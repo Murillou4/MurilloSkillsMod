@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "package": "com.murilloskills.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "MurilloSkillsMixin",
+    "EnchantmentHelperMixin",
+    "ApplyBonusLootFunctionMixin",
+    "LivingEntityMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}
