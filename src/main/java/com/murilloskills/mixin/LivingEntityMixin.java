@@ -2,6 +2,7 @@ package com.murilloskills.mixin;
 
 import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.skills.warrior.WarriorAbilityHandler;
 import com.murilloskills.utils.SkillAttributes;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.entity.LivingEntity;
@@ -30,9 +31,23 @@ public abstract class LivingEntityMixin {
 
         // --- LIFESTEAL ---
         float healAmount = 0f;
-        if (level >= SkillConfig.LIFESTEAL_UNLOCK_LEVEL) {
+        boolean isBerserk = false;
+
+        // Verifica se está em modo Berserk
+        try {
+            isBerserk = WarriorAbilityHandler.isBerserkActive(attacker);
+        } catch (Exception ignored) {}
+
+        if (isBerserk) {
+            // Lifesteal massivo durante Berserk (ignora requisito de nível 75)
+            healAmount = amount * SkillConfig.WARRIOR_BERSERK_LIFESTEAL;
+        } else if (level >= SkillConfig.LIFESTEAL_UNLOCK_LEVEL) {
+            // Lifesteal normal (nível 75+)
             healAmount = amount * SkillConfig.LIFESTEAL_PERCENTAGE;
-            if (healAmount > 0) attacker.heal(healAmount);
+        }
+
+        if (healAmount > 0) {
+            attacker.heal(healAmount);
         }
 
     }

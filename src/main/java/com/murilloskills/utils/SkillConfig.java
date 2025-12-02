@@ -30,4 +30,13 @@ public class SkillConfig {
 
     public static final int LIFESTEAL_UNLOCK_LEVEL = 75;
     public static final float LIFESTEAL_PERCENTAGE = 0.15f;
+
+    // Master Skill (Warrior Berserk - Level 100)
+    public static final int WARRIOR_MASTER_LEVEL = 100;
+    public static final long WARRIOR_ABILITY_COOLDOWN = MINER_ABILITY_COOLDOWN; // Mesmo cooldown do Miner (1 hora)
+    public static final int WARRIOR_BERSERK_DURATION = 200; // 10 segundos (20 ticks * 10)
+    public static final float WARRIOR_BERSERK_LIFESTEAL = 0.50f; // 50% de roubo de vida durante Berserk
+    public static final int WARRIOR_EXHAUSTION_DURATION = 100; // 5 segundos de debuff após Berserk
+    public static final int WARRIOR_BERSERK_STRENGTH_AMPLIFIER = 3; // Força IV (amplifier 3)
+    public static final int WARRIOR_BERSERK_RESISTANCE_AMPLIFIER = 1; // Resistência II
 }

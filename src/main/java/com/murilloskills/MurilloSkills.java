@@ -9,6 +9,7 @@ import com.murilloskills.network.SkillSelectionC2SPayload;
 import com.murilloskills.network.SkillsSyncPayload;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.skills.miner.MinerAbilityHandler;
+import com.murilloskills.skills.warrior.WarriorAbilityHandler;
 import com.murilloskills.utils.SkillsNetworkUtils;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -49,7 +50,7 @@ public class MurilloSkills implements ModInitializer {
                 // Dispatcher
                 switch (paragon) {
                     case MINER -> MinerAbilityHandler.triggerActiveAbility(player);
-                    // Adicione outros cases aqui (Warrior, etc)
+                    case WARRIOR -> WarriorAbilityHandler.triggerActiveAbility(player);
                     default -> player.sendMessage(Text.of("§eHabilidade Paragon para " + paragon.name() + " ainda em desenvolvimento."), true);
                 }
             });
@@ -74,7 +75,8 @@ public class MurilloSkills implements ModInitializer {
                 }
 
                 var stats = data.getSkill(payload.skill());
-                if (stats.level >= 100) {
+                // Paragon pode ser selecionado no nível 99 (trava no 99 até escolher)
+                if (stats.level >= 99) {
                     data.paragonSkill = payload.skill();
                     state.markDirty();
                     SkillsNetworkUtils.syncSkills(player);

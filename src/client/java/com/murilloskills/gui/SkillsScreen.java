@@ -151,9 +151,9 @@ public class SkillsScreen extends Screen {
                 MurilloSkillsList skill = skills[i];
                 var stats = ClientSkillData.get(skill);
 
-                // Paragon button only for selected skills at level 100 with no paragon yet
+                // Paragon button only for selected skills at level 99+ with no paragon yet
                 boolean isSelected = ClientSkillData.isSkillSelected(skill);
-                if (paragon == null && isSelected && stats.level >= 100) {
+                if (paragon == null && isSelected && stats.level >= 99) {
                     int col = i % 2;
                     int row = i / 2;
                     int x = startX + (col * (cardWidth + padding));

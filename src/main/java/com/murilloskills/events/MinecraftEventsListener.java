@@ -4,6 +4,7 @@ package com.murilloskills.events;
 import com.murilloskills.skills.BlockBreakHandler;
 import com.murilloskills.skills.MobKillHandler;
 import com.murilloskills.skills.miner.MinerAbilityHandler;
+import com.murilloskills.skills.warrior.WarriorAbilityHandler;
 import com.murilloskills.utils.SkillsNetworkUtils;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -19,6 +20,7 @@ public class MinecraftEventsListener {
         blockBreakedListen();
         killEntityListen();
         playerJoinListen();
+        playerTickListen();
     }
 
 
@@ -60,6 +62,7 @@ public class MinecraftEventsListener {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                 MinerAbilityHandler.onPlayerTick(player);
+                WarriorAbilityHandler.onPlayerTick(player);
             }
         });
     }

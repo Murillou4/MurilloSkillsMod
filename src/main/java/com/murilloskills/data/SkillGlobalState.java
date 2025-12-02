@@ -222,8 +222,9 @@ public class SkillGlobalState extends PersistentState {
             SkillStats stats = skills.get(skill);
 
             int maxLevelAllowed = 99;
-            // Se já for Paragon OU se não houver Paragon, permite ir até 100
-            if (paragonSkill == null || paragonSkill == skill) {
+            // Nível 100 só é permitido se paragonSkill estiver definido E for igual à skill atual
+            // Jogador deve travar no 99 até ir no menu e selecionar o Paragon
+            if (paragonSkill != null && paragonSkill == skill) {
                 maxLevelAllowed = 100;
             }
 
