@@ -2,12 +2,16 @@ package com.murilloskills.data;
 
 import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.skills.MurilloSkillsList;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ClientSkillData {
     private static final Map<MurilloSkillsList, SkillGlobalState.SkillStats> skills = new HashMap<>();
     private static MurilloSkillsList paragonSkill = null;
+    private static List<MurilloSkillsList> selectedSkills = new ArrayList<>();
 
     public static void update(Map<MurilloSkillsList, SkillGlobalState.SkillStats> newSkills) {
         skills.clear();
@@ -20,6 +24,25 @@ public class ClientSkillData {
 
     public static MurilloSkillsList getParagonSkill() {
         return paragonSkill;
+    }
+
+    public static void setSelectedSkills(List<MurilloSkillsList> skills) {
+        selectedSkills.clear();
+        if (skills != null) {
+            selectedSkills.addAll(skills);
+        }
+    }
+
+    public static List<MurilloSkillsList> getSelectedSkills() {
+        return new ArrayList<>(selectedSkills);
+    }
+
+    public static boolean hasSelectedSkills() {
+        return selectedSkills != null && selectedSkills.size() == 2;
+    }
+
+    public static boolean isSkillSelected(MurilloSkillsList skill) {
+        return selectedSkills != null && selectedSkills.contains(skill);
     }
 
     public static SkillGlobalState.SkillStats get(MurilloSkillsList skill) {

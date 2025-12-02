@@ -56,11 +56,21 @@ public class SkillGlobalState extends PersistentState {
                 playerCompound.putString("paragonSkill", playerData.paragonSkill.name());
             }
 
+            // Save Selected Skills
+            if (playerData.selectedSkills != null && !playerData.selectedSkills.isEmpty()) {
+                NbtCompound selectedNbt = new NbtCompound();
+                for (int i = 0; i < playerData.selectedSkills.size(); i++) {
+                    selectedNbt.putString("skill" + i, playerData.selectedSkills.get(i).name());
+                }
+                selectedNbt.putInt("count", playerData.selectedSkills.size());
+                playerCompound.put("selectedSkills", selectedNbt);
+            }
+
             playerData.skills.forEach((skill, stats) -> {
                 NbtCompound skillCompound = new NbtCompound();
                 skillCompound.putInt("level", stats.level);
                 skillCompound.putDouble("xp", stats.xp);
-                skillCompound.putLong("lastAbilityUse", stats.lastAbilityUse); // Novo campo
+                skillCompound.putLong("lastAbilityUse", stats.lastAbilityUse);
                 playerCompound.put(skill.name(), skillCompound);
             });
             playersNbt.put(uuid.toString(), playerCompound);
@@ -84,6 +94,23 @@ public class SkillGlobalState extends PersistentState {
                     playerData.paragonSkill = MurilloSkillsList.valueOf(String.valueOf(playerCompound.getString("paragonSkill")));
                 } catch (IllegalArgumentException e) {
                     LOGGER.error("Unknown paragon skill in NBT");
+                }
+            }
+
+            // Load Selected Skills
+            if (playerCompound.contains("selectedSkills")) {
+                NbtCompound selectedNbt = playerCompound.getCompoundOrEmpty("selectedSkills");
+                Optional<Integer> countOpt = selectedNbt.getInt("count");
+                int count = countOpt.orElse(0);
+                for (int i = 0; i < count; i++) {
+                    Optional<String> skillName = selectedNbt.getString("skill" + i);
+                    if (skillName.isPresent()) {
+                        try {
+                            playerData.selectedSkills.add(MurilloSkillsList.valueOf(skillName.get()));
+                        } catch (IllegalArgumentException e) {
+                            LOGGER.error("Unknown selected skill in NBT: " + skillName);
+                        }
+                    }
                 }
             }
 
@@ -123,8 +150,11 @@ public class SkillGlobalState extends PersistentState {
     }
 
     public static class PlayerSkillData {
+        public static final int MAX_SELECTED_SKILLS = 2;
+
         public EnumMap<MurilloSkillsList, SkillStats> skills = new EnumMap<>(MurilloSkillsList.class);
-        public MurilloSkillsList paragonSkill = null; // New Field: The one skill allowed to reach 100
+        public MurilloSkillsList paragonSkill = null; // The one skill allowed to reach 100
+        public List<MurilloSkillsList> selectedSkills = new ArrayList<>(); // The 2 main skills chosen by player
 
         public PlayerSkillData() {
             for (MurilloSkillsList skill : MurilloSkillsList.values()) {
@@ -132,18 +162,64 @@ public class SkillGlobalState extends PersistentState {
             }
         }
 
-        public PlayerSkillData(MurilloSkillsList paragonSkill, EnumMap<MurilloSkillsList, SkillStats> skills) {
+        public PlayerSkillData(MurilloSkillsList paragonSkill, EnumMap<MurilloSkillsList, SkillStats> skills, List<MurilloSkillsList> selectedSkills) {
             this.paragonSkill = paragonSkill;
             this.skills = skills;
+            this.selectedSkills = selectedSkills != null ? new ArrayList<>(selectedSkills) : new ArrayList<>();
+        }
+
+        /**
+         * Check if player has selected their main skills
+         */
+        public boolean hasSelectedSkills() {
+            return selectedSkills != null && selectedSkills.size() == MAX_SELECTED_SKILLS;
+        }
+
+        /**
+         * Check if a skill is one of the selected main skills
+         */
+        public boolean isSkillSelected(MurilloSkillsList skill) {
+            return selectedSkills != null && selectedSkills.contains(skill);
+        }
+
+        /**
+         * Set the selected skills (max 2). Returns true if successful.
+         */
+        public boolean setSelectedSkills(List<MurilloSkillsList> skills) {
+            if (skills == null || skills.size() != MAX_SELECTED_SKILLS) {
+                return false;
+            }
+            // Prevent changing if already selected
+            if (hasSelectedSkills()) {
+                return false;
+            }
+            this.selectedSkills = new ArrayList<>(skills);
+            return true;
+        }
+
+        /**
+         * Get the list of selected skills (unmodifiable)
+         */
+        public List<MurilloSkillsList> getSelectedSkills() {
+            return Collections.unmodifiableList(selectedSkills);
         }
 
         /**
          * Central logic for adding XP and handling Paragon System constraints.
          * @return true if leveled up
          */
-// >>> ESTE MÉTODO FICA AQUI (Dentro de PlayerSkillData), não dentro de SkillStats <<<
         public boolean addXpToSkill(MurilloSkillsList skill, int amount) {
-            SkillStats stats = skills.get(skill); // Agora ele consegue achar a variável 'skills'
+            // RESTRICTION: If player hasn't selected skills yet, block all XP
+            if (!hasSelectedSkills()) {
+                return false;
+            }
+
+            // RESTRICTION: If skill is not in selectedSkills, block XP
+            if (!isSkillSelected(skill)) {
+                return false;
+            }
+
+            SkillStats stats = skills.get(skill);
 
             int maxLevelAllowed = 99;
             // Se já for Paragon OU se não houver Paragon, permite ir até 100
@@ -166,7 +242,7 @@ public class SkillGlobalState extends PersistentState {
             return skills.get(skill);
         }
 
-        // Updated Codec to include paragonSkill
+        // Updated Codec to include paragonSkill and selectedSkills
         public static final Codec<PlayerSkillData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.optionalFieldOf("paragonSkill").forGetter(d ->
                         Optional.ofNullable(d.paragonSkill).map(Enum::name)),
@@ -174,8 +250,10 @@ public class SkillGlobalState extends PersistentState {
                     Map<String, SkillStats> map = new HashMap<>();
                     d.skills.forEach((k, v) -> map.put(k.name(), v));
                     return map;
-                })
-        ).apply(instance, (paragonOpt, skillsMap) -> {
+                }),
+                Codec.STRING.listOf().optionalFieldOf("selectedSkills", List.of()).forGetter(d ->
+                        d.selectedSkills.stream().map(Enum::name).toList())
+        ).apply(instance, (paragonOpt, skillsMap, selectedList) -> {
             MurilloSkillsList p = paragonOpt.map(MurilloSkillsList::valueOf).orElse(null);
             EnumMap<MurilloSkillsList, SkillStats> map = new EnumMap<>(MurilloSkillsList.class);
             skillsMap.forEach((k, v) -> {
@@ -185,7 +263,12 @@ public class SkillGlobalState extends PersistentState {
             for (MurilloSkillsList s : MurilloSkillsList.values()) {
                 map.putIfAbsent(s, new SkillStats(0, 0, 0));
             }
-            return new PlayerSkillData(p, map);
+            // Parse selectedSkills
+            List<MurilloSkillsList> selected = new ArrayList<>();
+            for (String name : selectedList) {
+                try { selected.add(MurilloSkillsList.valueOf(name)); } catch (Exception ignored) {}
+            }
+            return new PlayerSkillData(p, map, selected);
         }));
     }
 

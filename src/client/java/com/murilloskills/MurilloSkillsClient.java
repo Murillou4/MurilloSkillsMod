@@ -24,7 +24,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
 
         // --- NETWORKING ---
 
-        // 1. Sync Skills (Updated for Paragon)
+        // 1. Sync Skills (Updated for Paragon and Selected Skills)
         ClientPlayNetworking.registerGlobalReceiver(SkillsSyncPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
                 com.murilloskills.data.ClientSkillData.update(payload.skills());
@@ -37,6 +37,9 @@ public class MurilloSkillsClient implements ClientModInitializer {
                     } catch (Exception ignored) {}
                 }
                 com.murilloskills.data.ClientSkillData.setParagonSkill(paragon);
+
+                // Update Selected Skills in Client Data
+                com.murilloskills.data.ClientSkillData.setSelectedSkills(payload.selectedSkills());
             });
         });
 
