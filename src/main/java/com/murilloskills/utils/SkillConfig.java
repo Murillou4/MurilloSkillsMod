@@ -16,7 +16,7 @@ public class SkillConfig {
 
     // Valores
     public static final float MINER_DURABILITY_CHANCE = 0.15f; // 15% chance de ignorar dano
-    public static final long MINER_ABILITY_COOLDOWN = 1;   // 1 Hora em ticks (20 * 60 * 60)
+    public static final long MINER_ABILITY_COOLDOWN = 20L * 60 * 60;   // 1 Hora em ticks (72000)
     public static final int MINER_ABILITY_RADIUS = 30;         // Raio do Master Miner
     public static final int MINER_ABILITY_DURATION = 200;       // 3 segundos (20 * 3)
 

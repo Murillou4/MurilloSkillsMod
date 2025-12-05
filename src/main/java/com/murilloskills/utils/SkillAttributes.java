@@ -1,92 +1,77 @@
 package com.murilloskills.utils;
 
+import com.murilloskills.api.AbstractSkill;
+import com.murilloskills.api.SkillRegistry;
 import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SkillAttributes {
 
-    private static final Identifier MINER_SPEED_ID = Identifier.of("murilloskills", "miner_speed_bonus");
-    private static final Identifier WARRIOR_DAMAGE_ID = Identifier.of("murilloskills", "warrior_damage");
-    private static final Identifier WARRIOR_HEALTH_ID = Identifier.of("murilloskills", "warrior_health");
+    private static final Logger LOGGER = LoggerFactory.getLogger("MurilloSkills-Attributes");
 
-    public static final float mineSpeedMultiplier = 0.03f;
-    public static final float mineFortuneMultiplier = 0.03f;
-    public static final float warriorDamageMultiplier = 0.05f;
-    public static final float warriorLootingMultiplier = 0.02f;
-
+    /**
+     * Updates all stats for a player using the new skill system
+     */
     public static void updateAllStats(ServerPlayerEntity player) {
-        updateMinerStats(player);
-        updateWarriorStats(player);
-    }
+        try {
+            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+            var playerData = state.getPlayerData(player);
 
-
-    public static void updateMinerStats(ServerPlayerEntity player) {
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        int level = state.getPlayerData(player).getSkill(MurilloSkillsList.MINER).level;
-
-        double speedBonus = level * mineSpeedMultiplier;
-
-        var attributeInstance = player.getAttributeInstance(EntityAttributes.BLOCK_BREAK_SPEED);
-
-        if (attributeInstance != null) {
-            attributeInstance.removeModifier(MINER_SPEED_ID);
-
-            if (speedBonus > 0) {
-                EntityAttributeModifier modifier = new EntityAttributeModifier(
-                        MINER_SPEED_ID,
-                        speedBonus,
-                        EntityAttributeModifier.Operation.ADD_MULTIPLIED_BASE
-                );
-                attributeInstance.addTemporaryModifier(modifier);
-            }
-        }
-    }
-
-    public static void updateWarriorStats(ServerPlayerEntity player) {
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        int level = state.getPlayerData(player).getSkill(MurilloSkillsList.WARRIOR).level;
-
-        // --- 1. DANO (0.1 por level) ---
-        double damageBonus = level * warriorDamageMultiplier;
-
-        var damageAttr = player.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE);
-        if (damageAttr != null) {
-            damageAttr.removeModifier(WARRIOR_DAMAGE_ID);
-            if (damageBonus > 0) {
-                // ADD_VALUE = Adiciona valor fixo (ex: Espada 7 + 50 = 57)
-                damageAttr.addTemporaryModifier(new EntityAttributeModifier(
-                        WARRIOR_DAMAGE_ID, damageBonus, EntityAttributeModifier.Operation.ADD_VALUE
-                ));
-            }
-        }
-
-        // --- 2. VIDA EXTRA (Milestones) ---
-        double healthBonus = 0;
-
-        // Nível 10: +1 Coração (+2 HP)
-        if (level >= 10) healthBonus += 2.0;
-        // Nível 50: +1 Coração (Total +4 HP)
-        if (level >= 50) healthBonus += 2.0;
-        // Nível 100: +3 Corações (Total +10 HP = 5 Corações)
-        if (level >= 100) healthBonus += 6.0;
-
-        var healthAttr = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
-        if (healthAttr != null) {
-            healthAttr.removeModifier(WARRIOR_HEALTH_ID);
-            if (healthBonus > 0) {
-                healthAttr.addTemporaryModifier(new EntityAttributeModifier(
-                        WARRIOR_HEALTH_ID, healthBonus, EntityAttributeModifier.Operation.ADD_VALUE
-                ));
-
-                // Cura o player para preencher a vida nova se ele estiver full
-                if (player.getHealth() > player.getMaxHealth()) {
-                    player.setHealth(player.getMaxHealth());
+            // Update attributes for all selected skills using the registry
+            if (playerData.hasSelectedSkills()) {
+                for (MurilloSkillsList skillEnum : playerData.getSelectedSkills()) {
+                    AbstractSkill skillObj = SkillRegistry.get(skillEnum);
+                    if (skillObj != null) {
+                        int level = playerData.getSkill(skillEnum).level;
+                        skillObj.updateAttributes(player, level);
+                    }
                 }
             }
+        } catch (Exception e) {
+            LOGGER.error("Erro ao atualizar atributos para " + player.getName().getString(), e);
+        }
+    }
+
+
+    /**
+     * Legacy method for updating miner stats - now uses the new skill system
+     * @deprecated Use updateAllStats() instead
+     */
+    @Deprecated
+    public static void updateMinerStats(ServerPlayerEntity player) {
+        try {
+            AbstractSkill minerSkill = SkillRegistry.get(MurilloSkillsList.MINER);
+            if (minerSkill != null) {
+                SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+                int level = state.getPlayerData(player).getSkill(MurilloSkillsList.MINER).level;
+                minerSkill.updateAttributes(player, level);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Erro ao atualizar stats do minerador (método legacy)", e);
+        }
+    }
+
+    /**
+     * Legacy method for updating warrior stats - now uses the new skill system
+     * @deprecated Use updateAllStats() instead
+     */
+    @Deprecated
+    public static void updateWarriorStats(ServerPlayerEntity player) {
+        try {
+            AbstractSkill warriorSkill = SkillRegistry.get(MurilloSkillsList.WARRIOR);
+            if (warriorSkill != null) {
+                SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+                int level = state.getPlayerData(player).getSkill(MurilloSkillsList.WARRIOR).level;
+                warriorSkill.updateAttributes(player, level);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Erro ao atualizar stats do guerreiro (método legacy)", e);
         }
     }
 }

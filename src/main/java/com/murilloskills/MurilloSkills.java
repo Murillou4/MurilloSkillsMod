@@ -1,6 +1,10 @@
 package com.murilloskills;
 
+import com.murilloskills.api.AbstractSkill;
+import com.murilloskills.api.SkillRegistry;
 import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.impl.MinerSkill;
+import com.murilloskills.impl.WarriorSkill;
 import com.murilloskills.item.ModItems;
 import com.murilloskills.network.MinerScanResultPayload;
 import com.murilloskills.network.ParagonActivationC2SPayload;
@@ -8,8 +12,6 @@ import com.murilloskills.network.SkillAbilityC2SPayload;
 import com.murilloskills.network.SkillSelectionC2SPayload;
 import com.murilloskills.network.SkillsSyncPayload;
 import com.murilloskills.skills.MurilloSkillsList;
-import com.murilloskills.skills.miner.MinerAbilityHandler;
-import com.murilloskills.skills.warrior.WarriorAbilityHandler;
 import com.murilloskills.utils.SkillsNetworkUtils;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -25,38 +27,28 @@ public class MurilloSkills implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        ModItems.registerModItems();
+        LOGGER.info("Inicializando MurilloSkills...");
 
-        // 1. Payloads
-        PayloadTypeRegistry.playS2C().register(SkillsSyncPayload.ID, SkillsSyncPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(MinerScanResultPayload.ID, MinerScanResultPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(SkillAbilityC2SPayload.ID, SkillAbilityC2SPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(ParagonActivationC2SPayload.ID, ParagonActivationC2SPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(SkillSelectionC2SPayload.ID, SkillSelectionC2SPayload.CODEC);
+        try {
+            // 1. Registrar Skills no Registry
+            registerSkills();
 
-        // 2. Receiver: Habilidade Ativa (Tecla Z)
-        ServerPlayNetworking.registerGlobalReceiver(SkillAbilityC2SPayload.ID, (payload, context) -> {
-            context.server().execute(() -> {
-                var player = context.player();
-                SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-                var playerData = state.getPlayerData(player);
-                MurilloSkillsList paragon = playerData.paragonSkill;
+            // 2. Registrar Items
+            ModItems.registerModItems();
 
-                if (paragon == null) {
-                    player.sendMessage(Text.of("§cVocê precisa confirmar uma habilidade Paragon Nível 100 (Tecla 'O') para usar o poder!"), true);
-                    return;
-                }
+            // 3. Payloads
+            PayloadTypeRegistry.playS2C().register(SkillsSyncPayload.ID, SkillsSyncPayload.CODEC);
+            PayloadTypeRegistry.playS2C().register(MinerScanResultPayload.ID, MinerScanResultPayload.CODEC);
+            PayloadTypeRegistry.playC2S().register(SkillAbilityC2SPayload.ID, SkillAbilityC2SPayload.CODEC);
+            PayloadTypeRegistry.playC2S().register(ParagonActivationC2SPayload.ID, ParagonActivationC2SPayload.CODEC);
+            PayloadTypeRegistry.playC2S().register(SkillSelectionC2SPayload.ID, SkillSelectionC2SPayload.CODEC);
 
-                // Dispatcher
-                switch (paragon) {
-                    case MINER -> MinerAbilityHandler.triggerActiveAbility(player);
-                    case WARRIOR -> WarriorAbilityHandler.triggerActiveAbility(player);
-                    default -> player.sendMessage(Text.of("§eHabilidade Paragon para " + paragon.name() + " ainda em desenvolvimento."), true);
-                }
-            });
-        });
+        // 4. Receiver: Habilidade Ativa (Tecla Z) - Usando Registry
+        registerAbilityReceiver();
 
-        // 3. Receiver: Ativação de Paragon (Botão na GUI)
+        // 5. Outros receivers existentes...
+
+        // Receiver: Ativação de Paragon (Botão na GUI)
         ServerPlayNetworking.registerGlobalReceiver(ParagonActivationC2SPayload.ID, (payload, context) -> {
             context.server().execute(() -> {
                 var player = context.player();
@@ -87,7 +79,7 @@ public class MurilloSkills implements ModInitializer {
             });
         });
 
-        // 4. Receiver: Seleção de Skills (Escolha das 2 habilidades principais)
+        // Receiver: Seleção de Skills (Escolha das 2 habilidades principais)
         ServerPlayNetworking.registerGlobalReceiver(SkillSelectionC2SPayload.ID, (payload, context) -> {
             context.server().execute(() -> {
                 var player = context.player();
@@ -129,6 +121,63 @@ public class MurilloSkills implements ModInitializer {
             });
         });
 
-        LOGGER.info("MurilloSkills Initialized with Skill Specialization System!");
+            // Validar que as skills esperadas estão registradas
+            SkillRegistry.validateRegistration(MurilloSkillsList.MINER, MurilloSkillsList.WARRIOR);
+            SkillRegistry.logRegisteredSkills();
+
+            LOGGER.info("MurilloSkills Initialized with Skill Specialization System!");
+
+        } catch (Exception e) {
+            LOGGER.error("ERRO CRÍTICO NA INICIALIZAÇÃO DO MOD!", e);
+        }
+    }
+
+    /**
+     * Registra todas as skills no SkillRegistry
+     */
+    private void registerSkills() {
+        try {
+            // Registrar skills implementadas
+            SkillRegistry.register(new MinerSkill());
+            SkillRegistry.register(new WarriorSkill());
+            // SkillRegistry.register(new ArcherSkill()); <-- Fácil de adicionar depois!
+
+            LOGGER.info("Skills registradas com sucesso no SkillRegistry");
+        } catch (Exception e) {
+            LOGGER.error("Erro ao registrar skills", e);
+        }
+    }
+
+    /**
+     * Registra o receiver para habilidades ativas usando o SkillRegistry
+     */
+    private void registerAbilityReceiver() {
+        ServerPlayNetworking.registerGlobalReceiver(SkillAbilityC2SPayload.ID, (payload, context) -> {
+            context.server().execute(() -> {
+                try {
+                    var player = context.player();
+                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+                    var playerData = state.getPlayerData(player);
+
+                    if (playerData.paragonSkill == null) {
+                        player.sendMessage(Text.of("§cVocê precisa confirmar uma habilidade Paragon Nível 100 (Tecla 'O') para usar o poder!"), true);
+                        return;
+                    }
+
+                    // O CÓDIGO LIMPO ESTÁ AQUI:
+                    AbstractSkill skill = SkillRegistry.get(playerData.paragonSkill);
+                    if (skill != null) {
+                        var stats = playerData.getSkill(playerData.paragonSkill);
+                        skill.onActiveAbility(player, stats); // Polimorfismo!
+                    } else {
+                        LOGGER.warn("Skill Paragon não encontrada no Registry: {}", playerData.paragonSkill);
+                        player.sendMessage(Text.of("§eHabilidade Paragon para " + playerData.paragonSkill.name() + " ainda em desenvolvimento."), true);
+                    }
+
+                } catch (Exception e) {
+                    LOGGER.error("Erro ao processar pacote de Habilidade", e);
+                }
+            });
+        });
     }
 }

@@ -1,9 +1,10 @@
 package com.murilloskills.mixin;
 
+import com.murilloskills.api.AbstractSkill;
+import com.murilloskills.api.SkillRegistry;
 import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.impl.WarriorSkill;
 import com.murilloskills.skills.MurilloSkillsList;
-import com.murilloskills.skills.warrior.WarriorAbilityHandler;
-import com.murilloskills.utils.SkillAttributes;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -35,7 +36,10 @@ public abstract class LivingEntityMixin {
 
         // Verifica se está em modo Berserk
         try {
-            isBerserk = WarriorAbilityHandler.isBerserkActive(attacker);
+            AbstractSkill skill = SkillRegistry.get(MurilloSkillsList.WARRIOR);
+            if (skill instanceof WarriorSkill warriorSkill) {
+                isBerserk = warriorSkill.isBerserkActive(attacker);
+            }
         } catch (Exception ignored) {}
 
         if (isBerserk) {

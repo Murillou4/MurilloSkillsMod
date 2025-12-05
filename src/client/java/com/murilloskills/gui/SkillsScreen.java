@@ -314,7 +314,7 @@ public class SkillsScreen extends Screen {
     private long getSkillCooldown(MurilloSkillsList skill) {
         return switch (skill) {
             case MINER -> SkillConfig.MINER_ABILITY_COOLDOWN;
-            case WARRIOR -> 12000L;
+            case WARRIOR -> SkillConfig.WARRIOR_ABILITY_COOLDOWN;
             default -> 6000L;
         };
     }
