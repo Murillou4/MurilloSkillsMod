@@ -8,7 +8,11 @@
     "ApplyBonusLootFunctionMixin",
     "LivingEntityMixin",
     "ArrowEntityMixin",
-    "PersistentProjectileEntityAccessor"
+    "PersistentProjectileEntityAccessor",
+    "CropBlockMixin",
+    "FishingBobberEntityMixin",
+    "ItemEntityFishingMixin",
+    "SeedItemMixin"
   ],
   "injectors": {
     "defaultRequire": 1

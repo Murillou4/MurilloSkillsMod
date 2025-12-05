@@ -13,10 +13,12 @@ import net.minecraft.server.network.ServerPlayerEntity;
 
 public class MobKillHandler {
     public static void handle(PlayerEntity player, Entity entityKilled) {
-        if (!(entityKilled instanceof LivingEntity victim) || player.getEntityWorld().isClient()) return;
+        if (!(entityKilled instanceof LivingEntity victim) || player.getEntityWorld().isClient())
+            return;
 
         SkillReceptorResult result = WarriorXpGetter.getMobXp(victim);
-        if (!result.didGainXp()) return;
+        if (!result.didGainXp())
+            return;
 
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
         SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
@@ -26,7 +28,7 @@ public class MobKillHandler {
         if (data.addXpToSkill(MurilloSkillsList.WARRIOR, result.getXpAmount())) {
             var stats = data.getSkill(MurilloSkillsList.WARRIOR);
             SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.WARRIOR, stats.level);
-            SkillAttributes.updateWarriorStats(serverPlayer);
+            SkillAttributes.updateAllStats(serverPlayer);
         }
 
         state.markDirty();

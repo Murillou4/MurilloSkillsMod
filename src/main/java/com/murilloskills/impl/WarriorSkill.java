@@ -61,8 +61,9 @@ public class WarriorSkill extends AbstractSkill {
             long worldTime = player.getEntityWorld().getTime();
             long timeSinceUse = worldTime - stats.lastAbilityUse;
 
-            if (stats.lastAbilityUse >= 0 && timeSinceUse < SkillConfig.WARRIOR_ABILITY_COOLDOWN) {
-                long minutesLeft = (SkillConfig.WARRIOR_ABILITY_COOLDOWN - timeSinceUse) / 20 / 60;
+            long cooldownTicks = SkillConfig.toTicksLong(SkillConfig.WARRIOR_ABILITY_COOLDOWN_SECONDS);
+            if (stats.lastAbilityUse >= 0 && timeSinceUse < cooldownTicks) {
+                long minutesLeft = (cooldownTicks - timeSinceUse) / 20 / 60;
                 sendMessage(player, "Habilidade em recarga: " + minutesLeft + " minutos.", Formatting.RED, true);
                 return;
             }
@@ -95,7 +96,7 @@ public class WarriorSkill extends AbstractSkill {
                 long elapsed = currentTime - startTime;
 
                 // Se o Berserk acabou
-                if (elapsed >= SkillConfig.WARRIOR_BERSERK_DURATION) {
+                if (elapsed >= SkillConfig.toTicks(SkillConfig.WARRIOR_BERSERK_DURATION_SECONDS)) {
                     endBerserk(player);
                 }
             }
@@ -169,7 +170,7 @@ public class WarriorSkill extends AbstractSkill {
         long currentTime = player.getEntityWorld().getTime();
         long elapsed = currentTime - startTime;
 
-        return elapsed < SkillConfig.WARRIOR_BERSERK_DURATION;
+        return elapsed < SkillConfig.toTicks(SkillConfig.WARRIOR_BERSERK_DURATION_SECONDS);
     }
 
     /**
@@ -182,14 +183,14 @@ public class WarriorSkill extends AbstractSkill {
         // Aplica Força (Strength)
         player.addStatusEffect(new StatusEffectInstance(
                 StatusEffects.STRENGTH,
-                SkillConfig.WARRIOR_BERSERK_DURATION,
+                SkillConfig.toTicks(SkillConfig.WARRIOR_BERSERK_DURATION_SECONDS),
                 SkillConfig.WARRIOR_BERSERK_STRENGTH_AMPLIFIER,
                 false, true, true));
 
         // Aplica Resistência
         player.addStatusEffect(new StatusEffectInstance(
                 StatusEffects.RESISTANCE,
-                SkillConfig.WARRIOR_BERSERK_DURATION,
+                SkillConfig.toTicks(SkillConfig.WARRIOR_BERSERK_DURATION_SECONDS),
                 SkillConfig.WARRIOR_BERSERK_RESISTANCE_AMPLIFIER,
                 false, true, true));
 
@@ -230,13 +231,13 @@ public class WarriorSkill extends AbstractSkill {
         // Aplica Exaustão (Slowness e Weakness)
         player.addStatusEffect(new StatusEffectInstance(
                 StatusEffects.SLOWNESS,
-                SkillConfig.WARRIOR_EXHAUSTION_DURATION,
+                SkillConfig.toTicks(SkillConfig.WARRIOR_EXHAUSTION_DURATION_SECONDS),
                 1, // Slowness II
                 false, true, true));
 
         player.addStatusEffect(new StatusEffectInstance(
                 StatusEffects.WEAKNESS,
-                SkillConfig.WARRIOR_EXHAUSTION_DURATION,
+                SkillConfig.toTicks(SkillConfig.WARRIOR_EXHAUSTION_DURATION_SECONDS),
                 1, // Weakness II
                 false, true, true));
 

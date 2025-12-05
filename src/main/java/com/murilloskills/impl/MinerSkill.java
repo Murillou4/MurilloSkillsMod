@@ -50,8 +50,9 @@ public class MinerSkill extends AbstractSkill {
             long worldTime = player.getEntityWorld().getTime();
             long timeSinceUse = worldTime - stats.lastAbilityUse;
 
-            if (stats.lastAbilityUse >= 0 && timeSinceUse < SkillConfig.MINER_ABILITY_COOLDOWN) {
-                long minutesLeft = (SkillConfig.MINER_ABILITY_COOLDOWN - timeSinceUse) / 20 / 60;
+            long cooldownTicks = SkillConfig.toTicksLong(SkillConfig.MINER_ABILITY_COOLDOWN_SECONDS);
+            if (stats.lastAbilityUse >= 0 && timeSinceUse < cooldownTicks) {
+                long minutesLeft = (cooldownTicks - timeSinceUse) / 20 / 60;
                 sendMessage(player, "Habilidade em recarga: " + minutesLeft + " minutos.", Formatting.RED, true);
                 return;
             }

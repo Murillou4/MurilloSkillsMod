@@ -20,15 +20,18 @@ public class OreHighlighter {
     public static void setHighlights(List<BlockPos> ores) {
         highlightedOres = ores;
         if (MinecraftClient.getInstance().world != null) {
-            highlightEndTime = MinecraftClient.getInstance().world.getTime() + SkillConfig.MINER_ABILITY_DURATION;
+            highlightEndTime = MinecraftClient.getInstance().world.getTime()
+                    + SkillConfig.toTicks(SkillConfig.MINER_ABILITY_DURATION_SECONDS);
         }
     }
 
     public static void render(WorldRenderContext context) {
-        if (highlightedOres == null || highlightedOres.isEmpty()) return;
+        if (highlightedOres == null || highlightedOres.isEmpty())
+            return;
 
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.world == null || client.player == null) return;
+        if (client.world == null || client.player == null)
+            return;
 
         if (client.world.getTime() > highlightEndTime) {
             highlightedOres = null;
@@ -43,7 +46,8 @@ public class OreHighlighter {
         GL11.glDepthFunc(GL11.GL_ALWAYS); // Desenha sobre tudo
         GL11.glLineWidth(3.0f);
 
-        VertexConsumer consumer = client.getBufferBuilders().getEntityVertexConsumers().getBuffer(RenderLayer.getLines());
+        VertexConsumer consumer = client.getBufferBuilders().getEntityVertexConsumers()
+                .getBuffer(RenderLayer.getLines());
 
         // 2. Loop de Desenho
         for (BlockPos pos : highlightedOres) {
@@ -63,11 +67,11 @@ public class OreHighlighter {
 
     // Método auxiliar simples para desenhar as 12 arestas de um cubo
     private static void drawSimpleBox(MatrixStack matrices, VertexConsumer consumer,
-                                      double x, double y, double z,
-                                      float r, float g, float b, float a) {
+            double x, double y, double z,
+            float r, float g, float b, float a) {
         MatrixStack.Entry entry = matrices.peek();
-        float minX = (float)x, minY = (float)y, minZ = (float)z;
-        float maxX = (float)(x + 1), maxY = (float)(y + 1), maxZ = (float)(z + 1);
+        float minX = (float) x, minY = (float) y, minZ = (float) z;
+        float maxX = (float) (x + 1), maxY = (float) (y + 1), maxZ = (float) (z + 1);
 
         // Base
         drawLine(entry, consumer, minX, minY, minZ, maxX, minY, minZ, r, g, b, a);
@@ -89,10 +93,11 @@ public class OreHighlighter {
     }
 
     private static void drawLine(MatrixStack.Entry entry, VertexConsumer consumer,
-                                 float x1, float y1, float z1,
-                                 float x2, float y2, float z2,
-                                 float r, float g, float b, float a) {
-        // Normal fixa (0, 1, 0) pois linhas de debug não precisam de iluminação complexa
+            float x1, float y1, float z1,
+            float x2, float y2, float z2,
+            float r, float g, float b, float a) {
+        // Normal fixa (0, 1, 0) pois linhas de debug não precisam de iluminação
+        // complexa
         consumer.vertex(entry.getPositionMatrix(), x1, y1, z1).color(r, g, b, a).normal(entry, 0, 1, 0);
         consumer.vertex(entry.getPositionMatrix(), x2, y2, z2).color(r, g, b, a).normal(entry, 0, 1, 0);
     }

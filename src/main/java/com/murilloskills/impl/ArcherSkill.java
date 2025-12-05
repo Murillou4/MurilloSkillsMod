@@ -57,8 +57,9 @@ public class ArcherSkill extends AbstractSkill {
             long worldTime = player.getEntityWorld().getTime();
             long timeSinceUse = worldTime - stats.lastAbilityUse;
 
-            if (stats.lastAbilityUse >= 0 && timeSinceUse < SkillConfig.ARCHER_ABILITY_COOLDOWN) {
-                long minutesLeft = (SkillConfig.ARCHER_ABILITY_COOLDOWN - timeSinceUse) / 20 / 60;
+            long cooldownTicks = SkillConfig.toTicksLong(SkillConfig.ARCHER_ABILITY_COOLDOWN_SECONDS);
+            if (stats.lastAbilityUse >= 0 && timeSinceUse < cooldownTicks) {
+                long minutesLeft = (cooldownTicks - timeSinceUse) / 20 / 60;
                 sendMessage(player, "Habilidade em recarga: " + minutesLeft + " minutos.", Formatting.RED, true);
                 return;
             }
@@ -91,7 +92,7 @@ public class ArcherSkill extends AbstractSkill {
                 long elapsed = currentTime - startTime;
 
                 // Se o Master Ranger acabou
-                if (elapsed >= SkillConfig.ARCHER_MASTER_RANGER_DURATION) {
+                if (elapsed >= SkillConfig.toTicks(SkillConfig.ARCHER_MASTER_RANGER_DURATION_SECONDS)) {
                     endMasterRanger(player);
                 }
             }
@@ -184,7 +185,7 @@ public class ArcherSkill extends AbstractSkill {
         long currentTime = player.getEntityWorld().getTime();
         long elapsed = currentTime - startTime;
 
-        return elapsed < SkillConfig.ARCHER_MASTER_RANGER_DURATION;
+        return elapsed < SkillConfig.toTicks(SkillConfig.ARCHER_MASTER_RANGER_DURATION_SECONDS);
     }
 
     /**

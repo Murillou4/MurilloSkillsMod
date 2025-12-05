@@ -4,13 +4,18 @@ import com.murilloskills.api.AbstractSkill;
 import com.murilloskills.api.SkillRegistry;
 import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.impl.ArcherSkill;
+import com.murilloskills.impl.FarmerSkill;
+import com.murilloskills.impl.FisherSkill;
 import com.murilloskills.impl.MinerSkill;
 import com.murilloskills.impl.WarriorSkill;
 import com.murilloskills.item.ModItems;
 import com.murilloskills.network.MinerScanResultPayload;
 import com.murilloskills.network.ParagonActivationC2SPayload;
+import com.murilloskills.network.RainDanceS2CPayload;
 import com.murilloskills.network.SkillAbilityC2SPayload;
 import com.murilloskills.network.SkillSelectionC2SPayload;
+import com.murilloskills.network.AreaPlantingToggleC2SPayload;
+import com.murilloskills.network.AreaPlantingSyncS2CPayload;
 import com.murilloskills.network.SkillsSyncPayload;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillsNetworkUtils;
@@ -40,12 +45,18 @@ public class MurilloSkills implements ModInitializer {
             // 3. Payloads
             PayloadTypeRegistry.playS2C().register(SkillsSyncPayload.ID, SkillsSyncPayload.CODEC);
             PayloadTypeRegistry.playS2C().register(MinerScanResultPayload.ID, MinerScanResultPayload.CODEC);
+            PayloadTypeRegistry.playS2C().register(RainDanceS2CPayload.ID, RainDanceS2CPayload.CODEC);
             PayloadTypeRegistry.playC2S().register(SkillAbilityC2SPayload.ID, SkillAbilityC2SPayload.CODEC);
             PayloadTypeRegistry.playC2S().register(ParagonActivationC2SPayload.ID, ParagonActivationC2SPayload.CODEC);
             PayloadTypeRegistry.playC2S().register(SkillSelectionC2SPayload.ID, SkillSelectionC2SPayload.CODEC);
+            PayloadTypeRegistry.playC2S().register(AreaPlantingToggleC2SPayload.ID, AreaPlantingToggleC2SPayload.CODEC);
+            PayloadTypeRegistry.playS2C().register(AreaPlantingSyncS2CPayload.ID, AreaPlantingSyncS2CPayload.CODEC);
 
             // 4. Receiver: Habilidade Ativa (Tecla Z) - Usando Registry
             registerAbilityReceiver();
+
+            // 5. Receiver: Toggle Area Planting (Tecla G)
+            registerAreaPlantingReceiver();
 
             // 5. Outros receivers existentes...
 
@@ -135,7 +146,7 @@ public class MurilloSkills implements ModInitializer {
 
             // Validar que as skills esperadas estão registradas
             SkillRegistry.validateRegistration(MurilloSkillsList.MINER, MurilloSkillsList.WARRIOR,
-                    MurilloSkillsList.ARCHER);
+                    MurilloSkillsList.ARCHER, MurilloSkillsList.FARMER, MurilloSkillsList.FISHER);
             SkillRegistry.logRegisteredSkills();
 
             LOGGER.info("MurilloSkills Initialized with Skill Specialization System!");
@@ -154,6 +165,8 @@ public class MurilloSkills implements ModInitializer {
             SkillRegistry.register(new MinerSkill());
             SkillRegistry.register(new WarriorSkill());
             SkillRegistry.register(new ArcherSkill());
+            SkillRegistry.register(new FarmerSkill());
+            SkillRegistry.register(new FisherSkill());
 
             LOGGER.info("Skills registradas com sucesso no SkillRegistry");
         } catch (Exception e) {
@@ -192,6 +205,57 @@ public class MurilloSkills implements ModInitializer {
 
                 } catch (Exception e) {
                     LOGGER.error("Erro ao processar pacote de Habilidade", e);
+                }
+            });
+        });
+    }
+
+    /**
+     * Registra o receiver para toggle de plantio em área (3x3)
+     */
+    private void registerAreaPlantingReceiver() {
+        ServerPlayNetworking.registerGlobalReceiver(AreaPlantingToggleC2SPayload.ID, (payload, context) -> {
+            context.server().execute(() -> {
+                try {
+                    var player = context.player();
+                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+                    var playerData = state.getPlayerData(player);
+
+                    // Check if player has FARMER selected
+                    if (!playerData.isSkillSelected(MurilloSkillsList.FARMER)) {
+                        player.sendMessage(Text.literal("Você precisa ter Agricultor como uma das suas habilidades!")
+                                .formatted(Formatting.RED), true);
+                        return;
+                    }
+
+                    var farmerStats = playerData.getSkill(MurilloSkillsList.FARMER);
+
+                    // Check level requirement
+                    if (farmerStats.level < com.murilloskills.utils.SkillConfig.FARMER_AREA_PLANTING_LEVEL) {
+                        player.sendMessage(
+                                Text.literal("Você precisa ser Nível 25 de Agricultor para usar Plantio em Área!")
+                                        .formatted(Formatting.RED),
+                                true);
+                        return;
+                    }
+
+                    // Toggle and get new state
+                    boolean nowEnabled = FarmerSkill.toggleAreaPlanting(player, farmerStats.level);
+
+                    // Send sync to client for HUD indicator
+                    ServerPlayNetworking.send(player, new AreaPlantingSyncS2CPayload(nowEnabled));
+
+                    // Feedback message
+                    if (nowEnabled) {
+                        player.sendMessage(Text.literal("🌱 Plantio em Área: ATIVADO (3x3)")
+                                .formatted(Formatting.GREEN), true);
+                    } else {
+                        player.sendMessage(Text.literal("🌱 Plantio em Área: DESATIVADO")
+                                .formatted(Formatting.GRAY), true);
+                    }
+
+                } catch (Exception e) {
+                    LOGGER.error("Erro ao processar toggle de Plantio em Área", e);
                 }
             });
         });

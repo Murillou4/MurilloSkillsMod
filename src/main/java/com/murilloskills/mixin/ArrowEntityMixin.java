@@ -61,8 +61,8 @@ public abstract class ArrowEntityMixin {
     }
 
     /**
-     * Implementa o homing arrow - flecha persegue o último inimigo quando Master
-     * Ranger está ativo
+     * Implementa o homing arrow - flecha persegue inimigos quando Master
+     * Ranger está ativo. Usa SLERP para curvas suaves e naturais.
      */
     @Inject(method = "tick", at = @At("HEAD"))
     private void onArrowTick(CallbackInfo ci) {
@@ -85,29 +85,22 @@ public abstract class ArrowEntityMixin {
             return;
         }
 
+        // Aplica penetração (piercing) se o jogador tem nível 50+
+        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+        int level = state.getPlayerData(player).getSkill(MurilloSkillsList.ARCHER).level;
+
+        if (ArcherSkill.hasArrowPenetration(level)) {
+            // Aplica piercing level 3 (atravessa até 4 entidades)
+            byte currentPierce = arrow.getPierceLevel();
+            if (currentPierce < 3) {
+                ((PersistentProjectileEntityAccessor) arrow).invokeSetPierceLevel((byte) 3);
+            }
+        }
+
         // Verifica se o Master Ranger está ativo
         if (!ArcherSkill.isMasterRangerActive(player)) {
             return;
         }
-
-        // Pega o UUID do último inimigo danificado
-        UUID targetUuid = ArcherSkill.getLastDamagedEnemy(player);
-        if (targetUuid == null) {
-            return;
-        }
-
-        // Busca a entidade alvo no mundo
-        ServerWorld world = (ServerWorld) arrow.getEntityWorld();
-        Entity targetEntity = world.getEntity(targetUuid);
-
-        if (targetEntity == null || !targetEntity.isAlive()) {
-            return;
-        }
-
-        // Calcula a direção para o alvo
-        Vec3d arrowPos = arrow.getEntityPos();
-        Vec3d targetPos = targetEntity.getEntityPos().add(0, targetEntity.getHeight() / 2, 0); // Mira no centro do alvo
-        Vec3d direction = targetPos.subtract(arrowPos).normalize();
 
         // Pega a velocidade atual da flecha
         Vec3d currentVelocity = arrow.getVelocity();
@@ -118,16 +111,168 @@ public abstract class ArrowEntityMixin {
             return;
         }
 
-        // Força de homing - quanto maior, mais forte o ajuste de direção
-        double homingStrength = 0.15; // 15% de ajuste por tick
-
-        // Interpola entre a direção atual e a direção do alvo
+        Vec3d arrowPos = arrow.getEntityPos();
         Vec3d currentDirection = currentVelocity.normalize();
-        Vec3d newDirection = currentDirection.multiply(1 - homingStrength).add(direction.multiply(homingStrength))
-                .normalize();
+
+        // Busca o alvo - primeiro tenta o último inimigo danificado
+        Entity targetEntity = null;
+        UUID targetUuid = ArcherSkill.getLastDamagedEnemy(player);
+
+        if (targetUuid != null) {
+            ServerWorld world = (ServerWorld) arrow.getEntityWorld();
+            targetEntity = world.getEntity(targetUuid);
+
+            // Verifica se o alvo ainda é válido
+            if (targetEntity == null || !targetEntity.isAlive()) {
+                targetEntity = null;
+            }
+        }
+
+        // Se não tem alvo prévio, busca o inimigo mais próximo na direção da flecha
+        if (targetEntity == null) {
+            targetEntity = findBestTarget(arrow, player, arrowPos, currentDirection);
+        }
+
+        // Se não encontrou nenhum alvo, não faz nada
+        if (targetEntity == null) {
+            return;
+        }
+
+        // Calcula a direção para o alvo (mira no centro do corpo)
+        Vec3d targetPos = targetEntity.getEntityPos().add(0, targetEntity.getHeight() * 0.5, 0);
+        Vec3d toTarget = targetPos.subtract(arrowPos);
+        double distanceToTarget = toTarget.length();
+
+        // Se está muito perto, não precisa ajustar (vai acertar de qualquer jeito)
+        if (distanceToTarget < 0.5) {
+            return;
+        }
+
+        Vec3d targetDirection = toTarget.normalize();
+
+        // Calcula o ângulo entre a direção atual e a direção do alvo
+        double dotProduct = currentDirection.dotProduct(targetDirection);
+        dotProduct = Math.max(-1.0, Math.min(1.0, dotProduct)); // Clamp
+        double angleBetween = Math.acos(dotProduct);
+
+        // =====================================
+        // SISTEMA DE CURVA SUAVE
+        // =====================================
+
+        // Ângulo máximo de curva por tick (em radianos)
+        // ~3 graus por tick = curva bem suave
+        // Ajustado inversamente pela velocidade: quanto mais rápido, mais forte a curva
+        // para compensar o menor número de ticks até o alvo
+        double baseMaxAngle = Math.toRadians(3.0);
+
+        // Fator de compensação de velocidade
+        // Velocidade normal de flecha: ~1.5-2.0 blocos/tick
+        // Velocidade com power V + força máxima: ~3.0+ blocos/tick
+        double velocityFactor = Math.max(1.0, speed / 1.5);
+        double maxAnglePerTick = baseMaxAngle * velocityFactor;
+
+        // Fator de distância: curva mais agressiva quando perto do alvo
+        // para garantir que acerte
+        double distanceFactor = 1.0;
+        if (distanceToTarget < 5.0) {
+            // Interpolação suave: quanto mais perto, mais forte (até 2x)
+            distanceFactor = 1.0 + (5.0 - distanceToTarget) / 5.0;
+        }
+        maxAnglePerTick *= distanceFactor;
+
+        // Limita a curva ao máximo permitido
+        double actualAngle = Math.min(angleBetween, maxAnglePerTick);
+
+        // Se já está apontando pro alvo (dentro de 1 grau), não ajusta
+        if (angleBetween < Math.toRadians(1.0)) {
+            return;
+        }
+
+        // Calcula a nova direção usando interpolação esférica (SLERP)
+        Vec3d newDirection = slerp(currentDirection, targetDirection, actualAngle / angleBetween);
 
         // Aplica a nova velocidade mantendo a mesma speed
         Vec3d newVelocity = newDirection.multiply(speed);
         arrow.setVelocity(newVelocity.x, newVelocity.y, newVelocity.z);
+    }
+
+    /**
+     * Busca o melhor alvo na direção da flecha.
+     * Considera apenas inimigos num cone de 45° à frente da flecha,
+     * priorizando os mais próximos e mais alinhados.
+     */
+    private Entity findBestTarget(PersistentProjectileEntity arrow, ServerPlayerEntity player,
+            Vec3d arrowPos, Vec3d arrowDirection) {
+        ServerWorld world = (ServerWorld) arrow.getEntityWorld();
+
+        // Raio máximo de busca
+        double maxRange = 32.0;
+        // Ângulo máximo do cone (45 graus = cos(45°) ≈ 0.707)
+        double minDotProduct = 0.707;
+
+        Entity bestTarget = null;
+        double bestScore = Double.MAX_VALUE;
+
+        // Busca todas as entidades vivas no raio
+        for (LivingEntity entity : world.getEntitiesByClass(
+                LivingEntity.class,
+                arrow.getBoundingBox().expand(maxRange),
+                e -> e != player && e.isAlive() && !e.isSpectator())) {
+
+            // Vetor da flecha para a entidade
+            Vec3d toEntity = entity.getEntityPos().add(0, entity.getHeight() * 0.5, 0).subtract(arrowPos);
+            double distance = toEntity.length();
+
+            // Ignora entidades muito longe
+            if (distance > maxRange || distance < 0.5) {
+                continue;
+            }
+
+            // Verifica se está no cone de visão da flecha
+            Vec3d directionToEntity = toEntity.normalize();
+            double dot = arrowDirection.dotProduct(directionToEntity);
+
+            if (dot < minDotProduct) {
+                continue; // Fora do cone de 45°
+            }
+
+            // Score: menor é melhor
+            // Combina distância e alinhamento
+            // Entidades mais próximas e mais alinhadas têm score menor
+            double alignmentFactor = 1.0 - dot; // 0 = perfeito alinhamento, 0.3 = limite do cone
+            double score = distance * (1.0 + alignmentFactor * 2.0);
+
+            if (score < bestScore) {
+                bestScore = score;
+                bestTarget = entity;
+            }
+        }
+
+        return bestTarget;
+    }
+
+    /**
+     * Interpolação esférica (SLERP) entre dois vetores unitários.
+     * Produz uma rotação suave entre as direções.
+     */
+    private Vec3d slerp(Vec3d from, Vec3d to, double t) {
+        // Clamp t entre 0 e 1
+        t = Math.max(0.0, Math.min(1.0, t));
+
+        double dot = from.dotProduct(to);
+        dot = Math.max(-1.0, Math.min(1.0, dot));
+
+        double theta = Math.acos(dot);
+
+        // Se os vetores são quase paralelos, usa interpolação linear
+        if (theta < 0.001) {
+            return from.multiply(1.0 - t).add(to.multiply(t)).normalize();
+        }
+
+        double sinTheta = Math.sin(theta);
+        double factorFrom = Math.sin((1.0 - t) * theta) / sinTheta;
+        double factorTo = Math.sin(t * theta) / sinTheta;
+
+        return from.multiply(factorFrom).add(to.multiply(factorTo)).normalize();
     }
 }
