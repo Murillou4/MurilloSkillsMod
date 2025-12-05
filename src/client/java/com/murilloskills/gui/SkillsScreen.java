@@ -132,12 +132,12 @@ public class SkillsScreen extends Screen {
             int confirmBtnY = this.height - 40;
 
             confirmButton = ButtonWidget.builder(Text.literal("CONFIRMAR ESCOLHA (0/2)"), (button) -> {
-                        if (pendingSelection.size() == 2) {
-                            List<MurilloSkillsList> selected = new ArrayList<>(pendingSelection);
-                            ClientPlayNetworking.send(new SkillSelectionC2SPayload(selected));
-                            this.close();
-                        }
-                    })
+                if (pendingSelection.size() == 2) {
+                    List<MurilloSkillsList> selected = new ArrayList<>(pendingSelection);
+                    ClientPlayNetworking.send(new SkillSelectionC2SPayload(selected));
+                    this.close();
+                }
+            })
                     .dimensions(confirmBtnX, confirmBtnY, confirmBtnWidth, confirmBtnHeight)
                     .build();
             confirmButton.active = false; // Disabled until 2 skills are selected
@@ -165,9 +165,9 @@ public class SkillsScreen extends Screen {
                     int btnHeight = 16;
 
                     ButtonWidget paragonBtn = ButtonWidget.builder(Text.literal("TORNAR PARAGON"), (button) -> {
-                                ClientPlayNetworking.send(new ParagonActivationC2SPayload(skill));
-                                this.close();
-                            })
+                        ClientPlayNetworking.send(new ParagonActivationC2SPayload(skill));
+                        this.close();
+                    })
                             .dimensions(btnX, btnY, btnWidth, btnHeight)
                             .build();
 
@@ -186,8 +186,12 @@ public class SkillsScreen extends Screen {
 
         // Title changes based on mode
         if (selectionMode) {
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("ESCOLHA SUAS HABILIDADES").formatted(Formatting.GOLD, Formatting.BOLD), this.width / 2, 10, 0xFFFFFFFF);
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Selecione 2 habilidades para evoluir").formatted(Formatting.YELLOW), this.width / 2, 22, 0xFFFFFFFF);
+            context.drawCenteredTextWithShadow(this.textRenderer,
+                    Text.literal("ESCOLHA SUAS HABILIDADES").formatted(Formatting.GOLD, Formatting.BOLD),
+                    this.width / 2, 10, 0xFFFFFFFF);
+            context.drawCenteredTextWithShadow(this.textRenderer,
+                    Text.literal("Selecione 2 habilidades para evoluir").formatted(Formatting.YELLOW), this.width / 2,
+                    22, 0xFFFFFFFF);
         } else {
             context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 15, 0xFFFFFFFF);
         }
@@ -195,7 +199,8 @@ public class SkillsScreen extends Screen {
         MurilloSkillsList[] skills = MurilloSkillsList.values();
         List<Text> tooltipToRender = null;
         MurilloSkillsList paragon = ClientSkillData.getParagonSkill();
-        long worldTime = MinecraftClient.getInstance().world != null ? MinecraftClient.getInstance().world.getTime() : 0;
+        long worldTime = MinecraftClient.getInstance().world != null ? MinecraftClient.getInstance().world.getTime()
+                : 0;
 
         // 2. Renderizar os Cartões (Fundo, Ícones, Texto)
         for (int i = 0; i < skills.length; i++) {
@@ -261,7 +266,8 @@ public class SkillsScreen extends Screen {
             String lvlStr = String.valueOf(stats.level);
             int lvlWidth = this.textRenderer.getWidth("Lvl " + lvlStr);
             int lvlColor = isLocked ? 0xFF666666 : 0xFFFFFFFF;
-            context.drawTextWithShadow(this.textRenderer, "Lvl " + lvlStr, x + cardWidth - lvlWidth - 5, y + 5, lvlColor);
+            context.drawTextWithShadow(this.textRenderer, "Lvl " + lvlStr, x + cardWidth - lvlWidth - 5, y + 5,
+                    lvlColor);
 
             // Barra de XP
             renderXpBar(context, x + 28, y + 25, stats, isLocked);
@@ -273,12 +279,14 @@ public class SkillsScreen extends Screen {
                 long cooldownTicks = getSkillCooldown(skill);
                 long timeSinceUse = worldTime - stats.lastAbilityUse;
 
-                if (timeSinceUse < cooldownTicks) {
+                // Se lastAbilityUse == -1, significa que nunca foi usada (pronto para usar)
+                // Ou se já passou o cooldown, também está pronto
+                if (stats.lastAbilityUse < 0 || timeSinceUse >= cooldownTicks) {
+                    context.drawText(this.textRenderer, "PRONTO (Z)", x + 28, y + 40, 0xFF00FF00, false);
+                } else {
                     long secondsLeft = (cooldownTicks - timeSinceUse) / 20;
                     String cdText = "CD: " + formatTime(secondsLeft);
                     context.drawText(this.textRenderer, cdText, x + 28, y + 40, 0xFFFF5555, false);
-                } else {
-                    context.drawText(this.textRenderer, "PRONTO (Z)", x + 28, y + 40, 0xFF00FF00, false);
                 }
                 context.drawTextWithShadow(this.textRenderer, "👑", x + 120, y - 4, 0xFFFFAA00);
             } else if (isSelected) {
@@ -292,7 +300,8 @@ public class SkillsScreen extends Screen {
                         .anyMatch(btn -> ((ButtonWidget) btn).isMouseOver(mouseX, mouseY));
 
                 if (!hoveringButton) {
-                    tooltipToRender = getSkillTooltip(skill, stats.level, isLocked, isParagon, selectionMode, isPendingSelect);
+                    tooltipToRender = getSkillTooltip(skill, stats.level, isLocked, isParagon, selectionMode,
+                            isPendingSelect);
                 }
             }
         }
@@ -307,7 +316,8 @@ public class SkillsScreen extends Screen {
     }
 
     private String formatTime(long seconds) {
-        if (seconds > 60) return (seconds / 60) + "m";
+        if (seconds > 60)
+            return (seconds / 60) + "m";
         return seconds + "s";
     }
 
@@ -329,7 +339,8 @@ public class SkillsScreen extends Screen {
         };
     }
 
-    private List<Text> getSkillTooltip(MurilloSkillsList skill, int level, boolean isLocked, boolean isParagon, boolean selectionMode, boolean isPendingSelect) {
+    private List<Text> getSkillTooltip(MurilloSkillsList skill, int level, boolean isLocked, boolean isParagon,
+            boolean selectionMode, boolean isPendingSelect) {
         List<Text> tooltip = new ArrayList<>();
         tooltip.add(Text.literal(capitalize(skill.name())).formatted(Formatting.GOLD, Formatting.BOLD));
 
@@ -339,13 +350,15 @@ public class SkillsScreen extends Screen {
                 tooltip.add(Text.literal("✓ SELECIONADA").formatted(Formatting.GREEN));
             }
             tooltip.add(Text.empty());
-            tooltip.add(Text.literal("Clique para " + (isPendingSelect ? "desmarcar" : "selecionar")).formatted(Formatting.YELLOW));
+            tooltip.add(Text.literal("Clique para " + (isPendingSelect ? "desmarcar" : "selecionar"))
+                    .formatted(Formatting.YELLOW));
             tooltip.add(Text.empty());
             tooltip.add(Text.literal("Descrição:").formatted(Formatting.GRAY));
             tooltip.add(Text.literal(getSkillDescription(skill)).formatted(Formatting.WHITE));
         } else {
             // Normal mode tooltip
-            if (isParagon) tooltip.add(Text.literal("★ PARAGON ATIVO ★").formatted(Formatting.YELLOW));
+            if (isParagon)
+                tooltip.add(Text.literal("★ PARAGON ATIVO ★").formatted(Formatting.YELLOW));
             if (isLocked) {
                 tooltip.add(Text.literal("🔒 BLOQUEADA").formatted(Formatting.RED));
                 tooltip.add(Text.literal("Esta habilidade não foi selecionada.").formatted(Formatting.DARK_GRAY));
@@ -366,32 +379,73 @@ public class SkillsScreen extends Screen {
                     tooltip.add(Text.literal("• Mineração: +" + speed + "% Vel.").formatted(Formatting.GREEN));
 
                     int fortune = (int) (level * SkillConfig.MINER_FORTUNE_PER_LEVEL);
-                    if (fortune > 0) tooltip.add(Text.literal("• Fortuna Extra: +" + fortune).formatted(Formatting.GREEN));
+                    if (fortune > 0)
+                        tooltip.add(Text.literal("• Fortuna Extra: +" + fortune).formatted(Formatting.GREEN));
 
-                    if (level >= SkillConfig.MINER_NIGHT_VISION_LEVEL) tooltip.add(Text.literal("• Visão Noturna (Cavernas)").formatted(Formatting.AQUA));
-                    if (level >= SkillConfig.MINER_DURABILITY_LEVEL) tooltip.add(Text.literal("• Durabilidade Infinita (Chance)").formatted(Formatting.AQUA));
-                    if (level >= SkillConfig.MINER_RADAR_LEVEL) tooltip.add(Text.literal("• Radar de Minérios").formatted(Formatting.AQUA));
+                    if (level >= SkillConfig.MINER_NIGHT_VISION_LEVEL)
+                        tooltip.add(Text.literal("• Visão Noturna (Cavernas)").formatted(Formatting.AQUA));
+                    if (level >= SkillConfig.MINER_DURABILITY_LEVEL)
+                        tooltip.add(Text.literal("• Durabilidade Infinita (Chance)").formatted(Formatting.AQUA));
+                    if (level >= SkillConfig.MINER_RADAR_LEVEL)
+                        tooltip.add(Text.literal("• Radar de Minérios").formatted(Formatting.AQUA));
                 }
                 case WARRIOR -> {
                     double damage = level * SkillConfig.WARRIOR_DAMAGE_PER_LEVEL;
-                    tooltip.add(Text.literal("• Dano Base: +" + String.format("%.1f", damage)).formatted(Formatting.RED));
+                    tooltip.add(
+                            Text.literal("• Dano Base: +" + String.format("%.1f", damage)).formatted(Formatting.RED));
 
                     int extraHearts = 0;
-                    if(level >= 10) extraHearts++;
-                    if(level >= 50) extraHearts++;
-                    if(level >= 100) extraHearts+=3;
-                    if(extraHearts > 0) tooltip.add(Text.literal("• Vida Max: +" + extraHearts + " ❤").formatted(Formatting.RED));
+                    if (level >= 10)
+                        extraHearts++;
+                    if (level >= 50)
+                        extraHearts++;
+                    if (level >= 100)
+                        extraHearts += 3;
+                    if (extraHearts > 0)
+                        tooltip.add(Text.literal("• Vida Max: +" + extraHearts + " ❤").formatted(Formatting.RED));
 
-                    if (level >= SkillConfig.RESISTANCE_UNLOCK_LEVEL) tooltip.add(Text.literal("• Pele de Ferro (Resistência)").formatted(Formatting.GOLD));
-                    if (level >= SkillConfig.LIFESTEAL_UNLOCK_LEVEL) tooltip.add(Text.literal("• Vampirismo (Roubo de Vida)").formatted(Formatting.DARK_PURPLE));
+                    if (level >= SkillConfig.RESISTANCE_UNLOCK_LEVEL)
+                        tooltip.add(Text.literal("• Pele de Ferro (Resistência)").formatted(Formatting.GOLD));
+                    if (level >= SkillConfig.LIFESTEAL_UNLOCK_LEVEL)
+                        tooltip.add(Text.literal("• Vampirismo (Roubo de Vida)").formatted(Formatting.DARK_PURPLE));
                 }
                 case FARMER -> {
                     tooltip.add(Text.literal("• Crescimento Extra (Em breve)").formatted(Formatting.GREEN));
                     tooltip.add(Text.literal("• Colheita Dupla (Em breve)").formatted(Formatting.GREEN));
                 }
                 case ARCHER -> {
-                    tooltip.add(Text.literal("• Dano de Flecha (Em breve)").formatted(Formatting.GREEN));
-                    tooltip.add(Text.literal("• Precisão (Em breve)").formatted(Formatting.GREEN));
+                    // Dano base por flecha (+2% por level)
+                    int arrowDamage = (int) (level * SkillConfig.ARCHER_DAMAGE_PER_LEVEL * 100);
+                    tooltip.add(Text.literal("• Dano de Flecha: +" + arrowDamage + "%").formatted(Formatting.GREEN));
+
+                    // Nível 10: Flechas mais rápidas
+                    if (level >= SkillConfig.ARCHER_FAST_ARROWS_LEVEL) {
+                        int speedBonus = (int) ((SkillConfig.ARCHER_ARROW_SPEED_MULTIPLIER - 1) * 100);
+                        tooltip.add(Text.literal("• Velocidade de Flecha: +" + speedBonus + "%")
+                                .formatted(Formatting.AQUA));
+                    }
+
+                    // Nível 25: +5% dano adicional
+                    if (level >= SkillConfig.ARCHER_BONUS_DAMAGE_LEVEL) {
+                        int bonusDamage = (int) (SkillConfig.ARCHER_BONUS_DAMAGE_AMOUNT * 100);
+                        tooltip.add(Text.literal("• Bônus de Dano: +" + bonusDamage + "%").formatted(Formatting.AQUA));
+                    }
+
+                    // Nível 50: Penetração de flechas
+                    if (level >= SkillConfig.ARCHER_PENETRATION_LEVEL) {
+                        tooltip.add(Text.literal("• Penetração (Piercing)").formatted(Formatting.AQUA));
+                    }
+
+                    // Nível 75: Tiros mais estáveis
+                    if (level >= SkillConfig.ARCHER_STABLE_SHOT_LEVEL) {
+                        int spreadReduction = (int) (SkillConfig.ARCHER_SPREAD_REDUCTION * 100);
+                        tooltip.add(Text.literal("• Precisão: +" + spreadReduction + "%").formatted(Formatting.AQUA));
+                    }
+
+                    // Nível 100: Master Ranger
+                    if (level >= SkillConfig.ARCHER_MASTER_LEVEL) {
+                        tooltip.add(Text.literal("• Master Ranger (Habilidade Ativa)").formatted(Formatting.GOLD));
+                    }
                 }
                 case FISHER -> tooltip.add(Text.literal("• Sorte no Mar (Em breve)").formatted(Formatting.GREEN));
                 default -> tooltip.add(Text.literal("• Status em desenvolvimento").formatted(Formatting.DARK_GRAY));
@@ -425,7 +479,8 @@ public class SkillsScreen extends Screen {
         int filledWidth = (int) (width * progress);
 
         int color = (stats.level >= 100) ? 0xFFFFAA00 : 0xFF00AA00;
-        if (isLocked) color = 0xFFAA0000;
+        if (isLocked)
+            color = 0xFFAA0000;
 
         context.fill(x, y, x + filledWidth, y + height, color);
     }
@@ -438,7 +493,8 @@ public class SkillsScreen extends Screen {
     }
 
     private String capitalize(String str) {
-        if (str == null || str.isEmpty()) return str;
+        if (str == null || str.isEmpty())
+            return str;
         return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
     }
 
@@ -457,5 +513,7 @@ public class SkillsScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() { return false; }
+    public boolean shouldPause() {
+        return false;
+    }
 }

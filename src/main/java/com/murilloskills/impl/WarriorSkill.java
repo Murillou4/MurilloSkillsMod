@@ -31,7 +31,8 @@ public class WarriorSkill extends AbstractSkill {
 
     private static final Identifier WARRIOR_DAMAGE_ID = Identifier.of("murilloskills", "warrior_damage");
     private static final Identifier WARRIOR_HEALTH_ID = Identifier.of("murilloskills", "warrior_health");
-    private static final Identifier BERSERK_KNOCKBACK_RESISTANCE_ID = Identifier.of("murilloskills", "berserk_knockback_resistance");
+    private static final Identifier BERSERK_KNOCKBACK_RESISTANCE_ID = Identifier.of("murilloskills",
+            "berserk_knockback_resistance");
 
     // Mapa para rastrear jogadores em modo Berserk (UUID → timestamp de início)
     private static final Map<UUID, Long> berserkPlayers = new HashMap<>();
@@ -56,11 +57,11 @@ public class WarriorSkill extends AbstractSkill {
                 return;
             }
 
-            // 3. Verifica Cooldown
+            // 3. Verifica Cooldown (pula se nunca usou: lastAbilityUse == -1)
             long worldTime = player.getEntityWorld().getTime();
             long timeSinceUse = worldTime - stats.lastAbilityUse;
 
-            if (timeSinceUse < SkillConfig.WARRIOR_ABILITY_COOLDOWN) {
+            if (stats.lastAbilityUse >= 0 && timeSinceUse < SkillConfig.WARRIOR_ABILITY_COOLDOWN) {
                 long minutesLeft = (SkillConfig.WARRIOR_ABILITY_COOLDOWN - timeSinceUse) / 20 / 60;
                 sendMessage(player, "Habilidade em recarga: " + minutesLeft + " minutos.", Formatting.RED, true);
                 return;
@@ -84,7 +85,8 @@ public class WarriorSkill extends AbstractSkill {
     @Override
     public void onTick(ServerPlayerEntity player, int level) {
         try {
-            if (player.age % 20 != 0) return; // Executa apenas 1 vez por segundo
+            if (player.age % 20 != 0)
+                return; // Executa apenas 1 vez por segundo
 
             // Verifica se o jogador estava em Berserk e o tempo acabou
             if (berserkPlayers.containsKey(player.getUuid())) {
@@ -117,8 +119,7 @@ public class WarriorSkill extends AbstractSkill {
                 damageAttr.removeModifier(WARRIOR_DAMAGE_ID);
                 if (damageBonus > 0) {
                     damageAttr.addTemporaryModifier(new EntityAttributeModifier(
-                            WARRIOR_DAMAGE_ID, damageBonus, EntityAttributeModifier.Operation.ADD_VALUE
-                    ));
+                            WARRIOR_DAMAGE_ID, damageBonus, EntityAttributeModifier.Operation.ADD_VALUE));
                 }
             }
 
@@ -126,19 +127,21 @@ public class WarriorSkill extends AbstractSkill {
             double healthBonus = 0;
 
             // Nível 10: +1 Coração (+2 HP)
-            if (level >= 10) healthBonus += 2.0;
+            if (level >= 10)
+                healthBonus += 2.0;
             // Nível 50: +1 Coração (Total +4 HP)
-            if (level >= 50) healthBonus += 2.0;
+            if (level >= 50)
+                healthBonus += 2.0;
             // Nível 100: +3 Corações (Total +10 HP = 5 Corações)
-            if (level >= 100) healthBonus += 6.0;
+            if (level >= 100)
+                healthBonus += 6.0;
 
             var healthAttr = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
             if (healthAttr != null) {
                 healthAttr.removeModifier(WARRIOR_HEALTH_ID);
                 if (healthBonus > 0) {
                     healthAttr.addTemporaryModifier(new EntityAttributeModifier(
-                            WARRIOR_HEALTH_ID, healthBonus, EntityAttributeModifier.Operation.ADD_VALUE
-                    ));
+                            WARRIOR_HEALTH_ID, healthBonus, EntityAttributeModifier.Operation.ADD_VALUE));
 
                     // Cura o player para preencher a vida nova se ele estiver full
                     if (player.getHealth() > player.getMaxHealth()) {
@@ -181,16 +184,14 @@ public class WarriorSkill extends AbstractSkill {
                 StatusEffects.STRENGTH,
                 SkillConfig.WARRIOR_BERSERK_DURATION,
                 SkillConfig.WARRIOR_BERSERK_STRENGTH_AMPLIFIER,
-                false, true, true
-        ));
+                false, true, true));
 
         // Aplica Resistência
         player.addStatusEffect(new StatusEffectInstance(
                 StatusEffects.RESISTANCE,
                 SkillConfig.WARRIOR_BERSERK_DURATION,
                 SkillConfig.WARRIOR_BERSERK_RESISTANCE_AMPLIFIER,
-                false, true, true
-        ));
+                false, true, true));
 
         // Aplica Knockback Resistance (imunidade total)
         var knockbackAttr = player.getAttributeInstance(EntityAttributes.KNOCKBACK_RESISTANCE);
@@ -199,16 +200,18 @@ public class WarriorSkill extends AbstractSkill {
             knockbackAttr.addTemporaryModifier(new EntityAttributeModifier(
                     BERSERK_KNOCKBACK_RESISTANCE_ID,
                     1.0, // 100% de resistência a knockback
-                    EntityAttributeModifier.Operation.ADD_VALUE
-            ));
+                    EntityAttributeModifier.Operation.ADD_VALUE));
         }
 
         // Som de ativação (rugido)
         player.playSound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.0f, 1.0f);
 
         // Mensagem
-        player.sendMessage(Text.literal("⚔ MODO BERSERK ATIVADO! ⚔").formatted(Formatting.DARK_RED, Formatting.BOLD), false);
-        player.sendMessage(Text.literal("Força aumentada, resistência máxima, lifesteal absoluto!").formatted(Formatting.RED), true);
+        player.sendMessage(Text.literal("⚔ MODO BERSERK ATIVADO! ⚔").formatted(Formatting.DARK_RED, Formatting.BOLD),
+                false);
+        player.sendMessage(
+                Text.literal("Força aumentada, resistência máxima, lifesteal absoluto!").formatted(Formatting.RED),
+                true);
     }
 
     /**
@@ -229,15 +232,13 @@ public class WarriorSkill extends AbstractSkill {
                 StatusEffects.SLOWNESS,
                 SkillConfig.WARRIOR_EXHAUSTION_DURATION,
                 1, // Slowness II
-                false, true, true
-        ));
+                false, true, true));
 
         player.addStatusEffect(new StatusEffectInstance(
                 StatusEffects.WEAKNESS,
                 SkillConfig.WARRIOR_EXHAUSTION_DURATION,
                 1, // Weakness II
-                false, true, true
-        ));
+                false, true, true));
 
         // Som de fim
         player.playSound(SoundEvents.ENTITY_PLAYER_BREATH, 1.0f, 0.5f);

@@ -1,8 +1,6 @@
 package com.murilloskills.utils;
 
 import com.murilloskills.models.SkillReceptorResult;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.Monster;

@@ -46,11 +46,11 @@ public class MinerSkill extends AbstractSkill {
                 return;
             }
 
-            // 2. Verifica Cooldown
+            // 2. Verifica Cooldown (pula se nunca usou: lastAbilityUse == -1)
             long worldTime = player.getEntityWorld().getTime();
             long timeSinceUse = worldTime - stats.lastAbilityUse;
 
-            if (timeSinceUse < SkillConfig.MINER_ABILITY_COOLDOWN) {
+            if (stats.lastAbilityUse >= 0 && timeSinceUse < SkillConfig.MINER_ABILITY_COOLDOWN) {
                 long minutesLeft = (SkillConfig.MINER_ABILITY_COOLDOWN - timeSinceUse) / 20 / 60;
                 sendMessage(player, "Habilidade em recarga: " + minutesLeft + " minutos.", Formatting.RED, true);
                 return;
@@ -68,8 +68,8 @@ public class MinerSkill extends AbstractSkill {
                 ServerPlayNetworking.send(player, new MinerScanResultPayload(ores));
                 sendMessage(player, "Instinto ativado! Minérios revelados.", Formatting.GREEN, true);
                 player.playSound(SoundEvents.ENTITY_WARDEN_SONIC_BOOM);
-                
-                LOGGER.info("Player {} ativou habilidade Miner Master na posição {} - {} minérios encontrados", 
+
+                LOGGER.info("Player {} ativou habilidade Miner Master na posição {} - {} minérios encontrados",
                         player.getName().getString(), player.getBlockPos(), ores.size());
             } else {
                 sendMessage(player, "Nenhum minério encontrado por perto.", Formatting.YELLOW, true);
@@ -84,7 +84,8 @@ public class MinerSkill extends AbstractSkill {
     @Override
     public void onTick(ServerPlayerEntity player, int level) {
         try {
-            if (player.age % 20 != 0) return; // Executa apenas 1 vez por segundo para otimização
+            if (player.age % 20 != 0)
+                return; // Executa apenas 1 vez por segundo para otimização
 
             // --- LEVEL 10: NIGHT VISION ---
             if (meetsLevelRequirement(level, SkillConfig.MINER_NIGHT_VISION_LEVEL)) {
@@ -116,12 +117,11 @@ public class MinerSkill extends AbstractSkill {
                     attributeInstance.addTemporaryModifier(new EntityAttributeModifier(
                             MINER_SPEED_ID,
                             speedBonus,
-                            EntityAttributeModifier.Operation.ADD_MULTIPLIED_BASE
-                    ));
+                            EntityAttributeModifier.Operation.ADD_MULTIPLIED_BASE));
                 }
             }
-            
-            LOGGER.debug("Updated miner attributes for {} - Speed bonus: {}", 
+
+            LOGGER.debug("Updated miner attributes for {} - Speed bonus: {}",
                     player.getName().getString(), speedBonus);
         } catch (Exception e) {
             LOGGER.error("Erro ao atualizar atributos do Minerador para " + player.getName().getString(), e);
@@ -133,7 +133,8 @@ public class MinerSkill extends AbstractSkill {
      */
     private void handleNightVision(ServerPlayerEntity player) {
         // Aplica apenas se estiver no subsolo (Y < 55) e em local escuro
-        // Não aplica se estiver com o céu visível (ex: noite na superfície) para não atrapalhar
+        // Não aplica se estiver com o céu visível (ex: noite na superfície) para não
+        // atrapalhar
         if (player.getY() < 55 && !player.getEntityWorld().isSkyVisible(player.getBlockPos())) {
             player.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 300, 0, false, false, true));
         }
@@ -144,15 +145,18 @@ public class MinerSkill extends AbstractSkill {
      */
     private void handleRadar(ServerPlayerEntity player) {
         // A cada 2 segundos (checagem dentro do tick de 1s, usamos age % 40)
-        if (player.age % 40 != 0) return;
+        if (player.age % 40 != 0)
+            return;
 
         BlockPos playerPos = player.getBlockPos();
         int radius = 5;
         boolean foundRareOre = false;
 
         // Escaneia área pequena
-        for (BlockPos pos : BlockPos.iterate(playerPos.add(-radius, -radius, -radius), playerPos.add(radius, radius, radius))) {
-            var result = MinerXpGetter.isMinerXpBlock(player.getEntityWorld().getBlockState(pos).getBlock(), false, true);
+        for (BlockPos pos : BlockPos.iterate(playerPos.add(-radius, -radius, -radius),
+                playerPos.add(radius, radius, radius))) {
+            var result = MinerXpGetter.isMinerXpBlock(player.getEntityWorld().getBlockState(pos).getBlock(), false,
+                    true);
 
             // Só apita para minérios valiosos (XP > 5)
             if (result.didGainXp() && result.getXpAmount() > 5) {
@@ -175,8 +179,10 @@ public class MinerSkill extends AbstractSkill {
         BlockPos center = player.getBlockPos();
         int radius = SkillConfig.MINER_ABILITY_RADIUS;
 
-        for (BlockPos pos : BlockPos.iterate(center.add(-radius, -radius, -radius), center.add(radius, radius, radius))) {
-            var result = MinerXpGetter.isMinerXpBlock(player.getEntityWorld().getBlockState(pos).getBlock(), false, true);
+        for (BlockPos pos : BlockPos.iterate(center.add(-radius, -radius, -radius),
+                center.add(radius, radius, radius))) {
+            var result = MinerXpGetter.isMinerXpBlock(player.getEntityWorld().getBlockState(pos).getBlock(), false,
+                    true);
             if (result.didGainXp()) {
                 ores.add(pos.toImmutable());
             }

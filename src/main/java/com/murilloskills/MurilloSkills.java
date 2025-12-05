@@ -3,6 +3,7 @@ package com.murilloskills;
 import com.murilloskills.api.AbstractSkill;
 import com.murilloskills.api.SkillRegistry;
 import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.impl.ArcherSkill;
 import com.murilloskills.impl.MinerSkill;
 import com.murilloskills.impl.WarriorSkill;
 import com.murilloskills.item.ModItems;
@@ -43,86 +44,98 @@ public class MurilloSkills implements ModInitializer {
             PayloadTypeRegistry.playC2S().register(ParagonActivationC2SPayload.ID, ParagonActivationC2SPayload.CODEC);
             PayloadTypeRegistry.playC2S().register(SkillSelectionC2SPayload.ID, SkillSelectionC2SPayload.CODEC);
 
-        // 4. Receiver: Habilidade Ativa (Tecla Z) - Usando Registry
-        registerAbilityReceiver();
+            // 4. Receiver: Habilidade Ativa (Tecla Z) - Usando Registry
+            registerAbilityReceiver();
 
-        // 5. Outros receivers existentes...
+            // 5. Outros receivers existentes...
 
-        // Receiver: Ativação de Paragon (Botão na GUI)
-        ServerPlayNetworking.registerGlobalReceiver(ParagonActivationC2SPayload.ID, (payload, context) -> {
-            context.server().execute(() -> {
-                var player = context.player();
-                SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-                var data = state.getPlayerData(player);
+            // Receiver: Ativação de Paragon (Botão na GUI)
+            ServerPlayNetworking.registerGlobalReceiver(ParagonActivationC2SPayload.ID, (payload, context) -> {
+                context.server().execute(() -> {
+                    var player = context.player();
+                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+                    var data = state.getPlayerData(player);
 
-                if (data.paragonSkill != null) {
-                    player.sendMessage(Text.literal("Você já escolheu um Paragon!").formatted(Formatting.RED), true);
-                    return;
-                }
+                    if (data.paragonSkill != null) {
+                        player.sendMessage(Text.literal("Você já escolheu um Paragon!").formatted(Formatting.RED),
+                                true);
+                        return;
+                    }
 
-                // VALIDATION: Paragon can only be activated on selected skills
-                if (!data.isSkillSelected(payload.skill())) {
-                    player.sendMessage(Text.literal("Você só pode ativar Paragon em uma das suas habilidades selecionadas!").formatted(Formatting.RED), true);
-                    return;
-                }
+                    // VALIDATION: Paragon can only be activated on selected skills
+                    if (!data.isSkillSelected(payload.skill())) {
+                        player.sendMessage(
+                                Text.literal("Você só pode ativar Paragon em uma das suas habilidades selecionadas!")
+                                        .formatted(Formatting.RED),
+                                true);
+                        return;
+                    }
 
-                var stats = data.getSkill(payload.skill());
-                // Paragon pode ser selecionado no nível 99 (trava no 99 até escolher)
-                if (stats.level >= 99) {
-                    data.paragonSkill = payload.skill();
-                    state.markDirty();
-                    SkillsNetworkUtils.syncSkills(player);
-                    player.sendMessage(Text.literal("Paragon Definido: " + payload.skill().name()).formatted(Formatting.GOLD, Formatting.BOLD), false);
-                } else {
-                    player.sendMessage(Text.literal("Nível insuficiente para Paragon.").formatted(Formatting.RED), true);
-                }
+                    var stats = data.getSkill(payload.skill());
+                    // Paragon pode ser selecionado no nível 99 (trava no 99 até escolher)
+                    if (stats.level >= 99) {
+                        data.paragonSkill = payload.skill();
+                        state.markDirty();
+                        SkillsNetworkUtils.syncSkills(player);
+                        player.sendMessage(Text.literal("Paragon Definido: " + payload.skill().name())
+                                .formatted(Formatting.GOLD, Formatting.BOLD), false);
+                    } else {
+                        player.sendMessage(Text.literal("Nível insuficiente para Paragon.").formatted(Formatting.RED),
+                                true);
+                    }
+                });
             });
-        });
 
-        // Receiver: Seleção de Skills (Escolha das 2 habilidades principais)
-        ServerPlayNetworking.registerGlobalReceiver(SkillSelectionC2SPayload.ID, (payload, context) -> {
-            context.server().execute(() -> {
-                var player = context.player();
-                SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-                var data = state.getPlayerData(player);
+            // Receiver: Seleção de Skills (Escolha das 2 habilidades principais)
+            ServerPlayNetworking.registerGlobalReceiver(SkillSelectionC2SPayload.ID, (payload, context) -> {
+                context.server().execute(() -> {
+                    var player = context.player();
+                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+                    var data = state.getPlayerData(player);
 
-                // Validation: Check if player already selected skills (permanent choice)
-                if (data.hasSelectedSkills()) {
-                    player.sendMessage(Text.literal("Você já escolheu suas habilidades! Esta escolha é permanente.").formatted(Formatting.RED), true);
-                    return;
-                }
+                    // Validation: Check if player already selected skills (permanent choice)
+                    if (data.hasSelectedSkills()) {
+                        player.sendMessage(Text.literal("Você já escolheu suas habilidades! Esta escolha é permanente.")
+                                .formatted(Formatting.RED), true);
+                        return;
+                    }
 
-                // Validation: Must select exactly 2 skills
-                if (payload.selectedSkills() == null || payload.selectedSkills().size() != SkillSelectionC2SPayload.MAX_SELECTED_SKILLS) {
-                    player.sendMessage(Text.literal("Você deve selecionar exatamente 2 habilidades!").formatted(Formatting.RED), true);
-                    return;
-                }
+                    // Validation: Must select exactly 2 skills
+                    if (payload.selectedSkills() == null
+                            || payload.selectedSkills().size() != SkillSelectionC2SPayload.MAX_SELECTED_SKILLS) {
+                        player.sendMessage(Text.literal("Você deve selecionar exatamente 2 habilidades!")
+                                .formatted(Formatting.RED), true);
+                        return;
+                    }
 
-                // Validation: No duplicate skills
-                if (payload.selectedSkills().get(0) == payload.selectedSkills().get(1)) {
-                    player.sendMessage(Text.literal("Você não pode selecionar a mesma habilidade duas vezes!").formatted(Formatting.RED), true);
-                    return;
-                }
+                    // Validation: No duplicate skills
+                    if (payload.selectedSkills().get(0) == payload.selectedSkills().get(1)) {
+                        player.sendMessage(Text.literal("Você não pode selecionar a mesma habilidade duas vezes!")
+                                .formatted(Formatting.RED), true);
+                        return;
+                    }
 
-                // Apply the selection
-                if (data.setSelectedSkills(payload.selectedSkills())) {
-                    state.markDirty();
-                    SkillsNetworkUtils.syncSkills(player);
+                    // Apply the selection
+                    if (data.setSelectedSkills(payload.selectedSkills())) {
+                        state.markDirty();
+                        SkillsNetworkUtils.syncSkills(player);
 
-                    String skill1 = payload.selectedSkills().get(0).name();
-                    String skill2 = payload.selectedSkills().get(1).name();
-                    player.sendMessage(Text.literal("Habilidades Selecionadas: " + skill1 + " e " + skill2 + "!")
-                            .formatted(Formatting.GREEN, Formatting.BOLD), false);
-                    player.sendMessage(Text.literal("Agora você pode ganhar XP apenas nessas habilidades.")
-                            .formatted(Formatting.YELLOW), false);
-                } else {
-                    player.sendMessage(Text.literal("Erro ao selecionar habilidades.").formatted(Formatting.RED), true);
-                }
+                        String skill1 = payload.selectedSkills().get(0).name();
+                        String skill2 = payload.selectedSkills().get(1).name();
+                        player.sendMessage(Text.literal("Habilidades Selecionadas: " + skill1 + " e " + skill2 + "!")
+                                .formatted(Formatting.GREEN, Formatting.BOLD), false);
+                        player.sendMessage(Text.literal("Agora você pode ganhar XP apenas nessas habilidades.")
+                                .formatted(Formatting.YELLOW), false);
+                    } else {
+                        player.sendMessage(Text.literal("Erro ao selecionar habilidades.").formatted(Formatting.RED),
+                                true);
+                    }
+                });
             });
-        });
 
             // Validar que as skills esperadas estão registradas
-            SkillRegistry.validateRegistration(MurilloSkillsList.MINER, MurilloSkillsList.WARRIOR);
+            SkillRegistry.validateRegistration(MurilloSkillsList.MINER, MurilloSkillsList.WARRIOR,
+                    MurilloSkillsList.ARCHER);
             SkillRegistry.logRegisteredSkills();
 
             LOGGER.info("MurilloSkills Initialized with Skill Specialization System!");
@@ -140,7 +153,7 @@ public class MurilloSkills implements ModInitializer {
             // Registrar skills implementadas
             SkillRegistry.register(new MinerSkill());
             SkillRegistry.register(new WarriorSkill());
-            // SkillRegistry.register(new ArcherSkill()); <-- Fácil de adicionar depois!
+            SkillRegistry.register(new ArcherSkill());
 
             LOGGER.info("Skills registradas com sucesso no SkillRegistry");
         } catch (Exception e) {
@@ -160,7 +173,9 @@ public class MurilloSkills implements ModInitializer {
                     var playerData = state.getPlayerData(player);
 
                     if (playerData.paragonSkill == null) {
-                        player.sendMessage(Text.of("§cVocê precisa confirmar uma habilidade Paragon Nível 100 (Tecla 'O') para usar o poder!"), true);
+                        player.sendMessage(Text.of(
+                                "§cVocê precisa confirmar uma habilidade Paragon Nível 100 (Tecla 'O') para usar o poder!"),
+                                true);
                         return;
                     }
 
@@ -171,7 +186,8 @@ public class MurilloSkills implements ModInitializer {
                         skill.onActiveAbility(player, stats); // Polimorfismo!
                     } else {
                         LOGGER.warn("Skill Paragon não encontrada no Registry: {}", playerData.paragonSkill);
-                        player.sendMessage(Text.of("§eHabilidade Paragon para " + playerData.paragonSkill.name() + " ainda em desenvolvimento."), true);
+                        player.sendMessage(Text.of("§eHabilidade Paragon para " + playerData.paragonSkill.name()
+                                + " ainda em desenvolvimento."), true);
                     }
 
                 } catch (Exception e) {

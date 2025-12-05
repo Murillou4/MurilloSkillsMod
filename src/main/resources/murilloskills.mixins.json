@@ -6,7 +6,9 @@
     "MurilloSkillsMixin",
     "EnchantmentHelperMixin",
     "ApplyBonusLootFunctionMixin",
-    "LivingEntityMixin"
+    "LivingEntityMixin",
+    "ArrowEntityMixin",
+    "PersistentProjectileEntityAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
