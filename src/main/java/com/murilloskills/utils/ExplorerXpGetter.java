@@ -46,4 +46,11 @@ public class ExplorerXpGetter {
     public static int getWanderingTradeXp() {
         return XP_WANDERING_TRADE;
     }
+
+    /**
+     * Gets XP for traveling a certain distance.
+     */
+    public static int getDistanceXp() {
+        return SkillConfig.EXPLORER_XP_PER_DISTANCE;
+    }
 }

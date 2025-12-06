@@ -8,16 +8,16 @@ import net.minecraft.item.Items;
  * Utility class to determine XP rewards for Fisher skill actions.
  * 
  * XP Sources (Treasure > Fish > Junk):
- * - Treasure items (Name Tag, Saddle, Enchanted Books, etc): 25 XP
- * - Fish (Cod, Salmon, Tropical Fish, Pufferfish): 10 XP
- * - Junk (Bowl, Leather, Rotten Flesh, etc): 3 XP
+ * - Treasure items (Name Tag, Saddle, Enchanted Books, etc): 150 XP
+ * - Fish (Cod, Salmon, Tropical Fish, Pufferfish): 50 XP
+ * - Junk (Bowl, Leather, Rotten Flesh, etc): 15 XP
  */
 public class FisherXpGetter {
 
     // Base XP values for different catch categories
-    private static final int XP_TREASURE = 25;
-    private static final int XP_FISH = 20;
-    private static final int XP_JUNK = 3;
+    private static final int XP_TREASURE = 150;
+    private static final int XP_FISH = 50;
+    private static final int XP_JUNK = 15;
 
     /**
      * Gets XP for a caught item based on its category.

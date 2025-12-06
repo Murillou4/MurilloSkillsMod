@@ -7,6 +7,7 @@ import com.murilloskills.utils.EpicBundleGenerator;
 import com.murilloskills.utils.FisherXpGetter;
 import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillNotifier;
+import com.murilloskills.utils.SkillsNetworkUtils;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -67,12 +68,15 @@ public class FishingCatchHandler {
                     xpAmount = (int) (xpAmount * (1.0f + SkillConfig.FISHER_XP_BONUS));
                 }
 
-                // Add XP
-                fisherStats.xp += xpAmount;
-                state.markDirty();
+                // Add XP using centralized logic (handles constraints and level up)
+                boolean leveledUp = playerData.addXpToSkill(MurilloSkillsList.FISHER, xpAmount);
 
-                // Check for level up
-                checkLevelUp(serverPlayer, fisherStats, state);
+                if (leveledUp) {
+                    SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.FISHER, fisherStats.level);
+                }
+
+                state.markDirty();
+                SkillsNetworkUtils.syncSkills(serverPlayer); // Sync with client
 
                 // Notify player (action bar message)
                 String category = FisherXpGetter.getCategoryName(caughtItem);
@@ -124,30 +128,4 @@ public class FishingCatchHandler {
         }
     }
 
-    /**
-     * Checks and handles level up.
-     */
-    private static void checkLevelUp(ServerPlayerEntity player, SkillGlobalState.SkillStats stats,
-            SkillGlobalState state) {
-        int xpRequired = getXpForNextLevel(stats.level);
-
-        while (stats.xp >= xpRequired && stats.level < SkillConfig.MAX_LEVEL) {
-            stats.xp -= xpRequired;
-            stats.level++;
-            state.markDirty();
-
-            // Notify level up using SkillNotifier
-            SkillNotifier.notifyLevelUp(player, MurilloSkillsList.FISHER, stats.level);
-
-            xpRequired = getXpForNextLevel(stats.level);
-        }
-    }
-
-    /**
-     * Gets XP required to reach the next level.
-     * Uses a simple formula: 100 * (level + 1)
-     */
-    private static int getXpForNextLevel(int currentLevel) {
-        return 100 * (currentLevel + 1);
-    }
 }

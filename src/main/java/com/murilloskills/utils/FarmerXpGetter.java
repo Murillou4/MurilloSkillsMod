@@ -16,7 +16,7 @@ import net.minecraft.block.Blocks;
 public class FarmerXpGetter {
 
     // Base XP values for different crops
-    private static final int XP_WHEAT = 1500000;
+    private static final int XP_WHEAT = 15;
     private static final int XP_CARROT = 10;
     private static final int XP_POTATO = 10;
     private static final int XP_BEETROOT = 10;

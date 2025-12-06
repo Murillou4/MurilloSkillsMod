@@ -14,8 +14,8 @@ public class MinerXpGetter {
     private static final int XP_GOLD = 15;
     private static final int XP_LAPIS = 10;
     private static final int XP_REDSTONE = 10;
-    private static final int XP_DIAMOND = 40;
-    private static final int XP_EMERALD = 60;
+    private static final int XP_DIAMOND = 60;
+    private static final int XP_EMERALD = 100;
     private static final int XP_ANCIENT_DEBRIS = 150;
     private static final int XP_NETHER_QUARTZ = 5;
     private static final int XP_NETHER_GOLD = 5;

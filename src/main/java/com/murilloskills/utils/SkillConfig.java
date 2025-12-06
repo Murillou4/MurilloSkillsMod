@@ -156,11 +156,13 @@ public class SkillConfig {
     public static final float EXPLORER_STEP_HEIGHT = 1.0f; // Altura automática de subida
 
     // XP Values
-    public static final int EXPLORER_XP_BIOME = 50; // Novo bioma
-    public static final int EXPLORER_XP_STRUCTURE = 100; // Nova estrutura
-    public static final int EXPLORER_XP_LOOT_CHEST = 30; // Abrir baú de loot pela primeira vez
-    public static final int EXPLORER_XP_MAP_COMPLETE = 200; // Completar mapa
-    public static final int EXPLORER_XP_WANDERING_TRADE = 150; // Trade com Wandering Trader
+    public static final int EXPLORER_XP_BIOME = 5000; // Novo bioma
+    public static final int EXPLORER_XP_STRUCTURE = 1000; // Nova estrutura
+    public static final int EXPLORER_XP_LOOT_CHEST = 300; // Abrir baú de loot pela primeira vez
+    public static final int EXPLORER_XP_MAP_COMPLETE = 2000; // Completar mapa
+    public static final int EXPLORER_XP_WANDERING_TRADE = 400; // Trade com Wandering Trader
+    public static final double EXPLORER_DISTANCE_THRESHOLD = 50.0; // Distância para ganhar XP
+    public static final int EXPLORER_XP_PER_DISTANCE = 35; // XP ganho por atingir o threshold
 
     // --- MÉTODOS UTILITÁRIOS ---
 

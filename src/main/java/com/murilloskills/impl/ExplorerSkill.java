@@ -5,6 +5,8 @@ import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.network.TreasureHunterS2CPayload;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillConfig;
+import com.murilloskills.utils.SkillNotifier;
+import com.murilloskills.utils.SkillsNetworkUtils;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.ChestBlockEntity;
@@ -114,11 +116,19 @@ public class ExplorerSkill extends AbstractSkill {
         return player.getEntityWorld().getTime() < endTime;
     }
 
+    // Map to track player positions for distance XP (UUID -> Last Position)
+    private static final Map<UUID, net.minecraft.util.math.Vec3d> lastPositions = new HashMap<>();
+    // Map to track accumulated distance (UUID -> Distance in blocks)
+    private static final Map<UUID, Double> accumulatedDistance = new HashMap<>();
+
     @Override
     public void onTick(ServerPlayerEntity player, int level) {
         try {
+            // Execute every tick to track movement accurately, but logic is gated
+            handleMovementXp(player);
+
             if (player.age % 20 != 0)
-                return; // Execute only once per second
+                return; // Execute other logic only once per second
 
             // --- LEVEL 20: AQUATIC (Water Breathing when underwater) ---
             if (meetsLevelRequirement(level, SkillConfig.EXPLORER_AQUATIC_LEVEL)) {
@@ -149,6 +159,58 @@ public class ExplorerSkill extends AbstractSkill {
                 LOGGER.error("Erro no tick do Explorador para " + player.getName().getString(), e);
             }
         }
+    }
+
+    private void handleMovementXp(ServerPlayerEntity player) {
+        UUID uuid = player.getUuid();
+        net.minecraft.util.math.Vec3d currentPos = player.getEntityPos();
+        net.minecraft.util.math.Vec3d lastPos = lastPositions.get(uuid);
+
+        if (lastPos != null) {
+            // Calculate distance
+            double distance = currentPos.distanceTo(lastPos);
+
+            // Anti-teleport/exploit check: ignore massive jumps in 1 tick (> 10 blocks)
+            // Also ignore if distance is 0
+            if (distance > 0 && distance < 10.0) {
+                double total = accumulatedDistance.getOrDefault(uuid, 0.0);
+                total += distance;
+
+                // Check threshold
+                if (total >= SkillConfig.EXPLORER_DISTANCE_THRESHOLD) {
+                    // Award XP
+                    int xp = com.murilloskills.utils.ExplorerXpGetter.getDistanceXp();
+                    awardXp(player, xp, "Viajante"); // "Traveler"
+
+                    // Reset or reduce accumulator
+                    total -= SkillConfig.EXPLORER_DISTANCE_THRESHOLD;
+                }
+                accumulatedDistance.put(uuid, total);
+            }
+        }
+
+        // Update last position
+        lastPositions.put(uuid, currentPos);
+    }
+
+    /**
+     * Awards XP to the player for Explorer skill
+     */
+    private void awardXp(ServerPlayerEntity player, int amount, String source) {
+        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+        SkillGlobalState.PlayerSkillData playerData = state.getPlayerData(player);
+
+        boolean leveledUp = playerData.addXpToSkill(getSkillType(), amount);
+
+        if (leveledUp) {
+            int newLevel = playerData.getSkill(getSkillType()).level;
+            onLevelUp(player, newLevel);
+            SkillNotifier.notifyLevelUp(player, getSkillType(), newLevel);
+        }
+
+        // Sync with client
+        state.markDirty();
+        SkillsNetworkUtils.syncSkills(player);
     }
 
     @Override

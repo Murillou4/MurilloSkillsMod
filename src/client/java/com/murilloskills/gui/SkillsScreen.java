@@ -530,6 +530,20 @@ public class SkillsScreen extends Screen {
             tooltip.add(Text.literal("Habilidade Especial (Tecla Z):").formatted(Formatting.GRAY));
             tooltip.add(Text.literal(getSpecialAbilityDescription(skill)).formatted(Formatting.BLUE));
 
+            // XP Progress Logic
+            double currentXp = ClientSkillData.get(skill).xp;
+            double maxXp = 50 + (level * 10) + (4 * level * level);
+            int percent = (int) ((currentXp / maxXp) * 100);
+
+            tooltip.add(Text.empty());
+            tooltip.add(Text.literal("Progresso para o Nível " + (level + 1) + ": " + percent + "%")
+                    .formatted(Formatting.GRAY));
+            tooltip.add(
+                    Text.literal(String.format("%,.0f / %,.0f XP", currentXp, maxXp)).formatted(Formatting.DARK_GRAY));
+
+            tooltip.add(Text.empty());
+            tooltip.add(Text.literal(getXpGainDescription(skill)).formatted(Formatting.GRAY));
+
             tooltip.add(Text.empty());
             tooltip.add(Text.literal("Passivas:").formatted(Formatting.GRAY));
 
@@ -736,6 +750,19 @@ public class SkillsScreen extends Screen {
                 "A muralha de ferro. Foca em DEFESA e TANK.\nConcede alta resistência a danos, espinhos e\ngrandes descontos em bigornas.\nIdeal para quem quer ser imortal e proteger o time.";
             case EXPLORER ->
                 "Espírito livre. Foca em mobilidade e descoberta.\nAumenta velocidade de movimento, permite respirar na água\ne destaca tesouros escondidos através de paredes.\nIdeal para quem nunca para em um lugar.";
+        };
+    }
+
+    private String getXpGainDescription(MurilloSkillsList skill) {
+        return switch (skill) {
+            case MINER -> "Ganhe XP ao: Minerar pedras, minérios e deepslate.";
+            case WARRIOR -> "Ganhe XP ao: Eliminar monstros e jogadores em combate.";
+            case FARMER -> "Ganhe XP ao: Colher plantações e fazer compostagem.";
+            case ARCHER -> "Ganhe XP ao: Eliminar inimigos à distância com flechas.";
+            case FISHER -> "Ganhe XP ao: Pescar peixes, tesouros ou lixo.";
+            case BUILDER -> "Ganhe XP ao: Colocar blocos de construção no mundo.";
+            case BLACKSMITH -> "Ganhe XP ao: Forjar, encantar, consertar ou fundir itens.";
+            case EXPLORER -> "Ganhe XP ao: Explorar o mundo, biomas e abrir baús.";
         };
     }
 
