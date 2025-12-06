@@ -6,33 +6,56 @@ import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Mixin to extend breath time underwater for Explorer level 20+.
  * Part of the "Aquatic" perk.
  * 
- * Uses ModifyVariable on the air decrement logic instead of getMaxAir.
+ * Uses @Inject at HEAD to track air and at TAIL to restore air for Aquatic perk
+ * holders.
  */
 @Mixin(LivingEntity.class)
 public abstract class ExplorerBreathMixin {
 
+    @Unique
+    private int murilloskills$previousAir = -1;
+
     /**
-     * Modify the air consumption when underwater.
-     * This intercepts the air value before it's decremented.
-     * We double the air when the entity would normally lose 1, giving 50% longer breath.
+     * Store the current air value before baseTick processes.
      */
-    @ModifyVariable(method = "baseTick", at = @At("STORE"), ordinal = 0)
-    private int modifyAirForExplorer(int air) {
+    @Inject(method = "baseTick", at = @At("HEAD"))
+    private void storeAirBeforeTick(CallbackInfo ci) {
+        LivingEntity self = (LivingEntity) (Object) this;
+        this.murilloskills$previousAir = self.getAir();
+    }
+
+    /**
+     * After baseTick, if air was lost and player has Aquatic perk, restore half the
+     * lost air.
+     * This effectively gives 50% longer breath time underwater.
+     */
+    @Inject(method = "baseTick", at = @At("TAIL"))
+    private void restoreAirForExplorer(CallbackInfo ci) {
         LivingEntity self = (LivingEntity) (Object) this;
 
         if (!(self instanceof ServerPlayerEntity player)) {
-            return air;
+            return;
         }
-        
+
         if (player.getEntityWorld().isClient()) {
-            return air;
+            return;
+        }
+
+        int currentAir = player.getAir();
+        int previousAir = this.murilloskills$previousAir;
+
+        // Only act if air was actually lost
+        if (previousAir <= 0 || currentAir >= previousAir) {
+            return;
         }
 
         try {
@@ -41,22 +64,21 @@ public abstract class ExplorerBreathMixin {
 
             // Check if Explorer is selected
             if (!playerData.isSkillSelected(MurilloSkillsList.EXPLORER)) {
-                return air;
+                return;
             }
 
             int level = playerData.getSkill(MurilloSkillsList.EXPLORER).level;
 
-            // If Aquatic perk is unlocked and player is losing air, slow down air consumption
-            if (ExplorerSkill.hasAquatic(level) && air < player.getAir()) {
-                // Skip every other air decrement (effectively 50% slower air loss)
+            // If Aquatic perk is unlocked, restore half the lost air
+            if (ExplorerSkill.hasAquatic(level)) {
+                int airLost = previousAir - currentAir;
+                // Every other tick, restore the lost air (effectively 50% slower air loss)
                 if (player.age % 2 == 0) {
-                    return player.getAir(); // Return current air to cancel this decrement
+                    player.setAir(currentAir + airLost);
                 }
             }
         } catch (Exception e) {
-            // Silent fail
+            // Silent fail - don't crash the game for perk logic
         }
-
-        return air;
     }
 }

@@ -6,9 +6,9 @@ import com.murilloskills.utils.BlacksmithXpGetter;
 import com.murilloskills.utils.SkillNotifier;
 import com.murilloskills.utils.SkillsNetworkUtils;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.GrindstoneScreenHandler;
-import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -22,8 +22,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * grindstone.
  * 
  * The grindstone output slot is slot index 2.
- * We hook into onSlotClick to detect when player takes output, and quickMove
- * for shift-click.
+ * We hook into quickMove (shift-click) and onContentChanged to detect when
+ * output is taken.
  */
 @Mixin(GrindstoneScreenHandler.class)
 public abstract class GrindstoneScreenHandlerMixin {
@@ -31,14 +31,21 @@ public abstract class GrindstoneScreenHandlerMixin {
     @Unique
     private static final int GRINDSTONE_OUTPUT_SLOT = 2;
 
+    @Unique
+    private ItemStack murilloskills$lastOutputStack = ItemStack.EMPTY;
+
+    @Unique
+    private PlayerEntity murilloskills$currentPlayer = null;
+
     /**
-     * Hook into onSlotClick to detect when player clicks on the output slot.
-     * This catches normal clicks on the output.
+     * Hook into quickMove to detect shift-click on the output slot.
      */
-    @Inject(method = "onSlotClick", at = @At("HEAD"))
-    private void onGrindstoneSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player,
-            CallbackInfo ci) {
-        if (slotIndex != GRINDSTONE_OUTPUT_SLOT) {
+    @Inject(method = "quickMove", at = @At("HEAD"))
+    private void onGrindstoneQuickMove(PlayerEntity player, int slot, CallbackInfoReturnable<ItemStack> cir) {
+        // Track the player for later use
+        this.murilloskills$currentPlayer = player;
+
+        if (slot != GRINDSTONE_OUTPUT_SLOT) {
             return;
         }
 
@@ -58,27 +65,24 @@ public abstract class GrindstoneScreenHandlerMixin {
     }
 
     /**
-     * Hook into quickMove to detect shift-click on the output slot.
+     * Hook into onContentChanged to track when output is taken.
+     * This detects when an item disappears from the output slot.
      */
-    @Inject(method = "quickMove", at = @At("HEAD"))
-    private void onGrindstoneQuickMove(PlayerEntity player, int slot, CallbackInfoReturnable<ItemStack> cir) {
-        if (slot != GRINDSTONE_OUTPUT_SLOT) {
-            return;
-        }
-
-        if (player.getEntityWorld().isClient() || !(player instanceof ServerPlayerEntity serverPlayer)) {
-            return;
-        }
-
+    @Inject(method = "onContentChanged", at = @At("TAIL"))
+    private void onGrindstoneContentChanged(Inventory inventory, CallbackInfo ci) {
         GrindstoneScreenHandler handler = (GrindstoneScreenHandler) (Object) this;
-        ItemStack outputStack = handler.getSlot(GRINDSTONE_OUTPUT_SLOT).getStack();
+        ItemStack currentOutput = handler.getSlot(GRINDSTONE_OUTPUT_SLOT).getStack();
 
-        // Only grant XP if there's something in the output to take
-        if (outputStack.isEmpty()) {
-            return;
+        // If there was an output item and now it's gone, player took it
+        if (!this.murilloskills$lastOutputStack.isEmpty() && currentOutput.isEmpty()) {
+            // Try to find the player who took the item
+            PlayerEntity player = this.murilloskills$currentPlayer;
+            if (player instanceof ServerPlayerEntity serverPlayer && !serverPlayer.getEntityWorld().isClient()) {
+                grantGrindstoneXp(serverPlayer);
+            }
         }
 
-        grantGrindstoneXp(serverPlayer);
+        this.murilloskills$lastOutputStack = currentOutput.copy();
     }
 
     /**
