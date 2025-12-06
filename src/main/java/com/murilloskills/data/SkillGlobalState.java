@@ -187,17 +187,24 @@ public class SkillGlobalState extends PersistentState {
         }
 
         /**
-         * Set the selected skills (max 2). Returns true if successful.
+         * Set the selected skills (1 to 3). Returns true if successful.
+         * Appends to existing selection if allowed.
          */
         public boolean setSelectedSkills(List<MurilloSkillsList> skills) {
-            if (skills == null || skills.size() != MAX_SELECTED_SKILLS) {
+            if (skills == null || skills.isEmpty()) {
                 return false;
             }
-            // Prevent changing if already selected
-            if (hasSelectedSkills()) {
+
+            // Calculate potential total
+            Set<MurilloSkillsList> potentialSelection = new HashSet<>(selectedSkills);
+            potentialSelection.addAll(skills);
+
+            if (potentialSelection.size() > MAX_SELECTED_SKILLS) {
                 return false;
             }
-            this.selectedSkills = new ArrayList<>(skills);
+
+            // Apply Update
+            this.selectedSkills = new ArrayList<>(potentialSelection);
             return true;
         }
 
@@ -214,8 +221,8 @@ public class SkillGlobalState extends PersistentState {
          * @return true if leveled up
          */
         public boolean addXpToSkill(MurilloSkillsList skill, int amount) {
-            // RESTRICTION: If player hasn't selected skills yet, block all XP
-            if (!hasSelectedSkills()) {
+            // RESTRICTION: If player hasn't selected ANY skills yet, block all XP
+            if (selectedSkills.isEmpty()) {
                 return false;
             }
 

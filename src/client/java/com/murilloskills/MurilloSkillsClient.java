@@ -53,6 +53,11 @@ public class MurilloSkillsClient implements ClientModInitializer {
 
                 // Update Selected Skills in Client Data
                 com.murilloskills.data.ClientSkillData.setSelectedSkills(payload.selectedSkills());
+
+                // Refresh SkillsScreen if open (to update buttons/layout)
+                if (context.client().currentScreen instanceof com.murilloskills.gui.SkillsScreen screen) {
+                    screen.init(context.client(), screen.width, screen.height);
+                }
             });
         });
 

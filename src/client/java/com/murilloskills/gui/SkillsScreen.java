@@ -70,12 +70,29 @@ public class SkillsScreen extends Screen {
             MurilloSkillsList skill = entry.getKey();
             ButtonWidget btn = entry.getValue();
             boolean isSelected = pendingSelection.contains(skill);
-            btn.setMessage(Text.literal(isSelected ? "✓ SELECIONADA" : "SELECIONAR"));
+            boolean isPermanent = ClientSkillData.isSkillSelected(skill);
+
+            if (isPermanent) {
+                btn.setMessage(Text.literal("✓ DEFINIDA"));
+                btn.active = false;
+            } else {
+                btn.setMessage(Text.literal(isSelected ? "✓ SELECIONADA" : "SELECIONAR"));
+                btn.active = true;
+            }
         }
 
         if (confirmButton != null) {
-            confirmButton.active = pendingSelection.size() == 3;
-            confirmButton.setMessage(Text.literal("CONFIRMAR ESCOLHA (" + pendingSelection.size() + "/3)"));
+            int count = pendingSelection.size();
+            boolean isComplete = count == 3;
+            // Active if we have at least 1 skill, and if we have partial selection (or
+            // full)
+            confirmButton.active = count > 0 && count <= 3;
+
+            if (isComplete) {
+                confirmButton.setMessage(Text.literal("FINALIZAR ESCOLHA (" + count + "/3)"));
+            } else {
+                confirmButton.setMessage(Text.literal("SALVAR PARCIALMENTE (" + count + "/3)"));
+            }
         }
     }
 
@@ -139,6 +156,12 @@ public class SkillsScreen extends Screen {
     protected void init() {
         super.init();
 
+        // Populate pending selection with already selected skills (Server
+        // authoritative)
+        if (isSelectionMode()) {
+            pendingSelection.addAll(ClientSkillData.getSelectedSkills());
+        }
+
         // Calcular layout responsivo baseado no tamanho da janela
         calculateResponsiveLayout();
 
@@ -167,9 +190,15 @@ public class SkillsScreen extends Screen {
                 int btnHeight = 14;
 
                 boolean isSelected = pendingSelection.contains(skill);
+                boolean isPermanent = ClientSkillData.isSkillSelected(skill);
+
                 ButtonWidget selectBtn = ButtonWidget.builder(
-                        Text.literal(isSelected ? "✓ SELECIONADA" : "SELECIONAR"),
+                        Text.literal(isPermanent ? "✓ DEFINIDA" : (isSelected ? "✓ SELECIONAR" : "SELECIONAR")),
                         (button) -> {
+                            // Cannot change permanently selected skills
+                            if (isPermanent)
+                                return;
+
                             // Toggle selection
                             if (pendingSelection.contains(skill)) {
                                 pendingSelection.remove(skill);
@@ -181,8 +210,32 @@ public class SkillsScreen extends Screen {
                         .dimensions(btnX, btnY, btnWidth, btnHeight)
                         .build();
 
+                // Disable button if permanent choice
+                if (isPermanent) {
+                    selectBtn.active = false;
+                }
+
                 selectionButtons.put(skill, selectBtn);
                 this.addDrawableChild(selectBtn);
+
+                // If permanent, also add the Reset button to allow "unlocking" it
+                if (isPermanent) {
+                    int resetBtnSize = Math.max(12, cardHeight / 5);
+                    int resetBtnX = x + cardWidth - resetBtnSize - 4;
+                    int resetBtnY = y + cardHeight - resetBtnSize - 4;
+                    int resetBtnWidth = resetBtnSize;
+                    int resetBtnHeight = resetBtnSize;
+
+                    ButtonWidget resetBtn = ButtonWidget.builder(Text.literal("⟳"), (button) -> {
+                        button.active = false;
+                        pendingSelection.remove(skill); // Remove from pending so it unlocks visually on refresh
+                        ClientPlayNetworking.send(new SkillResetC2SPayload(skill));
+                    })
+                            .dimensions(resetBtnX, resetBtnY, resetBtnWidth, resetBtnHeight)
+                            .build();
+
+                    this.addDrawableChild(resetBtn);
+                }
             }
 
             // Botão de confirmação responsivo
@@ -192,7 +245,7 @@ public class SkillsScreen extends Screen {
             int confirmBtnY = this.height - 35;
 
             confirmButton = ButtonWidget.builder(Text.literal("CONFIRMAR ESCOLHA (0/3)"), (button) -> {
-                if (pendingSelection.size() == 3) {
+                if (pendingSelection.size() > 0 && pendingSelection.size() <= 3) {
                     List<MurilloSkillsList> selected = new ArrayList<>(pendingSelection);
                     ClientPlayNetworking.send(new SkillSelectionC2SPayload(selected));
                     this.close();
@@ -200,7 +253,8 @@ public class SkillsScreen extends Screen {
             })
                     .dimensions(confirmBtnX, confirmBtnY, confirmBtnWidth, confirmBtnHeight)
                     .build();
-            confirmButton.active = false; // Disabled until 2 skills are selected
+            // confirmButton.active is updated in updateSelectionButtonStates
+            confirmButton.active = false;
             this.addDrawableChild(confirmButton);
 
             // Update button states based on current pending selection
@@ -250,8 +304,9 @@ public class SkillsScreen extends Screen {
                     int resetBtnHeight = resetBtnSize;
 
                     ButtonWidget resetBtn = ButtonWidget.builder(Text.literal("⟳"), (button) -> {
+                        button.active = false; // Disable to prevent double click
                         ClientPlayNetworking.send(new SkillResetC2SPayload(skill));
-                        this.close();
+                        // Do not close screen, wait for sync update
                     })
                             .dimensions(resetBtnX, resetBtnY, resetBtnWidth, resetBtnHeight)
                             .build();
@@ -280,8 +335,10 @@ public class SkillsScreen extends Screen {
             context.drawCenteredTextWithShadow(this.textRenderer,
                     Text.literal("⚔ ESCOLHA SUAS HABILIDADES ⚔").formatted(Formatting.GOLD, Formatting.BOLD),
                     this.width / 2, titleY, 0xFFFFFFFF);
+            int count = pendingSelection.size();
             context.drawCenteredTextWithShadow(this.textRenderer,
-                    Text.literal("Selecione 3 habilidades para evoluir").formatted(Formatting.YELLOW), this.width / 2,
+                    Text.literal("Selecione suas habilidades (" + count + "/3)").formatted(Formatting.YELLOW),
+                    this.width / 2,
                     titleY + 12, 0xFFFFFFFF);
         } else {
             context.drawCenteredTextWithShadow(this.textRenderer,
@@ -455,7 +512,9 @@ public class SkillsScreen extends Screen {
                     .formatted(Formatting.YELLOW));
             tooltip.add(Text.empty());
             tooltip.add(Text.literal("Descrição:").formatted(Formatting.GRAY));
-            tooltip.add(Text.literal(getSkillDescription(skill)).formatted(Formatting.WHITE));
+            for (String line : getSkillDescription(skill).split("\n")) {
+                tooltip.add(Text.literal(line).formatted(Formatting.WHITE));
+            }
         } else {
             // Normal mode tooltip
             if (isParagon)
@@ -661,14 +720,22 @@ public class SkillsScreen extends Screen {
 
     private String getSkillDescription(MurilloSkillsList skill) {
         return switch (skill) {
-            case MINER -> "Especialista em mineração. Ganha bônus ao minerar blocos.";
-            case WARRIOR -> "Mestre do combate. Causa mais dano e tem mais vida.";
-            case FARMER -> "Agricultor experiente. Melhora colheitas e plantações.";
-            case ARCHER -> "Atirador preciso. Aumenta dano e precisão com arcos.";
-            case FISHER -> "Pescador habilidoso. Melhora sorte na pesca.";
-            case BUILDER -> "Construtor talentoso. Bônus em construção.";
-            case BLACKSMITH -> "Ferreiro mestre. Melhora forja e reparos.";
-            case EXPLORER -> "Explorador destemido. Bônus em exploração.";
+            case MINER ->
+                "Domine o subterrâneo. Foca na eficiência de coleta.\nGarante mineração instantânea, sorte extra em minérios\ne utilitários como Visão Noturna e Radar.\nIdeal para quem sustenta a economia com recursos.";
+            case WARRIOR ->
+                "O caminho da espada. Foca em combate corpo a corpo.\nAumenta drasticamente seu dano, vida máxima e\nconcede Roubo de Vida.\nIdeal para quem gosta de ir para a linha de frente.";
+            case FARMER ->
+                "Mestre da agricultura. Foca em produção de alimentos.\nPermite colheitas múltiplas, crescimento acelerado\ne plantio automático em área.\nIdeal para manter estoques de comida sempre cheios.";
+            case ARCHER ->
+                "Morte silenciosa. Foca em combate à distância.\nMelhora a velocidade, dano e precisão das flechas,\ndesbloqueando flechas teleguiadas.\nIdeal para eliminar ameaças antes que cheguem perto.";
+            case FISHER ->
+                "Tesouros do oceano. Foca em pesca e itens raros.\nAcelera a pesca, aumenta chances de tesouro\ne permite invocar chuva para pesca massiva.\nIdeal para conseguir itens valiosos pacificamente.";
+            case BUILDER ->
+                "O arquiteto supremo. Foca em construção e alcance.\nAumenta alcance de colocação, reduz custos de crafting\ne oferece ferramentas de construção em área.\nIdeal para quem ama transformar o mundo.";
+            case BLACKSMITH ->
+                "A muralha de ferro. Foca em DEFESA e TANK.\nConcede alta resistência a danos, espinhos e\ngrandes descontos em bigornas.\nIdeal para quem quer ser imortal e proteger o time.";
+            case EXPLORER ->
+                "Espírito livre. Foca em mobilidade e descoberta.\nAumenta velocidade de movimento, permite respirar na água\ne destaca tesouros escondidos através de paredes.\nIdeal para quem nunca para em um lugar.";
         };
     }
 

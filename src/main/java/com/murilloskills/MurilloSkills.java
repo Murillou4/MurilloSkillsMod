@@ -29,6 +29,9 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,37 +118,40 @@ public class MurilloSkills implements ModInitializer {
                 });
             });
 
-            // Receiver: Seleção de Skills (Escolha das 2 habilidades principais)
+            // Receiver: Seleção de Skills (Escolha das habilidades principais)
             ServerPlayNetworking.registerGlobalReceiver(SkillSelectionC2SPayload.ID, (payload, context) -> {
                 context.server().execute(() -> {
                     var player = context.player();
                     SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
                     var data = state.getPlayerData(player);
 
-                    // Validation: Check if player already selected skills (permanent choice)
+                    // Validation: Check if player already has 3 skills selected (maxed out)
                     if (data.hasSelectedSkills()) {
-                        player.sendMessage(Text.literal("Você já escolheu suas habilidades! Esta escolha é permanente.")
+                        player.sendMessage(Text.literal("Você já atingiu o limite de 3 habilidades!")
                                 .formatted(Formatting.RED), true);
                         return;
                     }
 
-                    // Validation: Must select exactly 2 skills
-                    if (payload.selectedSkills() == null
-                            || payload.selectedSkills().size() != SkillSelectionC2SPayload.MAX_SELECTED_SKILLS) {
-                        player.sendMessage(Text.literal("Você deve selecionar exatamente 2 habilidades!")
+                    List<MurilloSkillsList> incoming = payload.selectedSkills();
+                    int newCount = incoming.size();
+
+                    // Validation: Must select between 1 and 3 skills
+                    if (incoming == null || newCount < 1 || newCount > SkillSelectionC2SPayload.MAX_SELECTED_SKILLS) {
+                        player.sendMessage(Text.literal("Selecione entre 1 e 3 habilidades.")
                                 .formatted(Formatting.RED), true);
                         return;
                     }
 
-                    // Validation: No duplicate skills
-                    if (payload.selectedSkills().get(0) == payload.selectedSkills().get(1)) {
-                        player.sendMessage(Text.literal("Você não pode selecionar a mesma habilidade duas vezes!")
+                    // Validation: No duplicate skills in the payload
+                    if (newCount != incoming.stream().distinct().count()) {
+                        player.sendMessage(Text.literal("Habilidades duplicadas detectadas!")
                                 .formatted(Formatting.RED), true);
                         return;
                     }
 
-                    // Apply the selection
-                    if (data.setSelectedSkills(payload.selectedSkills())) {
+                    // Apply the selection (Overwrite existing selection with new cumulative list)
+                    // Note: Client should send the FULL list of selected skills (old + new)
+                    if (data.setSelectedSkills(incoming)) {
                         state.markDirty();
 
                         // Apply attributes for selected skills immediately
@@ -153,12 +159,26 @@ public class MurilloSkills implements ModInitializer {
 
                         SkillsNetworkUtils.syncSkills(player);
 
-                        String skill1 = payload.selectedSkills().get(0).name();
-                        String skill2 = payload.selectedSkills().get(1).name();
-                        player.sendMessage(Text.literal("Habilidades Selecionadas: " + skill1 + " e " + skill2 + "!")
-                                .formatted(Formatting.GREEN, Formatting.BOLD), false);
-                        player.sendMessage(Text.literal("Agora você pode ganhar XP apenas nessas habilidades.")
-                                .formatted(Formatting.YELLOW), false);
+                        // Feedback Messages
+                        int currentCount = data.getSelectedSkills().size();
+                        if (currentCount == SkillSelectionC2SPayload.MAX_SELECTED_SKILLS) {
+                            // Complete selection
+                            player.sendMessage(Text.literal("Habilidades Definidas com Sucesso!")
+                                    .formatted(Formatting.GREEN, Formatting.BOLD), false);
+                            player.sendMessage(Text.literal("Você escolheu suas 3 habilidades principais.")
+                                    .formatted(Formatting.YELLOW), false);
+                        } else {
+                            // Partial selection
+                            int remaining = SkillSelectionC2SPayload.MAX_SELECTED_SKILLS - currentCount;
+                            player.sendMessage(Text.literal("Seleção Parcial Salva (" + currentCount + "/3)")
+                                    .formatted(Formatting.GREEN), false);
+                            player.sendMessage(
+                                    Text.literal("Você ainda pode escolher mais " + remaining + " habilidade(s).")
+                                            .formatted(Formatting.YELLOW),
+                                    false);
+                            player.sendMessage(Text.literal("Use o item ou comando novamente para completar.")
+                                    .formatted(Formatting.GRAY), false);
+                        }
                     } else {
                         player.sendMessage(Text.literal("Erro ao selecionar habilidades.").formatted(Formatting.RED),
                                 true);

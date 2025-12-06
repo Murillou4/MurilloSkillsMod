@@ -16,7 +16,7 @@ public class FisherXpGetter {
 
     // Base XP values for different catch categories
     private static final int XP_TREASURE = 25;
-    private static final int XP_FISH = 1500000;
+    private static final int XP_FISH = 20;
     private static final int XP_JUNK = 3;
 
     /**
