@@ -10,23 +10,23 @@ import net.minecraft.item.Items;
 public class BlacksmithXpGetter {
 
     // Base XP values for anvil actions
-    private static final int XP_ANVIL_REPAIR = 15;
-    private static final int XP_ANVIL_RENAME = 10;
-    private static final int XP_ANVIL_ENCHANT_COMBINE = 20;
+    private static final int XP_ANVIL_REPAIR = 80;
+    private static final int XP_ANVIL_RENAME = 50;
+    private static final int XP_ANVIL_ENCHANT_COMBINE = 100;
 
     // XP for enchanting table
-    private static final int XP_ENCHANT_LEVEL_1 = 10;
-    private static final int XP_ENCHANT_LEVEL_2 = 15;
-    private static final int XP_ENCHANT_LEVEL_3 = 25;
+    private static final int XP_ENCHANT_LEVEL_1 = 40;
+    private static final int XP_ENCHANT_LEVEL_2 = 70;
+    private static final int XP_ENCHANT_LEVEL_3 = 100;
 
     // XP for smelting ores (only ores that produce ingots/materials)
-    private static final int XP_SMELT_IRON = 5;
-    private static final int XP_SMELT_GOLD = 8;
-    private static final int XP_SMELT_COPPER = 4;
-    private static final int XP_SMELT_ANCIENT_DEBRIS = 20;
+    private static final int XP_SMELT_IRON = 15;
+    private static final int XP_SMELT_GOLD = 25;
+    private static final int XP_SMELT_COPPER = 12;
+    private static final int XP_SMELT_ANCIENT_DEBRIS = 80;
 
     // XP for grindstone
-    private static final int XP_GRINDSTONE_USE = 5;
+    private static final int XP_GRINDSTONE_USE = 30;
 
     /**
      * Get XP for anvil use based on the action type.

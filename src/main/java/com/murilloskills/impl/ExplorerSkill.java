@@ -51,7 +51,6 @@ public class ExplorerSkill extends AbstractSkill {
 
     // Map to track Treasure Hunter ability state (UUID → end time in world ticks)
     private static final Map<UUID, Long> treasureHunterActive = new HashMap<>();
-    private static final Map<UUID, Long> lastAbilityUse = new HashMap<>();
 
     // Duration and cooldown for Treasure Hunter ability
     private static final int TREASURE_HUNTER_DURATION_SECONDS = 60;
@@ -73,17 +72,17 @@ public class ExplorerSkill extends AbstractSkill {
     }
 
     /**
-     * Activates the Treasure Hunter ability with cooldown
+     * Activates the Treasure Hunter ability with cooldown.
+     * Uses stats.lastAbilityUse for persistent cooldown across server restarts.
      */
     private void activateTreasureHunter(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
         UUID uuid = player.getUuid();
         long worldTime = player.getEntityWorld().getTime();
         long cooldownTicks = SkillConfig.toTicksLong(TREASURE_HUNTER_COOLDOWN_SECONDS);
 
-        // Check cooldown
-        Long lastUse = lastAbilityUse.get(uuid);
-        if (lastUse != null && lastUse != Long.MIN_VALUE) {
-            long timeSinceUse = worldTime - lastUse;
+        // Check cooldown using persistent stats (survives server restart)
+        if (stats.lastAbilityUse >= 0) {
+            long timeSinceUse = worldTime - stats.lastAbilityUse;
             if (timeSinceUse < cooldownTicks) {
                 long remainingSeconds = (cooldownTicks - timeSinceUse) / 20;
                 long minutes = remainingSeconds / 60;
@@ -94,10 +93,13 @@ public class ExplorerSkill extends AbstractSkill {
             }
         }
 
-        // Activate ability
+        // Activate ability - update persistent cooldown
+        stats.lastAbilityUse = worldTime;
+        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+        state.markDirty();
+
         int durationTicks = SkillConfig.toTicks(TREASURE_HUNTER_DURATION_SECONDS);
         treasureHunterActive.put(uuid, worldTime + durationTicks);
-        lastAbilityUse.put(uuid, worldTime);
 
         sendMessage(player, "🔍 Sexto Sentido ATIVADO! Baús e Spawners revelados por "
                 + TREASURE_HUNTER_DURATION_SECONDS + " segundos!", Formatting.AQUA, false);

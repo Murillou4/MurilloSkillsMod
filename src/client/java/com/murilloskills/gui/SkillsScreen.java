@@ -492,8 +492,8 @@ public class SkillsScreen extends Screen {
             case ARCHER -> "Master Ranger: Flechas perseguem inimigos por 30 segundos.";
             case FISHER -> "Rain Dance: Invoca chuva com bônus massivos de pesca por 60s.";
             case BLACKSMITH -> "Titanium Aura: Imunidade a knockback, resistência máxima, regeneração.";
-            case BUILDER -> "Creative Brush: Desenhe linhas de blocos automaticamente por 20s.";
-            default -> "Habilidade especial em desenvolvimento.";
+            case BUILDER -> "Creative Brush: Preencha áreas entre dois pontos automaticamente.";
+            case EXPLORER -> "Sexto Sentido: Revela baús e spawners em um raio de 32 blocos.";
         };
     }
 
@@ -502,8 +502,13 @@ public class SkillsScreen extends Screen {
         List<Text> tooltip = new ArrayList<>();
         tooltip.add(Text.literal(capitalize(skill.name())).formatted(Formatting.GOLD, Formatting.BOLD));
 
-        if (selectionMode) {
-            // Selection mode tooltip
+        // Check if this specific skill is already active (server-confirmed selection)
+        boolean isThisSkillActive = ClientSkillData.isSkillSelected(skill);
+
+        // Show selection tooltip only if in selection mode AND this skill is NOT
+        // already active
+        if (selectionMode && !isThisSkillActive) {
+            // Selection mode tooltip for unselected skills
             if (isPendingSelect) {
                 tooltip.add(Text.literal("✓ SELECIONADA").formatted(Formatting.GREEN));
             }
@@ -725,7 +730,7 @@ public class SkillsScreen extends Screen {
                                 .formatted(Formatting.LIGHT_PURPLE));
                     }
                 }
-                default -> tooltip.add(Text.literal("• Habilidade em desenvolvimento").formatted(Formatting.DARK_GRAY));
+
             }
         }
 

@@ -143,7 +143,8 @@ public class BuilderXpGetter {
     }
 
     /**
-     * Checks if a block is a decorative variant (stairs, slabs, fences, walls).
+     * Checks if a block is a decorative/functional construction variant.
+     * Includes: stairs, slabs, fences, walls, doors, gates, carpets, signs, etc.
      */
     public static boolean isDecorativeVariant(Block block) {
         String name = block.getTranslationKey().toLowerCase();
@@ -151,7 +152,24 @@ public class BuilderXpGetter {
                 name.contains("slab") ||
                 name.contains("fence") ||
                 name.contains("wall") ||
-                name.contains("pane");
+                name.contains("pane") ||
+                name.contains("door") || // Includes trapdoor
+                name.contains("gate") || // Fence gates
+                name.contains("carpet") ||
+                name.contains("button") ||
+                name.contains("lever") ||
+                name.contains("sign") ||
+                name.contains("banner") ||
+                name.contains("torch") ||
+                name.contains("lantern") ||
+                name.contains("chain") ||
+                name.contains("ladder") ||
+                name.contains("rail") ||
+                name.contains("pressure_plate") ||
+                name.contains("candle") ||
+                name.contains("pot") || // Flower pots
+                name.contains("bed") ||
+                name.contains("chest"); // Chests are construction too
     }
 
     /**
@@ -167,7 +185,7 @@ public class BuilderXpGetter {
     }
 
     /**
-     * Checks if an item is a decorative crafting item.
+     * Checks if an item is a decorative/functional crafting item.
      */
     public static boolean isDecorativeItem(Item item) {
         String name = item.getTranslationKey().toLowerCase();
@@ -177,7 +195,20 @@ public class BuilderXpGetter {
                 name.contains("wall") ||
                 name.contains("pane") ||
                 name.contains("glass") ||
-                name.contains("lantern");
+                name.contains("lantern") ||
+                name.contains("door") ||
+                name.contains("gate") ||
+                name.contains("carpet") ||
+                name.contains("button") ||
+                name.contains("sign") ||
+                name.contains("banner") ||
+                name.contains("torch") ||
+                name.contains("chain") ||
+                name.contains("ladder") ||
+                name.contains("rail") ||
+                name.contains("candle") ||
+                name.contains("pot") ||
+                name.contains("bed");
     }
 
     /**

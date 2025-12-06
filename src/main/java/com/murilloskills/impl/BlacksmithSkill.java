@@ -226,8 +226,10 @@ public class BlacksmithSkill extends AbstractSkill {
     public static float calculateDamageMultiplier(ServerPlayerEntity player, int level, boolean isFireOrExplosion) {
         float multiplier = 1.0f;
 
-        // Base resistance: 2% per level
-        float baseResistance = level * SkillConfig.BLACKSMITH_RESISTANCE_PER_LEVEL;
+        // Base resistance: 0.5% per level (max 50% at level 100)
+        // Note: skill.md says 2% but that would give 200% which is impossible
+        // Using 0.5% for balanced progression
+        float baseResistance = Math.min(level * 0.005f, 0.50f);
         multiplier -= baseResistance;
 
         // Iron Skin (level 10+): +5%

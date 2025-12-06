@@ -92,6 +92,10 @@ public class FishingCatchHandler {
                         xpAmount);
             }
 
+            // Level 25 & 75: Bonus treasure chance
+            handleTreasureBonus(serverPlayer, level, caughtStack.getItem(),
+                    (ServerWorld) serverPlayer.getEntityWorld());
+
             // Check for Epic Bundle
             handleEpicBundle(serverPlayer, level, (ServerWorld) serverPlayer.getEntityWorld());
 
@@ -125,6 +129,101 @@ public class FishingCatchHandler {
                     false);
 
             LOGGER.info("Player {} pescou um Bundle Épico!", player.getName().getString());
+        }
+    }
+
+    /**
+     * Handles bonus treasure chance based on Fisher skill level.
+     * Level 25: +10% chance to spawn bonus treasure when fishing junk
+     * Level 75: Luck of the Sea passive (+2% additional treasure chance, stacks
+     * with lvl 25)
+     * Rain Dance: +30% additional treasure chance during ability
+     */
+    private static void handleTreasureBonus(ServerPlayerEntity player, int level, Item caughtItem, ServerWorld world) {
+        // Only apply treasure bonus if player caught junk
+        if (!FisherXpGetter.isJunk(caughtItem)) {
+            return;
+        }
+
+        float bonusTreasureChance = 0.0f;
+
+        // Level 25: +10% chance of bonus treasure
+        if (level >= SkillConfig.FISHER_TREASURE_BONUS_LEVEL) {
+            bonusTreasureChance += SkillConfig.FISHER_TREASURE_BONUS; // 0.10 = 10%
+        }
+
+        // Level 75: Luck of the Sea passive (+2% = Luck of the Sea I equivalent)
+        int luckBonus = FisherSkill.getLuckOfTheSeaBonus(level);
+        if (luckBonus > 0) {
+            bonusTreasureChance += luckBonus * 0.02f; // Each level adds 2%
+        }
+
+        // Rain Dance: +30% treasure chance
+        if (FisherSkill.isRainDanceActive(player)) {
+            bonusTreasureChance += SkillConfig.FISHER_RAIN_DANCE_TREASURE_BONUS;
+        }
+
+        // Roll for bonus treasure
+        if (bonusTreasureChance > 0 && random.nextFloat() < bonusTreasureChance) {
+            // Spawn a random treasure item
+            spawnBonusTreasure(player, world);
+        }
+    }
+
+    /**
+     * Spawns a random bonus treasure item near the player.
+     * Uses the same treasure pool as vanilla fishing.
+     */
+    private static void spawnBonusTreasure(ServerPlayerEntity player, ServerWorld world) {
+        // Select random treasure
+        ItemStack treasureStack = selectRandomTreasure();
+
+        // Spawn the item near the player
+        net.minecraft.entity.ItemEntity itemEntity = new net.minecraft.entity.ItemEntity(
+                world,
+                player.getX(),
+                player.getY() + 0.5,
+                player.getZ(),
+                treasureStack);
+        itemEntity.setPickupDelay(0); // Can be picked up immediately
+        world.spawnEntity(itemEntity);
+
+        // Notify player
+        player.sendMessage(
+                Text.literal("⭐ Bônus de Tesouro! ⭐")
+                        .formatted(Formatting.GOLD),
+                false);
+
+        LOGGER.debug("Player {} recebeu tesouro bônus: {}",
+                player.getName().getString(),
+                treasureStack.getItem().getName().getString());
+    }
+
+    /**
+     * Selects a random treasure item from the fishing treasure pool.
+     */
+    private static ItemStack selectRandomTreasure() {
+        float roll = random.nextFloat();
+
+        if (roll < 0.25f) {
+            // 25% - Name Tag
+            return new ItemStack(net.minecraft.item.Items.NAME_TAG);
+        } else if (roll < 0.50f) {
+            // 25% - Saddle
+            return new ItemStack(net.minecraft.item.Items.SADDLE);
+        } else if (roll < 0.70f) {
+            // 20% - Nautilus Shell
+            return new ItemStack(net.minecraft.item.Items.NAUTILUS_SHELL);
+        } else if (roll < 0.85f) {
+            // 15% - Bow (with some durability used)
+            ItemStack bow = new ItemStack(net.minecraft.item.Items.BOW);
+            bow.setDamage(random.nextInt(bow.getMaxDamage() / 2)); // Random durability
+            return bow;
+        } else {
+            // 15% - Fishing Rod (with some durability used)
+            ItemStack rod = new ItemStack(net.minecraft.item.Items.FISHING_ROD);
+            rod.setDamage(random.nextInt(rod.getMaxDamage() / 2)); // Random durability
+            return rod;
         }
     }
 

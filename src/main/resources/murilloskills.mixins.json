@@ -20,7 +20,11 @@
     "ScaffoldingClimbMixin",
     "MagmaBlockMixin",
     "LootChestMixin",
-    "WanderingTraderMixin"
+    "WanderingTraderMixin",
+    "ExplorerBreathMixin",
+    "SoulSandMixin",
+    "GrindstoneScreenHandlerMixin",
+    "FurnaceOutputMixin"
   ],
   "injectors": {
     "defaultRequire": 1
