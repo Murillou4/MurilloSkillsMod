@@ -1,92 +1,103 @@
 package com.murilloskills.render;
 
-import com.murilloskills.network.MinerScanResultPayload;
-import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.opengl.GL11;
 
 import java.util.List;
 
-public class OreHighlighter {
+/**
+ * Client-side renderer for Explorer's Treasure Hunter passive.
+ * Highlights chests and spawners with a glowing purple/teal outline through
+ * walls.
+ */
+public class TreasureHighlighter {
 
-    private static List<MinerScanResultPayload.OreEntry> highlightedOres = null;
-    private static long highlightEndTime = 0;
+    private static List<BlockPos> treasurePositions = null;
+    private static long lastUpdateTime = 0;
+    private static final long TIMEOUT_TICKS = 60; // 3 seconds (updates every 2 seconds from server)
 
-    public static void setHighlights(List<MinerScanResultPayload.OreEntry> ores) {
-        highlightedOres = ores;
+    /**
+     * Called when server sends new treasure positions
+     */
+    public static void setTreasures(List<BlockPos> positions) {
+        treasurePositions = positions;
         if (MinecraftClient.getInstance().world != null) {
-            highlightEndTime = MinecraftClient.getInstance().world.getTime()
-                    + SkillConfig.toTicks(SkillConfig.MINER_ABILITY_DURATION_SECONDS);
+            lastUpdateTime = MinecraftClient.getInstance().world.getTime();
         }
     }
 
+    /**
+     * Render the treasure highlights (called from WorldRenderEvents.END_MAIN)
+     */
     public static void render(WorldRenderContext context) {
-        if (highlightedOres == null || highlightedOres.isEmpty())
+        if (treasurePositions == null || treasurePositions.isEmpty())
             return;
 
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.world == null || client.player == null)
             return;
 
-        if (client.world.getTime() > highlightEndTime) {
-            highlightedOres = null;
+        // Timeout after 3 seconds if no new data received
+        if (client.world.getTime() - lastUpdateTime > TIMEOUT_TICKS) {
+            treasurePositions = null;
             return;
         }
 
         Vec3d cameraPos = client.gameRenderer.getCamera().getPos();
         MatrixStack matrices = context.matrices();
 
-        // 1. Configurações de Raio-X (OpenGL Puro)
+        // Enable X-Ray style rendering (draw through blocks)
         GL11.glEnable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthFunc(GL11.GL_ALWAYS); // Desenha sobre tudo
-        GL11.glLineWidth(3.0f);
+        GL11.glDepthFunc(GL11.GL_ALWAYS); // Always draw, ignoring depth
+        GL11.glLineWidth(2.5f);
 
         VertexConsumer consumer = client.getBufferBuilders().getEntityVertexConsumers()
                 .getBuffer(RenderLayer.getLines());
 
-        // 2. Loop de Desenho com cores por tipo de minério
-        for (MinerScanResultPayload.OreEntry entry : highlightedOres) {
-            double x = entry.pos().getX() - cameraPos.x;
-            double y = entry.pos().getY() - cameraPos.y;
-            double z = entry.pos().getZ() - cameraPos.z;
+        for (BlockPos pos : treasurePositions) {
+            double x = pos.getX() - cameraPos.x;
+            double y = pos.getY() - cameraPos.y;
+            double z = pos.getZ() - cameraPos.z;
 
-            // Usa a cor do tipo de minério
-            drawSimpleBox(matrices, consumer, x, y, z,
-                    entry.type().r, entry.type().g, entry.type().b, 1.0f);
+            // Teal/Cyan color for treasures (R=0.0, G=0.9, B=0.9, A=1.0)
+            drawBox(matrices, consumer, x, y, z, 0.0f, 0.9f, 0.9f, 1.0f);
         }
 
-        // 3. Renderiza e Limpa
+        // Flush the render buffer and restore OpenGL state
         client.getBufferBuilders().getEntityVertexConsumers().draw(RenderLayer.getLines());
         GL11.glDepthFunc(GL11.GL_LEQUAL);
         GL11.glLineWidth(1.0f);
     }
 
-    // Método auxiliar simples para desenhar as 12 arestas de um cubo
-    private static void drawSimpleBox(MatrixStack matrices, VertexConsumer consumer,
+    /**
+     * Draw a wireframe box at the given position
+     */
+    private static void drawBox(MatrixStack matrices, VertexConsumer consumer,
             double x, double y, double z,
             float r, float g, float b, float a) {
         MatrixStack.Entry entry = matrices.peek();
         float minX = (float) x, minY = (float) y, minZ = (float) z;
         float maxX = (float) (x + 1), maxY = (float) (y + 1), maxZ = (float) (z + 1);
 
-        // Base
+        // Bottom face edges
         drawLine(entry, consumer, minX, minY, minZ, maxX, minY, minZ, r, g, b, a);
         drawLine(entry, consumer, maxX, minY, minZ, maxX, minY, maxZ, r, g, b, a);
         drawLine(entry, consumer, maxX, minY, maxZ, minX, minY, maxZ, r, g, b, a);
         drawLine(entry, consumer, minX, minY, maxZ, minX, minY, minZ, r, g, b, a);
 
-        // Topo
+        // Top face edges
         drawLine(entry, consumer, minX, maxY, minZ, maxX, maxY, minZ, r, g, b, a);
         drawLine(entry, consumer, maxX, maxY, minZ, maxX, maxY, maxZ, r, g, b, a);
         drawLine(entry, consumer, maxX, maxY, maxZ, minX, maxY, maxZ, r, g, b, a);
         drawLine(entry, consumer, minX, maxY, maxZ, minX, maxY, minZ, r, g, b, a);
 
-        // Verticais
+        // Vertical edges
         drawLine(entry, consumer, minX, minY, minZ, minX, maxY, minZ, r, g, b, a);
         drawLine(entry, consumer, maxX, minY, minZ, maxX, maxY, minZ, r, g, b, a);
         drawLine(entry, consumer, maxX, minY, maxZ, maxX, maxY, maxZ, r, g, b, a);
@@ -97,8 +108,6 @@ public class OreHighlighter {
             float x1, float y1, float z1,
             float x2, float y2, float z2,
             float r, float g, float b, float a) {
-        // Normal fixa (0, 1, 0) pois linhas de debug não precisam de iluminação
-        // complexa
         consumer.vertex(entry.getPositionMatrix(), x1, y1, z1).color(r, g, b, a).normal(entry, 0, 1, 0);
         consumer.vertex(entry.getPositionMatrix(), x2, y2, z2).color(r, g, b, a).normal(entry, 0, 1, 0);
     }

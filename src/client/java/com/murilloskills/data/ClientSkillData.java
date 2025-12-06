@@ -1,6 +1,5 @@
 package com.murilloskills.data;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.skills.MurilloSkillsList;
 
 import java.util.ArrayList;
@@ -38,7 +37,7 @@ public class ClientSkillData {
     }
 
     public static boolean hasSelectedSkills() {
-        return selectedSkills != null && selectedSkills.size() == 2;
+        return selectedSkills != null && selectedSkills.size() == 3;
     }
 
     public static boolean isSkillSelected(MurilloSkillsList skill) {

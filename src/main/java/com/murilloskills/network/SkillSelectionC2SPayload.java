@@ -15,11 +15,11 @@ import java.util.List;
  * This is a permanent choice that cannot be changed once confirmed.
  */
 public record SkillSelectionC2SPayload(List<MurilloSkillsList> selectedSkills) implements CustomPayload {
-    
-    public static final int MAX_SELECTED_SKILLS = 2;
-    
-    public static final CustomPayload.Id<SkillSelectionC2SPayload> ID = 
-            new CustomPayload.Id<>(Identifier.of(MurilloSkills.MOD_ID, "skill_selection"));
+
+    public static final int MAX_SELECTED_SKILLS = 3;
+
+    public static final CustomPayload.Id<SkillSelectionC2SPayload> ID = new CustomPayload.Id<>(
+            Identifier.of(MurilloSkills.MOD_ID, "skill_selection"));
 
     public static final PacketCodec<RegistryByteBuf, SkillSelectionC2SPayload> CODEC = PacketCodec.ofStatic(
             (buf, payload) -> {
@@ -35,12 +35,10 @@ public record SkillSelectionC2SPayload(List<MurilloSkillsList> selectedSkills) i
                     skills.add(buf.readEnumConstant(MurilloSkillsList.class));
                 }
                 return new SkillSelectionC2SPayload(skills);
-            }
-    );
+            });
 
     @Override
     public Id<? extends CustomPayload> getId() {
         return ID;
     }
 }
-

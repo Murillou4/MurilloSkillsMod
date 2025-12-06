@@ -12,7 +12,15 @@
     "CropBlockMixin",
     "FishingBobberEntityMixin",
     "ItemEntityFishingMixin",
-    "SeedItemMixin"
+    "SeedItemMixin",
+    "ItemStackMixin",
+    "AnvilScreenHandlerMixin",
+    "EnchantmentScreenHandlerMixin",
+    "PlayerEntityReachMixin",
+    "ScaffoldingClimbMixin",
+    "MagmaBlockMixin",
+    "LootChestMixin",
+    "WanderingTraderMixin"
   ],
   "injectors": {
     "defaultRequire": 1

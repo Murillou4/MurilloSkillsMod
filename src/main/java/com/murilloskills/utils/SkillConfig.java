@@ -83,6 +83,85 @@ public class SkillConfig {
     public static final int FARMER_ABILITY_DURATION_SECONDS = 10; // 10 segundos de efeito
     public static final int FARMER_ABILITY_COOLDOWN_SECONDS = 120; // 2 minutos
 
+    // --- BLACKSMITH (FERREIRO) ---
+    // Bônus por Nível
+    public static final float BLACKSMITH_RESISTANCE_PER_LEVEL = 0.02f; // 2% resistência física por nível
+
+    // Perks por Nível
+    public static final int BLACKSMITH_IRON_SKIN_LEVEL = 10; // +5% resistência física passiva
+    public static final int BLACKSMITH_EFFICIENT_ANVIL_LEVEL = 25; // 25% desconto XP, 10% material save
+    public static final int BLACKSMITH_FORGED_RESILIENCE_LEVEL = 50; // +10% fire/explosion, +1 Protection
+    public static final int BLACKSMITH_THORNS_MASTER_LEVEL = 75; // 20% reflect, 50% knockback reduction
+    public static final int BLACKSMITH_MASTER_LEVEL = 100; // Titanium Aura
+
+    // Valores de Perks
+    public static final float BLACKSMITH_IRON_SKIN_BONUS = 0.05f; // +5% resistência física
+    public static final float BLACKSMITH_ANVIL_XP_DISCOUNT = 0.25f; // 25% desconto de XP
+    public static final float BLACKSMITH_ANVIL_MATERIAL_SAVE = 0.10f; // 10% chance de não consumir material
+    public static final float BLACKSMITH_FIRE_EXPLOSION_RESIST = 0.10f; // +10% resistência fogo/explosão
+    public static final float BLACKSMITH_THORNS_CHANCE = 0.20f; // 20% chance de refletir
+    public static final float BLACKSMITH_THORNS_REFLECT = 0.25f; // 25% do dano refletido
+    public static final float BLACKSMITH_KNOCKBACK_REDUCTION = 0.50f; // 50% redução de knockback
+    public static final float BLACKSMITH_SUPER_ENCHANT_CHANCE = 0.25f; // 25% chance encantamentos acima do limite
+
+    // Habilidade Ativa (Titanium Aura)
+    public static final int BLACKSMITH_ABILITY_DURATION_SECONDS = 15; // 15 segundos
+    public static final int BLACKSMITH_ABILITY_COOLDOWN_SECONDS = 3600; // 1 hora
+    public static final float BLACKSMITH_TITANIUM_RESISTANCE = 0.30f; // +30% resistência a todo dano
+    public static final float BLACKSMITH_TITANIUM_REGEN = 1.0f; // 0.5 coração/seg = 1 HP/seg
+
+    // --- BUILDER (CONSTRUTOR) ---
+    // Bônus por Nível
+    public static final float BUILDER_REACH_PER_LEVEL = 0.05f; // +0.05 blocos por nível (máx +5 nv100)
+
+    // Perks por Nível
+    public static final int BUILDER_EXTENDED_REACH_LEVEL = 10; // +1 bloco alcance + Quick Hands
+    public static final int BUILDER_EFFICIENT_CRAFTING_LEVEL = 15; // 20% economia decorativos
+    public static final int BUILDER_SAFE_LANDING_LEVEL = 25; // 25% menos dano de queda
+    public static final int BUILDER_SCAFFOLD_MASTER_LEVEL = 50; // Velocidade scaffolding + 50% economia estruturais
+    public static final int BUILDER_MASTER_REACH_LEVEL = 75; // +5 blocos alcance
+    public static final int BUILDER_MASTER_LEVEL = 100; // Creative Brush
+
+    // Valores de Perks
+    public static final float BUILDER_LEVEL_10_REACH = 1.0f; // +1 bloco no nível 10
+    public static final float BUILDER_LEVEL_75_REACH = 5.0f; // +5 blocos no nível 75
+    public static final float BUILDER_DECORATIVE_ECONOMY = 0.20f; // 20% economia blocos decorativos
+    public static final float BUILDER_STRUCTURAL_ECONOMY = 0.50f; // 50% economia blocos estruturais
+    public static final float BUILDER_FALL_DAMAGE_REDUCTION = 0.25f; // 25% redução dano de queda
+    public static final float BUILDER_SCAFFOLD_SPEED_MULTIPLIER = 1.5f; // 50% mais rápido no scaffolding
+
+    // Habilidade Ativa (Creative Brush)
+    public static final int BUILDER_ABILITY_DURATION_SECONDS = 120; // 20 segundos
+    public static final int BUILDER_ABILITY_COOLDOWN_SECONDS = 600; // 10 minutos
+    public static final int BUILDER_BRUSH_MAX_DISTANCE = 6; // Distância máxima do brush
+
+    // --- EXPLORER (EXPLORADOR) ---
+    // Bônus por Nível
+    public static final float EXPLORER_SPEED_PER_LEVEL = 0.002f; // 0.2% velocidade por nível (máx 20%)
+    public static final int EXPLORER_LUCK_INTERVAL = 20; // +1 Luck a cada 20 níveis
+    public static final float EXPLORER_HUNGER_REDUCTION_PER_LEVEL = 0.005f; // 0.5% menos fome ao andar
+
+    // Perks por Nível
+    public static final int EXPLORER_STEP_ASSIST_LEVEL = 10; // Subir blocos automaticamente
+    public static final int EXPLORER_AQUATIC_LEVEL = 20; // 50% mais respiração + mineração normal submerso
+    public static final int EXPLORER_NIGHT_VISION_LEVEL = 35; // Visão noturna permanente (toggle)
+    public static final int EXPLORER_FEATHER_FEET_LEVEL = 65; // 40% menos dano de queda
+    public static final int EXPLORER_NETHER_WALKER_LEVEL = 80; // Imunidade magma + soul sand normal
+    public static final int EXPLORER_MASTER_LEVEL = 100; // Treasure Hunter
+
+    // Valores de Perks
+    public static final float EXPLORER_BREATH_MULTIPLIER = 1.5f; // 50% mais tempo submerso
+    public static final float EXPLORER_FALL_DAMAGE_REDUCTION = 0.40f; // 40% redução
+    public static final int EXPLORER_TREASURE_RADIUS = 128; // Raio do Sexto Sentido
+    public static final float EXPLORER_STEP_HEIGHT = 1.0f; // Altura automática de subida
+
+    // XP Values
+    public static final int EXPLORER_XP_BIOME = 50; // Novo bioma
+    public static final int EXPLORER_XP_STRUCTURE = 100; // Nova estrutura
+    public static final int EXPLORER_XP_LOOT_CHEST = 30; // Abrir baú de loot pela primeira vez
+    public static final int EXPLORER_XP_MAP_COMPLETE = 200; // Completar mapa
+    public static final int EXPLORER_XP_WANDERING_TRADE = 150; // Trade com Wandering Trader
+
     // --- MÉTODOS UTILITÁRIOS ---
 
     // Habilidade Passiva Toggle (Plantio em Área 3x3)

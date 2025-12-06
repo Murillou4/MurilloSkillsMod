@@ -2,13 +2,16 @@ package com.murilloskills;
 
 import com.murilloskills.network.AreaPlantingToggleC2SPayload;
 import com.murilloskills.network.AreaPlantingSyncS2CPayload;
+import com.murilloskills.network.HollowFillToggleC2SPayload;
 import com.murilloskills.network.MinerScanResultPayload;
 import com.murilloskills.network.RainDanceS2CPayload;
 import com.murilloskills.network.SkillAbilityC2SPayload;
 import com.murilloskills.network.SkillsSyncPayload;
+import com.murilloskills.network.TreasureHunterS2CPayload;
 import com.murilloskills.render.AreaPlantingHud;
 import com.murilloskills.render.OreHighlighter;
 import com.murilloskills.render.RainDanceEffect;
+import com.murilloskills.render.TreasureHighlighter;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -25,6 +28,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
     private static KeyBinding skillsKey;
     private static KeyBinding abilityKey;
     private static KeyBinding areaPlantingToggleKey;
+    private static KeyBinding hollowFillToggleKey;
 
     @Override
     public void onInitializeClient() {
@@ -77,6 +81,13 @@ public class MurilloSkillsClient implements ClientModInitializer {
             });
         });
 
+        // 5. Treasure Hunter (Explorer Level 100 Passive)
+        ClientPlayNetworking.registerGlobalReceiver(TreasureHunterS2CPayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                TreasureHighlighter.setTreasures(payload.positions());
+            });
+        });
+
         // --- KEYBINDINGS ---
 
         skillsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
@@ -97,6 +108,12 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_G,
                 KeyBinding.Category.GAMEPLAY));
 
+        hollowFillToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.murilloskills.hollow_fill_toggle",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_H,
+                KeyBinding.Category.GAMEPLAY));
+
         // --- EVENTS ---
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -114,9 +131,14 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 // Envia pacote para toggle de plantio em área 3x3
                 ClientPlayNetworking.send(new AreaPlantingToggleC2SPayload());
             }
+            while (hollowFillToggleKey.wasPressed()) {
+                // Envia pacote para toggle hollow/filled (Builder)
+                ClientPlayNetworking.send(new HollowFillToggleC2SPayload());
+            }
         });
 
         WorldRenderEvents.END_MAIN.register(OreHighlighter::render);
+        WorldRenderEvents.END_MAIN.register(TreasureHighlighter::render);
 
         // HUD rendering for Area Planting indicator
         HudRenderCallback.EVENT.register(AreaPlantingHud::render);

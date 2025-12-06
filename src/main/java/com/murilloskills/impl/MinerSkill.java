@@ -62,7 +62,7 @@ public class MinerSkill extends AbstractSkill {
             SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
             state.markDirty();
 
-            List<BlockPos> ores = scanForOres(player);
+            List<MinerScanResultPayload.OreEntry> ores = scanForOres(player);
 
             if (!ores.isEmpty()) {
                 // Envia pacote para o cliente renderizar
@@ -173,22 +173,61 @@ public class MinerSkill extends AbstractSkill {
     }
 
     /**
-     * Scans for ores in a large radius around the player
+     * Scans for ores in a large radius around the player, identifying ore types for
+     * color-coded display
      */
-    private List<BlockPos> scanForOres(ServerPlayerEntity player) {
-        List<BlockPos> ores = new ArrayList<>();
+    private List<MinerScanResultPayload.OreEntry> scanForOres(ServerPlayerEntity player) {
+        List<MinerScanResultPayload.OreEntry> ores = new ArrayList<>();
         BlockPos center = player.getBlockPos();
         int radius = SkillConfig.MINER_ABILITY_RADIUS;
 
         for (BlockPos pos : BlockPos.iterate(center.add(-radius, -radius, -radius),
                 center.add(radius, radius, radius))) {
-            var result = MinerXpGetter.isMinerXpBlock(player.getEntityWorld().getBlockState(pos).getBlock(), false,
-                    true);
+            net.minecraft.block.Block block = player.getEntityWorld().getBlockState(pos).getBlock();
+            var result = MinerXpGetter.isMinerXpBlock(block, false, true);
             if (result.didGainXp()) {
-                ores.add(pos.toImmutable());
+                MinerScanResultPayload.OreType oreType = getOreType(block);
+                ores.add(new MinerScanResultPayload.OreEntry(pos.toImmutable(), oreType));
             }
         }
 
         return ores;
+    }
+
+    /**
+     * Determines the ore type from a block for color-coded highlighting
+     */
+    private MinerScanResultPayload.OreType getOreType(net.minecraft.block.Block block) {
+        if (block == net.minecraft.block.Blocks.COAL_ORE || block == net.minecraft.block.Blocks.DEEPSLATE_COAL_ORE) {
+            return MinerScanResultPayload.OreType.COAL;
+        } else if (block == net.minecraft.block.Blocks.COPPER_ORE
+                || block == net.minecraft.block.Blocks.DEEPSLATE_COPPER_ORE) {
+            return MinerScanResultPayload.OreType.COPPER;
+        } else if (block == net.minecraft.block.Blocks.IRON_ORE
+                || block == net.minecraft.block.Blocks.DEEPSLATE_IRON_ORE) {
+            return MinerScanResultPayload.OreType.IRON;
+        } else if (block == net.minecraft.block.Blocks.GOLD_ORE
+                || block == net.minecraft.block.Blocks.DEEPSLATE_GOLD_ORE) {
+            return MinerScanResultPayload.OreType.GOLD;
+        } else if (block == net.minecraft.block.Blocks.LAPIS_ORE
+                || block == net.minecraft.block.Blocks.DEEPSLATE_LAPIS_ORE) {
+            return MinerScanResultPayload.OreType.LAPIS;
+        } else if (block == net.minecraft.block.Blocks.REDSTONE_ORE
+                || block == net.minecraft.block.Blocks.DEEPSLATE_REDSTONE_ORE) {
+            return MinerScanResultPayload.OreType.REDSTONE;
+        } else if (block == net.minecraft.block.Blocks.DIAMOND_ORE
+                || block == net.minecraft.block.Blocks.DEEPSLATE_DIAMOND_ORE) {
+            return MinerScanResultPayload.OreType.DIAMOND;
+        } else if (block == net.minecraft.block.Blocks.EMERALD_ORE
+                || block == net.minecraft.block.Blocks.DEEPSLATE_EMERALD_ORE) {
+            return MinerScanResultPayload.OreType.EMERALD;
+        } else if (block == net.minecraft.block.Blocks.ANCIENT_DEBRIS) {
+            return MinerScanResultPayload.OreType.ANCIENT_DEBRIS;
+        } else if (block == net.minecraft.block.Blocks.NETHER_QUARTZ_ORE) {
+            return MinerScanResultPayload.OreType.NETHER_QUARTZ;
+        } else if (block == net.minecraft.block.Blocks.NETHER_GOLD_ORE) {
+            return MinerScanResultPayload.OreType.NETHER_GOLD;
+        }
+        return MinerScanResultPayload.OreType.OTHER;
     }
 }

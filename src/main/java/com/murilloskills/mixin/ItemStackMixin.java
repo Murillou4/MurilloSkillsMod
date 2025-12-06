@@ -18,10 +18,11 @@ public class ItemStackMixin {
     /**
      * Injeta na lógica de dano do item (Server Side).
      * Alvo: public void damage(int amount, LivingEntity entity, EquipmentSlot slot)
-     * Esse método é o ponto de entrada principal para perda de durabilidade (quebrar blocos, atacar).
+     * Esse método é o ponto de entrada principal para perda de durabilidade
+     * (quebrar blocos, atacar).
      */
     @Inject(method = "damage(ILnet/minecraft/entity/LivingEntity;Lnet/minecraft/entity/EquipmentSlot;)V", at = @At("HEAD"), cancellable = true)
-    private void checkMinerDurability(int amount, LivingEntity entity, EquipmentSlot slot, CallbackInfo ci) {
+    private void checkDurabilityProtection(int amount, LivingEntity entity, EquipmentSlot slot, CallbackInfo ci) {
 
         // Verifica se é no servidor e se é um jogador
         if (entity.getEntityWorld().isClient() || !(entity instanceof ServerPlayerEntity player)) {
@@ -30,12 +31,27 @@ public class ItemStackMixin {
 
         // Recupera o estado global do servidor
         SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        int level = state.getPlayerData(player).getSkill(MurilloSkillsList.MINER).level;
+        var playerData = state.getPlayerData(player);
 
-        if (level >= SkillConfig.MINER_DURABILITY_LEVEL) {
-            // 15% de chance de cancelar o dano totalmente (ignora Unbreaking, apenas não gasta)
+        // --- MINER: 15% chance to ignore tool durability loss (level 30+) ---
+        int minerLevel = playerData.getSkill(MurilloSkillsList.MINER).level;
+        if (minerLevel >= SkillConfig.MINER_DURABILITY_LEVEL) {
             if (player.getRandom().nextFloat() < SkillConfig.MINER_DURABILITY_CHANCE) {
                 ci.cancel();
+                return;
+            }
+        }
+
+        // --- BLACKSMITH: Armor durability protection during Titanium Aura ---
+        if (playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
+            // Check if this is armor (helmet, chestplate, leggings, boots)
+            boolean isArmor = slot == EquipmentSlot.HEAD || slot == EquipmentSlot.CHEST
+                    || slot == EquipmentSlot.LEGS || slot == EquipmentSlot.FEET;
+
+            if (isArmor && com.murilloskills.impl.BlacksmithSkill.isTitaniumAuraActive(player)) {
+                // During Titanium Aura, armor doesn't lose durability
+                ci.cancel();
+                return;
             }
         }
     }

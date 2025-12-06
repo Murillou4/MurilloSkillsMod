@@ -88,69 +88,79 @@ Perks por Nível:
 
 4. BUILDER (CONSTRUTOR)
 
+Tema: Construção, arquitetura, domínio espacial.
+
 Fontes de XP:
 - Colocar blocos de construção.
-- Craftar blocos estruturais.
+- Craftar blocos estruturais e decorativos.
 
 Bônus por Nível:
-- +0.05 blocos de alcance para colocar blocos.
+- +0.05 blocos de alcance para colocar blocos por nível (máx +5 blocos no nível 100).
 
 Perks por Nível:
 
 | Nível | Habilidade / Recompensa |
 | :---: | :--- |
-| 10 | -5% de dano de queda. |
-| 15 | -10% de desgaste em ferramentas de construção. |
-| 25 | +1 bloco de alcance ao construir. |
-| 50 | -20% de dano de queda. |
-| 75 | -20% de dano de queda (cumulativo). |
-| 100 | Master Builder: +3 blocos de alcance ao construir. |
+| 10 | **Extended Reach**: +1 bloco de alcance ao construir. Ganho de mais espaço no inventário (linha extra). 
+| 15 | **Efficient Crafting**: 20% de economia de materiais ao craftar blocos decorativos (escadas, lajes, cercas, etc.). |
+| 25 | **Safe Landing**: 25% menos dano de queda. |
+| 50 | **Scaffold Master**: Velocidade aumentada ao subir scaffolding (andaimes). 50% de economia de materiais ao craftar blocos estruturais. |
+| 75 | **Master Reach**: +5 blocos de alcance ao construir (cumulativo com bônus por nível). |
+| 100 | **Master Builder** (Habilidade Ativa): Ao pressionar F, ativa **Creative Brush** — por 20 segundos, você pode colocar blocos em área ao arrastar o cursor, como se estivesse "pintando o chão". Blocos preenchem a linha traçada automaticamente. Consome blocos do inventário. Recarga: 10 minutos. |
 
 ---
 
 5. BLACKSMITH (FERREIRO)
-
+Tema: Forja, resistência, armaduras impenetráveis.
 Fontes de XP:
 - Usar bigorna (Anvil).
-- Encantar ferramentas.
+- Encantar ferramentas e armaduras.
 - Fundir minérios em fornalhas.
 - Usar o rebolo (Grindstone).
-
+- Reparar itens (via bigorna ou crafting).
 Bônus por Nível:
-- +3% de resistência a danos.
+- +2% de resistência física por nível (máx 200% no nível 100).
 
 Perks por Nível:
-
 | Nível | Habilidade / Recompensa |
 | :---: | :--- |
-| 10 | +10% de resistência passiva. |
-| 25 | 10% de desconto (XP) no uso da bigorna. |
-| 50 | +50% de bônus de dano ao segurar uma bigorna na mão secundária. |
-| 75 | +10% de resistência passiva. |
-| 100 | Master Smith: 50% de chance de obter encantamentos acima do limite (ex: Fortuna IV, Eficiência VI). |
+| 10 | **Iron Skin**: +5% de resistência a dano físico passivo. |
+| 25 | **Efficient Anvil**: 25% de desconto de XP no uso da bigorna. 10% de chance de não consumir material ao reparar. |
+| 50 | **Forged Resilience**: +10% de resistência a dano de fogo e explosão. Armaduras ganham +1 nível de Protection efetivo (invisível, mas ativo). |
+| 75 | **Thorns Master**: 20% de chance de refletir 25% do dano recebido ao atacante. Knockback recebido é reduzido em 50%. |
+| 100 | **Master Smith** (Habilidade Ativa): Ao pressionar F, ativa **Titanium Aura** — por 15 segundos: imunidade a knockback, +30% de resistência a todo tipo de dano, regeneração lenta (0.5 coração/seg), e armaduras não perdem durabilidade. 25% de chance passiva de obter encantamentos acima do limite ao usar a bigorna (ex: Protection V, Unbreaking IV). Recarga: 1 hora. |
 
 ---
 
 6. EXPLORER (EXPLORADOR)
 
+Tema: Descoberta, terreno, sobrevivência em viagens longas.
+
 Fontes de XP:
-- Andar longas distâncias.
-- Descobrir novos biomas.
-- Encontrar estruturas.
-- Dormir em locais novos.
+
+| Ação | XP |
+| :--- | :---: |
+| Descobrir novo bioma | 50 |
+| Descobrir nova estrutura | 100 |
+| Abrir baú de loot (primeira vez) | 30 |
+| Completar um Mapa | 200 |
+| Trocar com Wandering Trader | 20 por trade |
 
 Bônus por Nível:
-- +1% de velocidade de movimento.
+- +0.2% de velocidade de movimento por nível (máx +20% no nível 100).
+- +1 de Sorte (Luck) a cada 20 níveis (melhora loot de baús gerados e pesca).
+- Redução gradual do consumo de fome ao andar.
 
 Perks por Nível:
 
 | Nível | Habilidade / Recompensa |
 | :---: | :--- |
-| 10 | -10% de consumo de fome. |
-| 25 | Visão noturna (Night Vision) leve durante a noite. |
-| 50 | Buff de resistência ao entrar em áreas inexploradas. |
-| 75 | Velocidade de corrida aumentada. |
-| 100 | Master Explorer: Salto assistido (sobe 1 bloco automaticamente, igual à mecânica da cabra/cavalo). |
+| 10 | **Passo Leve (Step Assist)**: Sobe blocos automaticamente sem pular (como cavalo/cabra). |
+| 20 | **Aquático (Aqua Affinity)**: Respira 50% mais tempo submerso. Minera em velocidade normal debaixo d'água. |
+| 35 | **Olhos de Gato (Night Vision)**: Visão noturna permanente (pode ser desativada pressionando Z). |
+| 65 | **Pés de Pena (Feather Feet)**: Reduz dano de queda em 40%. |
+| 80 | **Caminhante do Nether**: Imune a dano de Magma Blocks. Velocidade normal na Soul Sand sem encantamento Soul Speed. |
+| 100 | **Master Explorer** (Habilidade Passiva): **Sexto Sentido (Treasure Hunter)** — Todos os Baús e Spawners em um raio de 32 blocos ganham efeito de Glowing visível através de paredes. Nunca mais perca uma sala secreta! |
 
 ---
 

@@ -6,6 +6,7 @@ import com.murilloskills.models.SkillReceptorResult;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.FarmerXpGetter;
 import com.murilloskills.utils.SkillConfig;
+import com.murilloskills.utils.SkillsNetworkUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -126,6 +127,7 @@ public class SeedItemMixin {
 
             // Mark state as dirty and sync
             state.markDirty();
+            SkillsNetworkUtils.syncSkills(serverPlayer);
 
             // Cancel vanilla behavior
             cir.setReturnValue(ActionResult.SUCCESS);

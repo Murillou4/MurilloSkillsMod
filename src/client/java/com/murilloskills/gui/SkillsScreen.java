@@ -3,6 +3,7 @@ package com.murilloskills.gui;
 import com.murilloskills.data.ClientSkillData;
 import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.network.ParagonActivationC2SPayload;
+import com.murilloskills.network.SkillResetC2SPayload;
 import com.murilloskills.network.SkillSelectionC2SPayload;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillConfig;
@@ -25,25 +26,29 @@ import java.util.Set;
 
 public class SkillsScreen extends Screen {
 
-    // Cores
-    private static final int BG_OVERLAY = 0xCC000000;
-    private static final int CARD_BG_NORMAL = 0xFF202020;
-    private static final int CARD_BG_HOVER = 0xFF303030;
-    private static final int CARD_BG_PARAGON = 0xFF2A2A10;
-    private static final int CARD_BG_SELECTED = 0xFF1A3A1A; // Green tint for selected skills
-    private static final int CARD_BG_LOCKED = 0xFF1A1A1A; // Darker for locked skills
-    private static final int CARD_BG_PENDING_SELECT = 0xFF2A2A3A; // Blue tint for pending selection
-    private static final int BORDER_NORMAL = 0xFF555555;
-    private static final int BORDER_HOVER = 0xFFFFAA00;
-    private static final int BORDER_SELECTED = 0xFF00FF00; // Green border for selected
-    private static final int BORDER_LOCKED = 0xFF333333; // Dark border for locked
-    private static final int XP_BAR_BG = 0xFF000000;
+    // Cores Premium
+    private static final int BG_OVERLAY = 0xE0101018;
+    private static final int CARD_BG_NORMAL = 0xFF1A1A24;
+    private static final int CARD_BG_HOVER = 0xFF2A2A38;
+    private static final int CARD_BG_PARAGON = 0xFF2A2818;
+    private static final int CARD_BG_SELECTED = 0xFF1A2A20; // Green tint for selected skills
+    private static final int CARD_BG_LOCKED = 0xFF141418; // Darker for locked skills
+    private static final int CARD_BG_PENDING_SELECT = 0xFF202038; // Blue tint for pending selection
+    private static final int BORDER_NORMAL = 0xFF404050;
+    private static final int BORDER_HOVER = 0xFFFFCC44;
+    private static final int BORDER_SELECTED = 0xFF44FF66; // Green border for selected
+    private static final int BORDER_LOCKED = 0xFF282830; // Dark border for locked
+    private static final int BORDER_PARAGON = 0xFFFFAA00; // Gold border for paragon
+    private static final int XP_BAR_BG = 0xFF0A0A10;
+    private static final int HEADER_BG = 0xDD101018;
 
-    // Layout
-    private final int cardWidth = 140;
-    private final int cardHeight = 55;
-    private final int padding = 10;
+    // Layout responsivo - calculado dinamicamente
+    private int cardWidth;
+    private int cardHeight;
+    private int padding;
+    private int columns;
     private int startX, startY;
+    private int headerHeight;
 
     // Selection Mode State
     private final Set<MurilloSkillsList> pendingSelection = new HashSet<>();
@@ -69,19 +74,73 @@ public class SkillsScreen extends Screen {
         }
 
         if (confirmButton != null) {
-            confirmButton.active = pendingSelection.size() == 2;
-            confirmButton.setMessage(Text.literal("CONFIRMAR ESCOLHA (" + pendingSelection.size() + "/2)"));
+            confirmButton.active = pendingSelection.size() == 3;
+            confirmButton.setMessage(Text.literal("CONFIRMAR ESCOLHA (" + pendingSelection.size() + "/3)"));
         }
+    }
+
+    /**
+     * Calcula layout responsivo baseado no tamanho da janela e escala da GUI
+     */
+    private void calculateResponsiveLayout() {
+        // Margem mínima das bordas
+        int marginX = 20;
+        int marginTop = 50;
+        int marginBottom = 50;
+
+        // Espaço disponível
+        int availableWidth = this.width - (marginX * 2);
+        int availableHeight = this.height - marginTop - marginBottom;
+
+        // Número de skills (8)
+        int skillCount = MurilloSkillsList.values().length;
+
+        // Determinar número de colunas baseado na largura (2, 4 ou até 8 para telas
+        // muito largas)
+        if (availableWidth >= 700) {
+            this.columns = 4;
+        } else if (availableWidth >= 400) {
+            this.columns = 2;
+        } else {
+            this.columns = 2; // Mínimo 2 colunas
+        }
+
+        int rows = (int) Math.ceil((double) skillCount / columns);
+
+        // Calcular padding baseado no tamanho
+        this.padding = Math.max(6, Math.min(12, availableWidth / 40));
+
+        // Calcular tamanho dos cards para caber na tela
+        int totalPaddingX = (columns - 1) * padding;
+        int totalPaddingY = (rows - 1) * padding;
+
+        // Card width: Usar espaço disponível dividido pelas colunas
+        this.cardWidth = Math.min(180, Math.max(120, (availableWidth - totalPaddingX) / columns));
+
+        // Card height: Proporcional ao width (ratio ~2.5:1) mas limitado
+        this.cardHeight = Math.min(70, Math.max(50, cardWidth * 45 / 100));
+
+        // Verificar se cabe verticalmente, se não, reduzir
+        int neededHeight = (rows * cardHeight) + totalPaddingY;
+        if (neededHeight > availableHeight) {
+            this.cardHeight = Math.max(45, (availableHeight - totalPaddingY) / rows);
+        }
+
+        // Header dinâmico
+        this.headerHeight = Math.max(35, this.height / 12);
+
+        // Posições iniciais (centralizadas)
+        int totalGridWidth = (columns * cardWidth) + totalPaddingX;
+        this.startX = (this.width - totalGridWidth) / 2;
+        this.startY = headerHeight + 10;
     }
 
     @Override
     protected void init() {
         super.init();
 
-        // Calcular posições iniciais
-        int totalWidth = (cardWidth * 2) + padding;
-        this.startX = (this.width - totalWidth) / 2;
-        this.startY = 40;
+        // Calcular layout responsivo baseado no tamanho da janela
+        calculateResponsiveLayout();
 
         // Limpar widgets antigos para não duplicar se a tela for redimensionada
         this.clearChildren();
@@ -96,15 +155,16 @@ public class SkillsScreen extends Screen {
             for (int i = 0; i < skills.length; i++) {
                 MurilloSkillsList skill = skills[i];
 
-                int col = i % 2;
-                int row = i / 2;
+                int col = i % columns;
+                int row = i / columns;
                 int x = startX + (col * (cardWidth + padding));
                 int y = startY + (row * (cardHeight + padding));
 
-                int btnX = x + 20;
-                int btnY = y + 35;
-                int btnWidth = 100;
-                int btnHeight = 16;
+                // Botões proporcionais ao tamanho do card
+                int btnX = x + 18;
+                int btnY = y + cardHeight - 18;
+                int btnWidth = cardWidth - 36;
+                int btnHeight = 14;
 
                 boolean isSelected = pendingSelection.contains(skill);
                 ButtonWidget selectBtn = ButtonWidget.builder(
@@ -113,7 +173,7 @@ public class SkillsScreen extends Screen {
                             // Toggle selection
                             if (pendingSelection.contains(skill)) {
                                 pendingSelection.remove(skill);
-                            } else if (pendingSelection.size() < 2) {
+                            } else if (pendingSelection.size() < 3) {
                                 pendingSelection.add(skill);
                             }
                             updateSelectionButtonStates();
@@ -125,14 +185,14 @@ public class SkillsScreen extends Screen {
                 this.addDrawableChild(selectBtn);
             }
 
-            // Add confirm button at the bottom
-            int confirmBtnWidth = 200;
-            int confirmBtnHeight = 20;
+            // Botão de confirmação responsivo
+            int confirmBtnWidth = Math.min(300, Math.max(180, this.width / 3));
+            int confirmBtnHeight = 22;
             int confirmBtnX = (this.width - confirmBtnWidth) / 2;
-            int confirmBtnY = this.height - 40;
+            int confirmBtnY = this.height - 35;
 
-            confirmButton = ButtonWidget.builder(Text.literal("CONFIRMAR ESCOLHA (0/2)"), (button) -> {
-                if (pendingSelection.size() == 2) {
+            confirmButton = ButtonWidget.builder(Text.literal("CONFIRMAR ESCOLHA (0/3)"), (button) -> {
+                if (pendingSelection.size() == 3) {
                     List<MurilloSkillsList> selected = new ArrayList<>(pendingSelection);
                     ClientPlayNetworking.send(new SkillSelectionC2SPayload(selected));
                     this.close();
@@ -154,15 +214,16 @@ public class SkillsScreen extends Screen {
                 // Paragon button only for selected skills at level 99+ with no paragon yet
                 boolean isSelected = ClientSkillData.isSkillSelected(skill);
                 if (paragon == null && isSelected && stats.level >= 99) {
-                    int col = i % 2;
-                    int row = i / 2;
+                    int col = i % columns;
+                    int row = i / columns;
                     int x = startX + (col * (cardWidth + padding));
                     int y = startY + (row * (cardHeight + padding));
 
-                    int btnX = x + 20;
-                    int btnY = y + 35;
-                    int btnWidth = 100;
-                    int btnHeight = 16;
+                    // Botões proporcionais ao tamanho do card
+                    int btnX = x + 18;
+                    int btnY = y + cardHeight - 18;
+                    int btnWidth = cardWidth - 36;
+                    int btnHeight = 14;
 
                     ButtonWidget paragonBtn = ButtonWidget.builder(Text.literal("TORNAR PARAGON"), (button) -> {
                         ClientPlayNetworking.send(new ParagonActivationC2SPayload(skill));
@@ -172,6 +233,30 @@ public class SkillsScreen extends Screen {
                             .build();
 
                     this.addDrawableChild(paragonBtn);
+                }
+
+                // Reset button for all selected skills (only on selected, non-paragon skills)
+                if (isSelected) {
+                    int col = i % columns;
+                    int row = i / columns;
+                    int x = startX + (col * (cardWidth + padding));
+                    int y = startY + (row * (cardHeight + padding));
+
+                    // Botão de reset no canto inferior direito (não sobrepor o nível)
+                    int resetBtnSize = Math.max(12, cardHeight / 5);
+                    int resetBtnX = x + cardWidth - resetBtnSize - 4;
+                    int resetBtnY = y + cardHeight - resetBtnSize - 4;
+                    int resetBtnWidth = resetBtnSize;
+                    int resetBtnHeight = resetBtnSize;
+
+                    ButtonWidget resetBtn = ButtonWidget.builder(Text.literal("⟳"), (button) -> {
+                        ClientPlayNetworking.send(new SkillResetC2SPayload(skill));
+                        this.close();
+                    })
+                            .dimensions(resetBtnX, resetBtnY, resetBtnWidth, resetBtnHeight)
+                            .build();
+
+                    this.addDrawableChild(resetBtn);
                 }
             }
         }
@@ -184,16 +269,24 @@ public class SkillsScreen extends Screen {
 
         boolean selectionMode = isSelectionMode();
 
+        // 1.5. Header Background Panel
+        context.fill(0, 0, this.width, headerHeight, HEADER_BG);
+        // Subtle gradient line at bottom of header
+        context.fill(0, headerHeight - 1, this.width, headerHeight, 0x40FFFFFF);
+
         // Title changes based on mode
+        int titleY = (headerHeight - 20) / 2;
         if (selectionMode) {
             context.drawCenteredTextWithShadow(this.textRenderer,
-                    Text.literal("ESCOLHA SUAS HABILIDADES").formatted(Formatting.GOLD, Formatting.BOLD),
-                    this.width / 2, 10, 0xFFFFFFFF);
+                    Text.literal("⚔ ESCOLHA SUAS HABILIDADES ⚔").formatted(Formatting.GOLD, Formatting.BOLD),
+                    this.width / 2, titleY, 0xFFFFFFFF);
             context.drawCenteredTextWithShadow(this.textRenderer,
-                    Text.literal("Selecione 2 habilidades para evoluir").formatted(Formatting.YELLOW), this.width / 2,
-                    22, 0xFFFFFFFF);
+                    Text.literal("Selecione 3 habilidades para evoluir").formatted(Formatting.YELLOW), this.width / 2,
+                    titleY + 12, 0xFFFFFFFF);
         } else {
-            context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 15, 0xFFFFFFFF);
+            context.drawCenteredTextWithShadow(this.textRenderer,
+                    Text.literal("⚔ Habilidades ⚔").formatted(Formatting.GOLD, Formatting.BOLD),
+                    this.width / 2, titleY + 5, 0xFFFFFFFF);
         }
 
         MurilloSkillsList[] skills = MurilloSkillsList.values();
@@ -207,8 +300,8 @@ public class SkillsScreen extends Screen {
             MurilloSkillsList skill = skills[i];
             var stats = ClientSkillData.get(skill);
 
-            int col = i % 2;
-            int row = i / 2;
+            int col = i % columns;
+            int row = i / columns;
             int x = startX + (col * (cardWidth + padding));
             int y = startY + (row * (cardHeight + padding));
 
@@ -235,7 +328,7 @@ public class SkillsScreen extends Screen {
                 // Normal mode colors
                 if (isParagon) {
                     cardBg = CARD_BG_PARAGON;
-                    borderColor = isHovered ? BORDER_HOVER : BORDER_NORMAL;
+                    borderColor = isHovered ? BORDER_HOVER : BORDER_PARAGON;
                 } else if (isLocked) {
                     cardBg = CARD_BG_LOCKED;
                     borderColor = BORDER_LOCKED;
@@ -326,6 +419,10 @@ public class SkillsScreen extends Screen {
             case MINER -> SkillConfig.toTicksLong(SkillConfig.MINER_ABILITY_COOLDOWN_SECONDS);
             case WARRIOR -> SkillConfig.toTicksLong(SkillConfig.WARRIOR_ABILITY_COOLDOWN_SECONDS);
             case ARCHER -> SkillConfig.toTicksLong(SkillConfig.ARCHER_ABILITY_COOLDOWN_SECONDS);
+            case FARMER -> SkillConfig.toTicksLong(SkillConfig.FARMER_ABILITY_COOLDOWN_SECONDS);
+            case FISHER -> SkillConfig.toTicksLong(SkillConfig.FISHER_ABILITY_COOLDOWN_SECONDS);
+            case BLACKSMITH -> SkillConfig.toTicksLong(SkillConfig.BLACKSMITH_ABILITY_COOLDOWN_SECONDS);
+            case BUILDER -> SkillConfig.toTicksLong(SkillConfig.BUILDER_ABILITY_COOLDOWN_SECONDS);
             default -> 6000L;
         };
     }
@@ -334,8 +431,11 @@ public class SkillsScreen extends Screen {
         return switch (skill) {
             case MINER -> "Raio-X: Revela minérios valiosos em uma grande área.";
             case WARRIOR -> "Berserk: Ganha Força II, Velocidade II e Resistência.";
-            case FARMER -> "Colheita: Cresce instantaneamente as plantações ao redor.";
-            case ARCHER -> "Olho de Águia: O próximo tiro causa dano massivo.";
+            case FARMER -> "Harvest Moon: Colhe automaticamente plantações ao redor com drops triplos.";
+            case ARCHER -> "Master Ranger: Flechas perseguem inimigos por 30 segundos.";
+            case FISHER -> "Rain Dance: Invoca chuva com bônus massivos de pesca por 60s.";
+            case BLACKSMITH -> "Titanium Aura: Imunidade a knockback, resistência máxima, regeneração.";
+            case BUILDER -> "Creative Brush: Desenhe linhas de blocos automaticamente por 20s.";
             default -> "Habilidade especial em desenvolvimento.";
         };
     }
@@ -411,8 +511,31 @@ public class SkillsScreen extends Screen {
                         tooltip.add(Text.literal("• Vampirismo (Roubo de Vida)").formatted(Formatting.DARK_PURPLE));
                 }
                 case FARMER -> {
-                    tooltip.add(Text.literal("• Crescimento Extra (Em breve)").formatted(Formatting.GREEN));
-                    tooltip.add(Text.literal("• Colheita Dupla (Em breve)").formatted(Formatting.GREEN));
+                    // Dano base
+                    int doubleChance = (int) (level * SkillConfig.FARMER_DOUBLE_HARVEST_PER_LEVEL * 100);
+                    tooltip.add(
+                            Text.literal("• Colheita Dupla: " + doubleChance + "% chance").formatted(Formatting.GREEN));
+
+                    int goldenChance = (int) (level * SkillConfig.FARMER_GOLDEN_CROP_PER_LEVEL * 100);
+                    if (goldenChance > 0)
+                        tooltip.add(Text.literal("• Cultivo Dourado: " + goldenChance + "% chance")
+                                .formatted(Formatting.GOLD));
+
+                    if (level >= SkillConfig.FARMER_GREEN_THUMB_LEVEL)
+                        tooltip.add(Text.literal("• Green Thumb (+5% colheita)").formatted(Formatting.GREEN));
+                    if (level >= SkillConfig.FARMER_FERTILE_GROUND_LEVEL)
+                        tooltip.add(Text.literal("• Fertile Ground (25% crescimento)").formatted(Formatting.AQUA));
+                    if (level >= SkillConfig.FARMER_NUTRIENT_CYCLE_LEVEL)
+                        tooltip.add(Text.literal("• Nutrient Cycle (2x Bone Meal)").formatted(Formatting.AQUA));
+                    if (level >= SkillConfig.FARMER_ABUNDANT_HARVEST_LEVEL)
+                        tooltip.add(Text.literal("• Abundant Harvest (+15% colheita)").formatted(Formatting.GOLD));
+
+                    // Key binding info
+                    if (level >= SkillConfig.FARMER_AREA_PLANTING_LEVEL) {
+                        tooltip.add(Text.empty());
+                        tooltip.add(Text.literal("⌨ Tecla G: Toggle Plantio em Área 3x3")
+                                .formatted(Formatting.LIGHT_PURPLE));
+                    }
                 }
                 case ARCHER -> {
                     // Dano base por flecha (+2% por level)
@@ -448,8 +571,88 @@ public class SkillsScreen extends Screen {
                         tooltip.add(Text.literal("• Master Ranger (Habilidade Ativa)").formatted(Formatting.GOLD));
                     }
                 }
-                case FISHER -> tooltip.add(Text.literal("• Sorte no Mar (Em breve)").formatted(Formatting.GREEN));
-                default -> tooltip.add(Text.literal("• Status em desenvolvimento").formatted(Formatting.DARK_GRAY));
+                case FISHER -> {
+                    tooltip.add(Text
+                            .literal("• Velocidade de Pesca: +"
+                                    + (int) (level * SkillConfig.FISHER_SPEED_PER_LEVEL * 100) + "%")
+                            .formatted(Formatting.AQUA));
+                    if (level >= SkillConfig.FISHER_WAIT_REDUCTION_LEVEL)
+                        tooltip.add(Text.literal("• -25% tempo de espera").formatted(Formatting.GREEN));
+                    if (level >= SkillConfig.FISHER_TREASURE_BONUS_LEVEL)
+                        tooltip.add(Text.literal("• +10% chance de tesouro").formatted(Formatting.GREEN));
+                    if (level >= SkillConfig.FISHER_DOLPHIN_GRACE_LEVEL)
+                        tooltip.add(Text.literal("• Dolphin's Grace (água)").formatted(Formatting.AQUA));
+                    if (level >= SkillConfig.FISHER_LUCK_SEA_LEVEL)
+                        tooltip.add(Text.literal("• Luck of the Sea passivo").formatted(Formatting.AQUA));
+                }
+                case BLACKSMITH -> {
+                    tooltip.add(Text
+                            .literal("• Resistência Física: +"
+                                    + (int) (level * SkillConfig.BLACKSMITH_RESISTANCE_PER_LEVEL * 100) + "%")
+                            .formatted(Formatting.GOLD));
+                    if (level >= SkillConfig.BLACKSMITH_IRON_SKIN_LEVEL)
+                        tooltip.add(Text.literal("• Iron Skin (+5% resistência)").formatted(Formatting.GREEN));
+                    if (level >= SkillConfig.BLACKSMITH_EFFICIENT_ANVIL_LEVEL)
+                        tooltip.add(Text.literal("• Efficient Anvil (25% desconto)").formatted(Formatting.GREEN));
+                    if (level >= SkillConfig.BLACKSMITH_FORGED_RESILIENCE_LEVEL)
+                        tooltip.add(Text.literal("• Forged Resilience (fogo/explosão)").formatted(Formatting.AQUA));
+                    if (level >= SkillConfig.BLACKSMITH_THORNS_MASTER_LEVEL)
+                        tooltip.add(Text.literal("• Thorns Master (reflexo de dano)").formatted(Formatting.AQUA));
+                }
+                case BUILDER -> {
+                    double reach = level * SkillConfig.BUILDER_REACH_PER_LEVEL;
+                    tooltip.add(Text.literal("• Alcance Extra: +" + String.format("%.1f", reach) + " blocos")
+                            .formatted(Formatting.AQUA));
+                    if (level >= SkillConfig.BUILDER_EXTENDED_REACH_LEVEL)
+                        tooltip.add(Text.literal("• Extended Reach (+1 bloco)").formatted(Formatting.GREEN));
+                    if (level >= SkillConfig.BUILDER_EFFICIENT_CRAFTING_LEVEL)
+                        tooltip.add(Text.literal("• Efficient Crafting (economia)").formatted(Formatting.GREEN));
+                    if (level >= SkillConfig.BUILDER_SAFE_LANDING_LEVEL)
+                        tooltip.add(Text.literal("• Safe Landing (-25% queda)").formatted(Formatting.AQUA));
+                    if (level >= SkillConfig.BUILDER_SCAFFOLD_MASTER_LEVEL)
+                        tooltip.add(Text.literal("• Scaffold Master (velocidade)").formatted(Formatting.AQUA));
+                    if (level >= SkillConfig.BUILDER_MASTER_REACH_LEVEL)
+                        tooltip.add(Text.literal("• Master Reach (+5 blocos)").formatted(Formatting.GOLD));
+
+                    // Key binding info for Creative Brush mode
+                    if (level >= SkillConfig.BUILDER_MASTER_LEVEL) {
+                        tooltip.add(Text.empty());
+                        tooltip.add(
+                                Text.literal("⌨ Tecla H: Toggle Modo Oco/Sólido").formatted(Formatting.LIGHT_PURPLE));
+                    }
+                }
+                case EXPLORER -> {
+                    // Velocidade base
+                    int speedBonus = (int) (level * SkillConfig.EXPLORER_SPEED_PER_LEVEL * 100);
+                    tooltip.add(Text.literal("• Velocidade: +" + speedBonus + "%").formatted(Formatting.GREEN));
+
+                    int luck = level / SkillConfig.EXPLORER_LUCK_INTERVAL;
+                    if (luck > 0)
+                        tooltip.add(Text.literal("• Sorte: +" + luck).formatted(Formatting.GOLD));
+
+                    if (level >= SkillConfig.EXPLORER_STEP_ASSIST_LEVEL)
+                        tooltip.add(Text.literal("• Passo Leve (auto-step)").formatted(Formatting.GREEN));
+                    if (level >= SkillConfig.EXPLORER_AQUATIC_LEVEL)
+                        tooltip.add(Text.literal("• Aquático (+50% respiração)").formatted(Formatting.AQUA));
+                    if (level >= SkillConfig.EXPLORER_NIGHT_VISION_LEVEL)
+                        tooltip.add(Text.literal("• Visão Noturna (toggleável)").formatted(Formatting.AQUA));
+                    if (level >= SkillConfig.EXPLORER_FEATHER_FEET_LEVEL)
+                        tooltip.add(Text.literal("• Pés de Pena (-40% queda)").formatted(Formatting.AQUA));
+                    if (level >= SkillConfig.EXPLORER_NETHER_WALKER_LEVEL)
+                        tooltip.add(Text.literal("• Caminhante do Nether (magma imune)").formatted(Formatting.GOLD));
+                    if (level >= SkillConfig.EXPLORER_MASTER_LEVEL)
+                        tooltip.add(Text.literal("• Sexto Sentido (Baús/Spawners brilham)").formatted(Formatting.GOLD));
+
+                    // Key binding info
+                    if (level >= SkillConfig.EXPLORER_NIGHT_VISION_LEVEL) {
+                        tooltip.add(Text.empty());
+                        tooltip.add(Text
+                                .literal("⌨ Tecla Z: Toggle Visão Noturna"
+                                        + (level >= SkillConfig.EXPLORER_MASTER_LEVEL ? " / Ativar Sexto Sentido" : ""))
+                                .formatted(Formatting.LIGHT_PURPLE));
+                    }
+                }
+                default -> tooltip.add(Text.literal("• Habilidade em desenvolvimento").formatted(Formatting.DARK_GRAY));
             }
         }
 

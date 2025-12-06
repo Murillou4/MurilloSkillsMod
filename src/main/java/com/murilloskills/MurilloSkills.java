@@ -4,7 +4,10 @@ import com.murilloskills.api.AbstractSkill;
 import com.murilloskills.api.SkillRegistry;
 import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.impl.ArcherSkill;
+import com.murilloskills.impl.BlacksmithSkill;
+import com.murilloskills.impl.BuilderSkill;
 import com.murilloskills.impl.FarmerSkill;
+import com.murilloskills.impl.ExplorerSkill;
 import com.murilloskills.impl.FisherSkill;
 import com.murilloskills.impl.MinerSkill;
 import com.murilloskills.impl.WarriorSkill;
@@ -12,8 +15,10 @@ import com.murilloskills.item.ModItems;
 import com.murilloskills.network.MinerScanResultPayload;
 import com.murilloskills.network.ParagonActivationC2SPayload;
 import com.murilloskills.network.RainDanceS2CPayload;
+import com.murilloskills.network.TreasureHunterS2CPayload;
 import com.murilloskills.network.SkillAbilityC2SPayload;
 import com.murilloskills.network.SkillSelectionC2SPayload;
+import com.murilloskills.network.SkillResetC2SPayload;
 import com.murilloskills.network.AreaPlantingToggleC2SPayload;
 import com.murilloskills.network.AreaPlantingSyncS2CPayload;
 import com.murilloskills.network.SkillsSyncPayload;
@@ -42,15 +47,22 @@ public class MurilloSkills implements ModInitializer {
             // 2. Registrar Items
             ModItems.registerModItems();
 
+            // 2.1. Registrar Event Handlers
+            com.murilloskills.events.BlockPlacementHandler.register();
+
             // 3. Payloads
             PayloadTypeRegistry.playS2C().register(SkillsSyncPayload.ID, SkillsSyncPayload.CODEC);
             PayloadTypeRegistry.playS2C().register(MinerScanResultPayload.ID, MinerScanResultPayload.CODEC);
             PayloadTypeRegistry.playS2C().register(RainDanceS2CPayload.ID, RainDanceS2CPayload.CODEC);
+            PayloadTypeRegistry.playS2C().register(TreasureHunterS2CPayload.ID, TreasureHunterS2CPayload.CODEC);
             PayloadTypeRegistry.playC2S().register(SkillAbilityC2SPayload.ID, SkillAbilityC2SPayload.CODEC);
             PayloadTypeRegistry.playC2S().register(ParagonActivationC2SPayload.ID, ParagonActivationC2SPayload.CODEC);
             PayloadTypeRegistry.playC2S().register(SkillSelectionC2SPayload.ID, SkillSelectionC2SPayload.CODEC);
             PayloadTypeRegistry.playC2S().register(AreaPlantingToggleC2SPayload.ID, AreaPlantingToggleC2SPayload.CODEC);
             PayloadTypeRegistry.playS2C().register(AreaPlantingSyncS2CPayload.ID, AreaPlantingSyncS2CPayload.CODEC);
+            PayloadTypeRegistry.playC2S().register(com.murilloskills.network.HollowFillToggleC2SPayload.ID,
+                    com.murilloskills.network.HollowFillToggleC2SPayload.CODEC);
+            PayloadTypeRegistry.playC2S().register(SkillResetC2SPayload.ID, SkillResetC2SPayload.CODEC);
 
             // 4. Receiver: Habilidade Ativa (Tecla Z) - Usando Registry
             registerAbilityReceiver();
@@ -58,7 +70,13 @@ public class MurilloSkills implements ModInitializer {
             // 5. Receiver: Toggle Area Planting (Tecla G)
             registerAreaPlantingReceiver();
 
+            // 6. Receiver: Toggle Hollow/Filled (Tecla H)
+            registerHollowFillReceiver();
+
             // 5. Outros receivers existentes...
+
+            // Receiver: Skill Reset (Botão na GUI)
+            registerSkillResetReceiver();
 
             // Receiver: Ativação de Paragon (Botão na GUI)
             ServerPlayNetworking.registerGlobalReceiver(ParagonActivationC2SPayload.ID, (payload, context) -> {
@@ -129,6 +147,10 @@ public class MurilloSkills implements ModInitializer {
                     // Apply the selection
                     if (data.setSelectedSkills(payload.selectedSkills())) {
                         state.markDirty();
+
+                        // Apply attributes for selected skills immediately
+                        com.murilloskills.utils.SkillAttributes.updateAllStats(player);
+
                         SkillsNetworkUtils.syncSkills(player);
 
                         String skill1 = payload.selectedSkills().get(0).name();
@@ -146,7 +168,8 @@ public class MurilloSkills implements ModInitializer {
 
             // Validar que as skills esperadas estão registradas
             SkillRegistry.validateRegistration(MurilloSkillsList.MINER, MurilloSkillsList.WARRIOR,
-                    MurilloSkillsList.ARCHER, MurilloSkillsList.FARMER, MurilloSkillsList.FISHER);
+                    MurilloSkillsList.ARCHER, MurilloSkillsList.FARMER, MurilloSkillsList.FISHER,
+                    MurilloSkillsList.BLACKSMITH, MurilloSkillsList.BUILDER, MurilloSkillsList.EXPLORER);
             SkillRegistry.logRegisteredSkills();
 
             LOGGER.info("MurilloSkills Initialized with Skill Specialization System!");
@@ -167,6 +190,9 @@ public class MurilloSkills implements ModInitializer {
             SkillRegistry.register(new ArcherSkill());
             SkillRegistry.register(new FarmerSkill());
             SkillRegistry.register(new FisherSkill());
+            SkillRegistry.register(new BlacksmithSkill());
+            SkillRegistry.register(new BuilderSkill());
+            SkillRegistry.register(new ExplorerSkill());
 
             LOGGER.info("Skills registradas com sucesso no SkillRegistry");
         } catch (Exception e) {
@@ -256,6 +282,101 @@ public class MurilloSkills implements ModInitializer {
 
                 } catch (Exception e) {
                     LOGGER.error("Erro ao processar toggle de Plantio em Área", e);
+                }
+            });
+        });
+    }
+
+    /**
+     * Registra o receiver para toggle hollow/filled (Builder)
+     */
+    private void registerHollowFillReceiver() {
+        ServerPlayNetworking.registerGlobalReceiver(com.murilloskills.network.HollowFillToggleC2SPayload.ID,
+                (payload, context) -> {
+                    context.server().execute(() -> {
+                        try {
+                            var player = context.player();
+                            SkillGlobalState state = SkillGlobalState
+                                    .getServerState(player.getEntityWorld().getServer());
+                            var playerData = state.getPlayerData(player);
+
+                            // Check if player has BUILDER selected
+                            if (!playerData.isSkillSelected(MurilloSkillsList.BUILDER)) {
+                                player.sendMessage(
+                                        Text.literal("Você precisa ter Construtor como uma das suas habilidades!")
+                                                .formatted(Formatting.RED),
+                                        true);
+                                return;
+                            }
+
+                            // Toggle hollow mode
+                            boolean nowHollow = com.murilloskills.impl.BuilderSkill.toggleHollowMode(player);
+
+                            // Feedback message
+                            if (nowHollow) {
+                                player.sendMessage(Text.literal("🧱 Modo Creative Brush: OCO (apenas paredes)")
+                                        .formatted(Formatting.AQUA), true);
+                            } else {
+                                player.sendMessage(Text.literal("🧱 Modo Creative Brush: SÓLIDO (preenchido)")
+                                        .formatted(Formatting.GREEN), true);
+                            }
+
+                        } catch (Exception e) {
+                            LOGGER.error("Erro ao processar toggle de Hollow/Filled", e);
+                        }
+                    });
+                });
+    }
+
+    /**
+     * Registra o receiver para resetar skill (nível e XP voltam para 0)
+     */
+    private void registerSkillResetReceiver() {
+        ServerPlayNetworking.registerGlobalReceiver(SkillResetC2SPayload.ID, (payload, context) -> {
+            context.server().execute(() -> {
+                try {
+                    var player = context.player();
+                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+                    var data = state.getPlayerData(player);
+
+                    // Validation: Can only reset selected skills
+                    if (!data.isSkillSelected(payload.skill())) {
+                        player.sendMessage(Text.literal("Você só pode resetar uma das suas habilidades selecionadas!")
+                                .formatted(Formatting.RED), true);
+                        return;
+                    }
+
+                    // Reset the skill to level 0 and XP 0
+                    var stats = data.getSkill(payload.skill());
+                    stats.level = 0;
+                    stats.xp = 0;
+                    stats.lastAbilityUse = -1; // Reset cooldown too
+
+                    // If this was the paragon skill, remove paragon status
+                    if (data.paragonSkill == payload.skill()) {
+                        data.paragonSkill = null;
+                    }
+
+                    // Remove skill from selection - player can now choose a new one
+                    data.selectedSkills.remove(payload.skill());
+
+                    state.markDirty();
+
+                    // Update attributes to reflect reset
+                    com.murilloskills.utils.SkillAttributes.updateAllStats(player);
+
+                    SkillsNetworkUtils.syncSkills(player);
+
+                    player.sendMessage(
+                            Text.literal("🔄 Skill " + payload.skill().name() + " removida! Escolha uma nova skill.")
+                                    .formatted(Formatting.YELLOW),
+                            false);
+
+                    LOGGER.info("Player {} resetou a skill {} para nivel 0",
+                            player.getName().getString(), payload.skill().name());
+
+                } catch (Exception e) {
+                    LOGGER.error("Erro ao processar reset de skill", e);
                 }
             });
         });

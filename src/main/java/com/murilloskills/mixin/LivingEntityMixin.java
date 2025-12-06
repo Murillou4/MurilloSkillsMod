@@ -63,7 +63,7 @@ public abstract class LivingEntityMixin {
 
     }
 
-    // RESISTÊNCIA
+    // RESISTÊNCIA (Warrior + Blacksmith)
     @ModifyVariable(method = "damage", at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private float applyResistance(float amount, ServerWorld world, DamageSource source) {
         LivingEntity self = (LivingEntity) (Object) this;
@@ -72,12 +72,68 @@ public abstract class LivingEntityMixin {
             return amount;
 
         SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        int level = state.getPlayerData(player).getSkill(MurilloSkillsList.WARRIOR).level;
+        var playerData = state.getPlayerData(player);
+        float modifiedAmount = amount;
 
-        if (level >= SkillConfig.RESISTANCE_UNLOCK_LEVEL) {
-            return amount * SkillConfig.RESISTANCE_REDUCTION;
+        // --- WARRIOR RESISTANCE ---
+        int warriorLevel = playerData.getSkill(MurilloSkillsList.WARRIOR).level;
+        if (warriorLevel >= SkillConfig.RESISTANCE_UNLOCK_LEVEL) {
+            modifiedAmount *= SkillConfig.RESISTANCE_REDUCTION;
         }
-        return amount;
+
+        // --- BLACKSMITH RESISTANCE ---
+        if (playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
+            int blacksmithLevel = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
+
+            // Check if damage is fire or explosion
+            boolean isFireOrExplosion = source.getName().contains("fire")
+                    || source.getName().contains("explosion")
+                    || source.getName().contains("lava")
+                    || source.getName().contains("inFire")
+                    || source.getName().contains("onFire");
+
+            // Apply Blacksmith damage multiplier
+            float damageMultiplier = com.murilloskills.impl.BlacksmithSkill
+                    .calculateDamageMultiplier(player, blacksmithLevel, isFireOrExplosion);
+            modifiedAmount *= damageMultiplier;
+
+            // --- THORNS MASTER (Level 75+) ---
+            if (com.murilloskills.impl.BlacksmithSkill.shouldReflectDamage(blacksmithLevel)) {
+                if (source.getAttacker() instanceof LivingEntity attacker && attacker != player) {
+                    float reflectedDamage = com.murilloskills.impl.BlacksmithSkill.getReflectedDamage(amount);
+                    // Deal damage back to attacker
+                    attacker.damage(world, player.getDamageSources().thorns(player), reflectedDamage);
+                }
+            }
+        }
+
+        // --- BUILDER FALL DAMAGE REDUCTION ---
+        if (playerData.isSkillSelected(MurilloSkillsList.BUILDER)) {
+            int builderLevel = playerData.getSkill(MurilloSkillsList.BUILDER).level;
+
+            // Check if damage is from falling
+            boolean isFallDamage = source.getName().contains("fall");
+
+            if (isFallDamage && com.murilloskills.impl.BuilderSkill.shouldReduceFallDamage(builderLevel)) {
+                float fallMultiplier = com.murilloskills.impl.BuilderSkill.getFallDamageMultiplier(builderLevel);
+                modifiedAmount *= fallMultiplier;
+            }
+        }
+
+        // --- EXPLORER FALL DAMAGE REDUCTION (Feather Feet) ---
+        if (playerData.isSkillSelected(MurilloSkillsList.EXPLORER)) {
+            int explorerLevel = playerData.getSkill(MurilloSkillsList.EXPLORER).level;
+
+            // Check if damage is from falling
+            boolean isFallDamage = source.getName().contains("fall");
+
+            if (isFallDamage && com.murilloskills.impl.ExplorerSkill.hasFeatherFeet(explorerLevel)) {
+                float fallMultiplier = com.murilloskills.impl.ExplorerSkill.getFallDamageMultiplier(explorerLevel);
+                modifiedAmount *= fallMultiplier;
+            }
+        }
+
+        return modifiedAmount;
     }
 
     // XP DO ARCHER - Quando uma entidade morre por flecha

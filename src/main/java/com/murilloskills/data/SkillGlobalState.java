@@ -153,7 +153,7 @@ public class SkillGlobalState extends PersistentState {
     }
 
     public static class PlayerSkillData {
-        public static final int MAX_SELECTED_SKILLS = 2;
+        public static final int MAX_SELECTED_SKILLS = 3;
 
         public EnumMap<MurilloSkillsList, SkillStats> skills = new EnumMap<>(MurilloSkillsList.class);
         public MurilloSkillsList paragonSkill = null; // The one skill allowed to reach 100
