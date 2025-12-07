@@ -9,12 +9,11 @@ import com.murilloskills.skills.MobKillHandler;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillsNetworkUtils;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +25,7 @@ public class MinecraftEventsListener {
         blockBreakedListen();
         killEntityListen();
         playerJoinListen();
+        playerRespawnListen();
         playerTickListen();
     }
 
@@ -61,6 +61,43 @@ public class MinecraftEventsListener {
             handlePlayerJoin(handler.getPlayer());
             // Sincroniza as skills ao entrar
             SkillsNetworkUtils.syncSkills(handler.getPlayer());
+        });
+    }
+
+    /**
+     * Registra listener para quando o jogador respawna após morrer.
+     * CRÍTICO: Isso garante que os atributos das skills sejam reaplicados após a
+     * morte.
+     */
+    public static void playerRespawnListen() {
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            try {
+                LOGGER.debug("Player {} respawned (alive={}), reapplying skill attributes...",
+                        newPlayer.getName().getString(), alive);
+
+                // Mesmo comportamento do handlePlayerJoin - reaplicar todos os atributos
+                SkillGlobalState state = SkillGlobalState.getServerState(newPlayer.getEntityWorld().getServer());
+                var playerData = state.getPlayerData(newPlayer);
+
+                // Reaplicar atributos para todas as skills selecionadas
+                if (playerData.hasSelectedSkills()) {
+                    for (MurilloSkillsList skillEnum : playerData.getSelectedSkills()) {
+                        AbstractSkill skillObj = SkillRegistry.get(skillEnum);
+                        if (skillObj != null) {
+                            int level = playerData.getSkill(skillEnum).level;
+                            skillObj.onPlayerJoin(newPlayer, level);
+                        }
+                    }
+                }
+
+                // Sincroniza as skills após respawn para garantir UI atualizada
+                SkillsNetworkUtils.syncSkills(newPlayer);
+
+                LOGGER.info("Skill attributes reapplied for {} after respawn", newPlayer.getName().getString());
+
+            } catch (Exception e) {
+                LOGGER.error("Erro ao reaplicar atributos após respawn para " + newPlayer.getName().getString(), e);
+            }
         });
     }
 
