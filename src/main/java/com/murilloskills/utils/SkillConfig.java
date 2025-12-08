@@ -212,11 +212,11 @@ public class SkillConfig {
     /**
      * XP vanilla progressivo por milestone (em níveis de experiência do Minecraft)
      */
-    public static final int MILESTONE_XP_LEVEL_10 = 5; // ~ 5 níveis
-    public static final int MILESTONE_XP_LEVEL_25 = 15; // ~ 15 níveis
-    public static final int MILESTONE_XP_LEVEL_50 = 30; // ~ 30 níveis (encantamento máximo)
-    public static final int MILESTONE_XP_LEVEL_75 = 50; // ~ 50 níveis
-    public static final int MILESTONE_XP_LEVEL_100 = 100; // ~ 100 níveis (recompensa máxima)
+    public static final int MILESTONE_XP_LEVEL_10 = 10; // ~ 8 níveis
+    public static final int MILESTONE_XP_LEVEL_25 = 25; // ~ 22 níveis
+    public static final int MILESTONE_XP_LEVEL_50 = 50; // ~ 45 níveis (encantamento máximo+)
+    public static final int MILESTONE_XP_LEVEL_75 = 75; // ~ 75 níveis
+    public static final int MILESTONE_XP_LEVEL_100 = 150; // ~ 150 níveis (recompensa máxima)
 
     /**
      * Retorna a quantidade de níveis de XP vanilla para um milestone específico.
