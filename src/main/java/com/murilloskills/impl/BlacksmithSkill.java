@@ -48,13 +48,17 @@ public class BlacksmithSkill extends AbstractSkill {
         try {
             // 1. Check Level
             if (stats.level < SkillConfig.BLACKSMITH_MASTER_LEVEL) {
-                sendMessage(player, "Você precisa ser Nível 100 de Ferreiro!", Formatting.RED, true);
+                player.sendMessage(
+                        Text.translatable("murilloskills.error.level_required", 100,
+                                Text.translatable("murilloskills.skill.name.blacksmith")).formatted(Formatting.RED),
+                        true);
                 return;
             }
 
             // 2. Check if already active
             if (isTitaniumAuraActive(player)) {
-                sendMessage(player, "Titanium Aura já está ativa!", Formatting.RED, true);
+                player.sendMessage(Text.translatable("murilloskills.error.already_active", "Titanium Aura")
+                        .formatted(Formatting.RED), true);
                 return;
             }
 
@@ -65,7 +69,8 @@ public class BlacksmithSkill extends AbstractSkill {
             long cooldownTicks = SkillConfig.toTicksLong(SkillConfig.BLACKSMITH_ABILITY_COOLDOWN_SECONDS);
             if (stats.lastAbilityUse >= 0 && timeSinceUse < cooldownTicks) {
                 long minutesLeft = (cooldownTicks - timeSinceUse) / 20 / 60;
-                sendMessage(player, "Habilidade em recarga: " + minutesLeft + " minutos.", Formatting.RED, true);
+                player.sendMessage(Text.translatable("murilloskills.error.cooldown_minutes", minutesLeft)
+                        .formatted(Formatting.RED), true);
                 return;
             }
 
@@ -79,8 +84,8 @@ public class BlacksmithSkill extends AbstractSkill {
             LOGGER.info("Player {} ativou Titanium Aura", player.getName().getString());
 
         } catch (Exception e) {
-            LOGGER.error("Erro ao executar habilidade ativa do Ferreiro para " + player.getName().getString(), e);
-            sendMessage(player, "Erro ao ativar habilidade. Contate o admin.", Formatting.RED, false);
+            LOGGER.error("Error executing Blacksmith active ability for " + player.getName().getString(), e);
+            player.sendMessage(Text.translatable("murilloskills.error.ability_error").formatted(Formatting.RED), false);
         }
     }
 
@@ -184,10 +189,12 @@ public class BlacksmithSkill extends AbstractSkill {
         player.playSound(SoundEvents.BLOCK_ANVIL_USE, 1.0f, 0.8f);
 
         // Messages
-        player.sendMessage(Text.literal("⚒ TITANIUM AURA ATIVADA! ⚒").formatted(Formatting.AQUA, Formatting.BOLD),
+        player.sendMessage(
+                Text.translatable("murilloskills.blacksmith.titanium_activated").formatted(Formatting.AQUA,
+                        Formatting.BOLD),
                 false);
         player.sendMessage(
-                Text.literal("Imunidade a knockback, resistência máxima, regeneração ativa!")
+                Text.translatable("murilloskills.blacksmith.titanium_description")
                         .formatted(Formatting.DARK_AQUA),
                 true);
     }
@@ -209,7 +216,8 @@ public class BlacksmithSkill extends AbstractSkill {
         player.playSound(SoundEvents.BLOCK_ANVIL_LAND, 0.5f, 1.2f);
 
         // Message
-        sendMessage(player, "Titanium Aura desativada.", Formatting.GRAY, true);
+        player.sendMessage(Text.translatable("murilloskills.blacksmith.titanium_ended").formatted(Formatting.GRAY),
+                true);
 
         LOGGER.debug("Player {} saiu do modo Titanium Aura", player.getName().getString());
     }

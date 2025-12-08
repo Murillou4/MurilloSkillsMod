@@ -30,7 +30,8 @@ public class BlockBreakHandler {
 
     public static ActionResult handle(PlayerEntity player, World world, BlockPos pos, BlockState state) {
 
-        if (world.isClient()) return ActionResult.PASS;
+        if (world.isClient())
+            return ActionResult.PASS;
 
         final ItemStack tool = player.getMainHandStack();
         final ItemEnchantmentsComponent enchantments = tool.getEnchantments();
@@ -39,17 +40,23 @@ public class BlockBreakHandler {
 
         if (result.didGainXp()) {
             final MinecraftServer server = world.getServer();
-            if (server == null) return ActionResult.FAIL;
+            if (server == null)
+                return ActionResult.FAIL;
 
             final ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity) player;
             SkillGlobalState skillState = SkillGlobalState.getServerState(server);
             SkillGlobalState.PlayerSkillData data = skillState.getPlayerData(serverPlayerEntity);
 
             // --- UPDATED CALL: Handles Paragon Logic Internally ---
-            final boolean levelUp = data.addXpToSkill(MurilloSkillsList.MINER, result.getXpAmount());
+            final SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.MINER,
+                    result.getXpAmount());
             SkillGlobalState.SkillStats stats = data.getSkill(MurilloSkillsList.MINER);
 
-            if (levelUp) {
+            // Check for milestone rewards
+            com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayerEntity, "Minerador",
+                    xpResult);
+
+            if (xpResult.leveledUp()) {
                 MutableText message = Text.empty()
                         .append(Text.literal("✦ ").formatted(Formatting.GOLD))
                         .append(Text.literal("LEVEL UP!").formatted(Formatting.GOLD, Formatting.BOLD))
@@ -75,7 +82,8 @@ public class BlockBreakHandler {
 
     public static boolean hasSilkTouch(ItemEnchantmentsComponent enchantments) {
         for (RegistryEntry<Enchantment> entry : enchantments.getEnchantments()) {
-            if (entry.matchesKey(Enchantments.SILK_TOUCH)) return true;
+            if (entry.matchesKey(Enchantments.SILK_TOUCH))
+                return true;
         }
         return false;
     }

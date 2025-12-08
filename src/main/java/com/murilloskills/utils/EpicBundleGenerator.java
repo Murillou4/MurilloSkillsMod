@@ -20,14 +20,18 @@ import java.util.Random;
 /**
  * Generator for Epic Bundle items from fishing.
  * 
- * Epic Bundle chances (weighted random):
- * | 40% | Enchanted Book (Mending, Frost Walker, Depth Strider, Looting III,
- * Fortune III, Efficiency V, Sharpness V, Protection V) |
- * | 30% | 1-3x Gold Block |
- * | 15% | 1-2x Diamond Block |
- * | 10% | Trident with high-level enchantment |
- * | 4% | 1x Netherite Block |
- * | 1% | 1x Enchanted Golden Apple |
+ * REBALANCED - Epic Bundle chances (weighted random with level requirements):
+ * | Weight | Item | Min Level |
+ * |--------|-----------------------------------|-----------|
+ * | 40% | Enchanted Book (fishing-focused) | 1 |
+ * | 25% | 1-3x Gold Block | 1 |
+ * | 20% | 1-2x Diamond Block | 25 |
+ * | 10% | Trident with enchantment | 50 |
+ * | 4% | Heart of the Sea | 75 |
+ * | 1% | Enchanted Golden Apple | 90 |
+ * 
+ * NOTE: Netherite Block REMOVED - too powerful for fishing rewards.
+ * Players should use Miner skill for Netherite.
  */
 public class EpicBundleGenerator {
 
@@ -35,11 +39,19 @@ public class EpicBundleGenerator {
 
     // Weight constants (total = 100)
     private static final int WEIGHT_ENCHANTED_BOOK = 40;
-    private static final int WEIGHT_GOLD_BLOCK = 30;
-    private static final int WEIGHT_DIAMOND_BLOCK = 15;
+    private static final int WEIGHT_GOLD_BLOCK = 25;
+    private static final int WEIGHT_DIAMOND_BLOCK = 20;
     private static final int WEIGHT_TRIDENT = 10;
-    private static final int WEIGHT_NETHERITE_BLOCK = 4;
+    private static final int WEIGHT_HEART_OF_SEA = 4;
+    @SuppressWarnings("unused") // Used conceptually in weight calculation (1% remainder)
+    private static final int WEIGHT_GOLDEN_APPLE = 1;
     private static final int TOTAL_WEIGHT = 100;
+
+    // Level requirements for tier-gated items
+    private static final int LEVEL_DIAMOND_BLOCK = 25;
+    private static final int LEVEL_TRIDENT = 50;
+    private static final int LEVEL_HEART_OF_SEA = 75;
+    private static final int LEVEL_GOLDEN_APPLE = 90;
 
     /**
      * Generates and spawns an Epic Bundle item at the player's location.
@@ -48,7 +60,13 @@ public class EpicBundleGenerator {
      * @param world  The server world
      */
     public static void generateAndSpawn(ServerPlayerEntity player, ServerWorld world) {
-        ItemStack bundleItem = generateRandomItem(player, world);
+        // Get player's Fisher level
+        var state = com.murilloskills.data.SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+        var playerData = state.getPlayerData(player);
+        var fisherStats = playerData.getSkill(com.murilloskills.skills.MurilloSkillsList.FISHER);
+        int playerLevel = fisherStats.level;
+
+        ItemStack bundleItem = generateRandomItem(player, world, playerLevel);
 
         if (bundleItem != null && !bundleItem.isEmpty()) {
             // Spawn the item at the player's location
@@ -64,69 +82,105 @@ public class EpicBundleGenerator {
     }
 
     /**
-     * Generates a random Epic Bundle item based on weighted chances.
+     * Generates a random Epic Bundle item based on weighted chances and player
+     * level.
+     * Items are level-gated - if player doesn't meet level requirement, rerolls to
+     * lower tier.
      */
-    public static ItemStack generateRandomItem(ServerPlayerEntity player, ServerWorld world) {
+    public static ItemStack generateRandomItem(ServerPlayerEntity player, ServerWorld world, int playerLevel) {
         int roll = random.nextInt(TOTAL_WEIGHT);
         int cumulative = 0;
 
-        // 40% - Enchanted Book
+        // 40% - Enchanted Book (always available)
         cumulative += WEIGHT_ENCHANTED_BOOK;
         if (roll < cumulative) {
             return createEnchantedBook(world);
         }
 
-        // 30% - Gold Block (1-3)
+        // 25% - Gold Block (always available)
         cumulative += WEIGHT_GOLD_BLOCK;
         if (roll < cumulative) {
             int count = 1 + random.nextInt(3);
             return new ItemStack(Items.GOLD_BLOCK, count);
         }
 
-        // 15% - Diamond Block (1-2)
+        // 20% - Diamond Block (Level 25+)
         cumulative += WEIGHT_DIAMOND_BLOCK;
         if (roll < cumulative) {
-            int count = 1 + random.nextInt(2);
-            return new ItemStack(Items.DIAMOND_BLOCK, count);
+            if (playerLevel >= LEVEL_DIAMOND_BLOCK) {
+                int count = 1 + random.nextInt(2);
+                return new ItemStack(Items.DIAMOND_BLOCK, count);
+            }
+            // Fallback: Gold Block for lower levels
+            int count = 1 + random.nextInt(3);
+            return new ItemStack(Items.GOLD_BLOCK, count);
         }
 
-        // 10% - Trident with enchantment
+        // 10% - Trident with enchantment (Level 50+)
         cumulative += WEIGHT_TRIDENT;
         if (roll < cumulative) {
+            if (playerLevel >= LEVEL_TRIDENT) {
+                return createEnchantedTrident(world);
+            }
+            // Fallback: Diamond Block for level 25+, else Gold Block
+            if (playerLevel >= LEVEL_DIAMOND_BLOCK) {
+                return new ItemStack(Items.DIAMOND_BLOCK, 1);
+            }
+            return new ItemStack(Items.GOLD_BLOCK, 2);
+        }
+
+        // 4% - Heart of the Sea (Level 75+)
+        cumulative += WEIGHT_HEART_OF_SEA;
+        if (roll < cumulative) {
+            if (playerLevel >= LEVEL_HEART_OF_SEA) {
+                return new ItemStack(Items.HEART_OF_THE_SEA, 1);
+            }
+            // Fallback: Trident for level 50+, Diamond for 25+, else Gold
+            if (playerLevel >= LEVEL_TRIDENT) {
+                return createEnchantedTrident(world);
+            }
+            if (playerLevel >= LEVEL_DIAMOND_BLOCK) {
+                return new ItemStack(Items.DIAMOND_BLOCK, 1);
+            }
+            return new ItemStack(Items.GOLD_BLOCK, 2);
+        }
+
+        // 1% - Enchanted Golden Apple (Level 90+)
+        if (playerLevel >= LEVEL_GOLDEN_APPLE) {
+            return new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, 1);
+        }
+        // Fallback: Heart of the Sea for 75+, Trident for 50+, Diamond for 25+, else
+        // Gold
+        if (playerLevel >= LEVEL_HEART_OF_SEA) {
+            return new ItemStack(Items.HEART_OF_THE_SEA, 1);
+        }
+        if (playerLevel >= LEVEL_TRIDENT) {
             return createEnchantedTrident(world);
         }
-
-        // 4% - Netherite Block
-        cumulative += WEIGHT_NETHERITE_BLOCK;
-        if (roll < cumulative) {
-            return new ItemStack(Items.NETHERITE_BLOCK, 1);
+        if (playerLevel >= LEVEL_DIAMOND_BLOCK) {
+            return new ItemStack(Items.DIAMOND_BLOCK, 1);
         }
-
-        // 1% - Enchanted Golden Apple
-        return new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, 1);
+        return new ItemStack(Items.GOLD_BLOCK, 2);
     }
 
     /**
-     * Creates an enchanted book with one OP enchantment.
+     * Creates an enchanted book with a fishing-focused enchantment.
+     * Enchantments: Mending, Lure III, Luck of the Sea III, Unbreaking III
      */
     private static ItemStack createEnchantedBook(ServerWorld world) {
         ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
 
-        // List of OP enchantments to choose from
+        // Fishing-focused enchantments (more thematic than old OP list)
         @SuppressWarnings("unchecked")
-        RegistryKey<Enchantment>[] opEnchantments = new RegistryKey[] {
+        RegistryKey<Enchantment>[] fishingEnchantments = new RegistryKey[] {
                 Enchantments.MENDING,
-                Enchantments.FROST_WALKER,
-                Enchantments.DEPTH_STRIDER,
-                Enchantments.LOOTING,
-                Enchantments.FORTUNE,
-                Enchantments.EFFICIENCY,
-                Enchantments.SHARPNESS,
-                Enchantments.PROTECTION
+                Enchantments.LURE,
+                Enchantments.LUCK_OF_THE_SEA,
+                Enchantments.UNBREAKING
         };
 
         // Pick a random enchantment
-        RegistryKey<Enchantment> chosen = opEnchantments[random.nextInt(opEnchantments.length)];
+        RegistryKey<Enchantment> chosen = fishingEnchantments[random.nextInt(fishingEnchantments.length)];
 
         // Get the enchantment registry
         Registry<Enchantment> registry = world.getRegistryManager().getOrThrow(RegistryKeys.ENCHANTMENT);

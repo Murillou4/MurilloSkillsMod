@@ -16,6 +16,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -66,7 +67,7 @@ public class ExplorerSkill extends AbstractSkill {
         else if (stats.level >= SkillConfig.EXPLORER_NIGHT_VISION_LEVEL) {
             toggleNightVision(player);
         } else {
-            sendMessage(player, "Você precisa ser Nível 35 de Explorador para usar habilidades!", Formatting.RED,
+            player.sendMessage(Text.translatable("murilloskills.explorer.need_level_35").formatted(Formatting.RED),
                     true);
         }
     }
@@ -202,9 +203,12 @@ public class ExplorerSkill extends AbstractSkill {
         SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
         SkillGlobalState.PlayerSkillData playerData = state.getPlayerData(player);
 
-        boolean leveledUp = playerData.addXpToSkill(getSkillType(), amount);
+        SkillGlobalState.XpAddResult xpResult = playerData.addXpToSkill(getSkillType(), amount);
 
-        if (leveledUp) {
+        // Check for milestone rewards
+        com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(player, "Explorador", xpResult);
+
+        if (xpResult.leveledUp()) {
             int newLevel = playerData.getSkill(getSkillType()).level;
             onLevelUp(player, newLevel);
             SkillNotifier.notifyLevelUp(player, getSkillType(), newLevel);
@@ -279,10 +283,10 @@ public class ExplorerSkill extends AbstractSkill {
         nightVisionEnabled.put(uuid, newState);
 
         if (newState) {
-            sendMessage(player, "👁️ Visão Noturna: ATIVADA", Formatting.GREEN, true);
+            player.sendMessage(Text.translatable("murilloskills.explorer.night_vision_enabled").formatted(Formatting.GREEN), true);
             applyNightVision(player);
         } else {
-            sendMessage(player, "👁️ Visão Noturna: DESATIVADA", Formatting.GRAY, true);
+            player.sendMessage(Text.translatable("murilloskills.explorer.night_vision_disabled").formatted(Formatting.GRAY), true);
             player.removeStatusEffect(StatusEffects.NIGHT_VISION);
         }
     }

@@ -21,7 +21,8 @@ import java.util.UUID;
  * Fisher skill implementation with all fisher-specific logic.
  * Features:
  * - Passive: +0.5% fishing speed per level
- * - Passive: +0.3% Epic Bundle chance per level (max 30% at level 100)
+ * - Passive: +0.1% Epic Bundle chance per level (max 10% at level 100)
+ * [REBALANCED]
  * - Level 10: -25% wait time between bites
  * - Level 25: +10% treasure chance + 10% more XP
  * - Level 50: Light Dolphin's Grace (increased water speed)
@@ -43,13 +44,16 @@ public class FisherSkill extends AbstractSkill {
         try {
             // 1. Check Level
             if (stats.level < SkillConfig.FISHER_MASTER_LEVEL) {
-                sendMessage(player, "Você precisa ser Nível 100 de Pescador!", Formatting.RED, true);
+                player.sendMessage(Text.translatable("murilloskills.error.level_required", 100,
+                        Text.translatable("murilloskills.skill.name.fisher")).formatted(Formatting.RED), true);
                 return;
             }
 
             // 2. Check if already active
             if (isRainDanceActive(player)) {
-                sendMessage(player, "Rain Dance já está ativo!", Formatting.RED, true);
+                player.sendMessage(
+                        Text.translatable("murilloskills.error.already_active", "Rain Dance").formatted(Formatting.RED),
+                        true);
                 return;
             }
 
@@ -61,7 +65,8 @@ public class FisherSkill extends AbstractSkill {
             if (stats.lastAbilityUse >= 0 && timeSinceUse < cooldownTicks) {
                 long secondsLeft = (cooldownTicks - timeSinceUse) / 20;
                 long minutesLeft = secondsLeft / 60;
-                sendMessage(player, "Habilidade em recarga: " + minutesLeft + " minutos.", Formatting.RED, true);
+                player.sendMessage(Text.translatable("murilloskills.error.cooldown_minutes", minutesLeft)
+                        .formatted(Formatting.RED), true);
                 return;
             }
 
@@ -75,8 +80,8 @@ public class FisherSkill extends AbstractSkill {
             LOGGER.info("Player {} ativou Rain Dance", player.getName().getString());
 
         } catch (Exception e) {
-            LOGGER.error("Erro ao executar habilidade ativa do Pescador para " + player.getName().getString(), e);
-            sendMessage(player, "Erro ao ativar habilidade. Contate o admin.", Formatting.RED, false);
+            LOGGER.error("Error executing Fisher active ability for " + player.getName().getString(), e);
+            player.sendMessage(Text.translatable("murilloskills.error.ability_error").formatted(Formatting.RED), false);
         }
     }
 
@@ -204,10 +209,12 @@ public class FisherSkill extends AbstractSkill {
         player.playSound(SoundEvents.BLOCK_BEACON_ACTIVATE, 1.0f, 0.8f);
 
         // Message
-        player.sendMessage(Text.literal("🌧️ RAIN DANCE ATIVADO! 🌧️").formatted(Formatting.AQUA, Formatting.BOLD),
+        player.sendMessage(
+                Text.translatable("murilloskills.fisher.rain_dance_activated").formatted(Formatting.AQUA,
+                        Formatting.BOLD),
                 false);
         player.sendMessage(
-                Text.literal("Por 60 segundos: +50% velocidade de pesca, +30% tesouro, 3x chance de Bundle Épico!")
+                Text.translatable("murilloskills.fisher.rain_dance_description")
                         .formatted(Formatting.DARK_AQUA),
                 true);
     }
@@ -242,7 +249,7 @@ public class FisherSkill extends AbstractSkill {
         ServerPlayNetworking.send(player, new RainDanceS2CPayload(false, 0));
 
         player.playSound(SoundEvents.WEATHER_RAIN_ABOVE, 0.5f, 0.5f);
-        sendMessage(player, "Rain Dance terminou.", Formatting.GRAY, true);
+        player.sendMessage(Text.translatable("murilloskills.fisher.rain_dance_ended").formatted(Formatting.GRAY), true);
 
         LOGGER.debug("Player {} saiu do Rain Dance", player.getName().getString());
     }

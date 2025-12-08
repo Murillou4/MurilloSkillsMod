@@ -69,9 +69,13 @@ public class FishingCatchHandler {
                 }
 
                 // Add XP using centralized logic (handles constraints and level up)
-                boolean leveledUp = playerData.addXpToSkill(MurilloSkillsList.FISHER, xpAmount);
+                SkillGlobalState.XpAddResult xpAddResult = playerData.addXpToSkill(MurilloSkillsList.FISHER, xpAmount);
 
-                if (leveledUp) {
+                // Check for milestone rewards
+                com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Pescador",
+                        xpAddResult);
+
+                if (xpAddResult.leveledUp()) {
                     SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.FISHER, fisherStats.level);
                 }
 
@@ -81,7 +85,7 @@ public class FishingCatchHandler {
                 // Notify player (action bar message)
                 String category = FisherXpGetter.getCategoryName(caughtItem);
                 serverPlayer.sendMessage(
-                        Text.literal("+" + xpAmount + " XP Fisher (" + category + ")")
+                        Text.translatable("murilloskills.fisher.xp_gained", xpAmount, category)
                                 .formatted(Formatting.AQUA),
                         true);
 
@@ -124,7 +128,7 @@ public class FishingCatchHandler {
             EpicBundleGenerator.generateAndSpawn(player, world);
 
             player.sendMessage(
-                    Text.literal("✦ BUNDLE ÉPICO! ✦")
+                    Text.translatable("murilloskills.fisher.epic_bundle")
                             .formatted(Formatting.GOLD, Formatting.BOLD),
                     false);
 
@@ -190,7 +194,7 @@ public class FishingCatchHandler {
 
         // Notify player
         player.sendMessage(
-                Text.literal("⭐ Bônus de Tesouro! ⭐")
+                Text.translatable("murilloskills.fisher.treasure_bonus")
                         .formatted(Formatting.GOLD),
                 false);
 

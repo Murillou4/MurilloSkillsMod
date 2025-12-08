@@ -26,6 +26,104 @@ import java.util.Set;
 
 public class SkillsScreen extends Screen {
 
+    // Perk info record for next perk tooltip
+    private record PerkInfo(int level, String name, String description) {
+    }
+
+    // Static perk definitions per skill (ordered by level)
+    private static final java.util.Map<MurilloSkillsList, List<PerkInfo>> SKILL_PERKS = new java.util.HashMap<>();
+    static {
+        // MINER
+        SKILL_PERKS.put(MurilloSkillsList.MINER, List.of(
+                new PerkInfo(10, "Visão Noturna", "Visão noturna em cavernas"),
+                new PerkInfo(30, "Durabilidade", "Ferramentas duram 15% mais"),
+                new PerkInfo(60, "Radar de Minérios", "Som ao se aproximar de minérios"),
+                new PerkInfo(100, "Master Miner", "Pulso revela minérios próximos")));
+
+        // WARRIOR
+        SKILL_PERKS.put(MurilloSkillsList.WARRIOR, List.of(
+                new PerkInfo(10, "+1 Coração", "+1 coração de vida máxima"),
+                new PerkInfo(25, "Pele de Ferro", "+15% resistência a dano"),
+                new PerkInfo(50, "+1 Coração", "+1 coração de vida máxima"),
+                new PerkInfo(75, "Vampirismo", "15% roubo de vida"),
+                new PerkInfo(100, "Master Warrior", "+3 corações de vida máxima")));
+
+        // FARMER
+        SKILL_PERKS.put(MurilloSkillsList.FARMER, List.of(
+                new PerkInfo(10, "Green Thumb", "+5% colheita, 10% semente salva"),
+                new PerkInfo(25, "Fertile Ground", "Plantações crescem 25% mais rápido"),
+                new PerkInfo(50, "Nutrient Cycle", "2x Bone Meal, 5% sementes extras"),
+                new PerkInfo(75, "Abundant Harvest", "+15% colheita, colheita adjacente"),
+                new PerkInfo(100, "Harvest Moon", "Colhe todos os cultivos ao redor")));
+
+        // ARCHER
+        SKILL_PERKS.put(MurilloSkillsList.ARCHER, List.of(
+                new PerkInfo(10, "Flechas Rápidas", "Flechas voam 25% mais rápido"),
+                new PerkInfo(25, "Dano Bônus", "+5% dano à distância"),
+                new PerkInfo(50, "Penetração", "Flechas atravessam inimigos"),
+                new PerkInfo(75, "Tiro Estável", "50% menos dispersão"),
+                new PerkInfo(100, "Master Ranger", "Flechas perseguem inimigos")));
+
+        // FISHER
+        SKILL_PERKS.put(MurilloSkillsList.FISHER, List.of(
+                new PerkInfo(10, "Pesca Rápida", "-25% tempo de espera"),
+                new PerkInfo(25, "Caçador de Tesouros", "+10% tesouro, +10% XP"),
+                new PerkInfo(50, "Dolphin's Grace", "Velocidade na água"),
+                new PerkInfo(75, "Luck of the Sea", "Sorte passiva nível 1"),
+                new PerkInfo(100, "Rain Dance", "Invoca chuva com bônus massivos")));
+
+        // BLACKSMITH
+        SKILL_PERKS.put(MurilloSkillsList.BLACKSMITH, List.of(
+                new PerkInfo(10, "Iron Skin", "+5% resistência física"),
+                new PerkInfo(25, "Efficient Anvil", "25% desconto XP, 10% material salvo"),
+                new PerkInfo(50, "Forged Resilience", "+10% fogo/explosão, +1 Protection"),
+                new PerkInfo(75, "Thorns Master", "20% reflexo, -50% knockback"),
+                new PerkInfo(100, "Titanium Aura", "Imunidade/regeneração/resistência")));
+
+        // BUILDER
+        SKILL_PERKS.put(MurilloSkillsList.BUILDER, List.of(
+                new PerkInfo(10, "Extended Reach", "+1 bloco de alcance"),
+                new PerkInfo(15, "Efficient Crafting", "20% economia decorativos"),
+                new PerkInfo(25, "Safe Landing", "-25% dano de queda"),
+                new PerkInfo(50, "Scaffold Master", "Velocidade scaffolding"),
+                new PerkInfo(75, "Master Reach", "+5 blocos de alcance"),
+                new PerkInfo(100, "Creative Brush", "Preenche áreas automaticamente")));
+
+        // EXPLORER
+        SKILL_PERKS.put(MurilloSkillsList.EXPLORER, List.of(
+                new PerkInfo(10, "Passo Leve", "Sobe blocos automaticamente"),
+                new PerkInfo(20, "Aquático", "+50% respiração submerso"),
+                new PerkInfo(35, "Olhos de Gato", "Visão noturna permanente"),
+                new PerkInfo(65, "Pés de Pena", "-40% dano de queda"),
+                new PerkInfo(80, "Nether Walker", "Imune a magma, soul sand normal"),
+                new PerkInfo(100, "Sexto Sentido", "Baús e Spawners brilham")));
+    }
+
+    /**
+     * Gets the next perk for a skill based on current level
+     * 
+     * @return PerkInfo of next perk, or null if all perks unlocked
+     */
+    private static PerkInfo getNextPerk(MurilloSkillsList skill, int currentLevel) {
+        List<PerkInfo> perks = SKILL_PERKS.get(skill);
+        if (perks == null)
+            return null;
+
+        for (PerkInfo perk : perks) {
+            if (perk.level() > currentLevel) {
+                return perk;
+            }
+        }
+        return null; // All perks unlocked
+    }
+
+    /**
+     * Gets the translatable skill name for i18n support
+     */
+    private static Text getTranslatableSkillName(MurilloSkillsList skill) {
+        return Text.translatable("murilloskills.skill.name." + skill.name().toLowerCase());
+    }
+
     // Cores Premium
     private static final int BG_OVERLAY = 0xE0101018;
     private static final int CARD_BG_NORMAL = 0xFF1A1A24;
@@ -73,10 +171,11 @@ public class SkillsScreen extends Screen {
             boolean isPermanent = ClientSkillData.isSkillSelected(skill);
 
             if (isPermanent) {
-                btn.setMessage(Text.literal("✓ DEFINIDA"));
+                btn.setMessage(Text.translatable("murilloskills.gui.btn_defined"));
                 btn.active = false;
             } else {
-                btn.setMessage(Text.literal(isSelected ? "✓ SELECIONADA" : "SELECIONAR"));
+                btn.setMessage(isSelected ? Text.translatable("murilloskills.gui.btn_selected")
+                        : Text.translatable("murilloskills.gui.btn_select"));
                 btn.active = true;
             }
         }
@@ -89,9 +188,9 @@ public class SkillsScreen extends Screen {
             confirmButton.active = count > 0 && count <= 3;
 
             if (isComplete) {
-                confirmButton.setMessage(Text.literal("FINALIZAR ESCOLHA (" + count + "/3)"));
+                confirmButton.setMessage(Text.translatable("murilloskills.gui.btn_confirm", count));
             } else {
-                confirmButton.setMessage(Text.literal("SALVAR PARCIALMENTE (" + count + "/3)"));
+                confirmButton.setMessage(Text.translatable("murilloskills.gui.btn_save_partial", count));
             }
         }
     }
@@ -193,7 +292,9 @@ public class SkillsScreen extends Screen {
                 boolean isPermanent = ClientSkillData.isSkillSelected(skill);
 
                 ButtonWidget selectBtn = ButtonWidget.builder(
-                        Text.literal(isPermanent ? "✓ DEFINIDA" : (isSelected ? "✓ SELECIONAR" : "SELECIONAR")),
+                        isPermanent ? Text.translatable("murilloskills.gui.btn_defined")
+                                : (isSelected ? Text.translatable("murilloskills.gui.btn_selected")
+                                        : Text.translatable("murilloskills.gui.btn_select")),
                         (button) -> {
                             // Cannot change permanently selected skills
                             if (isPermanent)
@@ -244,13 +345,14 @@ public class SkillsScreen extends Screen {
             int confirmBtnX = (this.width - confirmBtnWidth) / 2;
             int confirmBtnY = this.height - 35;
 
-            confirmButton = ButtonWidget.builder(Text.literal("CONFIRMAR ESCOLHA (0/3)"), (button) -> {
-                if (pendingSelection.size() > 0 && pendingSelection.size() <= 3) {
-                    List<MurilloSkillsList> selected = new ArrayList<>(pendingSelection);
-                    ClientPlayNetworking.send(new SkillSelectionC2SPayload(selected));
-                    this.close();
-                }
-            })
+            confirmButton = ButtonWidget
+                    .builder(Text.translatable("murilloskills.gui.btn_save_partial", 0), (button) -> {
+                        if (pendingSelection.size() > 0 && pendingSelection.size() <= 3) {
+                            List<MurilloSkillsList> selected = new ArrayList<>(pendingSelection);
+                            ClientPlayNetworking.send(new SkillSelectionC2SPayload(selected));
+                            this.close();
+                        }
+                    })
                     .dimensions(confirmBtnX, confirmBtnY, confirmBtnWidth, confirmBtnHeight)
                     .build();
             // confirmButton.active is updated in updateSelectionButtonStates
@@ -279,10 +381,11 @@ public class SkillsScreen extends Screen {
                     int btnWidth = cardWidth - 36;
                     int btnHeight = 14;
 
-                    ButtonWidget paragonBtn = ButtonWidget.builder(Text.literal("TORNAR PARAGON"), (button) -> {
-                        ClientPlayNetworking.send(new ParagonActivationC2SPayload(skill));
-                        this.close();
-                    })
+                    ButtonWidget paragonBtn = ButtonWidget
+                            .builder(Text.translatable("murilloskills.gui.btn_paragon"), (button) -> {
+                                ClientPlayNetworking.send(new ParagonActivationC2SPayload(skill));
+                                this.close();
+                            })
                             .dimensions(btnX, btnY, btnWidth, btnHeight)
                             .build();
 
@@ -333,16 +436,16 @@ public class SkillsScreen extends Screen {
         int titleY = (headerHeight - 20) / 2;
         if (selectionMode) {
             context.drawCenteredTextWithShadow(this.textRenderer,
-                    Text.literal("⚔ ESCOLHA SUAS HABILIDADES ⚔").formatted(Formatting.GOLD, Formatting.BOLD),
+                    Text.translatable("murilloskills.gui.choose_skills").formatted(Formatting.GOLD, Formatting.BOLD),
                     this.width / 2, titleY, 0xFFFFFFFF);
             int count = pendingSelection.size();
             context.drawCenteredTextWithShadow(this.textRenderer,
-                    Text.literal("Selecione suas habilidades (" + count + "/3)").formatted(Formatting.YELLOW),
+                    Text.translatable("murilloskills.gui.select_skills_count", count).formatted(Formatting.YELLOW),
                     this.width / 2,
                     titleY + 12, 0xFFFFFFFF);
         } else {
             context.drawCenteredTextWithShadow(this.textRenderer,
-                    Text.literal("⚔ Habilidades ⚔").formatted(Formatting.GOLD, Formatting.BOLD),
+                    Text.translatable("murilloskills.gui.title").formatted(Formatting.GOLD, Formatting.BOLD),
                     this.width / 2, titleY + 5, 0xFFFFFFFF);
         }
 
@@ -405,7 +508,7 @@ public class SkillsScreen extends Screen {
             // Ícone e Título
             int titleColor = isLocked ? 0xFF666666 : 0xFFFFAA00;
             context.drawItem(getSkillIcon(skill), x + 5, y + 14);
-            context.drawTextWithShadow(this.textRenderer, capitalize(skill.name()), x + 28, y + 5, titleColor);
+            context.drawTextWithShadow(this.textRenderer, getTranslatableSkillName(skill), x + 28, y + 5, titleColor);
 
             // Lock icon for non-selected skills (normal mode only)
             if (!selectionMode && isLocked) {
@@ -424,7 +527,8 @@ public class SkillsScreen extends Screen {
 
             // Status text below XP bar (buttons handle selection mode text)
             if (isLocked) {
-                context.drawText(this.textRenderer, "BLOQUEADA", x + 28, y + 40, 0xFFAA0000, false);
+                context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.locked"), x + 28, y + 40,
+                        0xFFAA0000, false);
             } else if (isParagon) {
                 long cooldownTicks = getSkillCooldown(skill);
                 long timeSinceUse = worldTime - stats.lastAbilityUse;
@@ -432,15 +536,18 @@ public class SkillsScreen extends Screen {
                 // Se lastAbilityUse == -1, significa que nunca foi usada (pronto para usar)
                 // Ou se já passou o cooldown, também está pronto
                 if (stats.lastAbilityUse < 0 || timeSinceUse >= cooldownTicks) {
-                    context.drawText(this.textRenderer, "PRONTO (Z)", x + 28, y + 40, 0xFF00FF00, false);
+                    context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.ready"), x + 28, y + 40,
+                            0xFF00FF00, false);
                 } else {
                     long secondsLeft = (cooldownTicks - timeSinceUse) / 20;
-                    String cdText = "CD: " + formatTime(secondsLeft);
-                    context.drawText(this.textRenderer, cdText, x + 28, y + 40, 0xFFFF5555, false);
+                    String cdText = formatTime(secondsLeft);
+                    context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.cooldown", cdText), x + 28,
+                            y + 40, 0xFFFF5555, false);
                 }
                 context.drawTextWithShadow(this.textRenderer, "👑", x + 120, y - 4, 0xFFFFAA00);
             } else if (isSelected) {
-                context.drawText(this.textRenderer, "ATIVA", x + 28, y + 40, 0xFF00AA00, false);
+                context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.active"), x + 28, y + 40,
+                        0xFF00AA00, false);
             }
 
             // Tooltip Logic
@@ -484,23 +591,14 @@ public class SkillsScreen extends Screen {
         };
     }
 
-    private String getSpecialAbilityDescription(MurilloSkillsList skill) {
-        return switch (skill) {
-            case MINER -> "Raio-X: Revela minérios valiosos em uma grande área.";
-            case WARRIOR -> "Berserk: Ganha Força II, Velocidade II e Resistência.";
-            case FARMER -> "Harvest Moon: Colhe automaticamente plantações ao redor com drops triplos.";
-            case ARCHER -> "Master Ranger: Flechas perseguem inimigos por 30 segundos.";
-            case FISHER -> "Rain Dance: Invoca chuva com bônus massivos de pesca por 60s.";
-            case BLACKSMITH -> "Titanium Aura: Imunidade a knockback, resistência máxima, regeneração.";
-            case BUILDER -> "Creative Brush: Preencha áreas entre dois pontos automaticamente.";
-            case EXPLORER -> "Sexto Sentido: Revela baús e spawners em um raio de 32 blocos.";
-        };
+    private Text getSpecialAbilityDescription(MurilloSkillsList skill) {
+        return Text.translatable("murilloskills.ability.desc." + skill.name().toLowerCase());
     }
 
     private List<Text> getSkillTooltip(MurilloSkillsList skill, int level, boolean isLocked, boolean isParagon,
             boolean selectionMode, boolean isPendingSelect) {
         List<Text> tooltip = new ArrayList<>();
-        tooltip.add(Text.literal(capitalize(skill.name())).formatted(Formatting.GOLD, Formatting.BOLD));
+        tooltip.add(getTranslatableSkillName(skill).copy().formatted(Formatting.GOLD, Formatting.BOLD));
 
         // Check if this specific skill is already active (server-confirmed selection)
         boolean isThisSkillActive = ClientSkillData.isSkillSelected(skill);
@@ -510,30 +608,29 @@ public class SkillsScreen extends Screen {
         if (selectionMode && !isThisSkillActive) {
             // Selection mode tooltip for unselected skills
             if (isPendingSelect) {
-                tooltip.add(Text.literal("✓ SELECIONADA").formatted(Formatting.GREEN));
+                tooltip.add(Text.translatable("murilloskills.gui.btn_selected").formatted(Formatting.GREEN));
             }
             tooltip.add(Text.empty());
-            tooltip.add(Text.literal("Clique para " + (isPendingSelect ? "desmarcar" : "selecionar"))
-                    .formatted(Formatting.YELLOW));
+            tooltip.add(isPendingSelect
+                    ? Text.translatable("murilloskills.gui.click_to_deselect").formatted(Formatting.YELLOW)
+                    : Text.translatable("murilloskills.gui.click_to_select").formatted(Formatting.YELLOW));
             tooltip.add(Text.empty());
-            tooltip.add(Text.literal("Descrição:").formatted(Formatting.GRAY));
-            for (String line : getSkillDescription(skill).split("\n")) {
-                tooltip.add(Text.literal(line).formatted(Formatting.WHITE));
-            }
+            tooltip.add(Text.translatable("murilloskills.gui.description").formatted(Formatting.GRAY));
+            tooltip.add(getSkillDescription(skill).copy().formatted(Formatting.WHITE));
         } else {
             // Normal mode tooltip
             if (isParagon)
-                tooltip.add(Text.literal("★ PARAGON ATIVO ★").formatted(Formatting.YELLOW));
+                tooltip.add(Text.translatable("murilloskills.gui.paragon_active").formatted(Formatting.YELLOW));
             if (isLocked) {
-                tooltip.add(Text.literal("🔒 BLOQUEADA").formatted(Formatting.RED));
-                tooltip.add(Text.literal("Esta habilidade não foi selecionada.").formatted(Formatting.DARK_GRAY));
-                tooltip.add(Text.literal("Você não pode ganhar XP nela.").formatted(Formatting.DARK_GRAY));
+                tooltip.add(Text.translatable("murilloskills.gui.skill_locked").formatted(Formatting.RED));
+                tooltip.add(Text.translatable("murilloskills.gui.skill_not_selected").formatted(Formatting.DARK_GRAY));
+                tooltip.add(Text.translatable("murilloskills.gui.cannot_gain_xp").formatted(Formatting.DARK_GRAY));
                 return tooltip;
             }
 
             tooltip.add(Text.empty());
-            tooltip.add(Text.literal("Habilidade Especial (Tecla Z):").formatted(Formatting.GRAY));
-            tooltip.add(Text.literal(getSpecialAbilityDescription(skill)).formatted(Formatting.BLUE));
+            tooltip.add(Text.translatable("murilloskills.gui.special_ability").formatted(Formatting.GRAY));
+            tooltip.add(getSpecialAbilityDescription(skill).copy().formatted(Formatting.BLUE));
 
             // XP Progress Logic
             double currentXp = ClientSkillData.get(skill).xp;
@@ -547,10 +644,26 @@ public class SkillsScreen extends Screen {
                     Text.literal(String.format("%,.0f / %,.0f XP", currentXp, maxXp)).formatted(Formatting.DARK_GRAY));
 
             tooltip.add(Text.empty());
-            tooltip.add(Text.literal(getXpGainDescription(skill)).formatted(Formatting.GRAY));
+            tooltip.add(getXpGainDescription(skill).copy().formatted(Formatting.GRAY));
+
+            // === NEXT PERK SECTION ===
+            PerkInfo nextPerk = getNextPerk(skill, level);
+            tooltip.add(Text.empty());
+            if (nextPerk != null) {
+                int levelsRemaining = nextPerk.level() - level;
+                tooltip.add(Text.translatable("murilloskills.gui.next_perk").formatted(Formatting.LIGHT_PURPLE));
+                tooltip.add(Text.literal("🔓 " + nextPerk.name()).formatted(Formatting.YELLOW));
+                tooltip.add(Text.literal("   " + nextPerk.description()).formatted(Formatting.GRAY));
+                tooltip.add(Text.translatable("murilloskills.gui.perk_remaining", nextPerk.level(), levelsRemaining)
+                        .formatted(Formatting.AQUA));
+            } else {
+                tooltip.add(
+                        Text.translatable("murilloskills.gui.all_perks_unlocked").formatted(Formatting.GOLD,
+                                Formatting.BOLD));
+            }
 
             tooltip.add(Text.empty());
-            tooltip.add(Text.literal("Passivas:").formatted(Formatting.GRAY));
+            tooltip.add(Text.translatable("murilloskills.gui.passives").formatted(Formatting.GRAY));
 
             switch (skill) {
                 case MINER -> {
@@ -737,38 +850,12 @@ public class SkillsScreen extends Screen {
         return tooltip;
     }
 
-    private String getSkillDescription(MurilloSkillsList skill) {
-        return switch (skill) {
-            case MINER ->
-                "Domine o subterrâneo. Foca na eficiência de coleta.\nGarante mineração instantânea, sorte extra em minérios\ne utilitários como Visão Noturna e Radar.\nIdeal para quem sustenta a economia com recursos.";
-            case WARRIOR ->
-                "O caminho da espada. Foca em combate corpo a corpo.\nAumenta drasticamente seu dano, vida máxima e\nconcede Roubo de Vida.\nIdeal para quem gosta de ir para a linha de frente.";
-            case FARMER ->
-                "Mestre da agricultura. Foca em produção de alimentos.\nPermite colheitas múltiplas, crescimento acelerado\ne plantio automático em área.\nIdeal para manter estoques de comida sempre cheios.";
-            case ARCHER ->
-                "Morte silenciosa. Foca em combate à distância.\nMelhora a velocidade, dano e precisão das flechas,\ndesbloqueando flechas teleguiadas.\nIdeal para eliminar ameaças antes que cheguem perto.";
-            case FISHER ->
-                "Tesouros do oceano. Foca em pesca e itens raros.\nAcelera a pesca, aumenta chances de tesouro\ne permite invocar chuva para pesca massiva.\nIdeal para conseguir itens valiosos pacificamente.";
-            case BUILDER ->
-                "O arquiteto supremo. Foca em construção e alcance.\nAumenta alcance de colocação, reduz custos de crafting\ne oferece ferramentas de construção em área.\nIdeal para quem ama transformar o mundo.";
-            case BLACKSMITH ->
-                "A muralha de ferro. Foca em DEFESA e TANK.\nConcede alta resistência a danos, espinhos e\ngrandes descontos em bigornas.\nIdeal para quem quer ser imortal e proteger o time.";
-            case EXPLORER ->
-                "Espírito livre. Foca em mobilidade e descoberta.\nAumenta velocidade de movimento, permite respirar na água\ne destaca tesouros escondidos através de paredes.\nIdeal para quem nunca para em um lugar.";
-        };
+    private Text getSkillDescription(MurilloSkillsList skill) {
+        return Text.translatable("murilloskills.skill.desc." + skill.name().toLowerCase());
     }
 
-    private String getXpGainDescription(MurilloSkillsList skill) {
-        return switch (skill) {
-            case MINER -> "Ganhe XP ao: Minerar pedras, minérios e deepslate.";
-            case WARRIOR -> "Ganhe XP ao: Eliminar monstros e jogadores em combate.";
-            case FARMER -> "Ganhe XP ao: Colher plantações e fazer compostagem.";
-            case ARCHER -> "Ganhe XP ao: Eliminar inimigos à distância com flechas.";
-            case FISHER -> "Ganhe XP ao: Pescar peixes, tesouros ou lixo.";
-            case BUILDER -> "Ganhe XP ao: Colocar blocos de construção no mundo.";
-            case BLACKSMITH -> "Ganhe XP ao: Forjar, encantar, consertar ou fundir itens.";
-            case EXPLORER -> "Ganhe XP ao: Explorar o mundo, biomas e abrir baús.";
-        };
+    private Text getXpGainDescription(MurilloSkillsList skill) {
+        return Text.translatable("murilloskills.tooltip.xp_gain." + skill.name().toLowerCase());
     }
 
     private void renderXpBar(DrawContext context, int x, int y, SkillGlobalState.SkillStats stats, boolean isLocked) {

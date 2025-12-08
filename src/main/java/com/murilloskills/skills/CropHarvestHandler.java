@@ -70,7 +70,12 @@ public class CropHarvestHandler {
         int level = stats.level;
 
         // Add XP
-        if (playerData.addXpToSkill(MurilloSkillsList.FARMER, result.getXpAmount())) {
+        SkillGlobalState.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.FARMER, result.getXpAmount());
+
+        // Check for milestone rewards
+        com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Agricultor", xpResult);
+
+        if (xpResult.leveledUp()) {
             SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.FARMER, stats.level);
         }
 

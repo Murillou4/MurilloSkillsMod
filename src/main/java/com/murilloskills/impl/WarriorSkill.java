@@ -47,13 +47,16 @@ public class WarriorSkill extends AbstractSkill {
         try {
             // 1. Verifica Nível
             if (stats.level < SkillConfig.WARRIOR_MASTER_LEVEL) {
-                sendMessage(player, "Você precisa ser Nível 100 de Guerreiro!", Formatting.RED, true);
+                player.sendMessage(Text.translatable("murilloskills.error.level_required", 100,
+                        Text.translatable("murilloskills.skill.name.warrior")).formatted(Formatting.RED), true);
                 return;
             }
 
             // 2. Verifica se já está em Berserk
             if (isBerserkActive(player)) {
-                sendMessage(player, "Você já está em modo Berserk!", Formatting.RED, true);
+                player.sendMessage(
+                        Text.translatable("murilloskills.error.already_active", "Berserk").formatted(Formatting.RED),
+                        true);
                 return;
             }
 
@@ -64,7 +67,8 @@ public class WarriorSkill extends AbstractSkill {
             long cooldownTicks = SkillConfig.toTicksLong(SkillConfig.WARRIOR_ABILITY_COOLDOWN_SECONDS);
             if (stats.lastAbilityUse >= 0 && timeSinceUse < cooldownTicks) {
                 long minutesLeft = (cooldownTicks - timeSinceUse) / 20 / 60;
-                sendMessage(player, "Habilidade em recarga: " + minutesLeft + " minutos.", Formatting.RED, true);
+                player.sendMessage(Text.translatable("murilloskills.error.cooldown_minutes", minutesLeft)
+                        .formatted(Formatting.RED), true);
                 return;
             }
 
@@ -78,8 +82,8 @@ public class WarriorSkill extends AbstractSkill {
             LOGGER.info("Player {} ativou modo Berserk", player.getName().getString());
 
         } catch (Exception e) {
-            LOGGER.error("Erro ao executar habilidade ativa do Guerreiro para " + player.getName().getString(), e);
-            sendMessage(player, "Erro ao ativar habilidade. Contate o admin.", Formatting.RED, false);
+            LOGGER.error("Error executing Warrior active ability for " + player.getName().getString(), e);
+            player.sendMessage(Text.translatable("murilloskills.error.ability_error").formatted(Formatting.RED), false);
         }
     }
 
@@ -208,10 +212,12 @@ public class WarriorSkill extends AbstractSkill {
         player.playSound(SoundEvents.ENTITY_RAVAGER_ROAR, 1.0f, 1.0f);
 
         // Mensagem
-        player.sendMessage(Text.literal("⚔ MODO BERSERK ATIVADO! ⚔").formatted(Formatting.DARK_RED, Formatting.BOLD),
+        player.sendMessage(
+                Text.translatable("murilloskills.warrior.berserk_activated").formatted(Formatting.DARK_RED,
+                        Formatting.BOLD),
                 false);
         player.sendMessage(
-                Text.literal("Força aumentada, resistência máxima, lifesteal absoluto!").formatted(Formatting.RED),
+                Text.translatable("murilloskills.warrior.berserk_description").formatted(Formatting.RED),
                 true);
     }
 
@@ -245,7 +251,7 @@ public class WarriorSkill extends AbstractSkill {
         player.playSound(SoundEvents.ENTITY_PLAYER_BREATH, 1.0f, 0.5f);
 
         // Mensagem
-        sendMessage(player, "A fúria passou... Você está exausto.", Formatting.GRAY, true);
+        player.sendMessage(Text.translatable("murilloskills.warrior.berserk_ended").formatted(Formatting.GRAY), true);
 
         LOGGER.debug("Player {} saiu do modo Berserk", player.getName().getString());
     }

@@ -4,6 +4,7 @@ import com.murilloskills.network.AreaPlantingToggleC2SPayload;
 import com.murilloskills.network.AreaPlantingSyncS2CPayload;
 import com.murilloskills.network.HollowFillToggleC2SPayload;
 import com.murilloskills.network.MinerScanResultPayload;
+import com.murilloskills.network.NightVisionToggleC2SPayload;
 import com.murilloskills.network.RainDanceS2CPayload;
 import com.murilloskills.network.SkillAbilityC2SPayload;
 import com.murilloskills.network.SkillsSyncPayload;
@@ -21,14 +22,21 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 public class MurilloSkillsClient implements ClientModInitializer {
+
+    // Custom keybinding category for mod - groups all keybinds together in Controls
+    // menu
+    private static final KeyBinding.Category KEYBIND_CATEGORY = KeyBinding.Category.create(
+            Identifier.of("murilloskills", "keybinds"));
 
     private static KeyBinding skillsKey;
     private static KeyBinding abilityKey;
     private static KeyBinding areaPlantingToggleKey;
     private static KeyBinding hollowFillToggleKey;
+    private static KeyBinding nightVisionToggleKey;
 
     @Override
     public void onInitializeClient() {
@@ -99,25 +107,31 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 "key.murilloskills.open_gui",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_O,
-                KeyBinding.Category.INVENTORY));
+                KEYBIND_CATEGORY));
 
         abilityKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.murilloskills.use_ability",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_Z,
-                KeyBinding.Category.GAMEPLAY));
+                KEYBIND_CATEGORY));
 
         areaPlantingToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.murilloskills.area_planting_toggle",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_G,
-                KeyBinding.Category.GAMEPLAY));
+                KEYBIND_CATEGORY));
 
         hollowFillToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.murilloskills.hollow_fill_toggle",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_H,
-                KeyBinding.Category.GAMEPLAY));
+                KEYBIND_CATEGORY));
+
+        nightVisionToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.murilloskills.night_vision_toggle",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_N,
+                KEYBIND_CATEGORY));
 
         // --- EVENTS ---
 
@@ -139,6 +153,10 @@ public class MurilloSkillsClient implements ClientModInitializer {
             while (hollowFillToggleKey.wasPressed()) {
                 // Envia pacote para toggle hollow/filled (Builder)
                 ClientPlayNetworking.send(new HollowFillToggleC2SPayload());
+            }
+            while (nightVisionToggleKey.wasPressed()) {
+                // Envia pacote para toggle de visão noturna (Explorer)
+                ClientPlayNetworking.send(new NightVisionToggleC2SPayload());
             }
         });
 

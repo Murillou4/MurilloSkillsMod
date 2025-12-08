@@ -79,7 +79,8 @@ public class BuilderSkill extends AbstractSkill {
     public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
         try {
             if (stats.level < SkillConfig.BUILDER_MASTER_LEVEL) {
-                sendMessage(player, "Você precisa ser Nível 100 de Construtor!", Formatting.RED, true);
+                player.sendMessage(Text.translatable("murilloskills.error.level_required", 100,
+                        Text.translatable("murilloskills.skill.name.builder")).formatted(Formatting.RED), true);
                 return;
             }
 
@@ -96,9 +97,10 @@ public class BuilderSkill extends AbstractSkill {
                 if (remaining > 0) {
                     pausedRemainingTime.put(uuid, remaining);
                     long remainingSeconds = remaining / 20;
-                    sendMessage(player,
-                            "Creative Brush pausado. Restam " + remainingSeconds + "s. Aperte Z para continuar.",
-                            Formatting.YELLOW, true);
+                    player.sendMessage(
+                            Text.translatable("murilloskills.builder.creative_brush_paused", remainingSeconds)
+                                    .formatted(Formatting.YELLOW),
+                            true);
                 }
 
                 endCreativeBrush(player);
@@ -111,8 +113,8 @@ public class BuilderSkill extends AbstractSkill {
                 resumeCreativeBrush(player, remaining);
                 pausedRemainingTime.remove(uuid);
                 long remainingSeconds = remaining / 20;
-                sendMessage(player, "Creative Brush retomado! Restam " + remainingSeconds + "s.", Formatting.GREEN,
-                        true);
+                player.sendMessage(Text.translatable("murilloskills.builder.creative_brush_resumed", remainingSeconds)
+                        .formatted(Formatting.GREEN), true);
                 return;
             }
 
@@ -123,7 +125,8 @@ public class BuilderSkill extends AbstractSkill {
             long cooldownTicks = SkillConfig.toTicksLong(SkillConfig.BUILDER_ABILITY_COOLDOWN_SECONDS);
             if (stats.lastAbilityUse >= 0 && timeSinceUse < cooldownTicks) {
                 long minutesLeft = (cooldownTicks - timeSinceUse) / 20 / 60;
-                sendMessage(player, "Habilidade em recarga: " + minutesLeft + " minutos.", Formatting.RED, true);
+                player.sendMessage(Text.translatable("murilloskills.error.cooldown_minutes", minutesLeft)
+                        .formatted(Formatting.RED), true);
                 return;
             }
 
@@ -139,8 +142,8 @@ public class BuilderSkill extends AbstractSkill {
             LOGGER.info("Player {} ativou Creative Brush", player.getName().getString());
 
         } catch (Exception e) {
-            LOGGER.error("Erro ao executar habilidade ativa do Construtor para " + player.getName().getString(), e);
-            sendMessage(player, "Erro ao ativar habilidade. Contate o admin.", Formatting.RED, false);
+            LOGGER.error("Error executing Builder active ability for " + player.getName().getString(), e);
+            player.sendMessage(Text.translatable("murilloskills.error.ability_error").formatted(Formatting.RED), false);
         }
     }
 
@@ -229,10 +232,12 @@ public class BuilderSkill extends AbstractSkill {
 
         player.playSound(SoundEvents.BLOCK_BEACON_ACTIVATE, 1.0f, 1.5f);
 
-        player.sendMessage(Text.literal("🖌 CREATIVE BRUSH ATIVADO! 🖌").formatted(Formatting.AQUA, Formatting.BOLD),
+        player.sendMessage(
+                Text.translatable("murilloskills.builder.creative_brush_activated").formatted(Formatting.AQUA,
+                        Formatting.BOLD),
                 false);
         player.sendMessage(
-                Text.literal("Coloque o primeiro bloco para marcar o canto 1, depois outro para preencher a área!")
+                Text.translatable("murilloskills.builder.creative_brush_instructions")
                         .formatted(Formatting.DARK_AQUA),
                 false);
     }
@@ -257,7 +262,8 @@ public class BuilderSkill extends AbstractSkill {
         firstCornerPos.remove(player.getUuid());
 
         player.playSound(SoundEvents.BLOCK_BEACON_DEACTIVATE, 0.5f, 1.2f);
-        sendMessage(player, "Creative Brush desativado.", Formatting.GRAY, true);
+        player.sendMessage(Text.translatable("murilloskills.builder.creative_brush_ended").formatted(Formatting.GRAY),
+                true);
 
         LOGGER.debug("Player {} saiu do Creative Brush", player.getName().getString());
     }
@@ -279,10 +285,10 @@ public class BuilderSkill extends AbstractSkill {
         if (firstCorner == null) {
             firstCornerPos.put(uuid, pos);
             player.sendMessage(
-                    Text.literal("📍 Canto 1 marcado em " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ())
+                    Text.translatable("murilloskills.builder.corner_marked", pos.getX(), pos.getY(), pos.getZ())
                             .formatted(Formatting.AQUA),
                     true);
-            player.sendMessage(Text.literal("Coloque outro bloco para preencher a área!")
+            player.sendMessage(Text.translatable("murilloskills.builder.place_second")
                     .formatted(Formatting.YELLOW), false);
             return 0;
         }
@@ -302,7 +308,7 @@ public class BuilderSkill extends AbstractSkill {
         int maxBlocks = 1000;
         if (totalBlocks > maxBlocks) {
             player.sendMessage(
-                    Text.literal("⚠ Área muito grande! Máximo: " + maxBlocks + " blocos. Tentou: " + totalBlocks)
+                    Text.translatable("murilloskills.builder.area_too_large", maxBlocks, totalBlocks)
                             .formatted(Formatting.RED),
                     true);
             return 0;
@@ -338,7 +344,7 @@ public class BuilderSkill extends AbstractSkill {
 
                     int slot = findBlockInInventory(player, blockItem.getBlock());
                     if (slot == -1) {
-                        player.sendMessage(Text.literal("⚠ Sem blocos suficientes! Colocados: " + blocksPlaced)
+                        player.sendMessage(Text.translatable("murilloskills.builder.not_enough_blocks", blocksPlaced)
                                 .formatted(Formatting.YELLOW), true);
                         return blocksPlaced;
                     }
@@ -355,7 +361,7 @@ public class BuilderSkill extends AbstractSkill {
 
         if (blocksPlaced > 0) {
             world.playSound(null, pos, SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.BLOCKS, 1.0f, 1.5f);
-            player.sendMessage(Text.literal("✨ Área preenchida! " + blocksPlaced + " blocos colocados!")
+            player.sendMessage(Text.translatable("murilloskills.builder.area_filled", blocksPlaced)
                     .formatted(Formatting.GREEN, Formatting.BOLD), true);
         }
 

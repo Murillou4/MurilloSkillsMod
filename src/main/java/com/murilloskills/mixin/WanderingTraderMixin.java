@@ -44,13 +44,16 @@ public abstract class WanderingTraderMixin {
 
         // Award XP for trading
         int xp = ExplorerXpGetter.getWanderingTradeXp();
-        boolean leveledUp = playerData.addXpToSkill(MurilloSkillsList.EXPLORER, xp);
+        SkillGlobalState.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.EXPLORER, xp);
         state.markDirty();
+
+        // Check for milestone rewards
+        com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Explorador", xpResult);
 
         // Sync and notify
         SkillsNetworkUtils.syncSkills(serverPlayer);
 
-        if (leveledUp) {
+        if (xpResult.leveledUp()) {
             int newLevel = playerData.getSkill(MurilloSkillsList.EXPLORER).level;
             SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.EXPLORER, newLevel);
 

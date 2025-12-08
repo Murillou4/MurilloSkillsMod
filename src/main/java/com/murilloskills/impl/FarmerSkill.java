@@ -56,13 +56,15 @@ public class FarmerSkill extends AbstractSkill {
         try {
             // 1. Check Level
             if (stats.level < SkillConfig.FARMER_MASTER_LEVEL) {
-                sendMessage(player, "Você precisa ser Nível 100 de Agricultor!", Formatting.RED, true);
+                player.sendMessage(Text.translatable("murilloskills.error.level_required", 100,
+                        Text.translatable("murilloskills.skill.name.farmer")).formatted(Formatting.RED), true);
                 return;
             }
 
             // 2. Check if already active
             if (isHarvestMoonActive(player)) {
-                sendMessage(player, "Harvest Moon já está ativo!", Formatting.RED, true);
+                player.sendMessage(Text.translatable("murilloskills.error.already_active", "Harvest Moon")
+                        .formatted(Formatting.RED), true);
                 return;
             }
 
@@ -73,7 +75,8 @@ public class FarmerSkill extends AbstractSkill {
             long cooldownTicks = SkillConfig.toTicksLong(SkillConfig.FARMER_ABILITY_COOLDOWN_SECONDS);
             if (stats.lastAbilityUse >= 0 && timeSinceUse < cooldownTicks) {
                 long secondsLeft = (cooldownTicks - timeSinceUse) / 20;
-                sendMessage(player, "Habilidade em recarga: " + secondsLeft + " segundos.", Formatting.RED, true);
+                player.sendMessage(Text.translatable("murilloskills.error.cooldown_seconds", secondsLeft)
+                        .formatted(Formatting.RED), true);
                 return;
             }
 
@@ -87,8 +90,8 @@ public class FarmerSkill extends AbstractSkill {
             LOGGER.info("Player {} ativou Harvest Moon", player.getName().getString());
 
         } catch (Exception e) {
-            LOGGER.error("Erro ao executar habilidade ativa do Agricultor para " + player.getName().getString(), e);
-            sendMessage(player, "Erro ao ativar habilidade. Contate o admin.", Formatting.RED, false);
+            LOGGER.error("Error executing Farmer active ability for " + player.getName().getString(), e);
+            player.sendMessage(Text.translatable("murilloskills.error.ability_error").formatted(Formatting.RED), false);
         }
     }
 
@@ -247,9 +250,11 @@ public class FarmerSkill extends AbstractSkill {
         player.playSound(SoundEvents.BLOCK_BEACON_ACTIVATE, 1.0f, 1.2f);
 
         // Message
-        player.sendMessage(Text.literal("🌾 HARVEST MOON ATIVADO! 🌾").formatted(Formatting.GOLD, Formatting.BOLD),
+        player.sendMessage(
+                Text.translatable("murilloskills.farmer.harvest_moon_activated").formatted(Formatting.GOLD,
+                        Formatting.BOLD),
                 false);
-        player.sendMessage(Text.literal("Colheita automática por 10 segundos! Drops triplos!")
+        player.sendMessage(Text.translatable("murilloskills.farmer.harvest_moon_description")
                 .formatted(Formatting.YELLOW), true);
     }
 
@@ -345,7 +350,8 @@ public class FarmerSkill extends AbstractSkill {
         harvestMoonPlayers.remove(player.getUuid());
 
         player.playSound(SoundEvents.BLOCK_BEACON_DEACTIVATE, 1.0f, 0.8f);
-        sendMessage(player, "Harvest Moon terminou.", Formatting.GRAY, true);
+        player.sendMessage(Text.translatable("murilloskills.farmer.harvest_moon_ended").formatted(Formatting.GRAY),
+                true);
 
         LOGGER.debug("Player {} saiu do Harvest Moon", player.getName().getString());
     }

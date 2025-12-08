@@ -173,7 +173,8 @@ public class SkillConfig {
     // --- FISHER (PESCADOR) ---
     // Bônus por Nível
     public static final float FISHER_SPEED_PER_LEVEL = 0.005f; // 0.5% velocidade de pesca por nível
-    public static final float FISHER_EPIC_BUNDLE_PER_LEVEL = 0.003f; // 0.3% chance de Bundle Épico (máx 30% nv100)
+    public static final float FISHER_EPIC_BUNDLE_PER_LEVEL = 0.001f; // 0.1% chance de Bundle Épico (máx 10% nv100) -
+                                                                     // REBALANCED
 
     // Perks por Nível
     public static final int FISHER_WAIT_REDUCTION_LEVEL = 10; // -25% tempo de espera
@@ -192,7 +193,7 @@ public class SkillConfig {
     public static final int FISHER_ABILITY_COOLDOWN_SECONDS = 1800; // 30 minutos (1800 segundos)
     public static final float FISHER_RAIN_DANCE_SPEED_BONUS = 0.50f; // +50% velocidade de pesca
     public static final float FISHER_RAIN_DANCE_TREASURE_BONUS = 0.30f; // +30% chance de tesouro
-    public static final int FISHER_RAIN_DANCE_BUNDLE_MULTIPLIER = 3; // Chance tripla de Bundle Épico
+    public static final int FISHER_RAIN_DANCE_BUNDLE_MULTIPLIER = 2; // Chance dobrada de Bundle Épico (reduzido de 3x)
 
     /** Converte segundos para ticks */
     public static int toTicks(int seconds) {
@@ -202,5 +203,35 @@ public class SkillConfig {
     /** Converte segundos para ticks (long) */
     public static long toTicksLong(int seconds) {
         return (long) seconds * TICKS_PER_SECOND;
+    }
+
+    // --- MILESTONE VANILLA XP REWARDS ---
+    /** Níveis de skill onde recompensas de XP vanilla são concedidas */
+    public static final int[] SKILL_MILESTONES = { 10, 25, 50, 75, 100 };
+
+    /**
+     * XP vanilla progressivo por milestone (em níveis de experiência do Minecraft)
+     */
+    public static final int MILESTONE_XP_LEVEL_10 = 5; // ~ 5 níveis
+    public static final int MILESTONE_XP_LEVEL_25 = 15; // ~ 15 níveis
+    public static final int MILESTONE_XP_LEVEL_50 = 30; // ~ 30 níveis (encantamento máximo)
+    public static final int MILESTONE_XP_LEVEL_75 = 50; // ~ 50 níveis
+    public static final int MILESTONE_XP_LEVEL_100 = 100; // ~ 100 níveis (recompensa máxima)
+
+    /**
+     * Retorna a quantidade de níveis de XP vanilla para um milestone específico.
+     * 
+     * @param level O nível do milestone
+     * @return Quantidade de níveis de XP vanilla, ou 0 se não for um milestone
+     */
+    public static int getMilestoneVanillaXpLevels(int level) {
+        return switch (level) {
+            case 10 -> MILESTONE_XP_LEVEL_10;
+            case 25 -> MILESTONE_XP_LEVEL_25;
+            case 50 -> MILESTONE_XP_LEVEL_50;
+            case 75 -> MILESTONE_XP_LEVEL_75;
+            case 100 -> MILESTONE_XP_LEVEL_100;
+            default -> 0;
+        };
     }
 }

@@ -67,7 +67,14 @@ public class BlockPlacementHandler {
                 var builderStats = playerData.getSkill(MurilloSkillsList.BUILDER);
 
                 // Use proper addXpToSkill method for level-up handling
-                if (playerData.addXpToSkill(MurilloSkillsList.BUILDER, xpResult.getXpAmount())) {
+                SkillGlobalState.XpAddResult xpAddResult = playerData.addXpToSkill(MurilloSkillsList.BUILDER,
+                        xpResult.getXpAmount());
+
+                // Check for milestone rewards
+                com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Construtor",
+                        xpAddResult);
+
+                if (xpAddResult.leveledUp()) {
                     // Player leveled up!
                     SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.BUILDER, builderStats.level);
                     // Update attributes with new level bonuses
@@ -88,7 +95,14 @@ public class BlockPlacementHandler {
 
                 if (extraBlocks > 0) {
                     // Award bonus XP for extra blocks placed
-                    if (playerData.addXpToSkill(MurilloSkillsList.BUILDER, xpResult.getXpAmount() * extraBlocks)) {
+                    SkillGlobalState.XpAddResult brushResult = playerData.addXpToSkill(MurilloSkillsList.BUILDER,
+                            xpResult.getXpAmount() * extraBlocks);
+
+                    // Check for milestone rewards
+                    com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Construtor",
+                            brushResult);
+
+                    if (brushResult.leveledUp()) {
                         var builderStats = playerData.getSkill(MurilloSkillsList.BUILDER);
                         SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.BUILDER, builderStats.level);
                     }

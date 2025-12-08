@@ -23,11 +23,19 @@ public class MinerXpGetter {
     public static SkillReceptorResult isMinerXpBlock(Block block, boolean hasSilkTouch,
             boolean excludeStoneAndDeepSlate) {
 
+        // Generic blocks (stone, deepslate) always grant XP, regardless of Silk Touch
+        // Silk Touch only blocks XP from ores (since it prevents the ore drop XP)
+        if ((block == Blocks.STONE || block == Blocks.DEEPSLATE) && !excludeStoneAndDeepSlate) {
+            return new SkillReceptorResult(true, XP_STONE);
+        }
+
+        // For ore blocks, Silk Touch blocks XP gain (since you're not actually mining
+        // the ore)
         if (hasSilkTouch) {
             return new SkillReceptorResult(false, 0);
-        } else if ((block == Blocks.STONE || block == Blocks.DEEPSLATE) && !excludeStoneAndDeepSlate) {
-            return new SkillReceptorResult(true, XP_STONE);
-        } else if (block == Blocks.COAL_ORE || block == Blocks.DEEPSLATE_COAL_ORE) {
+        }
+
+        if (block == Blocks.COAL_ORE || block == Blocks.DEEPSLATE_COAL_ORE) {
             return new SkillReceptorResult(true, XP_COAL);
         } else if (block == Blocks.COPPER_ORE || block == Blocks.DEEPSLATE_COPPER_ORE) {
             return new SkillReceptorResult(true, XP_COPPER);

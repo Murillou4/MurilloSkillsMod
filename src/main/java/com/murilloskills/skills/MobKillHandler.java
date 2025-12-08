@@ -25,7 +25,12 @@ public class MobKillHandler {
         var data = state.getPlayerData(serverPlayer);
 
         // --- UPDATED CALL: Handles Paragon Logic Internally ---
-        if (data.addXpToSkill(MurilloSkillsList.WARRIOR, result.getXpAmount())) {
+        SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.WARRIOR, result.getXpAmount());
+
+        // Check for milestone rewards
+        com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Guerreiro", xpResult);
+
+        if (xpResult.leveledUp()) {
             var stats = data.getSkill(MurilloSkillsList.WARRIOR);
             SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.WARRIOR, stats.level);
             SkillAttributes.updateAllStats(serverPlayer);

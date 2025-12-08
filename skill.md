@@ -39,18 +39,20 @@ Fontes de XP:
 
 Bônus por Nível:
 - +0.5% de velocidade de pesca.
-- +0.3% de chance de pescar um Bundle Épico (máx 30% no nível 100).
+- +0.1% de chance de pescar um Bundle Épico (máx 10% no nível 100). [REBALANCED]
 
-Conteúdo do Bundle Épico (1 item sorteado por peso):
+Conteúdo do Bundle Épico (1 item sorteado por peso, com requisito de nível):
 
-| Chance | Item |
-| :---: | :--- |
-| 40% | Livro Encantado OP (Mending, Frost Walker, Depth Strider, Looting III, Fortune III, Efficiency V, Sharpness V ou Protection V) |
-| 30% | 1-3x Bloco de Ouro |
-| 15% | 1-2x Bloco de Diamante |
-| 10% | Tridente (com 1 encantamento aleatório de nível alto) |
-| 4% | 1x Bloco de Netherite |
-| 1% | 1x Maçã Dourada Encantada |
+| Chance | Item | Nível Mínimo |
+| :---: | :--- | :---: |
+| 40% | Livro Encantado (Mending, Lure III, Luck of the Sea III ou Unbreaking III) | 1 |
+| 25% | 1-3x Bloco de Ouro | 1 |
+| 20% | 1-2x Bloco de Diamante | 25 |
+| 10% | Tridente (com 1 encantamento aleatório de nível alto) | 50 |
+| 4% | Coração do Mar (Heart of the Sea) | 75 |
+| 1% | 1x Maçã Dourada Encantada | 90 |
+
+> **Nota**: Bloco de Netherite REMOVIDO do loot - jogadores devem usar Minerador para Netherite.
 
 Perks por Nível:
 
@@ -60,7 +62,8 @@ Perks por Nível:
 | 25 | +10% de chance de pescar tesouros raros + 10% mais XP ao pescar. |
 | 50 | Dolphin's Grace leve (velocidade aumentada na água). |
 | 75 | Luck of the Sea passivo nível 1 (efeito invisível, mas ativo). |
-| 100 | Master Fisher (Habilidade Ativa): Ao pressionar F, ativa Rain Dance — invoca chuva visual temporária por 60 segundos. Durante o efeito: +50% velocidade de pesca, +30% chance de tesouro, chance tripla de Bundle Épico, e Conduit Power enquanto na água. Recarga: 30 minutos. |
+| 100 | Master Fisher (Habilidade Ativa): Ao pressionar F, ativa Rain Dance — invoca chuva visual temporária por 60 segundos. Durante o efeito: +50% velocidade de pesca, +30% chance de tesouro, chance dobrada de Bundle Épico (2x), e Conduit Power enquanto na água. Recarga: 30 minutos. |
+
 
 ---
 

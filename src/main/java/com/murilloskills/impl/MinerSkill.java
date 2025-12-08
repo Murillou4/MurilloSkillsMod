@@ -13,6 +13,7 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -42,7 +43,8 @@ public class MinerSkill extends AbstractSkill {
         try {
             // 1. Verifica Nível
             if (stats.level < SkillConfig.MINER_MASTER_LEVEL) {
-                sendMessage(player, "Você precisa ser Nível 100 de Minerador!", Formatting.RED, true);
+                player.sendMessage(Text.translatable("murilloskills.error.level_required", 100,
+                        Text.translatable("murilloskills.skill.name.miner")).formatted(Formatting.RED), true);
                 return;
             }
 
@@ -53,7 +55,8 @@ public class MinerSkill extends AbstractSkill {
             long cooldownTicks = SkillConfig.toTicksLong(SkillConfig.MINER_ABILITY_COOLDOWN_SECONDS);
             if (stats.lastAbilityUse >= 0 && timeSinceUse < cooldownTicks) {
                 long minutesLeft = (cooldownTicks - timeSinceUse) / 20 / 60;
-                sendMessage(player, "Habilidade em recarga: " + minutesLeft + " minutos.", Formatting.RED, true);
+                player.sendMessage(Text.translatable("murilloskills.error.cooldown_minutes", minutesLeft)
+                        .formatted(Formatting.RED), true);
                 return;
             }
 
@@ -67,18 +70,20 @@ public class MinerSkill extends AbstractSkill {
             if (!ores.isEmpty()) {
                 // Envia pacote para o cliente renderizar
                 ServerPlayNetworking.send(player, new MinerScanResultPayload(ores));
-                sendMessage(player, "Instinto ativado! Minérios revelados.", Formatting.GREEN, true);
+                player.sendMessage(
+                        Text.translatable("murilloskills.miner.instinct_activated").formatted(Formatting.GREEN), true);
                 player.playSound(SoundEvents.ENTITY_WARDEN_SONIC_BOOM);
 
-                LOGGER.info("Player {} ativou habilidade Miner Master na posição {} - {} minérios encontrados",
+                LOGGER.info("Player {} activated Miner Master ability at position {} - {} ores found",
                         player.getName().getString(), player.getBlockPos(), ores.size());
             } else {
-                sendMessage(player, "Nenhum minério encontrado por perto.", Formatting.YELLOW, true);
+                player.sendMessage(Text.translatable("murilloskills.miner.no_ores_found").formatted(Formatting.YELLOW),
+                        true);
             }
 
         } catch (Exception e) {
-            LOGGER.error("Erro ao executar habilidade ativa do Minerador para " + player.getName().getString(), e);
-            sendMessage(player, "Erro ao ativar habilidade. Contate o admin.", Formatting.RED, false);
+            LOGGER.error("Error executing Miner active ability for " + player.getName().getString(), e);
+            player.sendMessage(Text.translatable("murilloskills.error.ability_error").formatted(Formatting.RED), false);
         }
     }
 

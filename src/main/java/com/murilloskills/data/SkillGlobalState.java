@@ -218,17 +218,17 @@ public class SkillGlobalState extends PersistentState {
         /**
          * Central logic for adding XP and handling Paragon System constraints.
          * 
-         * @return true if leveled up
+         * @return XpAddResult containing level transition info for milestone detection
          */
-        public boolean addXpToSkill(MurilloSkillsList skill, int amount) {
+        public XpAddResult addXpToSkill(MurilloSkillsList skill, int amount) {
             // RESTRICTION: If player hasn't selected ANY skills yet, block all XP
             if (selectedSkills.isEmpty()) {
-                return false;
+                return XpAddResult.NO_CHANGE;
             }
 
             // RESTRICTION: If skill is not in selectedSkills, block XP
             if (!isSkillSelected(skill)) {
-                return false;
+                return XpAddResult.NO_CHANGE;
             }
 
             SkillStats stats = skills.get(skill);
@@ -314,9 +314,11 @@ public class SkillGlobalState extends PersistentState {
                 .apply(instance, SkillStats::new));
 
         // Logic moved to respect dynamic cap
-        public boolean addXp(int amount, int maxLevelAllowed) {
+        public XpAddResult addXp(int amount, int maxLevelAllowed) {
+            int oldLevel = this.level;
+
             if (this.level >= maxLevelAllowed)
-                return false;
+                return XpAddResult.NO_CHANGE;
 
             this.xp += amount;
             boolean leveledUp = false;
@@ -332,11 +334,20 @@ public class SkillGlobalState extends PersistentState {
                 this.xp = 0; // Or keep it as "Maxed"
             }
 
-            return leveledUp;
+            return new XpAddResult(leveledUp, oldLevel, this.level);
         }
 
         private int getXpNeededForNextLevel() {
             return 50 + (this.level * 10) + (4 * this.level * this.level);
         }
+    }
+
+    /**
+     * Result record for XP addition operations.
+     * Contains information about level transitions for milestone detection.
+     */
+    public record XpAddResult(boolean leveledUp, int oldLevel, int newLevel) {
+        /** Constant for when no XP change occurred */
+        public static final XpAddResult NO_CHANGE = new XpAddResult(false, 0, 0);
     }
 }

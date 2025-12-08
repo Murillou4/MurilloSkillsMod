@@ -82,11 +82,14 @@ public abstract class FurnaceOutputMixin {
         int totalXp = xpResult.getXpAmount() * stackCount;
 
         // Add XP using the central method that handles paragon constraints
-        boolean leveledUp = playerData.addXpToSkill(MurilloSkillsList.BLACKSMITH, totalXp);
+        SkillGlobalState.XpAddResult xpAddResult = playerData.addXpToSkill(MurilloSkillsList.BLACKSMITH, totalXp);
         state.markDirty();
 
+        // Check for milestone rewards
+        com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Ferreiro", xpAddResult);
+
         // Notify player on level up
-        if (leveledUp) {
+        if (xpAddResult.leveledUp()) {
             int newLevel = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
             SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.BLACKSMITH, newLevel);
         }

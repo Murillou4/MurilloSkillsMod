@@ -34,7 +34,12 @@ public class ArcherHitHandler {
         SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
         var data = state.getPlayerData(player);
 
-        if (data.addXpToSkill(MurilloSkillsList.ARCHER, result.getXpAmount())) {
+        SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.ARCHER, result.getXpAmount());
+
+        // Check for milestone rewards
+        com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(player, "Arqueiro", xpResult);
+
+        if (xpResult.leveledUp()) {
             var stats = data.getSkill(MurilloSkillsList.ARCHER);
             SkillNotifier.notifyLevelUp(player, MurilloSkillsList.ARCHER, stats.level);
         }
@@ -63,7 +68,12 @@ public class ArcherHitHandler {
         SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
         var data = state.getPlayerData(player);
 
-        if (data.addXpToSkill(MurilloSkillsList.ARCHER, result.getXpAmount())) {
+        SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.ARCHER, result.getXpAmount());
+
+        // Check for milestone rewards
+        com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(player, "Arqueiro", xpResult);
+
+        if (xpResult.leveledUp()) {
             var stats = data.getSkill(MurilloSkillsList.ARCHER);
             SkillNotifier.notifyLevelUp(player, MurilloSkillsList.ARCHER, stats.level);
         }

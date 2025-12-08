@@ -47,11 +47,14 @@ public abstract class EnchantmentScreenHandlerMixin {
         int xp = BlacksmithXpGetter.getEnchantXp(id);
 
         // Add XP using the central method that handles paragon constraints
-        boolean leveledUp = playerData.addXpToSkill(MurilloSkillsList.BLACKSMITH, xp);
+        SkillGlobalState.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.BLACKSMITH, xp);
         state.markDirty();
 
+        // Check for milestone rewards
+        com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Ferreiro", xpResult);
+
         // Notify player on level up
-        if (leveledUp) {
+        if (xpResult.leveledUp()) {
             int newLevel = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
             SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.BLACKSMITH, newLevel);
         }

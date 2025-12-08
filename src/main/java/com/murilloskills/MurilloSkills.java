@@ -19,6 +19,7 @@ import com.murilloskills.network.TreasureHunterS2CPayload;
 import com.murilloskills.network.SkillAbilityC2SPayload;
 import com.murilloskills.network.SkillSelectionC2SPayload;
 import com.murilloskills.network.SkillResetC2SPayload;
+import com.murilloskills.network.NightVisionToggleC2SPayload;
 import com.murilloskills.network.AreaPlantingToggleC2SPayload;
 import com.murilloskills.network.AreaPlantingSyncS2CPayload;
 import com.murilloskills.network.SkillsSyncPayload;
@@ -66,6 +67,7 @@ public class MurilloSkills implements ModInitializer {
             PayloadTypeRegistry.playC2S().register(com.murilloskills.network.HollowFillToggleC2SPayload.ID,
                     com.murilloskills.network.HollowFillToggleC2SPayload.CODEC);
             PayloadTypeRegistry.playC2S().register(SkillResetC2SPayload.ID, SkillResetC2SPayload.CODEC);
+            PayloadTypeRegistry.playC2S().register(NightVisionToggleC2SPayload.ID, NightVisionToggleC2SPayload.CODEC);
 
             // 4. Receiver: Habilidade Ativa (Tecla Z) - Usando Registry
             registerAbilityReceiver();
@@ -75,6 +77,9 @@ public class MurilloSkills implements ModInitializer {
 
             // 6. Receiver: Toggle Hollow/Filled (Tecla H)
             registerHollowFillReceiver();
+
+            // 7. Receiver: Toggle Night Vision (Tecla N)
+            registerNightVisionToggleReceiver();
 
             // 5. Outros receivers existentes...
 
@@ -397,6 +402,51 @@ public class MurilloSkills implements ModInitializer {
 
                 } catch (Exception e) {
                     LOGGER.error("Erro ao processar reset de skill", e);
+                }
+            });
+        });
+    }
+
+    /**
+     * Registra o receiver para toggle de Night Vision (Explorer)
+     */
+    private void registerNightVisionToggleReceiver() {
+        ServerPlayNetworking.registerGlobalReceiver(NightVisionToggleC2SPayload.ID, (payload, context) -> {
+            context.server().execute(() -> {
+                try {
+                    var player = context.player();
+                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+                    var playerData = state.getPlayerData(player);
+
+                    // Check if player has EXPLORER selected
+                    if (!playerData.isSkillSelected(MurilloSkillsList.EXPLORER)) {
+                        player.sendMessage(
+                                Text.literal("Você precisa ter Explorador como uma das suas habilidades!")
+                                        .formatted(Formatting.RED),
+                                true);
+                        return;
+                    }
+
+                    var explorerStats = playerData.getSkill(MurilloSkillsList.EXPLORER);
+
+                    // Check level requirement (Level 35 for Night Vision)
+                    if (explorerStats.level < com.murilloskills.utils.SkillConfig.EXPLORER_NIGHT_VISION_LEVEL) {
+                        player.sendMessage(
+                                Text.literal("Você precisa ser Nível 35 de Explorador para Visão Noturna!")
+                                        .formatted(Formatting.RED),
+                                true);
+                        return;
+                    }
+
+                    // Toggle Night Vision using the ExplorerSkill method
+                    ExplorerSkill explorerSkill = (ExplorerSkill) com.murilloskills.api.SkillRegistry
+                            .get(MurilloSkillsList.EXPLORER);
+                    if (explorerSkill != null) {
+                        explorerSkill.toggleNightVision(player);
+                    }
+
+                } catch (Exception e) {
+                    LOGGER.error("Erro ao processar toggle de Night Vision", e);
                 }
             });
         });
