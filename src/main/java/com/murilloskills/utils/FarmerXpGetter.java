@@ -16,15 +16,15 @@ import net.minecraft.block.Blocks;
 public class FarmerXpGetter {
 
     // Base XP values for different crops
-    private static final int XP_WHEAT = 15;
-    private static final int XP_CARROT = 10;
-    private static final int XP_POTATO = 10;
-    private static final int XP_BEETROOT = 10;
-    private static final int XP_MELON = 8;
-    private static final int XP_PUMPKIN = 8;
-    private static final int XP_NETHER_WART = 15;
-    private static final int XP_SWEET_BERRY = 5;
-    private static final int XP_COCOA = 8;
+    private static final int XP_WHEAT = 3;
+    private static final int XP_CARROT = 3;
+    private static final int XP_POTATO = 3;
+    private static final int XP_BEETROOT = 3;
+    private static final int XP_MELON = 8; // Mantido - crescimento lento
+    private static final int XP_PUMPKIN = 8; // Mantido - crescimento lento
+    private static final int XP_NETHER_WART = 5;
+    private static final int XP_SWEET_BERRY = 2;
+    private static final int XP_COCOA = 4;
 
     /**
      * Checks if a block is a harvestable crop and returns the XP reward.

@@ -634,7 +634,7 @@ public class SkillsScreen extends Screen {
 
             // XP Progress Logic
             double currentXp = ClientSkillData.get(skill).xp;
-            double maxXp = 50 + (level * 10) + (4 * level * level);
+            double maxXp = 60 + (level * 15) + (2 * level * level);
             int percent = (int) ((currentXp / maxXp) * 100);
 
             tooltip.add(Text.empty());
@@ -864,7 +864,7 @@ public class SkillsScreen extends Screen {
 
         context.fill(x, y, x + width, y + height, XP_BAR_BG);
 
-        double maxXp = 50 + (stats.level * 10) + (4 * stats.level * stats.level);
+        double maxXp = 60 + (stats.level * 15) + (2 * stats.level * stats.level);
         float progress = (float) MathHelper.clamp(stats.xp / maxXp, 0.0, 1.0);
         int filledWidth = (int) (width * progress);
 

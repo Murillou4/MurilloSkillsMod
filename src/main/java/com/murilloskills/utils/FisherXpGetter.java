@@ -15,9 +15,9 @@ import net.minecraft.item.Items;
 public class FisherXpGetter {
 
     // Base XP values for different catch categories
-    private static final int XP_TREASURE = 150;
-    private static final int XP_FISH = 50;
-    private static final int XP_JUNK = 15;
+    private static final int XP_TREASURE = 50;
+    private static final int XP_FISH = 15;
+    private static final int XP_JUNK = 5;
 
     /**
      * Gets XP for a caught item based on its category.

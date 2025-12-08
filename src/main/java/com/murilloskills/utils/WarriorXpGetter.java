@@ -12,9 +12,9 @@ public class WarriorXpGetter {
     private static final int XP_ENDER_DRAGON = 1000;
     private static final int XP_WITHER = 500;
     private static final int XP_WARDEN = 500;
-    private static final int XP_ENDERMAN = 1;
-    private static final int XP_BLAZE = 1;
-    private static final int XP_MONSTER_DEFAULT = 1;
+    private static final int XP_ENDERMAN = 20;
+    private static final int XP_BLAZE = 25;
+    private static final int XP_MONSTER_DEFAULT = 15;
 
     public static SkillReceptorResult getMobXp(LivingEntity entity) {
 

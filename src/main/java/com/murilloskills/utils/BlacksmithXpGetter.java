@@ -20,9 +20,9 @@ public class BlacksmithXpGetter {
     private static final int XP_ENCHANT_LEVEL_3 = 100;
 
     // XP for smelting ores (only ores that produce ingots/materials)
-    private static final int XP_SMELT_IRON = 15;
-    private static final int XP_SMELT_GOLD = 25;
-    private static final int XP_SMELT_COPPER = 12;
+    private static final int XP_SMELT_IRON = 4;
+    private static final int XP_SMELT_GOLD = 6;
+    private static final int XP_SMELT_COPPER = 3;
     private static final int XP_SMELT_ANCIENT_DEBRIS = 80;
 
     // XP for grindstone

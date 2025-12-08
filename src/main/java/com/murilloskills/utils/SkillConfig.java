@@ -156,8 +156,8 @@ public class SkillConfig {
     public static final float EXPLORER_STEP_HEIGHT = 1.0f; // Altura automática de subida
 
     // XP Values
-    public static final int EXPLORER_XP_BIOME = 5000; // Novo bioma
-    public static final int EXPLORER_XP_STRUCTURE = 1000; // Nova estrutura
+    public static final int EXPLORER_XP_BIOME = 500; // Novo bioma (reduzido de 5000)
+    public static final int EXPLORER_XP_STRUCTURE = 200; // Nova estrutura (reduzido de 1000)
     public static final int EXPLORER_XP_LOOT_CHEST = 300; // Abrir baú de loot pela primeira vez
     public static final int EXPLORER_XP_MAP_COMPLETE = 2000; // Completar mapa
     public static final int EXPLORER_XP_WANDERING_TRADE = 400; // Trade com Wandering Trader

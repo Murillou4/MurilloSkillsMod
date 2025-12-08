@@ -28,7 +28,7 @@ public class ArcherXpGetter {
     // Distance bonus multipliers
     private static final double LONG_RANGE_MULTIPLIER_1 = 1.5;
     private static final double LONG_RANGE_MULTIPLIER_2 = 2.0;
-    private static final double LONG_RANGE_MULTIPLIER_3 = 3.0;
+    private static final double LONG_RANGE_MULTIPLIER_3 = 2.0;
 
     /**
      * Calcula XP por acertar um alvo com flecha
