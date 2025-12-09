@@ -5,6 +5,7 @@ import com.murilloskills.network.AreaPlantingSyncS2CPayload;
 import com.murilloskills.network.HollowFillToggleC2SPayload;
 import com.murilloskills.network.MinerScanResultPayload;
 import com.murilloskills.network.NightVisionToggleC2SPayload;
+import com.murilloskills.network.StepAssistToggleC2SPayload;
 import com.murilloskills.network.RainDanceS2CPayload;
 import com.murilloskills.network.SkillAbilityC2SPayload;
 import com.murilloskills.network.SkillsSyncPayload;
@@ -37,6 +38,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
     private static KeyBinding areaPlantingToggleKey;
     private static KeyBinding hollowFillToggleKey;
     private static KeyBinding nightVisionToggleKey;
+    private static KeyBinding stepAssistToggleKey;
 
     @Override
     public void onInitializeClient() {
@@ -133,6 +135,12 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_N,
                 KEYBIND_CATEGORY));
 
+        stepAssistToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.murilloskills.step_assist_toggle",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_V,
+                KEYBIND_CATEGORY));
+
         // --- EVENTS ---
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -157,6 +165,10 @@ public class MurilloSkillsClient implements ClientModInitializer {
             while (nightVisionToggleKey.wasPressed()) {
                 // Envia pacote para toggle de visão noturna (Explorer)
                 ClientPlayNetworking.send(new NightVisionToggleC2SPayload());
+            }
+            while (stepAssistToggleKey.wasPressed()) {
+                // Envia pacote para toggle de step assist (Explorer)
+                ClientPlayNetworking.send(new StepAssistToggleC2SPayload());
             }
         });
 

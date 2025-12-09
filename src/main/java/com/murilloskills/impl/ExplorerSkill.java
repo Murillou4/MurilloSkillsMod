@@ -45,6 +45,9 @@ public class ExplorerSkill extends AbstractSkill {
     // Map to track players with Night Vision enabled (UUID → enabled)
     private static final Map<UUID, Boolean> nightVisionEnabled = new HashMap<>();
 
+    // Map to track players with Step Assist enabled (UUID → enabled)
+    private static final Map<UUID, Boolean> stepAssistEnabled = new HashMap<>();
+
     @Override
     public MurilloSkillsList getSkillType() {
         return MurilloSkillsList.EXPLORER;
@@ -250,11 +253,12 @@ public class ExplorerSkill extends AbstractSkill {
                 }
             }
 
-            // --- STEP HEIGHT (Level 10+) ---
+            // --- STEP HEIGHT (Level 10+) - Only if enabled ---
             var stepHeightAttribute = player.getAttributeInstance(EntityAttributes.STEP_HEIGHT);
             if (stepHeightAttribute != null) {
                 stepHeightAttribute.removeModifier(EXPLORER_STEP_HEIGHT_ID);
-                if (level >= SkillConfig.EXPLORER_STEP_ASSIST_LEVEL) {
+                // Only apply if level requirement met AND toggle is enabled
+                if (level >= SkillConfig.EXPLORER_STEP_ASSIST_LEVEL && isStepAssistEnabled(player)) {
                     stepHeightAttribute.addTemporaryModifier(new EntityAttributeModifier(
                             EXPLORER_STEP_HEIGHT_ID,
                             SkillConfig.EXPLORER_STEP_HEIGHT,
@@ -283,12 +287,44 @@ public class ExplorerSkill extends AbstractSkill {
         nightVisionEnabled.put(uuid, newState);
 
         if (newState) {
-            player.sendMessage(Text.translatable("murilloskills.explorer.night_vision_enabled").formatted(Formatting.GREEN), true);
+            player.sendMessage(
+                    Text.translatable("murilloskills.explorer.night_vision_enabled").formatted(Formatting.GREEN), true);
             applyNightVision(player);
         } else {
-            player.sendMessage(Text.translatable("murilloskills.explorer.night_vision_disabled").formatted(Formatting.GRAY), true);
+            player.sendMessage(
+                    Text.translatable("murilloskills.explorer.night_vision_disabled").formatted(Formatting.GRAY), true);
             player.removeStatusEffect(StatusEffects.NIGHT_VISION);
         }
+    }
+
+    /**
+     * Toggles step assist for the player
+     */
+    public void toggleStepAssist(ServerPlayerEntity player) {
+        UUID uuid = player.getUuid();
+        boolean currentlyEnabled = stepAssistEnabled.getOrDefault(uuid, true); // Default: enabled
+        boolean newState = !currentlyEnabled;
+        stepAssistEnabled.put(uuid, newState);
+
+        if (newState) {
+            player.sendMessage(
+                    Text.translatable("murilloskills.explorer.step_assist_enabled").formatted(Formatting.GREEN), true);
+        } else {
+            player.sendMessage(
+                    Text.translatable("murilloskills.explorer.step_assist_disabled").formatted(Formatting.GRAY), true);
+        }
+
+        // Re-apply attributes to update step height
+        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+        int level = state.getPlayerData(player).getSkill(getSkillType()).level;
+        updateAttributes(player, level);
+    }
+
+    /**
+     * Checks if step assist is enabled for player
+     */
+    public static boolean isStepAssistEnabled(ServerPlayerEntity player) {
+        return stepAssistEnabled.getOrDefault(player.getUuid(), true); // Default: enabled
     }
 
     /**

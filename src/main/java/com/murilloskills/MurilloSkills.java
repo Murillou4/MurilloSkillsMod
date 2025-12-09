@@ -20,6 +20,7 @@ import com.murilloskills.network.SkillAbilityC2SPayload;
 import com.murilloskills.network.SkillSelectionC2SPayload;
 import com.murilloskills.network.SkillResetC2SPayload;
 import com.murilloskills.network.NightVisionToggleC2SPayload;
+import com.murilloskills.network.StepAssistToggleC2SPayload;
 import com.murilloskills.network.AreaPlantingToggleC2SPayload;
 import com.murilloskills.network.AreaPlantingSyncS2CPayload;
 import com.murilloskills.network.SkillsSyncPayload;
@@ -68,6 +69,7 @@ public class MurilloSkills implements ModInitializer {
                     com.murilloskills.network.HollowFillToggleC2SPayload.CODEC);
             PayloadTypeRegistry.playC2S().register(SkillResetC2SPayload.ID, SkillResetC2SPayload.CODEC);
             PayloadTypeRegistry.playC2S().register(NightVisionToggleC2SPayload.ID, NightVisionToggleC2SPayload.CODEC);
+            PayloadTypeRegistry.playC2S().register(StepAssistToggleC2SPayload.ID, StepAssistToggleC2SPayload.CODEC);
 
             // 4. Receiver: Habilidade Ativa (Tecla Z) - Usando Registry
             registerAbilityReceiver();
@@ -80,6 +82,9 @@ public class MurilloSkills implements ModInitializer {
 
             // 7. Receiver: Toggle Night Vision (Tecla N)
             registerNightVisionToggleReceiver();
+
+            // 8. Receiver: Toggle Step Assist (Tecla V)
+            registerStepAssistToggleReceiver();
 
             // 5. Outros receivers existentes...
 
@@ -447,6 +452,51 @@ public class MurilloSkills implements ModInitializer {
 
                 } catch (Exception e) {
                     LOGGER.error("Erro ao processar toggle de Night Vision", e);
+                }
+            });
+        });
+    }
+
+    /**
+     * Registra o receiver para toggle de Step Assist (Explorer)
+     */
+    private void registerStepAssistToggleReceiver() {
+        ServerPlayNetworking.registerGlobalReceiver(StepAssistToggleC2SPayload.ID, (payload, context) -> {
+            context.server().execute(() -> {
+                try {
+                    var player = context.player();
+                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+                    var playerData = state.getPlayerData(player);
+
+                    // Check if player has EXPLORER selected
+                    if (!playerData.isSkillSelected(MurilloSkillsList.EXPLORER)) {
+                        player.sendMessage(
+                                Text.literal("Você precisa ter Explorador como uma das suas habilidades!")
+                                        .formatted(Formatting.RED),
+                                true);
+                        return;
+                    }
+
+                    var explorerStats = playerData.getSkill(MurilloSkillsList.EXPLORER);
+
+                    // Check level requirement (Level 10 for Step Assist)
+                    if (explorerStats.level < com.murilloskills.utils.SkillConfig.EXPLORER_STEP_ASSIST_LEVEL) {
+                        player.sendMessage(
+                                Text.literal("Você precisa ser Nível 10 de Explorador para Passo Leve!")
+                                        .formatted(Formatting.RED),
+                                true);
+                        return;
+                    }
+
+                    // Toggle Step Assist using the ExplorerSkill method
+                    ExplorerSkill explorerSkill = (ExplorerSkill) com.murilloskills.api.SkillRegistry
+                            .get(MurilloSkillsList.EXPLORER);
+                    if (explorerSkill != null) {
+                        explorerSkill.toggleStepAssist(player);
+                    }
+
+                } catch (Exception e) {
+                    LOGGER.error("Erro ao processar toggle de Step Assist", e);
                 }
             });
         });

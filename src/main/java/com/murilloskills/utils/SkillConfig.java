@@ -57,6 +57,7 @@ public class SkillConfig {
     public static final float ARCHER_SPREAD_REDUCTION = 0.50f; // 50% menos spread
     public static final int ARCHER_ABILITY_COOLDOWN_SECONDS = 3600; // 1 hora (3600 segundos)
     public static final int ARCHER_MASTER_RANGER_DURATION_SECONDS = 30; // 30 segundos
+    public static final float ARCHER_HEADSHOT_DAMAGE_BONUS = 0.30f; // 30% extra damage on headshots
 
     // --- FARMER (AGRICULTOR) ---
     // Bônus por Nível

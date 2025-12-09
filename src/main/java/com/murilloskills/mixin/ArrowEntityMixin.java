@@ -55,8 +55,33 @@ public abstract class ArrowEntityMixin {
 
         if (level > 0) {
             double damageMultiplier = ArcherSkill.getRangedDamageMultiplier(level);
+
+            // Headshot detection: check if arrow hit near the target's eye level
+            boolean isHeadshot = false;
+            if (target instanceof LivingEntity livingTarget) {
+                Vec3d hitPos = entityHitResult.getPos();
+                double targetEyeY = livingTarget.getEyePos().y;
+                double hitY = hitPos.y;
+
+                // Headshot if arrow hits within 0.3 blocks of eye level or above
+                isHeadshot = hitY >= targetEyeY - 0.3;
+            }
+
+            // Apply headshot bonus (30% extra damage)
+            double headshotMultiplier = isHeadshot
+                    ? (1.0 + com.murilloskills.utils.SkillConfig.ARCHER_HEADSHOT_DAMAGE_BONUS)
+                    : 1.0;
+
             double baseDamage = ((PersistentProjectileEntityAccessor) arrow).getDamage();
-            arrow.setDamage(baseDamage * damageMultiplier);
+            arrow.setDamage(baseDamage * damageMultiplier * headshotMultiplier);
+
+            // Notify player of headshot
+            if (isHeadshot) {
+                player.sendMessage(
+                        net.minecraft.text.Text.literal("💀 HEADSHOT! +30% dano")
+                                .formatted(net.minecraft.util.Formatting.RED, net.minecraft.util.Formatting.BOLD),
+                        true);
+            }
         }
     }
 

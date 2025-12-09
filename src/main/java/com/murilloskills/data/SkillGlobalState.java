@@ -338,7 +338,9 @@ public class SkillGlobalState extends PersistentState {
         }
 
         private int getXpNeededForNextLevel() {
-            return 50 + (this.level * 10) + (4 * this.level * this.level);
+            // Formula: 60 + (level * 15) + (2 * level²)
+            // This is the balanced curve - less aggressive than the old formula
+            return 60 + (this.level * 15) + (2 * this.level * this.level);
         }
     }
 
