@@ -328,9 +328,15 @@ public class SkillsScreen extends Screen {
                     int resetBtnHeight = resetBtnSize;
 
                     ButtonWidget resetBtn = ButtonWidget.builder(Text.literal("⟳"), (button) -> {
-                        button.active = false;
-                        pendingSelection.remove(skill); // Remove from pending so it unlocks visually on refresh
-                        ClientPlayNetworking.send(new SkillResetC2SPayload(skill));
+                        MinecraftClient.getInstance().setScreen(new ConfirmationScreen(
+                                this,
+                                Text.translatable("murilloskills.confirm.reset_title"),
+                                Text.translatable("murilloskills.confirm.reset_message",
+                                        getTranslatableSkillName(skill)),
+                                () -> {
+                                    pendingSelection.remove(skill);
+                                    ClientPlayNetworking.send(new SkillResetC2SPayload(skill));
+                                }));
                     })
                             .dimensions(resetBtnX, resetBtnY, resetBtnWidth, resetBtnHeight)
                             .build();
@@ -407,9 +413,14 @@ public class SkillsScreen extends Screen {
                     int resetBtnHeight = resetBtnSize;
 
                     ButtonWidget resetBtn = ButtonWidget.builder(Text.literal("⟳"), (button) -> {
-                        button.active = false; // Disable to prevent double click
-                        ClientPlayNetworking.send(new SkillResetC2SPayload(skill));
-                        // Do not close screen, wait for sync update
+                        MinecraftClient.getInstance().setScreen(new ConfirmationScreen(
+                                this,
+                                Text.translatable("murilloskills.confirm.reset_title"),
+                                Text.translatable("murilloskills.confirm.reset_message",
+                                        getTranslatableSkillName(skill)),
+                                () -> {
+                                    ClientPlayNetworking.send(new SkillResetC2SPayload(skill));
+                                }));
                     })
                             .dimensions(resetBtnX, resetBtnY, resetBtnWidth, resetBtnHeight)
                             .build();

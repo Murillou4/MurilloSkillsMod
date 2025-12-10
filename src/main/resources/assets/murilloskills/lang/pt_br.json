@@ -156,5 +156,10 @@
     "murilloskills.tooltip.xp_gain.fisher": "🎣 Pescar itens e tesouros",
     "murilloskills.tooltip.xp_gain.blacksmith": "🔨 Usar bigorna, fundir minérios",
     "murilloskills.tooltip.xp_gain.builder": "🧱 Colocar blocos de construção",
-    "murilloskills.tooltip.xp_gain.explorer": "🧭 Explorar novos chunks, viajar"
+    "murilloskills.tooltip.xp_gain.explorer": "🧭 Explorar novos chunks, viajar",
+    "_comment_confirmation": "=== CONFIRMATION DIALOGS ===",
+    "murilloskills.confirm.reset_title": "⚠ Resetar Skill?",
+    "murilloskills.confirm.reset_message": "Tem certeza que deseja resetar %s? Você perderá todo o progresso e precisará escolher uma nova habilidade.",
+    "murilloskills.confirm.btn_confirm": "Sim, Resetar",
+    "murilloskills.confirm.btn_cancel": "Cancelar"
 }

@@ -156,5 +156,10 @@
   "murilloskills.tooltip.xp_gain.fisher": "🎣 Fish items and treasures",
   "murilloskills.tooltip.xp_gain.blacksmith": "🔨 Use anvil, smelt ores",
   "murilloskills.tooltip.xp_gain.builder": "🧱 Place building blocks",
-  "murilloskills.tooltip.xp_gain.explorer": "🧭 Explore new chunks, travel"
+  "murilloskills.tooltip.xp_gain.explorer": "🧭 Explore new chunks, travel",
+  "_comment_confirmation": "=== CONFIRMATION DIALOGS ===",
+  "murilloskills.confirm.reset_title": "⚠ Reset Skill?",
+  "murilloskills.confirm.reset_message": "Are you sure you want to reset %s? You will lose all progress and need to choose a new skill.",
+  "murilloskills.confirm.btn_confirm": "Yes, Reset",
+  "murilloskills.confirm.btn_cancel": "Cancel"
 }
