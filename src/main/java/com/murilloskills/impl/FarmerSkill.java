@@ -63,7 +63,7 @@ public class FarmerSkill extends AbstractSkill {
 
             // 2. Check if already active
             if (isHarvestMoonActive(player)) {
-                player.sendMessage(Text.translatable("murilloskills.error.already_active", "Harvest Moon")
+                player.sendMessage(Text.translatable("murilloskills.error.already_active", Text.translatable("murilloskills.perk.name.farmer.master"))
                         .formatted(Formatting.RED), true);
                 return;
             }

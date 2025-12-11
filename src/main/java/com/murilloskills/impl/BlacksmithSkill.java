@@ -57,7 +57,7 @@ public class BlacksmithSkill extends AbstractSkill {
 
             // 2. Check if already active
             if (isTitaniumAuraActive(player)) {
-                player.sendMessage(Text.translatable("murilloskills.error.already_active", "Titanium Aura")
+                player.sendMessage(Text.translatable("murilloskills.error.already_active", Text.translatable("murilloskills.perk.name.blacksmith.master"))
                         .formatted(Formatting.RED), true);
                 return;
             }

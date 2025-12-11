@@ -244,7 +244,7 @@ public class CropHarvestHandler {
                 false, false, true));
 
         // Notify player
-        player.sendMessage(net.minecraft.text.Text.literal("✨ Colheita Dourada!")
+        player.sendMessage(net.minecraft.text.Text.translatable("murilloskills.farmer.golden_harvest")
                 .formatted(net.minecraft.util.Formatting.GOLD), true);
 
         LOGGER.debug("Player {} got golden crop from {}", player.getName().getString(), block);

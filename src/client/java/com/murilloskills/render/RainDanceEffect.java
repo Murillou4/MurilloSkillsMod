@@ -72,8 +72,8 @@ public class RainDanceEffect {
         seconds = seconds % 60;
 
         if (minutes > 0) {
-            return minutes + "m " + seconds + "s";
+            return minutes + net.minecraft.text.Text.translatable("murilloskills.gui.time.minutes").getString() + " " + seconds + net.minecraft.text.Text.translatable("murilloskills.gui.time.seconds").getString();
         }
-        return seconds + "s";
+        return seconds + net.minecraft.text.Text.translatable("murilloskills.gui.time.seconds").getString();
     }
 }

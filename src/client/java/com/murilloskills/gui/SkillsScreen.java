@@ -26,77 +26,110 @@ import java.util.Set;
 
 public class SkillsScreen extends Screen {
 
-    // Perk info record for next perk tooltip
-    private record PerkInfo(int level, String name, String description) {
+    // Perk info record for next perk tooltip - stores translation keys instead of
+    // hardcoded strings
+    private record PerkInfo(int level, String nameKey, String descKey) {
     }
 
-    // Static perk definitions per skill (ordered by level)
+    // Static perk definitions per skill (ordered by level) - uses translation keys
     private static final java.util.Map<MurilloSkillsList, List<PerkInfo>> SKILL_PERKS = new java.util.HashMap<>();
     static {
         // MINER
         SKILL_PERKS.put(MurilloSkillsList.MINER, List.of(
-                new PerkInfo(10, "Visão Noturna", "Visão noturna em cavernas"),
-                new PerkInfo(30, "Durabilidade", "Ferramentas duram 15% mais"),
-                new PerkInfo(60, "Radar de Minérios", "Som ao se aproximar de minérios"),
-                new PerkInfo(100, "Master Miner", "Pulso revela minérios próximos")));
+                new PerkInfo(10, "murilloskills.perk.name.miner.night_vision",
+                        "murilloskills.perk.desc.miner.night_vision"),
+                new PerkInfo(30, "murilloskills.perk.name.miner.durability",
+                        "murilloskills.perk.desc.miner.durability"),
+                new PerkInfo(60, "murilloskills.perk.name.miner.ore_radar", "murilloskills.perk.desc.miner.ore_radar"),
+                new PerkInfo(100, "murilloskills.perk.name.miner.master", "murilloskills.perk.desc.miner.master")));
 
         // WARRIOR
         SKILL_PERKS.put(MurilloSkillsList.WARRIOR, List.of(
-                new PerkInfo(10, "+1 Coração", "+1 coração de vida máxima"),
-                new PerkInfo(25, "Pele de Ferro", "+15% resistência a dano"),
-                new PerkInfo(50, "+1 Coração", "+1 coração de vida máxima"),
-                new PerkInfo(75, "Vampirismo", "15% roubo de vida"),
-                new PerkInfo(100, "Master Warrior", "+3 corações de vida máxima")));
+                new PerkInfo(10, "murilloskills.perk.name.warrior.heart_1", "murilloskills.perk.desc.warrior.heart_1"),
+                new PerkInfo(25, "murilloskills.perk.name.warrior.iron_skin",
+                        "murilloskills.perk.desc.warrior.iron_skin"),
+                new PerkInfo(50, "murilloskills.perk.name.warrior.heart_2", "murilloskills.perk.desc.warrior.heart_2"),
+                new PerkInfo(75, "murilloskills.perk.name.warrior.vampirism",
+                        "murilloskills.perk.desc.warrior.vampirism"),
+                new PerkInfo(100, "murilloskills.perk.name.warrior.master", "murilloskills.perk.desc.warrior.master")));
 
         // FARMER
         SKILL_PERKS.put(MurilloSkillsList.FARMER, List.of(
-                new PerkInfo(10, "Green Thumb", "+5% colheita, 10% semente salva"),
-                new PerkInfo(25, "Fertile Ground", "Plantações crescem 25% mais rápido"),
-                new PerkInfo(50, "Nutrient Cycle", "2x Bone Meal, 5% sementes extras"),
-                new PerkInfo(75, "Abundant Harvest", "+15% colheita, colheita adjacente"),
-                new PerkInfo(100, "Harvest Moon", "Colhe todos os cultivos ao redor")));
+                new PerkInfo(10, "murilloskills.perk.name.farmer.green_thumb",
+                        "murilloskills.perk.desc.farmer.green_thumb"),
+                new PerkInfo(25, "murilloskills.perk.name.farmer.fertile_ground",
+                        "murilloskills.perk.desc.farmer.fertile_ground"),
+                new PerkInfo(50, "murilloskills.perk.name.farmer.nutrient_cycle",
+                        "murilloskills.perk.desc.farmer.nutrient_cycle"),
+                new PerkInfo(75, "murilloskills.perk.name.farmer.abundant_harvest",
+                        "murilloskills.perk.desc.farmer.abundant_harvest"),
+                new PerkInfo(100, "murilloskills.perk.name.farmer.master", "murilloskills.perk.desc.farmer.master")));
 
         // ARCHER
         SKILL_PERKS.put(MurilloSkillsList.ARCHER, List.of(
-                new PerkInfo(10, "Flechas Rápidas", "Flechas voam 25% mais rápido"),
-                new PerkInfo(25, "Dano Bônus", "+5% dano à distância"),
-                new PerkInfo(50, "Penetração", "Flechas atravessam inimigos"),
-                new PerkInfo(75, "Tiro Estável", "50% menos dispersão"),
-                new PerkInfo(100, "Master Ranger", "Flechas perseguem inimigos")));
+                new PerkInfo(10, "murilloskills.perk.name.archer.fast_arrows",
+                        "murilloskills.perk.desc.archer.fast_arrows"),
+                new PerkInfo(25, "murilloskills.perk.name.archer.bonus_damage",
+                        "murilloskills.perk.desc.archer.bonus_damage"),
+                new PerkInfo(50, "murilloskills.perk.name.archer.penetration",
+                        "murilloskills.perk.desc.archer.penetration"),
+                new PerkInfo(75, "murilloskills.perk.name.archer.stable_shot",
+                        "murilloskills.perk.desc.archer.stable_shot"),
+                new PerkInfo(100, "murilloskills.perk.name.archer.master", "murilloskills.perk.desc.archer.master")));
 
         // FISHER
         SKILL_PERKS.put(MurilloSkillsList.FISHER, List.of(
-                new PerkInfo(10, "Pesca Rápida", "-25% tempo de espera"),
-                new PerkInfo(25, "Caçador de Tesouros", "+10% tesouro, +10% XP"),
-                new PerkInfo(50, "Dolphin's Grace", "Velocidade na água"),
-                new PerkInfo(75, "Luck of the Sea", "Sorte passiva nível 1"),
-                new PerkInfo(100, "Rain Dance", "Invoca chuva com bônus massivos")));
+                new PerkInfo(10, "murilloskills.perk.name.fisher.fast_fishing",
+                        "murilloskills.perk.desc.fisher.fast_fishing"),
+                new PerkInfo(25, "murilloskills.perk.name.fisher.treasure_hunter",
+                        "murilloskills.perk.desc.fisher.treasure_hunter"),
+                new PerkInfo(50, "murilloskills.perk.name.fisher.dolphins_grace",
+                        "murilloskills.perk.desc.fisher.dolphins_grace"),
+                new PerkInfo(75, "murilloskills.perk.name.fisher.luck_of_sea",
+                        "murilloskills.perk.desc.fisher.luck_of_sea"),
+                new PerkInfo(100, "murilloskills.perk.name.fisher.master", "murilloskills.perk.desc.fisher.master")));
 
         // BLACKSMITH
         SKILL_PERKS.put(MurilloSkillsList.BLACKSMITH, List.of(
-                new PerkInfo(10, "Iron Skin", "+5% resistência física"),
-                new PerkInfo(25, "Efficient Anvil", "25% desconto XP, 10% material salvo"),
-                new PerkInfo(50, "Forged Resilience", "+10% fogo/explosão, +1 Protection"),
-                new PerkInfo(75, "Thorns Master", "20% reflexo, -50% knockback"),
-                new PerkInfo(100, "Titanium Aura", "Imunidade/regeneração/resistência")));
+                new PerkInfo(10, "murilloskills.perk.name.blacksmith.iron_skin",
+                        "murilloskills.perk.desc.blacksmith.iron_skin"),
+                new PerkInfo(25, "murilloskills.perk.name.blacksmith.efficient_anvil",
+                        "murilloskills.perk.desc.blacksmith.efficient_anvil"),
+                new PerkInfo(50, "murilloskills.perk.name.blacksmith.forged_resilience",
+                        "murilloskills.perk.desc.blacksmith.forged_resilience"),
+                new PerkInfo(75, "murilloskills.perk.name.blacksmith.thorns_master",
+                        "murilloskills.perk.desc.blacksmith.thorns_master"),
+                new PerkInfo(100, "murilloskills.perk.name.blacksmith.master",
+                        "murilloskills.perk.desc.blacksmith.master")));
 
         // BUILDER
         SKILL_PERKS.put(MurilloSkillsList.BUILDER, List.of(
-                new PerkInfo(10, "Extended Reach", "+1 bloco de alcance"),
-                new PerkInfo(15, "Efficient Crafting", "20% economia decorativos"),
-                new PerkInfo(25, "Safe Landing", "-25% dano de queda"),
-                new PerkInfo(50, "Scaffold Master", "Velocidade scaffolding"),
-                new PerkInfo(75, "Master Reach", "+5 blocos de alcance"),
-                new PerkInfo(100, "Creative Brush", "Preenche áreas automaticamente")));
+                new PerkInfo(10, "murilloskills.perk.name.builder.extended_reach",
+                        "murilloskills.perk.desc.builder.extended_reach"),
+                new PerkInfo(15, "murilloskills.perk.name.builder.efficient_crafting",
+                        "murilloskills.perk.desc.builder.efficient_crafting"),
+                new PerkInfo(25, "murilloskills.perk.name.builder.safe_landing",
+                        "murilloskills.perk.desc.builder.safe_landing"),
+                new PerkInfo(50, "murilloskills.perk.name.builder.scaffold_master",
+                        "murilloskills.perk.desc.builder.scaffold_master"),
+                new PerkInfo(75, "murilloskills.perk.name.builder.master_reach",
+                        "murilloskills.perk.desc.builder.master_reach"),
+                new PerkInfo(100, "murilloskills.perk.name.builder.master", "murilloskills.perk.desc.builder.master")));
 
         // EXPLORER
         SKILL_PERKS.put(MurilloSkillsList.EXPLORER, List.of(
-                new PerkInfo(10, "Passo Leve", "Sobe blocos automaticamente"),
-                new PerkInfo(20, "Aquático", "+50% respiração submerso"),
-                new PerkInfo(35, "Olhos de Gato", "Visão noturna permanente"),
-                new PerkInfo(65, "Pés de Pena", "-40% dano de queda"),
-                new PerkInfo(80, "Nether Walker", "Imune a magma, soul sand normal"),
-                new PerkInfo(100, "Sexto Sentido", "Baús e Spawners brilham")));
+                new PerkInfo(10, "murilloskills.perk.name.explorer.step_assist",
+                        "murilloskills.perk.desc.explorer.step_assist"),
+                new PerkInfo(20, "murilloskills.perk.name.explorer.aquatic",
+                        "murilloskills.perk.desc.explorer.aquatic"),
+                new PerkInfo(35, "murilloskills.perk.name.explorer.night_vision",
+                        "murilloskills.perk.desc.explorer.night_vision"),
+                new PerkInfo(65, "murilloskills.perk.name.explorer.feather_feet",
+                        "murilloskills.perk.desc.explorer.feather_feet"),
+                new PerkInfo(80, "murilloskills.perk.name.explorer.nether_walker",
+                        "murilloskills.perk.desc.explorer.nether_walker"),
+                new PerkInfo(100, "murilloskills.perk.name.explorer.master",
+                        "murilloskills.perk.desc.explorer.master")));
     }
 
     /**
@@ -124,21 +157,48 @@ public class SkillsScreen extends Screen {
         return Text.translatable("murilloskills.skill.name." + skill.name().toLowerCase());
     }
 
-    // Cores Premium
-    private static final int BG_OVERLAY = 0xE0101018;
-    private static final int CARD_BG_NORMAL = 0xFF1A1A24;
-    private static final int CARD_BG_HOVER = 0xFF2A2A38;
-    private static final int CARD_BG_PARAGON = 0xFF2A2818;
-    private static final int CARD_BG_SELECTED = 0xFF1A2A20; // Green tint for selected skills
-    private static final int CARD_BG_LOCKED = 0xFF141418; // Darker for locked skills
-    private static final int CARD_BG_PENDING_SELECT = 0xFF202038; // Blue tint for pending selection
-    private static final int BORDER_NORMAL = 0xFF404050;
-    private static final int BORDER_HOVER = 0xFFFFCC44;
-    private static final int BORDER_SELECTED = 0xFF44FF66; // Green border for selected
-    private static final int BORDER_LOCKED = 0xFF282830; // Dark border for locked
-    private static final int BORDER_PARAGON = 0xFFFFAA00; // Gold border for paragon
-    private static final int XP_BAR_BG = 0xFF0A0A10;
-    private static final int HEADER_BG = 0xDD101018;
+    // === MODERN PREMIUM COLOR PALETTE ===
+    // Background & Overlay
+    private static final int BG_OVERLAY = 0xF0080810;
+    private static final int BG_VIGNETTE_INNER = 0x00000000;
+    private static final int BG_VIGNETTE_OUTER = 0x60000000;
+
+    // Card Colors - Elegant dark theme with subtle color tints
+    private static final int CARD_BG_NORMAL = 0xE8141420;
+    private static final int CARD_BG_HOVER = 0xF0202035;
+    private static final int CARD_BG_PARAGON = 0xF0201810;
+    private static final int CARD_BG_SELECTED = 0xE8102018;
+    private static final int CARD_BG_LOCKED = 0xD0101015;
+    private static final int CARD_BG_PENDING_SELECT = 0xE8181830;
+
+    // Card Inner Highlight (top edge glow)
+    private static final int CARD_HIGHLIGHT = 0x20FFFFFF;
+    private static final int CARD_SHADOW = 0x40000000;
+
+    // Border Colors - Refined gradients
+    private static final int BORDER_NORMAL = 0xFF2A2A3A;
+    private static final int BORDER_HOVER = 0xFFDDA520;
+    private static final int BORDER_SELECTED = 0xFF32CD32;
+    private static final int BORDER_LOCKED = 0xFF1A1A20;
+    private static final int BORDER_PARAGON = 0xFFFFD700;
+
+    // XP Bar Colors
+    private static final int XP_BAR_BG = 0xFF0A0A12;
+    private static final int XP_BAR_BORDER = 0xFF1A1A25;
+    private static final int XP_BAR_FILL_START = 0xFF00AA44;
+    private static final int XP_BAR_FILL_END = 0xFF00DD66;
+    private static final int XP_BAR_GLOW = 0x4000FF66;
+    private static final int XP_BAR_MAX = 0xFFFFAA00;
+
+    // Header
+    private static final int HEADER_BG_TOP = 0xF0101018;
+    private static final int HEADER_BG_BOTTOM = 0xC0080810;
+    private static final int HEADER_ACCENT = 0xFFDDA520;
+
+    // Text Colors
+    private static final int TEXT_TITLE = 0xFFFFD700;
+    private static final int TEXT_SUBTITLE = 0xFFBBBBCC;
+    private static final int TEXT_MUTED = 0xFF666680;
 
     // Layout responsivo - calculado dinamicamente
     private int cardWidth;
@@ -156,7 +216,7 @@ public class SkillsScreen extends Screen {
     private final java.util.Map<MurilloSkillsList, ButtonWidget> selectionButtons = new java.util.HashMap<>();
 
     public SkillsScreen() {
-        super(Text.of("§6§lHabilidades"));
+        super(Text.translatable("murilloskills.gui.title"));
     }
 
     private boolean isSelectionMode() {
@@ -327,7 +387,7 @@ public class SkillsScreen extends Screen {
                     int resetBtnWidth = resetBtnSize;
                     int resetBtnHeight = resetBtnSize;
 
-                    ButtonWidget resetBtn = ButtonWidget.builder(Text.literal("⟳"), (button) -> {
+                    ButtonWidget resetBtn = ButtonWidget.builder(Text.translatable("murilloskills.gui.icon.reset"), (button) -> {
                         MinecraftClient.getInstance().setScreen(new ConfirmationScreen(
                                 this,
                                 Text.translatable("murilloskills.confirm.reset_title"),
@@ -412,7 +472,7 @@ public class SkillsScreen extends Screen {
                     int resetBtnWidth = resetBtnSize;
                     int resetBtnHeight = resetBtnSize;
 
-                    ButtonWidget resetBtn = ButtonWidget.builder(Text.literal("⟳"), (button) -> {
+                    ButtonWidget resetBtn = ButtonWidget.builder(Text.translatable("murilloskills.gui.icon.reset"), (button) -> {
                         MinecraftClient.getInstance().setScreen(new ConfirmationScreen(
                                 this,
                                 Text.translatable("murilloskills.confirm.reset_title"),
@@ -433,32 +493,20 @@ public class SkillsScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // 1. Fundo Escuro da Tela
+        // 1. Background with vignette effect
         context.fill(0, 0, this.width, this.height, BG_OVERLAY);
+
+        // Subtle vignette corners (darkening towards edges)
+        int vignetteSize = Math.min(this.width, this.height) / 3;
+        drawVignetteCorner(context, 0, 0, vignetteSize, true, true);
+        drawVignetteCorner(context, this.width - vignetteSize, 0, vignetteSize, false, true);
+        drawVignetteCorner(context, 0, this.height - vignetteSize, vignetteSize, true, false);
+        drawVignetteCorner(context, this.width - vignetteSize, this.height - vignetteSize, vignetteSize, false, false);
 
         boolean selectionMode = isSelectionMode();
 
-        // 1.5. Header Background Panel
-        context.fill(0, 0, this.width, headerHeight, HEADER_BG);
-        // Subtle gradient line at bottom of header
-        context.fill(0, headerHeight - 1, this.width, headerHeight, 0x40FFFFFF);
-
-        // Title changes based on mode
-        int titleY = (headerHeight - 20) / 2;
-        if (selectionMode) {
-            context.drawCenteredTextWithShadow(this.textRenderer,
-                    Text.translatable("murilloskills.gui.choose_skills").formatted(Formatting.GOLD, Formatting.BOLD),
-                    this.width / 2, titleY, 0xFFFFFFFF);
-            int count = pendingSelection.size();
-            context.drawCenteredTextWithShadow(this.textRenderer,
-                    Text.translatable("murilloskills.gui.select_skills_count", count).formatted(Formatting.YELLOW),
-                    this.width / 2,
-                    titleY + 12, 0xFFFFFFFF);
-        } else {
-            context.drawCenteredTextWithShadow(this.textRenderer,
-                    Text.translatable("murilloskills.gui.title").formatted(Formatting.GOLD, Formatting.BOLD),
-                    this.width / 2, titleY + 5, 0xFFFFFFFF);
-        }
+        // 2. Modern Header with gradient
+        renderHeader(context, selectionMode);
 
         MurilloSkillsList[] skills = MurilloSkillsList.values();
         List<Text> tooltipToRender = null;
@@ -512,25 +560,31 @@ public class SkillsScreen extends Screen {
                 }
             }
 
-            // Fundo do Card
-            context.fill(x, y, x + cardWidth, y + cardHeight, cardBg);
-            drawBorder(context, x, y, cardWidth, cardHeight, borderColor);
+            // Modern Card with depth effects
+            renderModernCard(context, x, y, cardWidth, cardHeight, cardBg, borderColor, isHovered);
 
-            // Ícone e Título
-            int titleColor = isLocked ? 0xFF666666 : 0xFFFFAA00;
+            // Skill Icon with subtle glow for active skills
+            if (!isLocked && (isSelected || isParagon)) {
+                // Subtle item glow
+                context.fill(x + 3, y + 12, x + 23, y + 32, 0x15FFFFFF);
+            }
             context.drawItem(getSkillIcon(skill), x + 5, y + 14);
-            context.drawTextWithShadow(this.textRenderer, getTranslatableSkillName(skill), x + 28, y + 5, titleColor);
+
+            // Skill Name with better typography
+            int titleColor = isLocked ? TEXT_MUTED : TEXT_TITLE;
+            context.drawTextWithShadow(this.textRenderer, getTranslatableSkillName(skill), x + 28, y + 6, titleColor);
 
             // Lock icon for non-selected skills (normal mode only)
             if (!selectionMode && isLocked) {
-                context.drawTextWithShadow(this.textRenderer, "🔒", x + cardWidth - 15, y + 5, 0xFF666666);
+                context.drawTextWithShadow(this.textRenderer, Text.translatable("murilloskills.gui.icon.lock"), x + cardWidth - 16, y + 6, TEXT_MUTED);
             }
 
-            // Nível
+            // Level badge with better positioning
             String lvlStr = String.valueOf(stats.level);
-            int lvlWidth = this.textRenderer.getWidth("Lvl " + lvlStr);
-            int lvlColor = isLocked ? 0xFF666666 : 0xFFFFFFFF;
-            context.drawTextWithShadow(this.textRenderer, "Lvl " + lvlStr, x + cardWidth - lvlWidth - 5, y + 5,
+            Text fullLevelText = Text.translatable("murilloskills.gui.level_prefix").append(lvlStr);
+            int lvlWidth = this.textRenderer.getWidth(fullLevelText);
+            int lvlColor = isLocked ? TEXT_MUTED : (stats.level >= 100 ? TEXT_TITLE : 0xFFDDDDDD);
+            context.drawTextWithShadow(this.textRenderer, fullLevelText, x + cardWidth - lvlWidth - 6, y + 6,
                     lvlColor);
 
             // Barra de XP
@@ -555,7 +609,7 @@ public class SkillsScreen extends Screen {
                     context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.cooldown", cdText), x + 28,
                             y + 40, 0xFFFF5555, false);
                 }
-                context.drawTextWithShadow(this.textRenderer, "👑", x + 120, y - 4, 0xFFFFAA00);
+                context.drawTextWithShadow(this.textRenderer, Text.translatable("murilloskills.gui.icon.paragon"), x + 120, y - 4, 0xFFFFAA00);
             } else if (isSelected) {
                 context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.active"), x + 28, y + 40,
                         0xFF00AA00, false);
@@ -585,8 +639,8 @@ public class SkillsScreen extends Screen {
 
     private String formatTime(long seconds) {
         if (seconds > 60)
-            return (seconds / 60) + "m";
-        return seconds + "s";
+            return (seconds / 60) + Text.translatable("murilloskills.gui.time.minutes").getString();
+        return seconds + Text.translatable("murilloskills.gui.time.seconds").getString();
     }
 
     private long getSkillCooldown(MurilloSkillsList skill) {
@@ -649,10 +703,10 @@ public class SkillsScreen extends Screen {
             int percent = (int) ((currentXp / maxXp) * 100);
 
             tooltip.add(Text.empty());
-            tooltip.add(Text.literal("Progresso para o Nível " + (level + 1) + ": " + percent + "%")
+            tooltip.add(Text.translatable("murilloskills.gui.progress_xp", level + 1, percent)
                     .formatted(Formatting.GRAY));
-            tooltip.add(
-                    Text.literal(String.format("%,.0f / %,.0f XP", currentXp, maxXp)).formatted(Formatting.DARK_GRAY));
+            tooltip.add(Text.translatable("murilloskills.gui.xp_format",
+                    String.format("%,.0f", currentXp), String.format("%,.0f", maxXp)).formatted(Formatting.DARK_GRAY));
 
             tooltip.add(Text.empty());
             tooltip.add(getXpGainDescription(skill).copy().formatted(Formatting.GRAY));
@@ -663,8 +717,10 @@ public class SkillsScreen extends Screen {
             if (nextPerk != null) {
                 int levelsRemaining = nextPerk.level() - level;
                 tooltip.add(Text.translatable("murilloskills.gui.next_perk").formatted(Formatting.LIGHT_PURPLE));
-                tooltip.add(Text.literal("🔓 " + nextPerk.name()).formatted(Formatting.YELLOW));
-                tooltip.add(Text.literal("   " + nextPerk.description()).formatted(Formatting.GRAY));
+                tooltip.add(
+                        Text.literal("🔓 ").append(Text.translatable(nextPerk.nameKey())).formatted(Formatting.YELLOW));
+                tooltip.add(
+                        Text.literal("   ").append(Text.translatable(nextPerk.descKey())).formatted(Formatting.GRAY));
                 tooltip.add(Text.translatable("murilloskills.gui.perk_remaining", nextPerk.level(), levelsRemaining)
                         .formatted(Formatting.AQUA));
             } else {
@@ -679,23 +735,29 @@ public class SkillsScreen extends Screen {
             switch (skill) {
                 case MINER -> {
                     int speed = (int) (level * SkillConfig.MINER_SPEED_PER_LEVEL * 100);
-                    tooltip.add(Text.literal("• Mineração: +" + speed + "% Vel.").formatted(Formatting.GREEN));
+                    tooltip.add(Text.translatable("murilloskills.passive.miner.mining_speed", speed)
+                            .formatted(Formatting.GREEN));
 
                     int fortune = (int) (level * SkillConfig.MINER_FORTUNE_PER_LEVEL);
                     if (fortune > 0)
-                        tooltip.add(Text.literal("• Fortuna Extra: +" + fortune).formatted(Formatting.GREEN));
+                        tooltip.add(Text.translatable("murilloskills.passive.miner.extra_fortune", fortune)
+                                .formatted(Formatting.GREEN));
 
                     if (level >= SkillConfig.MINER_NIGHT_VISION_LEVEL)
-                        tooltip.add(Text.literal("• Visão Noturna (Cavernas)").formatted(Formatting.AQUA));
+                        tooltip.add(Text.translatable("murilloskills.passive.miner.night_vision")
+                                .formatted(Formatting.AQUA));
                     if (level >= SkillConfig.MINER_DURABILITY_LEVEL)
-                        tooltip.add(Text.literal("• Durabilidade Infinita (Chance)").formatted(Formatting.AQUA));
+                        tooltip.add(
+                                Text.translatable("murilloskills.passive.miner.durability").formatted(Formatting.AQUA));
                     if (level >= SkillConfig.MINER_RADAR_LEVEL)
-                        tooltip.add(Text.literal("• Radar de Minérios").formatted(Formatting.AQUA));
+                        tooltip.add(
+                                Text.translatable("murilloskills.passive.miner.ore_radar").formatted(Formatting.AQUA));
                 }
                 case WARRIOR -> {
                     double damage = level * SkillConfig.WARRIOR_DAMAGE_PER_LEVEL;
-                    tooltip.add(
-                            Text.literal("• Dano Base: +" + String.format("%.1f", damage)).formatted(Formatting.RED));
+                    tooltip.add(Text
+                            .translatable("murilloskills.passive.warrior.base_damage", String.format("%.1f", damage))
+                            .formatted(Formatting.RED));
 
                     int extraHearts = 0;
                     if (level >= 10)
@@ -705,153 +767,187 @@ public class SkillsScreen extends Screen {
                     if (level >= 100)
                         extraHearts += 3;
                     if (extraHearts > 0)
-                        tooltip.add(Text.literal("• Vida Max: +" + extraHearts + " ❤").formatted(Formatting.RED));
+                        tooltip.add(Text.translatable("murilloskills.passive.warrior.max_health", extraHearts)
+                                .formatted(Formatting.RED));
 
                     if (level >= SkillConfig.RESISTANCE_UNLOCK_LEVEL)
-                        tooltip.add(Text.literal("• Pele de Ferro (Resistência)").formatted(Formatting.GOLD));
+                        tooltip.add(Text.translatable("murilloskills.passive.warrior.iron_skin")
+                                .formatted(Formatting.GOLD));
                     if (level >= SkillConfig.LIFESTEAL_UNLOCK_LEVEL)
-                        tooltip.add(Text.literal("• Vampirismo (Roubo de Vida)").formatted(Formatting.DARK_PURPLE));
+                        tooltip.add(Text.translatable("murilloskills.passive.warrior.vampirism")
+                                .formatted(Formatting.DARK_PURPLE));
                 }
                 case FARMER -> {
-                    // Dano base
                     int doubleChance = (int) (level * SkillConfig.FARMER_DOUBLE_HARVEST_PER_LEVEL * 100);
-                    tooltip.add(
-                            Text.literal("• Colheita Dupla: " + doubleChance + "% chance").formatted(Formatting.GREEN));
+                    tooltip.add(Text.translatable("murilloskills.passive.farmer.double_harvest", doubleChance)
+                            .formatted(Formatting.GREEN));
 
                     int goldenChance = (int) (level * SkillConfig.FARMER_GOLDEN_CROP_PER_LEVEL * 100);
                     if (goldenChance > 0)
-                        tooltip.add(Text.literal("• Cultivo Dourado: " + goldenChance + "% chance")
+                        tooltip.add(Text.translatable("murilloskills.passive.farmer.golden_crop", goldenChance)
                                 .formatted(Formatting.GOLD));
 
                     if (level >= SkillConfig.FARMER_GREEN_THUMB_LEVEL)
-                        tooltip.add(Text.literal("• Green Thumb (+5% colheita)").formatted(Formatting.GREEN));
+                        tooltip.add(Text.translatable("murilloskills.passive.farmer.green_thumb")
+                                .formatted(Formatting.GREEN));
                     if (level >= SkillConfig.FARMER_FERTILE_GROUND_LEVEL)
-                        tooltip.add(Text.literal("• Fertile Ground (25% crescimento)").formatted(Formatting.AQUA));
+                        tooltip.add(Text.translatable("murilloskills.passive.farmer.fertile_ground")
+                                .formatted(Formatting.AQUA));
                     if (level >= SkillConfig.FARMER_NUTRIENT_CYCLE_LEVEL)
-                        tooltip.add(Text.literal("• Nutrient Cycle (2x Bone Meal)").formatted(Formatting.AQUA));
+                        tooltip.add(Text.translatable("murilloskills.passive.farmer.nutrient_cycle")
+                                .formatted(Formatting.AQUA));
                     if (level >= SkillConfig.FARMER_ABUNDANT_HARVEST_LEVEL)
-                        tooltip.add(Text.literal("• Abundant Harvest (+15% colheita)").formatted(Formatting.GOLD));
+                        tooltip.add(Text.translatable("murilloskills.passive.farmer.abundant_harvest")
+                                .formatted(Formatting.GOLD));
 
                     // Key binding info
                     if (level >= SkillConfig.FARMER_AREA_PLANTING_LEVEL) {
                         tooltip.add(Text.empty());
-                        tooltip.add(Text.literal("⌨ Tecla G: Toggle Plantio em Área 3x3")
+                        tooltip.add(Text.translatable("murilloskills.keybind.hint.area_planting")
                                 .formatted(Formatting.LIGHT_PURPLE));
                     }
                 }
                 case ARCHER -> {
                     // Dano base por flecha (+2% por level)
                     int arrowDamage = (int) (level * SkillConfig.ARCHER_DAMAGE_PER_LEVEL * 100);
-                    tooltip.add(Text.literal("• Dano de Flecha: +" + arrowDamage + "%").formatted(Formatting.GREEN));
+                    tooltip.add(Text.translatable("murilloskills.passive.archer.arrow_damage", arrowDamage)
+                            .formatted(Formatting.GREEN));
 
                     // Nível 10: Flechas mais rápidas
                     if (level >= SkillConfig.ARCHER_FAST_ARROWS_LEVEL) {
                         int speedBonus = (int) ((SkillConfig.ARCHER_ARROW_SPEED_MULTIPLIER - 1) * 100);
-                        tooltip.add(Text.literal("• Velocidade de Flecha: +" + speedBonus + "%")
+                        tooltip.add(Text.translatable("murilloskills.passive.archer.arrow_speed", speedBonus)
                                 .formatted(Formatting.AQUA));
                     }
 
                     // Nível 25: +5% dano adicional
                     if (level >= SkillConfig.ARCHER_BONUS_DAMAGE_LEVEL) {
                         int bonusDamage = (int) (SkillConfig.ARCHER_BONUS_DAMAGE_AMOUNT * 100);
-                        tooltip.add(Text.literal("• Bônus de Dano: +" + bonusDamage + "%").formatted(Formatting.AQUA));
+                        tooltip.add(Text.translatable("murilloskills.passive.archer.bonus_damage", bonusDamage)
+                                .formatted(Formatting.AQUA));
                     }
 
                     // Nível 50: Penetração de flechas
                     if (level >= SkillConfig.ARCHER_PENETRATION_LEVEL) {
-                        tooltip.add(Text.literal("• Penetração (Piercing)").formatted(Formatting.AQUA));
+                        tooltip.add(Text.translatable("murilloskills.passive.archer.penetration")
+                                .formatted(Formatting.AQUA));
                     }
 
                     // Nível 75: Tiros mais estáveis
                     if (level >= SkillConfig.ARCHER_STABLE_SHOT_LEVEL) {
                         int spreadReduction = (int) (SkillConfig.ARCHER_SPREAD_REDUCTION * 100);
-                        tooltip.add(Text.literal("• Precisão: +" + spreadReduction + "%").formatted(Formatting.AQUA));
+                        tooltip.add(Text.translatable("murilloskills.passive.archer.precision", spreadReduction)
+                                .formatted(Formatting.AQUA));
                     }
 
                     // Nível 100: Master Ranger
                     if (level >= SkillConfig.ARCHER_MASTER_LEVEL) {
-                        tooltip.add(Text.literal("• Master Ranger (Habilidade Ativa)").formatted(Formatting.GOLD));
+                        tooltip.add(
+                                Text.translatable("murilloskills.passive.archer.master").formatted(Formatting.GOLD));
                     }
                 }
                 case FISHER -> {
-                    tooltip.add(Text
-                            .literal("• Velocidade de Pesca: +"
-                                    + (int) (level * SkillConfig.FISHER_SPEED_PER_LEVEL * 100) + "%")
+                    int fishingSpeed = (int) (level * SkillConfig.FISHER_SPEED_PER_LEVEL * 100);
+                    tooltip.add(Text.translatable("murilloskills.passive.fisher.fishing_speed", fishingSpeed)
                             .formatted(Formatting.AQUA));
                     if (level >= SkillConfig.FISHER_WAIT_REDUCTION_LEVEL)
-                        tooltip.add(Text.literal("• -25% tempo de espera").formatted(Formatting.GREEN));
+                        tooltip.add(Text.translatable("murilloskills.passive.fisher.wait_reduction")
+                                .formatted(Formatting.GREEN));
                     if (level >= SkillConfig.FISHER_TREASURE_BONUS_LEVEL)
-                        tooltip.add(Text.literal("• +10% chance de tesouro").formatted(Formatting.GREEN));
+                        tooltip.add(Text.translatable("murilloskills.passive.fisher.treasure_chance")
+                                .formatted(Formatting.GREEN));
                     if (level >= SkillConfig.FISHER_DOLPHIN_GRACE_LEVEL)
-                        tooltip.add(Text.literal("• Dolphin's Grace (água)").formatted(Formatting.AQUA));
+                        tooltip.add(Text.translatable("murilloskills.passive.fisher.dolphins_grace")
+                                .formatted(Formatting.AQUA));
                     if (level >= SkillConfig.FISHER_LUCK_SEA_LEVEL)
-                        tooltip.add(Text.literal("• Luck of the Sea passivo").formatted(Formatting.AQUA));
+                        tooltip.add(Text.translatable("murilloskills.passive.fisher.luck_of_sea")
+                                .formatted(Formatting.AQUA));
                 }
                 case BLACKSMITH -> {
-                    tooltip.add(Text
-                            .literal("• Resistência Física: +"
-                                    + (int) (level * SkillConfig.BLACKSMITH_RESISTANCE_PER_LEVEL * 100) + "%")
+                    int resistance = (int) (level * SkillConfig.BLACKSMITH_RESISTANCE_PER_LEVEL * 100);
+                    tooltip.add(Text.translatable("murilloskills.passive.blacksmith.physical_resistance", resistance)
                             .formatted(Formatting.GOLD));
                     if (level >= SkillConfig.BLACKSMITH_IRON_SKIN_LEVEL)
-                        tooltip.add(Text.literal("• Iron Skin (+5% resistência)").formatted(Formatting.GREEN));
+                        tooltip.add(Text.translatable("murilloskills.passive.blacksmith.iron_skin")
+                                .formatted(Formatting.GREEN));
                     if (level >= SkillConfig.BLACKSMITH_EFFICIENT_ANVIL_LEVEL)
-                        tooltip.add(Text.literal("• Efficient Anvil (25% desconto)").formatted(Formatting.GREEN));
+                        tooltip.add(Text.translatable("murilloskills.passive.blacksmith.efficient_anvil")
+                                .formatted(Formatting.GREEN));
                     if (level >= SkillConfig.BLACKSMITH_FORGED_RESILIENCE_LEVEL)
-                        tooltip.add(Text.literal("• Forged Resilience (fogo/explosão)").formatted(Formatting.AQUA));
+                        tooltip.add(Text.translatable("murilloskills.passive.blacksmith.forged_resilience")
+                                .formatted(Formatting.AQUA));
                     if (level >= SkillConfig.BLACKSMITH_THORNS_MASTER_LEVEL)
-                        tooltip.add(Text.literal("• Thorns Master (reflexo de dano)").formatted(Formatting.AQUA));
+                        tooltip.add(Text.translatable("murilloskills.passive.blacksmith.thorns_master")
+                                .formatted(Formatting.AQUA));
                 }
                 case BUILDER -> {
                     double reach = level * SkillConfig.BUILDER_REACH_PER_LEVEL;
-                    tooltip.add(Text.literal("• Alcance Extra: +" + String.format("%.1f", reach) + " blocos")
-                            .formatted(Formatting.AQUA));
+                    tooltip.add(
+                            Text.translatable("murilloskills.passive.builder.extra_reach", String.format("%.1f", reach))
+                                    .formatted(Formatting.AQUA));
                     if (level >= SkillConfig.BUILDER_EXTENDED_REACH_LEVEL)
-                        tooltip.add(Text.literal("• Extended Reach (+1 bloco)").formatted(Formatting.GREEN));
+                        tooltip.add(Text.translatable("murilloskills.passive.builder.extended_reach")
+                                .formatted(Formatting.GREEN));
                     if (level >= SkillConfig.BUILDER_EFFICIENT_CRAFTING_LEVEL)
-                        tooltip.add(Text.literal("• Efficient Crafting (economia)").formatted(Formatting.GREEN));
+                        tooltip.add(Text.translatable("murilloskills.passive.builder.efficient_crafting")
+                                .formatted(Formatting.GREEN));
                     if (level >= SkillConfig.BUILDER_SAFE_LANDING_LEVEL)
-                        tooltip.add(Text.literal("• Safe Landing (-25% queda)").formatted(Formatting.AQUA));
+                        tooltip.add(Text.translatable("murilloskills.passive.builder.safe_landing")
+                                .formatted(Formatting.AQUA));
                     if (level >= SkillConfig.BUILDER_SCAFFOLD_MASTER_LEVEL)
-                        tooltip.add(Text.literal("• Scaffold Master (velocidade)").formatted(Formatting.AQUA));
+                        tooltip.add(Text.translatable("murilloskills.passive.builder.scaffold_master")
+                                .formatted(Formatting.AQUA));
                     if (level >= SkillConfig.BUILDER_MASTER_REACH_LEVEL)
-                        tooltip.add(Text.literal("• Master Reach (+5 blocos)").formatted(Formatting.GOLD));
+                        tooltip.add(Text.translatable("murilloskills.passive.builder.master_reach")
+                                .formatted(Formatting.GOLD));
 
                     // Key binding info for Creative Brush mode
                     if (level >= SkillConfig.BUILDER_MASTER_LEVEL) {
                         tooltip.add(Text.empty());
-                        tooltip.add(
-                                Text.literal("⌨ Tecla H: Toggle Modo Oco/Sólido").formatted(Formatting.LIGHT_PURPLE));
+                        tooltip.add(Text.translatable("murilloskills.keybind.hint.hollow_mode")
+                                .formatted(Formatting.LIGHT_PURPLE));
                     }
                 }
                 case EXPLORER -> {
                     // Velocidade base
                     int speedBonus = (int) (level * SkillConfig.EXPLORER_SPEED_PER_LEVEL * 100);
-                    tooltip.add(Text.literal("• Velocidade: +" + speedBonus + "%").formatted(Formatting.GREEN));
+                    tooltip.add(Text.translatable("murilloskills.passive.explorer.speed", speedBonus)
+                            .formatted(Formatting.GREEN));
 
                     int luck = level / SkillConfig.EXPLORER_LUCK_INTERVAL;
                     if (luck > 0)
-                        tooltip.add(Text.literal("• Sorte: +" + luck).formatted(Formatting.GOLD));
+                        tooltip.add(Text.translatable("murilloskills.passive.explorer.luck", luck)
+                                .formatted(Formatting.GOLD));
 
                     if (level >= SkillConfig.EXPLORER_STEP_ASSIST_LEVEL)
-                        tooltip.add(Text.literal("• Passo Leve (auto-step)").formatted(Formatting.GREEN));
+                        tooltip.add(Text.translatable("murilloskills.passive.explorer.step_assist")
+                                .formatted(Formatting.GREEN));
                     if (level >= SkillConfig.EXPLORER_AQUATIC_LEVEL)
-                        tooltip.add(Text.literal("• Aquático (+50% respiração)").formatted(Formatting.AQUA));
+                        tooltip.add(
+                                Text.translatable("murilloskills.passive.explorer.aquatic").formatted(Formatting.AQUA));
                     if (level >= SkillConfig.EXPLORER_NIGHT_VISION_LEVEL)
-                        tooltip.add(Text.literal("• Visão Noturna (toggleável)").formatted(Formatting.AQUA));
+                        tooltip.add(Text.translatable("murilloskills.passive.explorer.night_vision")
+                                .formatted(Formatting.AQUA));
                     if (level >= SkillConfig.EXPLORER_FEATHER_FEET_LEVEL)
-                        tooltip.add(Text.literal("• Pés de Pena (-40% queda)").formatted(Formatting.AQUA));
+                        tooltip.add(Text.translatable("murilloskills.passive.explorer.feather_feet")
+                                .formatted(Formatting.AQUA));
                     if (level >= SkillConfig.EXPLORER_NETHER_WALKER_LEVEL)
-                        tooltip.add(Text.literal("• Caminhante do Nether (magma imune)").formatted(Formatting.GOLD));
+                        tooltip.add(Text.translatable("murilloskills.passive.explorer.nether_walker")
+                                .formatted(Formatting.GOLD));
                     if (level >= SkillConfig.EXPLORER_MASTER_LEVEL)
-                        tooltip.add(Text.literal("• Sexto Sentido (Baús/Spawners brilham)").formatted(Formatting.GOLD));
+                        tooltip.add(Text.translatable("murilloskills.passive.explorer.sixth_sense")
+                                .formatted(Formatting.GOLD));
 
                     // Key binding info
                     if (level >= SkillConfig.EXPLORER_NIGHT_VISION_LEVEL) {
                         tooltip.add(Text.empty());
-                        tooltip.add(Text
-                                .literal("⌨ Tecla Z: Toggle Visão Noturna"
-                                        + (level >= SkillConfig.EXPLORER_MASTER_LEVEL ? " / Ativar Sexto Sentido" : ""))
-                                .formatted(Formatting.LIGHT_PURPLE));
+                        if (level >= SkillConfig.EXPLORER_MASTER_LEVEL) {
+                            tooltip.add(Text.translatable("murilloskills.keybind.hint.sixth_sense")
+                                    .formatted(Formatting.LIGHT_PURPLE));
+                        } else {
+                            tooltip.add(Text.translatable("murilloskills.keybind.hint.night_vision")
+                                    .formatted(Formatting.LIGHT_PURPLE));
+                        }
                     }
                 }
 
@@ -870,20 +966,42 @@ public class SkillsScreen extends Screen {
     }
 
     private void renderXpBar(DrawContext context, int x, int y, SkillGlobalState.SkillStats stats, boolean isLocked) {
-        int width = 105;
-        int height = 5;
+        int width = 100;
+        int height = 6;
 
+        // Background with subtle border
+        context.fill(x - 1, y - 1, x + width + 1, y + height + 1, XP_BAR_BORDER);
         context.fill(x, y, x + width, y + height, XP_BAR_BG);
 
         double maxXp = 60 + (stats.level * 15) + (2 * stats.level * stats.level);
         float progress = (float) MathHelper.clamp(stats.xp / maxXp, 0.0, 1.0);
         int filledWidth = (int) (width * progress);
 
-        int color = (stats.level >= 100) ? 0xFFFFAA00 : 0xFF00AA00;
-        if (isLocked)
-            color = 0xFFAA0000;
+        if (filledWidth > 0) {
+            // Determine colors based on state
+            int fillColor;
+            int glowColor;
 
-        context.fill(x, y, x + filledWidth, y + height, color);
+            if (isLocked) {
+                fillColor = 0xFF882222;
+                glowColor = 0x30FF4444;
+            } else if (stats.level >= 100) {
+                fillColor = XP_BAR_MAX;
+                glowColor = 0x40FFDD44;
+            } else {
+                fillColor = XP_BAR_FILL_START;
+                glowColor = XP_BAR_GLOW;
+            }
+
+            // Glow effect (outer)
+            context.fill(x - 1, y - 1, x + filledWidth + 1, y + height + 1, glowColor);
+
+            // Main fill
+            context.fill(x, y, x + filledWidth, y + height, fillColor);
+
+            // Inner highlight (top edge)
+            context.fill(x, y, x + filledWidth, y + 1, 0x40FFFFFF);
+        }
     }
 
     private void drawBorder(DrawContext context, int x, int y, int width, int height, int color) {
@@ -916,5 +1034,103 @@ public class SkillsScreen extends Screen {
     @Override
     public boolean shouldPause() {
         return false;
+    }
+
+    // === MODERN VISUAL EFFECT HELPERS ===
+
+    /**
+     * Renders the modern gradient header with title
+     */
+    private void renderHeader(DrawContext context, boolean selectionMode) {
+        // Gradient header background
+        for (int i = 0; i < headerHeight; i++) {
+            float ratio = (float) i / headerHeight;
+            int alpha = (int) (0xF0 * (1 - ratio * 0.3f));
+            int color = (alpha << 24) | 0x101018;
+            context.fill(0, i, this.width, i + 1, color);
+        }
+
+        // Decorative accent line at bottom
+        context.fill(0, headerHeight - 2, this.width, headerHeight - 1, 0x30FFFFFF);
+        context.fill(this.width / 4, headerHeight - 1, this.width * 3 / 4, headerHeight, HEADER_ACCENT);
+
+        // Title
+        int titleY = (headerHeight - 20) / 2;
+        if (selectionMode) {
+            context.drawCenteredTextWithShadow(this.textRenderer,
+                    Text.translatable("murilloskills.gui.choose_skills").formatted(Formatting.GOLD, Formatting.BOLD),
+                    this.width / 2, titleY, TEXT_TITLE);
+            int count = pendingSelection.size();
+            context.drawCenteredTextWithShadow(this.textRenderer,
+                    Text.translatable("murilloskills.gui.select_skills_count", count).formatted(Formatting.YELLOW),
+                    this.width / 2, titleY + 12, TEXT_SUBTITLE);
+        } else {
+            context.drawCenteredTextWithShadow(this.textRenderer,
+                    Text.translatable("murilloskills.gui.title").formatted(Formatting.GOLD, Formatting.BOLD),
+                    this.width / 2, titleY + 5, TEXT_TITLE);
+        }
+    }
+
+    /**
+     * Draws a subtle vignette corner for depth effect
+     */
+    private void drawVignetteCorner(DrawContext context, int x, int y, int size, boolean left, boolean top) {
+        // Simplified vignette - just darken corners slightly
+        int steps = 8;
+        for (int i = 0; i < steps; i++) {
+            float ratio = (float) i / steps;
+            int alpha = (int) (0x15 * (1 - ratio));
+            if (alpha <= 0)
+                continue;
+
+            int color = (alpha << 24);
+            int offset = (int) (size * ratio);
+
+            int x1 = left ? x : x + offset;
+            int x2 = left ? x + size - offset : x + size;
+            int y1 = top ? y : y + offset;
+            int y2 = top ? y + size - offset : y + size;
+
+            if (x1 < x2 && y1 < y2) {
+                context.fill(x1, y1, x2, y2, color);
+            }
+        }
+    }
+
+    /**
+     * Renders a modern card with depth effects
+     */
+    private void renderModernCard(DrawContext context, int x, int y, int width, int height,
+            int bgColor, int borderColor, boolean isHovered) {
+        // Outer shadow (only visible on hover)
+        if (isHovered) {
+            context.fill(x - 1, y - 1, x + width + 1, y + height + 1, CARD_SHADOW);
+        }
+
+        // Main card background
+        context.fill(x, y, x + width, y + height, bgColor);
+
+        // Inner highlight (top edge)
+        context.fill(x + 1, y + 1, x + width - 1, y + 2, CARD_HIGHLIGHT);
+
+        // Border
+        drawBorder(context, x, y, width, height, borderColor);
+
+        // Corner accents for hover state
+        if (isHovered) {
+            int accentSize = 4;
+            // Top-left
+            context.fill(x, y, x + accentSize, y + 1, borderColor);
+            context.fill(x, y, x + 1, y + accentSize, borderColor);
+            // Top-right
+            context.fill(x + width - accentSize, y, x + width, y + 1, borderColor);
+            context.fill(x + width - 1, y, x + width, y + accentSize, borderColor);
+            // Bottom-left
+            context.fill(x, y + height - 1, x + accentSize, y + height, borderColor);
+            context.fill(x, y + height - accentSize, x + 1, y + height, borderColor);
+            // Bottom-right
+            context.fill(x + width - accentSize, y + height - 1, x + width, y + height, borderColor);
+            context.fill(x + width - 1, y + height - accentSize, x + width, y + height, borderColor);
+        }
     }
 }

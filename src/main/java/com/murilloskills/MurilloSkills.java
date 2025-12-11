@@ -99,7 +99,8 @@ public class MurilloSkills implements ModInitializer {
                     var data = state.getPlayerData(player);
 
                     if (data.paragonSkill != null) {
-                        player.sendMessage(Text.literal("Você já escolheu um Paragon!").formatted(Formatting.RED),
+                        player.sendMessage(
+                                Text.translatable("murilloskills.paragon.already_chosen").formatted(Formatting.RED),
                                 true);
                         return;
                     }
@@ -107,7 +108,7 @@ public class MurilloSkills implements ModInitializer {
                     // VALIDATION: Paragon can only be activated on selected skills
                     if (!data.isSkillSelected(payload.skill())) {
                         player.sendMessage(
-                                Text.literal("Você só pode ativar Paragon em uma das suas habilidades selecionadas!")
+                                Text.translatable("murilloskills.paragon.only_selected_skills")
                                         .formatted(Formatting.RED),
                                 true);
                         return;
@@ -119,10 +120,11 @@ public class MurilloSkills implements ModInitializer {
                         data.paragonSkill = payload.skill();
                         state.markDirty();
                         SkillsNetworkUtils.syncSkills(player);
-                        player.sendMessage(Text.literal("Paragon Definido: " + payload.skill().name())
+                        player.sendMessage(Text.translatable("murilloskills.paragon.defined", payload.skill().name())
                                 .formatted(Formatting.GOLD, Formatting.BOLD), false);
                     } else {
-                        player.sendMessage(Text.literal("Nível insuficiente para Paragon.").formatted(Formatting.RED),
+                        player.sendMessage(
+                                Text.translatable("murilloskills.paragon.level_insufficient").formatted(Formatting.RED),
                                 true);
                     }
                 });
@@ -137,7 +139,7 @@ public class MurilloSkills implements ModInitializer {
 
                     // Validation: Check if player already has 3 skills selected (maxed out)
                     if (data.hasSelectedSkills()) {
-                        player.sendMessage(Text.literal("Você já atingiu o limite de 3 habilidades!")
+                        player.sendMessage(Text.translatable("murilloskills.selection.limit_reached")
                                 .formatted(Formatting.RED), true);
                         return;
                     }
@@ -147,14 +149,14 @@ public class MurilloSkills implements ModInitializer {
 
                     // Validation: Must select between 1 and 3 skills
                     if (incoming == null || newCount < 1 || newCount > SkillSelectionC2SPayload.MAX_SELECTED_SKILLS) {
-                        player.sendMessage(Text.literal("Selecione entre 1 e 3 habilidades.")
+                        player.sendMessage(Text.translatable("murilloskills.selection.select_1_to_3")
                                 .formatted(Formatting.RED), true);
                         return;
                     }
 
                     // Validation: No duplicate skills in the payload
                     if (newCount != incoming.stream().distinct().count()) {
-                        player.sendMessage(Text.literal("Habilidades duplicadas detectadas!")
+                        player.sendMessage(Text.translatable("murilloskills.selection.duplicates")
                                 .formatted(Formatting.RED), true);
                         return;
                     }
@@ -173,24 +175,24 @@ public class MurilloSkills implements ModInitializer {
                         int currentCount = data.getSelectedSkills().size();
                         if (currentCount == SkillSelectionC2SPayload.MAX_SELECTED_SKILLS) {
                             // Complete selection
-                            player.sendMessage(Text.literal("Habilidades Definidas com Sucesso!")
+                            player.sendMessage(Text.translatable("murilloskills.selection.success")
                                     .formatted(Formatting.GREEN, Formatting.BOLD), false);
-                            player.sendMessage(Text.literal("Você escolheu suas 3 habilidades principais.")
+                            player.sendMessage(Text.translatable("murilloskills.selection.chose_3")
                                     .formatted(Formatting.YELLOW), false);
                         } else {
                             // Partial selection
                             int remaining = SkillSelectionC2SPayload.MAX_SELECTED_SKILLS - currentCount;
-                            player.sendMessage(Text.literal("Seleção Parcial Salva (" + currentCount + "/3)")
+                            player.sendMessage(Text.translatable("murilloskills.selection.partial_saved", currentCount)
                                     .formatted(Formatting.GREEN), false);
                             player.sendMessage(
-                                    Text.literal("Você ainda pode escolher mais " + remaining + " habilidade(s).")
+                                    Text.translatable("murilloskills.selection.can_choose_more", remaining)
                                             .formatted(Formatting.YELLOW),
                                     false);
-                            player.sendMessage(Text.literal("Use o item ou comando novamente para completar.")
+                            player.sendMessage(Text.translatable("murilloskills.selection.use_again")
                                     .formatted(Formatting.GRAY), false);
                         }
                     } else {
-                        player.sendMessage(Text.literal("Erro ao selecionar habilidades.").formatted(Formatting.RED),
+                        player.sendMessage(Text.translatable("murilloskills.selection.error").formatted(Formatting.RED),
                                 true);
                     }
                 });
@@ -242,9 +244,8 @@ public class MurilloSkills implements ModInitializer {
                     var playerData = state.getPlayerData(player);
 
                     if (playerData.paragonSkill == null) {
-                        player.sendMessage(Text.of(
-                                "§cVocê precisa confirmar uma habilidade Paragon Nível 100 (Tecla 'O') para usar o poder!"),
-                                true);
+                        player.sendMessage(Text.translatable("murilloskills.paragon.need_confirm")
+                                .formatted(Formatting.RED), true);
                         return;
                     }
 
@@ -255,8 +256,9 @@ public class MurilloSkills implements ModInitializer {
                         skill.onActiveAbility(player, stats); // Polimorfismo!
                     } else {
                         LOGGER.warn("Skill Paragon não encontrada no Registry: {}", playerData.paragonSkill);
-                        player.sendMessage(Text.of("§eHabilidade Paragon para " + playerData.paragonSkill.name()
-                                + " ainda em desenvolvimento."), true);
+                        player.sendMessage(Text
+                                .translatable("murilloskills.paragon.in_development", playerData.paragonSkill.name())
+                                .formatted(Formatting.YELLOW), true);
                     }
 
                 } catch (Exception e) {
@@ -279,7 +281,7 @@ public class MurilloSkills implements ModInitializer {
 
                     // Check if player has FARMER selected
                     if (!playerData.isSkillSelected(MurilloSkillsList.FARMER)) {
-                        player.sendMessage(Text.literal("Você precisa ter Agricultor como uma das suas habilidades!")
+                        player.sendMessage(Text.translatable("murilloskills.farmer.need_farmer_skill")
                                 .formatted(Formatting.RED), true);
                         return;
                     }
@@ -289,7 +291,7 @@ public class MurilloSkills implements ModInitializer {
                     // Check level requirement
                     if (farmerStats.level < com.murilloskills.utils.SkillConfig.FARMER_AREA_PLANTING_LEVEL) {
                         player.sendMessage(
-                                Text.literal("Você precisa ser Nível 25 de Agricultor para usar Plantio em Área!")
+                                Text.translatable("murilloskills.farmer.need_level_25")
                                         .formatted(Formatting.RED),
                                 true);
                         return;
@@ -303,10 +305,10 @@ public class MurilloSkills implements ModInitializer {
 
                     // Feedback message
                     if (nowEnabled) {
-                        player.sendMessage(Text.literal("🌱 Plantio em Área: ATIVADO (3x3)")
+                        player.sendMessage(Text.translatable("murilloskills.farmer.area_enabled")
                                 .formatted(Formatting.GREEN), true);
                     } else {
-                        player.sendMessage(Text.literal("🌱 Plantio em Área: DESATIVADO")
+                        player.sendMessage(Text.translatable("murilloskills.farmer.area_disabled")
                                 .formatted(Formatting.GRAY), true);
                     }
 
@@ -333,7 +335,7 @@ public class MurilloSkills implements ModInitializer {
                             // Check if player has BUILDER selected
                             if (!playerData.isSkillSelected(MurilloSkillsList.BUILDER)) {
                                 player.sendMessage(
-                                        Text.literal("Você precisa ter Construtor como uma das suas habilidades!")
+                                        Text.translatable("murilloskills.builder.need_builder_skill")
                                                 .formatted(Formatting.RED),
                                         true);
                                 return;
@@ -344,10 +346,10 @@ public class MurilloSkills implements ModInitializer {
 
                             // Feedback message
                             if (nowHollow) {
-                                player.sendMessage(Text.literal("🧱 Modo Creative Brush: OCO (apenas paredes)")
+                                player.sendMessage(Text.translatable("murilloskills.builder.mode_hollow")
                                         .formatted(Formatting.AQUA), true);
                             } else {
-                                player.sendMessage(Text.literal("🧱 Modo Creative Brush: SÓLIDO (preenchido)")
+                                player.sendMessage(Text.translatable("murilloskills.builder.mode_filled")
                                         .formatted(Formatting.GREEN), true);
                             }
 
@@ -371,7 +373,7 @@ public class MurilloSkills implements ModInitializer {
 
                     // Validation: Can only reset selected skills
                     if (!data.isSkillSelected(payload.skill())) {
-                        player.sendMessage(Text.literal("Você só pode resetar uma das suas habilidades selecionadas!")
+                        player.sendMessage(Text.translatable("murilloskills.reset.only_selected")
                                 .formatted(Formatting.RED), true);
                         return;
                     }
@@ -398,7 +400,7 @@ public class MurilloSkills implements ModInitializer {
                     SkillsNetworkUtils.syncSkills(player);
 
                     player.sendMessage(
-                            Text.literal("🔄 Skill " + payload.skill().name() + " removida! Escolha uma nova skill.")
+                            Text.translatable("murilloskills.reset.success", payload.skill().name())
                                     .formatted(Formatting.YELLOW),
                             false);
 
@@ -426,7 +428,7 @@ public class MurilloSkills implements ModInitializer {
                     // Check if player has EXPLORER selected
                     if (!playerData.isSkillSelected(MurilloSkillsList.EXPLORER)) {
                         player.sendMessage(
-                                Text.literal("Você precisa ter Explorador como uma das suas habilidades!")
+                                Text.translatable("murilloskills.explorer.need_explorer_skill")
                                         .formatted(Formatting.RED),
                                 true);
                         return;
@@ -437,7 +439,7 @@ public class MurilloSkills implements ModInitializer {
                     // Check level requirement (Level 35 for Night Vision)
                     if (explorerStats.level < com.murilloskills.utils.SkillConfig.EXPLORER_NIGHT_VISION_LEVEL) {
                         player.sendMessage(
-                                Text.literal("Você precisa ser Nível 35 de Explorador para Visão Noturna!")
+                                Text.translatable("murilloskills.explorer.need_level_35_night_vision")
                                         .formatted(Formatting.RED),
                                 true);
                         return;
@@ -471,7 +473,7 @@ public class MurilloSkills implements ModInitializer {
                     // Check if player has EXPLORER selected
                     if (!playerData.isSkillSelected(MurilloSkillsList.EXPLORER)) {
                         player.sendMessage(
-                                Text.literal("Você precisa ter Explorador como uma das suas habilidades!")
+                                Text.translatable("murilloskills.explorer.need_explorer_skill")
                                         .formatted(Formatting.RED),
                                 true);
                         return;
@@ -482,7 +484,7 @@ public class MurilloSkills implements ModInitializer {
                     // Check level requirement (Level 10 for Step Assist)
                     if (explorerStats.level < com.murilloskills.utils.SkillConfig.EXPLORER_STEP_ASSIST_LEVEL) {
                         player.sendMessage(
-                                Text.literal("Você precisa ser Nível 10 de Explorador para Passo Leve!")
+                                Text.translatable("murilloskills.explorer.need_level_35")
                                         .formatted(Formatting.RED),
                                 true);
                         return;

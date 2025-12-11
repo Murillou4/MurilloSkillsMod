@@ -38,6 +38,20 @@ public abstract class ArrowEntityMixin {
             return;
         }
 
+        // Aplica bônus de dano baseado no nível do Archer
+        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+        int level = state.getPlayerData(player).getSkill(MurilloSkillsList.ARCHER).level;
+
+        // IMPORTANTE: Aplica piercing ANTES de processar o hit para evitar que a flecha
+        // volte
+        // Isso deve ser feito antes de qualquer processamento de dano
+        if (level > 0 && ArcherSkill.hasArrowPenetration(level)) {
+            byte currentPierce = arrow.getPierceLevel();
+            if (currentPierce < 3) {
+                ((PersistentProjectileEntityAccessor) arrow).invokeSetPierceLevel((byte) 3);
+            }
+        }
+
         // Calcula a distância do tiro
         double distance = arrow.getEntityPos().distanceTo(player.getEntityPos());
 
@@ -48,10 +62,6 @@ public abstract class ArrowEntityMixin {
         if (target instanceof LivingEntity) {
             ArcherSkill.setLastDamagedEnemy(player, target.getUuid());
         }
-
-        // Aplica bônus de dano baseado no nível do Archer
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        int level = state.getPlayerData(player).getSkill(MurilloSkillsList.ARCHER).level;
 
         if (level > 0) {
             double damageMultiplier = ArcherSkill.getRangedDamageMultiplier(level);
@@ -78,7 +88,7 @@ public abstract class ArrowEntityMixin {
             // Notify player of headshot
             if (isHeadshot) {
                 player.sendMessage(
-                        net.minecraft.text.Text.literal("💀 HEADSHOT! +30% dano")
+                        net.minecraft.text.Text.translatable("murilloskills.notify.headshot")
                                 .formatted(net.minecraft.util.Formatting.RED, net.minecraft.util.Formatting.BOLD),
                         true);
             }
@@ -110,17 +120,8 @@ public abstract class ArrowEntityMixin {
             return;
         }
 
-        // Aplica penetração (piercing) se o jogador tem nível 50+
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        int level = state.getPlayerData(player).getSkill(MurilloSkillsList.ARCHER).level;
-
-        if (ArcherSkill.hasArrowPenetration(level)) {
-            // Aplica piercing level 3 (atravessa até 4 entidades)
-            byte currentPierce = arrow.getPierceLevel();
-            if (currentPierce < 3) {
-                ((PersistentProjectileEntityAccessor) arrow).invokeSetPierceLevel((byte) 3);
-            }
-        }
+        // NOTE: Piercing agora é aplicado em onArrowHit() para evitar bug de flecha
+        // voltando
 
         // Verifica se o Master Ranger está ativo
         if (!ArcherSkill.isMasterRangerActive(player)) {

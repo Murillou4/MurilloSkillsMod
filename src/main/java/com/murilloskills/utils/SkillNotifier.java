@@ -14,9 +14,10 @@ public class SkillNotifier {
         // Mensagem Minimalista Otimizada
         Text message = Text.empty()
                 .append(Text.literal("✦ ").formatted(Formatting.GOLD))
-                .append(Text.literal("LEVEL UP!").formatted(Formatting.GOLD, Formatting.BOLD))
+                .append(Text.translatable("murilloskills.notify.level_up").formatted(Formatting.GOLD, Formatting.BOLD))
                 .append(Text.literal(" | ").formatted(Formatting.DARK_GRAY))
-                .append(Text.literal(formatSkillName(skill)).formatted(Formatting.YELLOW))
+                .append(Text.translatable("murilloskills.skill.name." + skill.name().toLowerCase())
+                        .formatted(Formatting.YELLOW))
                 .append(Text.literal(" » ").formatted(Formatting.DARK_GRAY))
                 .append(Text.literal(String.valueOf(newLevel)).formatted(Formatting.WHITE, Formatting.BOLD));
 
@@ -27,17 +28,4 @@ public class SkillNotifier {
                 SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.0f, 1.0f);
     }
 
-    private static String formatSkillName(MurilloSkillsList skill) {
-        // Simples capitalize ou switch case para nomes em PT-BR
-        return switch (skill) {
-            case MINER -> "Miner";
-            case WARRIOR -> "Warrior";
-            case FARMER -> "Farmer";
-            case ARCHER -> "Archer";
-            case FISHER -> "Fisher";
-            case BUILDER -> "Builder";
-            case BLACKSMITH -> "Blacksmith";
-            default -> skill.name();
-        };
-    }
 }

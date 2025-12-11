@@ -59,14 +59,16 @@ public class BlockBreakHandler {
             if (xpResult.leveledUp()) {
                 MutableText message = Text.empty()
                         .append(Text.literal("✦ ").formatted(Formatting.GOLD))
-                        .append(Text.literal("LEVEL UP!").formatted(Formatting.GOLD, Formatting.BOLD))
+                        .append(Text.translatable("murilloskills.notify.level_up").formatted(Formatting.GOLD,
+                                Formatting.BOLD))
                         .append(Text.literal(" | ").formatted(Formatting.DARK_GRAY))
-                        .append(Text.literal("Minerador").formatted(Formatting.YELLOW))
+                        .append(Text.translatable("murilloskills.skill.name.miner").formatted(Formatting.YELLOW))
                         .append(Text.literal(" » ").formatted(Formatting.DARK_GRAY))
                         .append(Text.literal(String.valueOf(stats.level)).formatted(Formatting.WHITE, Formatting.BOLD));
 
                 if (stats.level == 100) {
-                    message.append(Text.literal(" [PARAGON]").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD));
+                    message.append(Text.translatable("murilloskills.notify.paragon").formatted(Formatting.LIGHT_PURPLE,
+                            Formatting.BOLD));
                 }
 
                 serverPlayerEntity.sendMessage(message, true);

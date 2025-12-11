@@ -7,26 +7,40 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
 /**
- * A reusable confirmation modal screen.
- * Displays a warning with confirm/cancel buttons before executing an action.
+ * A modern, elegant confirmation modal screen.
+ * Displays a warning with styled confirm/cancel buttons before executing an
+ * action.
  */
 public class ConfirmationScreen extends Screen {
 
-    // Premium Colors (matching SkillsScreen)
-    private static final int BG_OVERLAY = 0xE0101018;
-    private static final int MODAL_BG = 0xFF1A1A24;
-    private static final int BORDER_COLOR = 0xFFFFCC44;
-    private static final int TITLE_COLOR = 0xFFFFAA00;
-    private static final int MESSAGE_COLOR = 0xFFDDDDDD;
+    // === MODERN PREMIUM COLOR PALETTE ===
+    private static final int BG_OVERLAY = 0xE8000008;
+
+    // Modal Colors
+    private static final int MODAL_BG = 0xF8101018;
+    private static final int MODAL_INNER_SHADOW = 0x40000000;
+    private static final int MODAL_HIGHLIGHT = 0x15FFFFFF;
+
+    // Border & Accent
+    private static final int BORDER_OUTER = 0xFF1A1A25;
+    private static final int BORDER_ACCENT = 0xFFDD8800;
+    private static final int BORDER_GLOW = 0x40FFAA00;
+
+    // Text Colors
+    private static final int TITLE_COLOR = 0xFFFFCC44;
+    private static final int MESSAGE_COLOR = 0xFFCCCCDD;
+    private static final int WARNING_ICON_COLOR = 0xFFFFAA00;
 
     private final Screen parent;
     private final Text title;
     private final Text message;
     private final Runnable onConfirm;
 
-    // Modal dimensions
-    private static final int MODAL_WIDTH = 280;
-    private static final int MODAL_HEIGHT = 120;
+    // Responsive modal dimensions
+    private int modalWidth;
+    private int modalHeight;
+    private int modalX;
+    private int modalY;
 
     public ConfirmationScreen(Screen parent, Text title, Text message, Runnable onConfirm) {
         super(title);
@@ -40,66 +54,106 @@ public class ConfirmationScreen extends Screen {
     protected void init() {
         super.init();
 
-        int modalX = (this.width - MODAL_WIDTH) / 2;
-        int modalY = (this.height - MODAL_HEIGHT) / 2;
+        // Responsive modal sizing
+        modalWidth = Math.min(320, Math.max(250, this.width / 3));
+        modalHeight = Math.min(150, Math.max(120, this.height / 4));
+        modalX = (this.width - modalWidth) / 2;
+        modalY = (this.height - modalHeight) / 2;
 
-        // Confirm button
-        int btnWidth = 100;
+        // Button dimensions - responsive
+        int btnWidth = Math.min(100, (modalWidth - 50) / 2);
         int btnHeight = 20;
-        int btnY = modalY + MODAL_HEIGHT - 35;
+        int btnY = modalY + modalHeight - 32;
+        int btnSpacing = 15;
 
+        // Cancel button (left) - neutral styling
+        ButtonWidget cancelBtn = ButtonWidget.builder(
+                Text.translatable("murilloskills.confirm.btn_cancel"),
+                (button) -> this.close())
+                .dimensions(modalX + (modalWidth / 2) - btnWidth - btnSpacing / 2, btnY, btnWidth, btnHeight)
+                .build();
+
+        // Confirm button (right) - action styling
         ButtonWidget confirmBtn = ButtonWidget.builder(
                 Text.translatable("murilloskills.confirm.btn_confirm"),
                 (button) -> {
                     onConfirm.run();
                     this.close();
                 })
-                .dimensions(modalX + 25, btnY, btnWidth, btnHeight)
+                .dimensions(modalX + (modalWidth / 2) + btnSpacing / 2, btnY, btnWidth, btnHeight)
                 .build();
 
-        // Cancel button
-        ButtonWidget cancelBtn = ButtonWidget.builder(
-                Text.translatable("murilloskills.confirm.btn_cancel"),
-                (button) -> this.close())
-                .dimensions(modalX + MODAL_WIDTH - btnWidth - 25, btnY, btnWidth, btnHeight)
-                .build();
-
-        this.addDrawableChild(confirmBtn);
         this.addDrawableChild(cancelBtn);
+        this.addDrawableChild(confirmBtn);
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Dark overlay background
+        // 1. Dark overlay with fade effect
         context.fill(0, 0, this.width, this.height, BG_OVERLAY);
 
-        int modalX = (this.width - MODAL_WIDTH) / 2;
-        int modalY = (this.height - MODAL_HEIGHT) / 2;
+        // 2. Modal outer glow/shadow
+        int glowSize = 4;
+        for (int i = glowSize; i > 0; i--) {
+            int alpha = (int) (0x15 * ((float) i / glowSize));
+            int glowColor = (alpha << 24) | 0x000000;
+            context.fill(modalX - i, modalY - i, modalX + modalWidth + i, modalY + modalHeight + i, glowColor);
+        }
 
-        // Modal background
-        context.fill(modalX, modalY, modalX + MODAL_WIDTH, modalY + MODAL_HEIGHT, MODAL_BG);
+        // 3. Modal background with depth
+        // Outer border
+        context.fill(modalX - 1, modalY - 1, modalX + modalWidth + 1, modalY + modalHeight + 1, BORDER_OUTER);
 
-        // Modal border
-        drawBorder(context, modalX, modalY, MODAL_WIDTH, MODAL_HEIGHT, BORDER_COLOR);
+        // Main background
+        context.fill(modalX, modalY, modalX + modalWidth, modalY + modalHeight, MODAL_BG);
 
-        // Title
-        context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, modalY + 15, TITLE_COLOR);
+        // Inner highlight (top edge)
+        context.fill(modalX + 1, modalY + 1, modalX + modalWidth - 1, modalY + 2, MODAL_HIGHLIGHT);
 
-        // Message (wrapped if needed)
-        int messageY = modalY + 40;
-        int maxWidth = MODAL_WIDTH - 30;
+        // Inner shadow (bottom)
+        context.fill(modalX + 1, modalY + modalHeight - 2, modalX + modalWidth - 1, modalY + modalHeight - 1,
+                MODAL_INNER_SHADOW);
 
-        // Simple word wrap for the message
+        // 4. Accent border at top
+        context.fill(modalX, modalY, modalX + modalWidth, modalY + 2, BORDER_ACCENT);
+
+        // Corner accents
+        int cornerSize = 6;
+        // Top-left corner
+        context.fill(modalX, modalY, modalX + cornerSize, modalY + 2, BORDER_GLOW);
+        context.fill(modalX, modalY, modalX + 2, modalY + cornerSize, BORDER_GLOW);
+        // Top-right corner
+        context.fill(modalX + modalWidth - cornerSize, modalY, modalX + modalWidth, modalY + 2, BORDER_GLOW);
+        context.fill(modalX + modalWidth - 2, modalY, modalX + modalWidth, modalY + cornerSize, BORDER_GLOW);
+
+        // 5. Warning icon
+        Text warningIcon = Text.translatable("murilloskills.gui.icon.warning");
+        int iconWidth = this.textRenderer.getWidth(warningIcon);
+        context.drawTextWithShadow(this.textRenderer, warningIcon,
+                modalX + (modalWidth - iconWidth) / 2, modalY + 12, WARNING_ICON_COLOR);
+
+        // 6. Title
+        context.drawCenteredTextWithShadow(this.textRenderer, this.title,
+                modalX + modalWidth / 2, modalY + 28, TITLE_COLOR);
+
+        // 7. Separator line
+        int separatorY = modalY + 42;
+        context.fill(modalX + 20, separatorY, modalX + modalWidth - 20, separatorY + 1, 0x30FFFFFF);
+
+        // 8. Message (wrapped if needed)
+        int messageY = modalY + 50;
+        int maxWidth = modalWidth - 30;
+
         String messageStr = this.message.getString();
         java.util.List<String> lines = wrapText(messageStr, maxWidth);
 
         for (String line : lines) {
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(line), this.width / 2, messageY,
-                    MESSAGE_COLOR);
-            messageY += 12;
+            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(line),
+                    modalX + modalWidth / 2, messageY, MESSAGE_COLOR);
+            messageY += 11;
         }
 
-        // Render widgets (buttons)
+        // 9. Render widgets (buttons) - must be last for proper layering
         super.render(context, mouseX, mouseY, delta);
     }
 
@@ -125,13 +179,6 @@ public class ConfirmationScreen extends Screen {
         }
 
         return lines;
-    }
-
-    private void drawBorder(DrawContext context, int x, int y, int width, int height, int color) {
-        context.fill(x, y, x + width, y + 1, color);
-        context.fill(x, y + height - 1, x + width, y + height, color);
-        context.fill(x, y, x + 1, y + height, color);
-        context.fill(x + width - 1, y, x + width, y + height, color);
     }
 
     @Override

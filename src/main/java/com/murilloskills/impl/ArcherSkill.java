@@ -43,13 +43,15 @@ public class ArcherSkill extends AbstractSkill {
         try {
             // 1. Verifica Nível
             if (stats.level < SkillConfig.ARCHER_MASTER_LEVEL) {
-                sendMessage(player, "Você precisa ser Nível 100 de Arqueiro!", Formatting.RED, true);
+                sendMessage(player, Text.translatable("murilloskills.notify.need_level_100_archer"),
+                        Formatting.RED, true);
                 return;
             }
 
             // 2. Verifica se já está com Master Ranger ativo
             if (isMasterRangerActive(player)) {
-                sendMessage(player, "Master Ranger já está ativo!", Formatting.RED, true);
+                sendMessage(player, Text.translatable("murilloskills.notify.master_ranger_already_active"),
+                        Formatting.RED, true);
                 return;
             }
 
@@ -60,7 +62,8 @@ public class ArcherSkill extends AbstractSkill {
             long cooldownTicks = SkillConfig.toTicksLong(SkillConfig.ARCHER_ABILITY_COOLDOWN_SECONDS);
             if (stats.lastAbilityUse >= 0 && timeSinceUse < cooldownTicks) {
                 long minutesLeft = (cooldownTicks - timeSinceUse) / 20 / 60;
-                sendMessage(player, "Habilidade em recarga: " + minutesLeft + " minutos.", Formatting.RED, true);
+                sendMessage(player, Text.translatable("murilloskills.notify.ability_cooldown", minutesLeft),
+                        Formatting.RED, true);
                 return;
             }
 
@@ -75,7 +78,7 @@ public class ArcherSkill extends AbstractSkill {
 
         } catch (Exception e) {
             LOGGER.error("Erro ao executar habilidade ativa do Arqueiro para " + player.getName().getString(), e);
-            sendMessage(player, "Erro ao ativar habilidade. Contate o admin.", Formatting.RED, false);
+            sendMessage(player, Text.translatable("murilloskills.error.ability_error"), Formatting.RED, false);
         }
     }
 
@@ -213,9 +216,11 @@ public class ArcherSkill extends AbstractSkill {
         player.playSound(SoundEvents.ENTITY_ENDER_EYE_DEATH, 1.0f, 1.5f);
 
         // Mensagem
-        player.sendMessage(Text.literal("🏹 MASTER RANGER ATIVADO! 🏹").formatted(Formatting.GREEN, Formatting.BOLD),
+        player.sendMessage(
+                Text.translatable("murilloskills.notify.master_ranger_activated").formatted(Formatting.GREEN,
+                        Formatting.BOLD),
                 false);
-        player.sendMessage(Text.literal("Flechas perfuram múltiplos alvos e perseguem inimigos por 30 segundos!")
+        player.sendMessage(Text.translatable("murilloskills.notify.master_ranger_description")
                 .formatted(Formatting.YELLOW), true);
     }
 
@@ -230,7 +235,8 @@ public class ArcherSkill extends AbstractSkill {
         player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), 1.0f, 0.5f);
 
         // Mensagem
-        sendMessage(player, "Master Ranger desativado.", Formatting.GRAY, true);
+        sendMessage(player, Text.translatable("murilloskills.notify.master_ranger_deactivated"),
+                Formatting.GRAY, true);
 
         LOGGER.debug("Player {} saiu do modo Master Ranger", player.getName().getString());
     }

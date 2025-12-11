@@ -98,5 +98,32 @@
     "murilloskills.builder.mode_hollow": "🧱 Modo Pincel Creativo: HUECO (solo paredes)",
     "murilloskills.builder.mode_filled": "🧱 Modo Pincel Creativo: SÓLIDO (relleno)",
     "_comment_xp_sources": "=== XP SOURCE NAMES ===",
-    "murilloskills.xp.traveler": "Viajero"
+    "murilloskills.xp.traveler": "Viajero",
+    "murilloskills.explorer.need_level_10_step": "¡Necesitas ser Nivel 10 de Explorador para Paso Ligero!",
+    
+    "_comment_gui_icons": "=== GUI ICONS ===",
+    "murilloskills.gui.icon.warning": "⚠",
+    "murilloskills.gui.icon.reset": "⟳",
+    "murilloskills.gui.icon.lock": "🔒",
+    "murilloskills.gui.icon.paragon": "👑",
+    "murilloskills.gui.level_prefix": "Nv",
+    "murilloskills.gui.time.minutes": "m",
+    "murilloskills.gui.time.seconds": "s",
+    "murilloskills.hud.area_planting": "🌱 3x3",
+
+    "_comment_notifications": "=== NOTIFICATIONS ===",
+    "murilloskills.notify.level_up": "¡SUBIDA DE NIVEL!",
+    "murilloskills.notify.milestone": "HITO",
+    "murilloskills.notify.xp_levels": "+%s Niveles de XP",
+    "murilloskills.notify.paragon": "[PARAGÓN]",
+    "murilloskills.notify.headshot": "💀 ¡DISPARO A LA CABEZA! +30% daño",
+    "murilloskills.notify.master_ranger_activated": "🏹 ¡MAESTRO ARQUERO ACTIVADO! 🏹",
+    "murilloskills.notify.master_ranger_description": "¡Las flechas atraviesan múltiples objetivos y persiguen enemigos por 30 segundos!",
+    "murilloskills.notify.master_ranger_deactivated": "Maestro Arquero desactivado.",
+    "murilloskills.notify.ability_cooldown": "Habilidad en enfriamiento: %s minutos.",
+    "murilloskills.notify.master_ranger_already_active": "¡Maestro Arquero ya está activo!",
+    "murilloskills.notify.need_level_100_archer": "¡Necesitas ser Nivel 100 de Arquero!",
+    "murilloskills.notify.no_active_ability": "Esta habilidad aún no tiene poder activo.",
+    "murilloskills.notify.ability_error": "Error al activar habilidad. Contacta al admin.",
+    "murilloskills.notify.level_up_message": "¡Felicidades! ¡Alcanzaste el nivel %s en %s!"
 }

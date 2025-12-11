@@ -91,7 +91,7 @@ public class ExplorerSkill extends AbstractSkill {
                 long remainingSeconds = (cooldownTicks - timeSinceUse) / 20;
                 long minutes = remainingSeconds / 60;
                 long seconds = remainingSeconds % 60;
-                sendMessage(player, String.format("⏳ Sexto Sentido em recarga: %d:%02d", minutes, seconds),
+                sendMessage(player, Text.translatable("murilloskills.explorer.treasure_hunter_cooldown", minutes, seconds),
                         Formatting.YELLOW, true);
                 return;
             }
@@ -105,8 +105,7 @@ public class ExplorerSkill extends AbstractSkill {
         int durationTicks = SkillConfig.toTicks(TREASURE_HUNTER_DURATION_SECONDS);
         treasureHunterActive.put(uuid, worldTime + durationTicks);
 
-        sendMessage(player, "🔍 Sexto Sentido ATIVADO! Baús e Spawners revelados por "
-                + TREASURE_HUNTER_DURATION_SECONDS + " segundos!", Formatting.AQUA, false);
+        sendMessage(player, Text.translatable("murilloskills.explorer.treasure_hunter_activated", TREASURE_HUNTER_DURATION_SECONDS), Formatting.AQUA, false);
 
         // Immediately trigger a scan
         handleTreasureHunter(player);
@@ -186,7 +185,7 @@ public class ExplorerSkill extends AbstractSkill {
                 if (total >= SkillConfig.EXPLORER_DISTANCE_THRESHOLD) {
                     // Award XP
                     int xp = com.murilloskills.utils.ExplorerXpGetter.getDistanceXp();
-                    awardXp(player, xp, "Viajante"); // "Traveler"
+                    awardXp(player, xp, Text.translatable("murilloskills.xp.traveler").getString()); // "Traveler"
 
                     // Reset or reduce accumulator
                     total -= SkillConfig.EXPLORER_DISTANCE_THRESHOLD;

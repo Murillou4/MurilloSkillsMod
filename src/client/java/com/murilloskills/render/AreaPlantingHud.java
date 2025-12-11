@@ -46,7 +46,7 @@ public class AreaPlantingHud {
         int y = context.getScaledWindowHeight() - 60;
 
         // Draw indicator text
-        Text text = Text.literal("🌱 3x3").formatted(Formatting.GREEN, Formatting.BOLD);
+        Text text = Text.translatable("murilloskills.hud.area_planting").formatted(Formatting.GREEN, Formatting.BOLD);
         context.drawTextWithShadow(client.textRenderer, text, x, y, 0xFFFFFF);
     }
 }

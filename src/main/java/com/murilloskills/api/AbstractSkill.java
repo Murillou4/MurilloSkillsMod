@@ -32,22 +32,25 @@ public abstract class AbstractSkill {
      * Called when a player levels up in this skill.
      * Override this method to implement level-up specific logic.
      * 
-     * @param player The player who leveled up
+     * @param player   The player who leveled up
      * @param newLevel The new level achieved
      */
     public void onLevelUp(ServerPlayerEntity player, int newLevel) {
         try {
             // Default implementation: send a level up message
-            player.sendMessage(Text.literal("Parabéns! Você alcançou o nível " + newLevel + " em " + getSkillType().name() + "!")
-                    .formatted(Formatting.GREEN, Formatting.BOLD), false);
-            
+            player.sendMessage(
+                    Text.translatable("murilloskills.notify.level_up_message", newLevel, getSkillType().name())
+                            .formatted(Formatting.GREEN, Formatting.BOLD),
+                    false);
+
             // Update attributes when leveling up
             updateAttributes(player, newLevel);
-            
-            LOGGER.info("Player {} leveled up to {} in skill {}", 
+
+            LOGGER.info("Player {} leveled up to {} in skill {}",
                     player.getName().getString(), newLevel, getSkillType());
         } catch (Exception e) {
-            LOGGER.error("Erro ao processar Level Up para a skill " + getSkillType() + " do jogador " + player.getName().getString(), e);
+            LOGGER.error("Erro ao processar Level Up para a skill " + getSkillType() + " do jogador "
+                    + player.getName().getString(), e);
         }
     }
 
@@ -56,47 +59,51 @@ public abstract class AbstractSkill {
      * Override this method to implement the skill's active ability.
      * 
      * @param player The player using the ability
-     * @param stats The player's skill stats
+     * @param stats  The player's skill stats
      */
     public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
         try {
             // Default implementation: inform that the skill has no active ability yet
-            player.sendMessage(Text.literal("Esta skill não possui habilidade ativa ainda.")
+            player.sendMessage(Text.translatable("murilloskills.notify.no_active_ability")
                     .formatted(Formatting.RED), true);
-            LOGGER.debug("Player {} tried to use active ability for skill {} which has no implementation", 
+            LOGGER.debug("Player {} tried to use active ability for skill {} which has no implementation",
                     player.getName().getString(), getSkillType());
         } catch (Exception e) {
-            LOGGER.error("Erro ao executar habilidade ativa da skill " + getSkillType() + " para " + player.getName().getString(), e);
-            player.sendMessage(Text.literal("Erro ao ativar habilidade. Contate o admin.")
+            LOGGER.error("Erro ao executar habilidade ativa da skill " + getSkillType() + " para "
+                    + player.getName().getString(), e);
+            player.sendMessage(Text.translatable("murilloskills.notify.ability_error")
                     .formatted(Formatting.RED), false);
         }
     }
-    
+
     /**
      * Called to apply or update passive attributes for this skill.
      * This is typically called when a player joins the server or levels up.
      * 
      * @param player The player to update attributes for
-     * @param level The current level of the skill
+     * @param level  The current level of the skill
      */
     public void updateAttributes(ServerPlayerEntity player, int level) {
         try {
             // Default implementation: no attributes to update
             // Skills should override this to implement their passive bonuses
         } catch (Exception e) {
-            LOGGER.error("Erro ao atualizar atributos da skill " + getSkillType() + " para " + player.getName().getString(), e);
+            LOGGER.error(
+                    "Erro ao atualizar atributos da skill " + getSkillType() + " para " + player.getName().getString(),
+                    e);
         }
     }
 
     /**
      * Called every server tick for players who have this skill.
-     * Override this method to implement tick-based functionality like passive effects.
+     * Override this method to implement tick-based functionality like passive
+     * effects.
      * 
      * Note: This is called every tick, so be mindful of performance.
      * Consider using player.age % X to limit execution frequency.
      * 
      * @param player The player to tick
-     * @param level The current level of the skill
+     * @param level  The current level of the skill
      */
     public void onTick(ServerPlayerEntity player, int level) {
         try {
@@ -115,7 +122,7 @@ public abstract class AbstractSkill {
      * Override this method to implement join-specific logic.
      * 
      * @param player The player who joined
-     * @param level The current level of the skill
+     * @param level  The current level of the skill
      */
     public void onPlayerJoin(ServerPlayerEntity player, int level) {
         try {
@@ -127,9 +134,10 @@ public abstract class AbstractSkill {
     }
 
     /**
-     * Utility method to check if a player meets the level requirement for a feature.
+     * Utility method to check if a player meets the level requirement for a
+     * feature.
      * 
-     * @param level Current skill level
+     * @param level         Current skill level
      * @param requiredLevel Required level
      * @return true if the level requirement is met
      */
@@ -140,12 +148,24 @@ public abstract class AbstractSkill {
     /**
      * Utility method to send a formatted message to a player.
      * 
-     * @param player The player to send the message to
-     * @param message The message text
+     * @param player     The player to send the message to
+     * @param message    The message text
      * @param formatting The formatting to apply
-     * @param actionBar Whether to send as action bar message
+     * @param actionBar  Whether to send as action bar message
      */
     protected void sendMessage(ServerPlayerEntity player, String message, Formatting formatting, boolean actionBar) {
         player.sendMessage(Text.literal(message).formatted(formatting), actionBar);
+    }
+
+    /**
+     * Utility method to send a formatted message to a player.
+     * 
+     * @param player     The player to send the message to
+     * @param message    The message text
+     * @param formatting The formatting to apply
+     * @param actionBar  Whether to send as action bar message
+     */
+    protected void sendMessage(ServerPlayerEntity player, Text message, Formatting formatting, boolean actionBar) {
+        player.sendMessage(message.copy().formatted(formatting), actionBar);
     }
 }
