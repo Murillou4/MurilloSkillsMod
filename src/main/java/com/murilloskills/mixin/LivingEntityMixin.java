@@ -84,6 +84,7 @@ public abstract class LivingEntityMixin {
         // --- BLACKSMITH RESISTANCE ---
         if (playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
             int blacksmithLevel = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
+            int blacksmithPrestige = playerData.getSkill(MurilloSkillsList.BLACKSMITH).prestige;
 
             // Check if damage is fire or explosion
             boolean isFireOrExplosion = source.getName().contains("fire")
@@ -92,9 +93,9 @@ public abstract class LivingEntityMixin {
                     || source.getName().contains("inFire")
                     || source.getName().contains("onFire");
 
-            // Apply Blacksmith damage multiplier
+            // Apply Blacksmith damage multiplier (with prestige bonus)
             float damageMultiplier = com.murilloskills.impl.BlacksmithSkill
-                    .calculateDamageMultiplier(player, blacksmithLevel, isFireOrExplosion);
+                    .calculateDamageMultiplier(player, blacksmithLevel, blacksmithPrestige, isFireOrExplosion);
             modifiedAmount *= damageMultiplier;
 
             // --- THORNS MASTER (Level 75+) ---

@@ -64,7 +64,8 @@ public abstract class ArrowEntityMixin {
         }
 
         if (level > 0) {
-            double damageMultiplier = ArcherSkill.getRangedDamageMultiplier(level);
+            int prestige = state.getPlayerData(player).getSkill(MurilloSkillsList.ARCHER).prestige;
+            double damageMultiplier = ArcherSkill.getRangedDamageMultiplier(level, prestige);
 
             // Headshot detection: check if arrow hit near the target's eye level
             boolean isHeadshot = false;
@@ -92,6 +93,10 @@ public abstract class ArrowEntityMixin {
                                 .formatted(net.minecraft.util.Formatting.RED, net.minecraft.util.Formatting.BOLD),
                         true);
             }
+
+            // Track daily challenge progress - Archer challenges (uses distance from line
+            // 56)
+            com.murilloskills.events.ChallengeEventsHandler.onArrowHit(player, distance, isHeadshot);
         }
     }
 

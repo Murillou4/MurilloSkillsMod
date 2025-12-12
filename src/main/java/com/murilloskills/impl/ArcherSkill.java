@@ -42,7 +42,9 @@ public class ArcherSkill extends AbstractSkill {
     public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
         try {
             // 1. Verifica Nível
-            if (stats.level < SkillConfig.ARCHER_MASTER_LEVEL) {
+            // 1. Verifica Nível (permite se level >= 100 OU se já prestigiou)
+            boolean hasReachedMaster = stats.level >= SkillConfig.ARCHER_MASTER_LEVEL || stats.prestige > 0;
+            if (!hasReachedMaster) {
                 sendMessage(player, Text.translatable("murilloskills.notify.need_level_100_archer"),
                         Formatting.RED, true);
                 return;
@@ -134,14 +136,20 @@ public class ArcherSkill extends AbstractSkill {
 
     /**
      * Calcula o multiplicador de dano à distância baseado no nível
+     * 
+     * @param level    The player's archer level
+     * @param prestige The player's prestige level for passive bonus
      */
-    public static double getRangedDamageMultiplier(int level) {
-        // +2% por nível
-        double multiplier = 1.0 + (level * SkillConfig.ARCHER_DAMAGE_PER_LEVEL);
+    public static double getRangedDamageMultiplier(int level, int prestige) {
+        // Get prestige passive multiplier (+2% per prestige level)
+        float prestigeMultiplier = com.murilloskills.utils.PrestigeManager.getPassiveMultiplier(prestige);
+
+        // +2% por nível (with prestige bonus)
+        double multiplier = 1.0 + (level * SkillConfig.ARCHER_DAMAGE_PER_LEVEL * prestigeMultiplier);
 
         // Nível 25: +5% adicional
         if (level >= SkillConfig.ARCHER_BONUS_DAMAGE_LEVEL) {
-            multiplier += SkillConfig.ARCHER_BONUS_DAMAGE_AMOUNT;
+            multiplier += SkillConfig.ARCHER_BONUS_DAMAGE_AMOUNT * prestigeMultiplier;
         }
 
         return multiplier;

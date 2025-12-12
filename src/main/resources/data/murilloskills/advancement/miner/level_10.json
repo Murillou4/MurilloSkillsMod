@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:iron_pickaxe"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.miner.level10.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.miner.level10.description"
+        },
+        "frame": "task",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:root",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

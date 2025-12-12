@@ -55,7 +55,9 @@ public class FarmerSkill extends AbstractSkill {
     public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
         try {
             // 1. Check Level
-            if (stats.level < SkillConfig.FARMER_MASTER_LEVEL) {
+            // 1. Verifica Nível (permite se level >= 100 OU se já prestigiou)
+            boolean hasReachedMaster = stats.level >= SkillConfig.FARMER_MASTER_LEVEL || stats.prestige > 0;
+            if (!hasReachedMaster) {
                 player.sendMessage(Text.translatable("murilloskills.error.level_required", 100,
                         Text.translatable("murilloskills.skill.name.farmer")).formatted(Formatting.RED), true);
                 return;
@@ -63,7 +65,9 @@ public class FarmerSkill extends AbstractSkill {
 
             // 2. Check if already active
             if (isHarvestMoonActive(player)) {
-                player.sendMessage(Text.translatable("murilloskills.error.already_active", Text.translatable("murilloskills.perk.name.farmer.master"))
+                player.sendMessage(Text
+                        .translatable("murilloskills.error.already_active",
+                                Text.translatable("murilloskills.perk.name.farmer.master"))
                         .formatted(Formatting.RED), true);
                 return;
             }
@@ -147,19 +151,25 @@ public class FarmerSkill extends AbstractSkill {
 
     /**
      * Calculates the total double harvest chance based on level and perks
+     * 
+     * @param level    The player's farmer level
+     * @param prestige The player's prestige level for passive bonus
      */
-    public static float getDoubleHarvestChance(int level) {
-        // Base: 0.5% per level
-        float chance = level * SkillConfig.FARMER_DOUBLE_HARVEST_PER_LEVEL;
+    public static float getDoubleHarvestChance(int level, int prestige) {
+        // Get prestige passive multiplier (+2% per prestige level)
+        float prestigeMultiplier = com.murilloskills.utils.PrestigeManager.getPassiveMultiplier(prestige);
+
+        // Base: 0.5% per level (with prestige bonus)
+        float chance = level * SkillConfig.FARMER_DOUBLE_HARVEST_PER_LEVEL * prestigeMultiplier;
 
         // Level 10: +5% extra
         if (level >= SkillConfig.FARMER_GREEN_THUMB_LEVEL) {
-            chance += SkillConfig.FARMER_GREEN_THUMB_EXTRA;
+            chance += SkillConfig.FARMER_GREEN_THUMB_EXTRA * prestigeMultiplier;
         }
 
         // Level 75: +15% extra
         if (level >= SkillConfig.FARMER_ABUNDANT_HARVEST_LEVEL) {
-            chance += SkillConfig.FARMER_ABUNDANT_EXTRA;
+            chance += SkillConfig.FARMER_ABUNDANT_EXTRA * prestigeMultiplier;
         }
 
         return Math.min(chance, 1.0f); // Cap at 100%
@@ -167,10 +177,16 @@ public class FarmerSkill extends AbstractSkill {
 
     /**
      * Calculates the golden crop chance based on level
+     * 
+     * @param level    The player's farmer level
+     * @param prestige The player's prestige level for passive bonus
      */
-    public static float getGoldenCropChance(int level) {
-        // 0.15% per level (max 15% at level 100)
-        return level * SkillConfig.FARMER_GOLDEN_CROP_PER_LEVEL;
+    public static float getGoldenCropChance(int level, int prestige) {
+        // Get prestige passive multiplier (+2% per prestige level)
+        float prestigeMultiplier = com.murilloskills.utils.PrestigeManager.getPassiveMultiplier(prestige);
+
+        // 0.15% per level (max 15% at level 100, with prestige bonus)
+        return level * SkillConfig.FARMER_GOLDEN_CROP_PER_LEVEL * prestigeMultiplier;
     }
 
     /**

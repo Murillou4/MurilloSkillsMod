@@ -14,6 +14,7 @@ import com.murilloskills.impl.WarriorSkill;
 import com.murilloskills.item.ModItems;
 import com.murilloskills.network.MinerScanResultPayload;
 import com.murilloskills.network.ParagonActivationC2SPayload;
+import com.murilloskills.network.PrestigeC2SPayload;
 import com.murilloskills.network.RainDanceS2CPayload;
 import com.murilloskills.network.TreasureHunterS2CPayload;
 import com.murilloskills.network.SkillAbilityC2SPayload;
@@ -26,7 +27,10 @@ import com.murilloskills.network.AreaPlantingSyncS2CPayload;
 import com.murilloskills.network.SkillsSyncPayload;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillsNetworkUtils;
+import com.murilloskills.utils.PrestigeManager;
+import com.murilloskills.commands.SkillAdminCommands;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.text.Text;
@@ -54,6 +58,11 @@ public class MurilloSkills implements ModInitializer {
 
             // 2.1. Registrar Event Handlers
             com.murilloskills.events.BlockPlacementHandler.register();
+            com.murilloskills.events.ChallengeEventsHandler.register();
+
+            // 2.2. Register Admin Commands
+            CommandRegistrationCallback.EVENT.register(SkillAdminCommands::register);
+            LOGGER.info("Skill admin commands registered");
 
             // 3. Payloads
             PayloadTypeRegistry.playS2C().register(SkillsSyncPayload.ID, SkillsSyncPayload.CODEC);
@@ -70,6 +79,11 @@ public class MurilloSkills implements ModInitializer {
             PayloadTypeRegistry.playC2S().register(SkillResetC2SPayload.ID, SkillResetC2SPayload.CODEC);
             PayloadTypeRegistry.playC2S().register(NightVisionToggleC2SPayload.ID, NightVisionToggleC2SPayload.CODEC);
             PayloadTypeRegistry.playC2S().register(StepAssistToggleC2SPayload.ID, StepAssistToggleC2SPayload.CODEC);
+            PayloadTypeRegistry.playC2S().register(PrestigeC2SPayload.ID, PrestigeC2SPayload.CODEC);
+            PayloadTypeRegistry.playS2C().register(com.murilloskills.network.XpGainS2CPayload.ID,
+                    com.murilloskills.network.XpGainS2CPayload.CODEC);
+            PayloadTypeRegistry.playS2C().register(com.murilloskills.network.DailyChallengesSyncS2CPayload.ID,
+                    com.murilloskills.network.DailyChallengesSyncS2CPayload.CODEC);
 
             // 4. Receiver: Habilidade Ativa (Tecla Z) - Usando Registry
             registerAbilityReceiver();
@@ -90,6 +104,9 @@ public class MurilloSkills implements ModInitializer {
 
             // Receiver: Skill Reset (Botão na GUI)
             registerSkillResetReceiver();
+
+            // Receiver: Prestige (Botão na GUI)
+            registerPrestigeReceiver();
 
             // Receiver: Ativação de Paragon (Botão na GUI)
             ServerPlayNetworking.registerGlobalReceiver(ParagonActivationC2SPayload.ID, (payload, context) -> {
@@ -499,6 +516,62 @@ public class MurilloSkills implements ModInitializer {
 
                 } catch (Exception e) {
                     LOGGER.error("Erro ao processar toggle de Step Assist", e);
+                }
+            });
+        });
+    }
+
+    /**
+     * Registra o receiver para prestígio de skills (Bot\u00e3o na GUI)
+     */
+    private void registerPrestigeReceiver() {
+        ServerPlayNetworking.registerGlobalReceiver(PrestigeC2SPayload.ID, (payload, context) -> {
+            context.server().execute(() -> {
+                try {
+                    var player = context.player();
+                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+                    var data = state.getPlayerData(player);
+
+                    MurilloSkillsList skill = payload.skill();
+
+                    // Validation: Prestige only works on the player's Paragon skill
+                    if (data.paragonSkill != skill) {
+                        player.sendMessage(
+                                Text.translatable("murilloskills.prestige.not_paragon")
+                                        .formatted(Formatting.RED),
+                                true);
+                        return;
+                    }
+
+                    // Validation: Check if prestige is possible
+                    if (!PrestigeManager.canPrestige(player, skill)) {
+                        var stats = data.getSkill(skill);
+                        if (stats.prestige >= PrestigeManager.MAX_PRESTIGE_LEVEL) {
+                            player.sendMessage(
+                                    Text.translatable("murilloskills.prestige.max_reached")
+                                            .formatted(Formatting.RED),
+                                    true);
+                        } else {
+                            player.sendMessage(
+                                    Text.translatable("murilloskills.paragon.level_insufficient")
+                                            .formatted(Formatting.RED),
+                                    true);
+                        }
+                        return;
+                    }
+
+                    // Execute prestige
+                    if (PrestigeManager.doPrestige(player, skill)) {
+                        player.sendMessage(
+                                Text.translatable("murilloskills.prestige.success")
+                                        .formatted(Formatting.GREEN, Formatting.BOLD),
+                                false);
+                        LOGGER.info("Player {} prestiged skill {} to level {}",
+                                player.getName().getString(), skill.name(), data.getSkill(skill).prestige);
+                    }
+
+                } catch (Exception e) {
+                    LOGGER.error("Erro ao processar prestige de skill", e);
                 }
             });
         });

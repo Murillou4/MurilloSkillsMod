@@ -42,7 +42,9 @@ public class MinerSkill extends AbstractSkill {
     public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
         try {
             // 1. Verifica Nível
-            if (stats.level < SkillConfig.MINER_MASTER_LEVEL) {
+            // 1. Verifica Nível (permite se level >= 100 OU se já prestigiou)
+            boolean hasReachedMaster = stats.level >= SkillConfig.MINER_MASTER_LEVEL || stats.prestige > 0;
+            if (!hasReachedMaster) {
                 player.sendMessage(Text.translatable("murilloskills.error.level_required", 100,
                         Text.translatable("murilloskills.skill.name.miner")).formatted(Formatting.RED), true);
                 return;
@@ -114,7 +116,13 @@ public class MinerSkill extends AbstractSkill {
     @Override
     public void updateAttributes(ServerPlayerEntity player, int level) {
         try {
-            double speedBonus = level * SkillConfig.MINER_SPEED_PER_LEVEL;
+            // Get prestige level for passive multiplier
+            var state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+            int prestige = state.getPlayerData(player).getSkill(MurilloSkillsList.MINER).prestige;
+            float prestigeMultiplier = com.murilloskills.utils.PrestigeManager.getPassiveMultiplier(prestige);
+
+            // Apply prestige bonus to mining speed
+            double speedBonus = level * SkillConfig.MINER_SPEED_PER_LEVEL * prestigeMultiplier;
             var attributeInstance = player.getAttributeInstance(EntityAttributes.BLOCK_BREAK_SPEED);
 
             if (attributeInstance != null) {
@@ -127,8 +135,8 @@ public class MinerSkill extends AbstractSkill {
                 }
             }
 
-            LOGGER.debug("Updated miner attributes for {} - Speed bonus: {}",
-                    player.getName().getString(), speedBonus);
+            LOGGER.debug("Updated miner attributes for {} - Speed bonus: {} (prestige: {})",
+                    player.getName().getString(), speedBonus, prestige);
         } catch (Exception e) {
             LOGGER.error("Erro ao atualizar atributos do Minerador para " + player.getName().getString(), e);
         }

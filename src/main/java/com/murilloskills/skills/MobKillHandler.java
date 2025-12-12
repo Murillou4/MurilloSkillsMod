@@ -6,6 +6,7 @@ import com.murilloskills.utils.SkillAttributes;
 import com.murilloskills.utils.SkillNotifier;
 import com.murilloskills.utils.SkillsNetworkUtils;
 import com.murilloskills.utils.WarriorXpGetter;
+import com.murilloskills.utils.XpStreakManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -24,8 +25,12 @@ public class MobKillHandler {
         SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
         var data = state.getPlayerData(serverPlayer);
 
+        // Apply streak bonus
+        int baseXp = result.getXpAmount();
+        int streakXp = XpStreakManager.applyStreakBonus(serverPlayer.getUuid(), MurilloSkillsList.WARRIOR, baseXp);
+
         // --- UPDATED CALL: Handles Paragon Logic Internally ---
-        SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.WARRIOR, result.getXpAmount());
+        SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.WARRIOR, streakXp);
 
         // Check for milestone rewards
         com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Guerreiro", xpResult);
@@ -38,5 +43,31 @@ public class MobKillHandler {
 
         state.markDirty();
         SkillsNetworkUtils.syncSkills(serverPlayer);
+
+        // Send XP toast notification (with streak indicator)
+        String mobName = victim.getName().getString();
+        int streak = XpStreakManager.getCurrentStreak(serverPlayer.getUuid(), MurilloSkillsList.WARRIOR);
+        String source = streak > 1 ? mobName + " (x" + streak + ")" : mobName;
+        com.murilloskills.utils.XpToastSender.send(serverPlayer, MurilloSkillsList.WARRIOR, streakXp, source);
+
+        // Track daily challenge progress - Warrior challenges
+        com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
+                com.murilloskills.utils.DailyChallengeManager.ChallengeType.KILL_MOBS, 1);
+
+        // Track specific mob types
+        if (victim instanceof net.minecraft.entity.mob.ZombieEntity ||
+                victim instanceof net.minecraft.entity.mob.SkeletonEntity ||
+                victim instanceof net.minecraft.entity.mob.PhantomEntity ||
+                victim instanceof net.minecraft.entity.mob.WitherSkeletonEntity) {
+            com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
+                    com.murilloskills.utils.DailyChallengeManager.ChallengeType.KILL_UNDEAD, 1);
+        }
+        if (victim instanceof net.minecraft.entity.mob.SpiderEntity ||
+                victim instanceof net.minecraft.entity.mob.CaveSpiderEntity) {
+            com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
+                    com.murilloskills.utils.DailyChallengeManager.ChallengeType.KILL_SPIDERS, 1);
+        }
+
+        com.murilloskills.utils.DailyChallengeManager.syncChallenges(serverPlayer);
     }
 }

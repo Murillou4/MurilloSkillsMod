@@ -10,10 +10,12 @@ import com.murilloskills.network.RainDanceS2CPayload;
 import com.murilloskills.network.SkillAbilityC2SPayload;
 import com.murilloskills.network.SkillsSyncPayload;
 import com.murilloskills.network.TreasureHunterS2CPayload;
+import com.murilloskills.network.XpGainS2CPayload;
 import com.murilloskills.render.AreaPlantingHud;
 import com.murilloskills.render.OreHighlighter;
 import com.murilloskills.render.RainDanceEffect;
 import com.murilloskills.render.TreasureHighlighter;
+import com.murilloskills.render.XpToastRenderer;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -103,6 +105,27 @@ public class MurilloSkillsClient implements ClientModInitializer {
             });
         });
 
+        // 6. XP Gain Toast Notifications
+        ClientPlayNetworking.registerGlobalReceiver(XpGainS2CPayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                XpToastRenderer.addToast(payload.getSkill(), payload.xpAmount(), payload.source());
+            });
+        });
+
+        // 7. Daily Challenges Sync
+        ClientPlayNetworking.registerGlobalReceiver(
+                com.murilloskills.network.DailyChallengesSyncS2CPayload.ID, (payload, context) -> {
+                    context.client().execute(() -> {
+                        java.util.List<com.murilloskills.data.ClientSkillData.ChallengeInfo> challenges = payload
+                                .challenges().stream()
+                                .map(c -> new com.murilloskills.data.ClientSkillData.ChallengeInfo(
+                                        c.type(), c.skillName(), c.target(), c.progress(), c.completed(), c.xpReward()))
+                                .toList();
+                        com.murilloskills.data.ClientSkillData.updateDailyChallenges(
+                                challenges, payload.dateKey(), payload.allComplete());
+                    });
+                });
+
         // --- KEYBINDINGS ---
 
         skillsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
@@ -177,5 +200,6 @@ public class MurilloSkillsClient implements ClientModInitializer {
 
         // HUD rendering for Area Planting indicator
         HudRenderCallback.EVENT.register(AreaPlantingHud::render);
+        HudRenderCallback.EVENT.register((context, tickDelta) -> XpToastRenderer.render(context));
     }
 }

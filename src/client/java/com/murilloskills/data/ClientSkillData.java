@@ -12,6 +12,11 @@ public class ClientSkillData {
     private static MurilloSkillsList paragonSkill = null;
     private static List<MurilloSkillsList> selectedSkills = new ArrayList<>();
 
+    // Daily Challenges data
+    private static List<ChallengeInfo> dailyChallenges = new ArrayList<>();
+    private static String challengeDateKey = "";
+    private static boolean allChallengesComplete = false;
+
     public static void update(Map<MurilloSkillsList, SkillGlobalState.SkillStats> newSkills) {
         skills.clear();
         skills.putAll(newSkills);
@@ -50,5 +55,68 @@ public class ClientSkillData {
 
     public static Map<MurilloSkillsList, SkillGlobalState.SkillStats> getAll() {
         return skills;
+    }
+
+    // ============ Prestige Methods ============
+
+    /**
+     * Gets prestige level for a skill.
+     */
+    public static int getPrestige(MurilloSkillsList skill) {
+        SkillGlobalState.SkillStats stats = skills.get(skill);
+        return stats != null ? stats.prestige : 0;
+    }
+
+    /**
+     * Checks if skill can prestige (level 100, not at max prestige).
+     */
+    public static boolean canPrestige(MurilloSkillsList skill) {
+        SkillGlobalState.SkillStats stats = skills.get(skill);
+        if (stats == null)
+            return false;
+        return stats.level >= 100 && stats.prestige < 10 && skill == paragonSkill;
+    }
+
+    // ============ Daily Challenges Methods ============
+
+    /**
+     * Updates daily challenges from server sync.
+     */
+    public static void updateDailyChallenges(List<ChallengeInfo> challenges, String dateKey, boolean allComplete) {
+        dailyChallenges.clear();
+        dailyChallenges.addAll(challenges);
+        challengeDateKey = dateKey;
+        allChallengesComplete = allComplete;
+    }
+
+    public static List<ChallengeInfo> getDailyChallenges() {
+        return new ArrayList<>(dailyChallenges);
+    }
+
+    public static String getChallengeDateKey() {
+        return challengeDateKey;
+    }
+
+    public static boolean areAllChallengesComplete() {
+        return allChallengesComplete;
+    }
+
+    public static int getCompletedChallengeCount() {
+        return (int) dailyChallenges.stream().filter(c -> c.completed).count();
+    }
+
+    /**
+     * Client-side challenge info for display.
+     */
+    public record ChallengeInfo(
+            String type,
+            String skillName,
+            int target,
+            int progress,
+            boolean completed,
+            int xpReward) {
+        public float getProgressPercentage() {
+            return target > 0 ? (float) progress / target : 0f;
+        }
     }
 }

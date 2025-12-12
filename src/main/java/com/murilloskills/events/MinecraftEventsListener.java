@@ -61,6 +61,8 @@ public class MinecraftEventsListener {
             handlePlayerJoin(handler.getPlayer());
             // Sincroniza as skills ao entrar
             SkillsNetworkUtils.syncSkills(handler.getPlayer());
+            // Sincroniza os desafios diários ao entrar
+            com.murilloskills.utils.DailyChallengeManager.syncChallenges(handler.getPlayer());
         });
     }
 

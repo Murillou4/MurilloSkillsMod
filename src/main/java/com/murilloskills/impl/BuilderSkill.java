@@ -78,7 +78,9 @@ public class BuilderSkill extends AbstractSkill {
     @Override
     public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
         try {
-            if (stats.level < SkillConfig.BUILDER_MASTER_LEVEL) {
+            // 1. Verifica Nível (permite se level >= 100 OU se já prestigiou)
+            boolean hasReachedMaster = stats.level >= SkillConfig.BUILDER_MASTER_LEVEL || stats.prestige > 0;
+            if (!hasReachedMaster) {
                 player.sendMessage(Text.translatable("murilloskills.error.level_required", 100,
                         Text.translatable("murilloskills.skill.name.builder")).formatted(Formatting.RED), true);
                 return;
@@ -173,10 +175,14 @@ public class BuilderSkill extends AbstractSkill {
     @Override
     public void updateAttributes(ServerPlayerEntity player, int level) {
         try {
-            double reachBonus = getReachBonus(level);
+            // Get prestige level for passive multiplier
+            var state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+            int prestige = state.getPlayerData(player).getSkill(MurilloSkillsList.BUILDER).prestige;
 
-            LOGGER.info("Applying Builder reach for {} - Level: {}, Reach Bonus: {}",
-                    player.getName().getString(), level, reachBonus);
+            double reachBonus = getReachBonus(level, prestige);
+
+            LOGGER.info("Applying Builder reach for {} - Level: {}, Prestige: {}, Reach Bonus: {}",
+                    player.getName().getString(), level, prestige, reachBonus);
 
             var reachAttr = player.getAttributeInstance(EntityAttributes.BLOCK_INTERACTION_RANGE);
             if (reachAttr != null) {
@@ -196,15 +202,24 @@ public class BuilderSkill extends AbstractSkill {
         }
     }
 
-    public static double getReachBonus(int level) {
-        double bonus = level * SkillConfig.BUILDER_REACH_PER_LEVEL;
+    /**
+     * Calculates the reach bonus based on level
+     * 
+     * @param level    The player's builder level
+     * @param prestige The player's prestige level for passive bonus
+     */
+    public static double getReachBonus(int level, int prestige) {
+        // Get prestige passive multiplier (+2% per prestige level)
+        float prestigeMultiplier = com.murilloskills.utils.PrestigeManager.getPassiveMultiplier(prestige);
+
+        double bonus = level * SkillConfig.BUILDER_REACH_PER_LEVEL * prestigeMultiplier;
 
         if (level >= SkillConfig.BUILDER_EXTENDED_REACH_LEVEL) {
-            bonus += SkillConfig.BUILDER_LEVEL_10_REACH;
+            bonus += SkillConfig.BUILDER_LEVEL_10_REACH * prestigeMultiplier;
         }
 
         if (level >= SkillConfig.BUILDER_MASTER_REACH_LEVEL) {
-            bonus += SkillConfig.BUILDER_LEVEL_75_REACH;
+            bonus += SkillConfig.BUILDER_LEVEL_75_REACH * prestigeMultiplier;
         }
 
         return bonus;

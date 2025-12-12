@@ -86,6 +86,25 @@ public class BlockPlacementHandler {
 
                 LOGGER.debug("Awarded {} XP to {} for placing {}",
                         xpResult.getXpAmount(), serverPlayer.getName().getString(), block.getName().getString());
+
+                // Track daily challenge progress - Builder challenges
+                com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
+                        com.murilloskills.utils.DailyChallengeManager.ChallengeType.PLACE_BLOCKS, 1);
+
+                // Check for high building
+                if (placementPos.getY() > 100) {
+                    com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
+                            com.murilloskills.utils.DailyChallengeManager.ChallengeType.BUILD_HEIGHT, 1);
+                }
+
+                // Check for stairs
+                String blockId = net.minecraft.registry.Registries.BLOCK.getId(block).toString();
+                if (blockId.contains("stairs")) {
+                    com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
+                            com.murilloskills.utils.DailyChallengeManager.ChallengeType.PLACE_STAIRS, 1);
+                }
+
+                com.murilloskills.utils.DailyChallengeManager.syncChallenges(serverPlayer);
             }
 
             // Handle Creative Brush line placement

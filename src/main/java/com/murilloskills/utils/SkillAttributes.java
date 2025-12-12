@@ -4,10 +4,7 @@ import com.murilloskills.api.AbstractSkill;
 import com.murilloskills.api.SkillRegistry;
 import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.skills.MurilloSkillsList;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,9 +35,9 @@ public class SkillAttributes {
         }
     }
 
-
     /**
      * Legacy method for updating miner stats - now uses the new skill system
+     * 
      * @deprecated Use updateAllStats() instead
      */
     @Deprecated
@@ -59,6 +56,7 @@ public class SkillAttributes {
 
     /**
      * Legacy method for updating warrior stats - now uses the new skill system
+     * 
      * @deprecated Use updateAllStats() instead
      */
     @Deprecated

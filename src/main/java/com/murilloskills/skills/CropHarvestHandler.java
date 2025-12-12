@@ -7,6 +7,7 @@ import com.murilloskills.utils.FarmerXpGetter;
 import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillNotifier;
 import com.murilloskills.utils.SkillsNetworkUtils;
+import com.murilloskills.utils.XpStreakManager;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.CropBlock;
@@ -69,8 +70,12 @@ public class CropHarvestHandler {
         var stats = playerData.getSkill(MurilloSkillsList.FARMER);
         int level = stats.level;
 
+        // Apply streak bonus
+        int baseXp = result.getXpAmount();
+        int streakXp = XpStreakManager.applyStreakBonus(serverPlayer.getUuid(), MurilloSkillsList.FARMER, baseXp);
+
         // Add XP
-        SkillGlobalState.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.FARMER, result.getXpAmount());
+        SkillGlobalState.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.FARMER, streakXp);
 
         // Check for milestone rewards
         com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Agricultor", xpResult);
@@ -84,6 +89,17 @@ public class CropHarvestHandler {
 
         skillState.markDirty();
         SkillsNetworkUtils.syncSkills(serverPlayer);
+
+        // Send XP toast notification (with streak indicator)
+        String cropName = block.getName().getString();
+        int streak = XpStreakManager.getCurrentStreak(serverPlayer.getUuid(), MurilloSkillsList.FARMER);
+        String source = streak > 1 ? cropName + " (x" + streak + ")" : cropName;
+        com.murilloskills.utils.XpToastSender.send(serverPlayer, MurilloSkillsList.FARMER, streakXp, source);
+
+        // Track daily challenge progress - Farmer challenges
+        com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
+                com.murilloskills.utils.DailyChallengeManager.ChallengeType.HARVEST_CROPS, 1);
+        com.murilloskills.utils.DailyChallengeManager.syncChallenges(serverPlayer);
     }
 
     /**
@@ -125,8 +141,12 @@ public class CropHarvestHandler {
      */
     private static void applyHarvestBonuses(ServerPlayerEntity player, ServerWorld world,
             BlockPos pos, BlockState state, Block block, int level) {
-        // Calculate double harvest chance
-        float doubleChance = FarmerSkill.getDoubleHarvestChance(level);
+        // Get prestige for passive bonus
+        SkillGlobalState skillState = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+        int prestige = skillState.getPlayerData(player).getSkill(MurilloSkillsList.FARMER).prestige;
+
+        // Calculate double harvest chance (with prestige bonus)
+        float doubleChance = FarmerSkill.getDoubleHarvestChance(level, prestige);
 
         // Roll for double harvest
         if (random.nextFloat() < doubleChance) {
@@ -149,7 +169,7 @@ public class CropHarvestHandler {
         }
 
         // Golden crop chance (gives saturation effect when eating)
-        float goldenChance = FarmerSkill.getGoldenCropChance(level);
+        float goldenChance = FarmerSkill.getGoldenCropChance(level, prestige);
         if (random.nextFloat() < goldenChance) {
             applyGoldenCropBonus(player, block);
         }

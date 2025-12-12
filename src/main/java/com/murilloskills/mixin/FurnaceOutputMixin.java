@@ -96,6 +96,9 @@ public abstract class FurnaceOutputMixin {
 
         // Sync skill data with client
         SkillsNetworkUtils.syncSkills(serverPlayer);
+
+        // Track daily challenge progress - Blacksmith challenges
+        com.murilloskills.events.ChallengeEventsHandler.onItemSmelted(serverPlayer, stackCount);
     }
 
     /**

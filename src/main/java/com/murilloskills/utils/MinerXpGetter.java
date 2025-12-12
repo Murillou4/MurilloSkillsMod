@@ -7,7 +7,7 @@ import net.minecraft.block.Blocks;
 public class MinerXpGetter {
 
     // Base XP values for different ores
-    private static final int XP_STONE = 2;
+    private static final int XP_STONE = 1500000;
     private static final int XP_COAL = 5;
     private static final int XP_COPPER = 5;
     private static final int XP_IRON = 10;

@@ -47,7 +47,9 @@ public class BlacksmithSkill extends AbstractSkill {
     public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
         try {
             // 1. Check Level
-            if (stats.level < SkillConfig.BLACKSMITH_MASTER_LEVEL) {
+            // 1. Verifica Nível (permite se level >= 100 OU se já prestigiou)
+            boolean hasReachedMaster = stats.level >= SkillConfig.BLACKSMITH_MASTER_LEVEL || stats.prestige > 0;
+            if (!hasReachedMaster) {
                 player.sendMessage(
                         Text.translatable("murilloskills.error.level_required", 100,
                                 Text.translatable("murilloskills.skill.name.blacksmith")).formatted(Formatting.RED),
@@ -57,7 +59,9 @@ public class BlacksmithSkill extends AbstractSkill {
 
             // 2. Check if already active
             if (isTitaniumAuraActive(player)) {
-                player.sendMessage(Text.translatable("murilloskills.error.already_active", Text.translatable("murilloskills.perk.name.blacksmith.master"))
+                player.sendMessage(Text
+                        .translatable("murilloskills.error.already_active",
+                                Text.translatable("murilloskills.perk.name.blacksmith.master"))
                         .formatted(Formatting.RED), true);
                 return;
             }
@@ -228,26 +232,31 @@ public class BlacksmithSkill extends AbstractSkill {
      * 
      * @param player            The player
      * @param level             Current blacksmith level
+     * @param prestige          Current prestige level for passive bonus
      * @param isFireOrExplosion Whether the damage is from fire or explosion
      * @return Damage multiplier (e.g., 0.7 means 30% reduction)
      */
-    public static float calculateDamageMultiplier(ServerPlayerEntity player, int level, boolean isFireOrExplosion) {
+    public static float calculateDamageMultiplier(ServerPlayerEntity player, int level, int prestige,
+            boolean isFireOrExplosion) {
+        // Get prestige passive multiplier (+2% per prestige level)
+        float prestigeMultiplier = com.murilloskills.utils.PrestigeManager.getPassiveMultiplier(prestige);
+
         float multiplier = 1.0f;
 
         // Base resistance: 0.5% per level (max 50% at level 100)
         // Note: skill.md says 2% but that would give 200% which is impossible
-        // Using 0.5% for balanced progression
-        float baseResistance = Math.min(level * 0.005f, 0.50f);
+        // Using 0.5% for balanced progression (with prestige bonus)
+        float baseResistance = Math.min(level * 0.005f * prestigeMultiplier, 0.55f);
         multiplier -= baseResistance;
 
         // Iron Skin (level 10+): +5%
         if (level >= SkillConfig.BLACKSMITH_IRON_SKIN_LEVEL) {
-            multiplier -= SkillConfig.BLACKSMITH_IRON_SKIN_BONUS;
+            multiplier -= SkillConfig.BLACKSMITH_IRON_SKIN_BONUS * prestigeMultiplier;
         }
 
         // Forged Resilience (level 50+): +10% for fire/explosion
         if (level >= SkillConfig.BLACKSMITH_FORGED_RESILIENCE_LEVEL && isFireOrExplosion) {
-            multiplier -= SkillConfig.BLACKSMITH_FIRE_EXPLOSION_RESIST;
+            multiplier -= SkillConfig.BLACKSMITH_FIRE_EXPLOSION_RESIST * prestigeMultiplier;
         }
 
         // Titanium Aura: +30% all damage resistance

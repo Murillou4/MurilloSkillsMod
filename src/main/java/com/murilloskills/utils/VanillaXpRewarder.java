@@ -47,6 +47,9 @@ public class VanillaXpRewarder {
 
         player.sendMessage(message, false);
 
+        // Show first-time hint about milestones
+        FirstTimeHints.showHintIfFirstTime(player, FirstTimeHints.HintType.MILESTONE_REACHED);
+
         ServerWorld world = (ServerWorld) player.getEntityWorld();
         world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.0f,
                 1.5f);

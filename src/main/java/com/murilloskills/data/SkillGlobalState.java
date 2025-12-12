@@ -73,8 +73,17 @@ public class SkillGlobalState extends PersistentState {
                 skillCompound.putInt("level", stats.level);
                 skillCompound.putDouble("xp", stats.xp);
                 skillCompound.putLong("lastAbilityUse", stats.lastAbilityUse);
+                skillCompound.putInt("prestige", stats.prestige);
                 playerCompound.put(skill.name(), skillCompound);
             });
+
+            // Save skill toggles
+            if (playerData.skillToggles != null && !playerData.skillToggles.isEmpty()) {
+                NbtCompound togglesNbt = new NbtCompound();
+                playerData.skillToggles.forEach((key, value) -> togglesNbt.putBoolean(key, value));
+                playerCompound.put("skillToggles", togglesNbt);
+            }
+
             playersNbt.put(uuid.toString(), playerCompound);
         });
         nbt.put("players", playersNbt);
@@ -123,14 +132,25 @@ public class SkillGlobalState extends PersistentState {
                     Optional<Integer> lvl = skillCompound.getInt("level");
                     Optional<Double> xp = skillCompound.getDouble("xp");
                     Optional<Long> lastUse = skillCompound.getLong("lastAbilityUse");
+                    Optional<Integer> prestige = skillCompound.getInt("prestige");
 
                     if (lvl.isPresent() && xp.isPresent() && lastUse.isPresent()) {
-                        playerData.setSkill(skill, lvl.get(), xp.get(), lastUse.get());
+                        playerData.setSkill(skill, lvl.get(), xp.get(), lastUse.get(), prestige.orElse(0));
                     } else {
                         LOGGER.error("skill values not present");
                     }
                 }
             }
+
+            // Load skill toggles
+            if (playerCompound.contains("skillToggles")) {
+                NbtCompound togglesNbt = playerCompound.getCompoundOrEmpty("skillToggles");
+                for (String toggleKey : togglesNbt.getKeys()) {
+                    Optional<Boolean> value = togglesNbt.getBoolean(toggleKey);
+                    value.ifPresent(v -> playerData.skillToggles.put(toggleKey, v));
+                }
+            }
+
             state.players.put(uuid, playerData);
         });
         return state;
@@ -152,6 +172,14 @@ public class SkillGlobalState extends PersistentState {
         return players.computeIfAbsent(player.getUuid(), uuid -> new PlayerSkillData());
     }
 
+    /**
+     * Gets or creates player data by UUID (for admin commands when player may be
+     * offline)
+     */
+    public PlayerSkillData getOrCreatePlayerData(UUID uuid) {
+        return players.computeIfAbsent(uuid, u -> new PlayerSkillData());
+    }
+
     public static class PlayerSkillData {
         public static final int MAX_SELECTED_SKILLS = 3;
 
@@ -159,9 +187,14 @@ public class SkillGlobalState extends PersistentState {
         public MurilloSkillsList paragonSkill = null; // The one skill allowed to reach 100
         public List<MurilloSkillsList> selectedSkills = new ArrayList<>(); // The 2 main skills chosen by player
 
+        // Persistent toggles for skill features (key format: "skillName.toggleName")
+        // Examples: "EXPLORER.nightVision", "EXPLORER.stepAssist",
+        // "FARMER.areaPlanting"
+        public Map<String, Boolean> skillToggles = new HashMap<>();
+
         public PlayerSkillData() {
             for (MurilloSkillsList skill : MurilloSkillsList.values()) {
-                skills.put(skill, new SkillStats(0, 0.0, -1)); // -1 = nunca usou a habilidade
+                skills.put(skill, new SkillStats(0, 0.0, -1, 0)); // -1 = nunca usou, 0 = sem prestige
             }
         }
 
@@ -216,6 +249,31 @@ public class SkillGlobalState extends PersistentState {
         }
 
         /**
+         * Gets a toggle value for a skill feature. Returns the default value if not
+         * set.
+         * 
+         * @param skill        The skill enum
+         * @param toggleName   The toggle name (e.g., "nightVision", "stepAssist")
+         * @param defaultValue The default value if toggle is not set
+         */
+        public boolean getToggle(MurilloSkillsList skill, String toggleName, boolean defaultValue) {
+            String key = skill.name() + "." + toggleName;
+            return skillToggles.getOrDefault(key, defaultValue);
+        }
+
+        /**
+         * Sets a toggle value for a skill feature.
+         * 
+         * @param skill      The skill enum
+         * @param toggleName The toggle name (e.g., "nightVision", "stepAssist")
+         * @param value      The toggle value
+         */
+        public void setToggle(MurilloSkillsList skill, String toggleName, boolean value) {
+            String key = skill.name() + "." + toggleName;
+            skillToggles.put(key, value);
+        }
+
+        /**
          * Central logic for adding XP and handling Paragon System constraints.
          * 
          * @return XpAddResult containing level transition info for milestone detection
@@ -233,6 +291,10 @@ public class SkillGlobalState extends PersistentState {
 
             SkillStats stats = skills.get(skill);
 
+            // Apply prestige XP bonus multiplier
+            float xpMultiplier = com.murilloskills.utils.PrestigeManager.getXpMultiplier(stats.prestige);
+            int adjustedAmount = Math.round(amount * xpMultiplier);
+
             int maxLevelAllowed = 99;
             // Nível 100 só é permitido se paragonSkill estiver definido E for igual à skill
             // atual
@@ -241,7 +303,7 @@ public class SkillGlobalState extends PersistentState {
                 maxLevelAllowed = 100;
             }
 
-            return stats.addXp(amount, maxLevelAllowed);
+            return stats.addXp(adjustedAmount, maxLevelAllowed);
         }
 
         public void setSkill(MurilloSkillsList skill, int level, double xp) {
@@ -249,7 +311,11 @@ public class SkillGlobalState extends PersistentState {
         }
 
         public void setSkill(MurilloSkillsList skill, int level, double xp, long lastAbilityUse) {
-            skills.put(skill, new SkillStats(level, xp, lastAbilityUse));
+            setSkill(skill, level, xp, lastAbilityUse, 0);
+        }
+
+        public void setSkill(MurilloSkillsList skill, int level, double xp, long lastAbilityUse, int prestige) {
+            skills.put(skill, new SkillStats(level, xp, lastAbilityUse, prestige));
         }
 
         public SkillStats getSkill(MurilloSkillsList skill) {
@@ -278,7 +344,7 @@ public class SkillGlobalState extends PersistentState {
                     });
                     // Ensure all enums are present
                     for (MurilloSkillsList s : MurilloSkillsList.values()) {
-                        map.putIfAbsent(s, new SkillStats(0, 0, -1)); // -1 = nunca usou a habilidade
+                        map.putIfAbsent(s, new SkillStats(0, 0, -1, 0)); // -1 = nunca usou, 0 = sem prestige
                     }
                     // Parse selectedSkills
                     List<MurilloSkillsList> selected = new ArrayList<>();
@@ -296,21 +362,28 @@ public class SkillGlobalState extends PersistentState {
         public int level;
         public double xp;
         public long lastAbilityUse; // Timestamp do último uso da habilidade (World Time)
+        public int prestige; // Nível de prestígio (0-10)
 
         public SkillStats(int level, double xp) {
-            this(level, xp, -1); // -1 = nunca usou a habilidade
+            this(level, xp, -1, 0); // -1 = nunca usou, 0 = sem prestige
         }
 
         public SkillStats(int level, double xp, long lastAbilityUse) {
+            this(level, xp, lastAbilityUse, 0);
+        }
+
+        public SkillStats(int level, double xp, long lastAbilityUse, int prestige) {
             this.level = level;
             this.xp = xp;
             this.lastAbilityUse = lastAbilityUse;
+            this.prestige = prestige;
         }
 
         public static final Codec<SkillStats> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.INT.fieldOf("level").forGetter(s -> s.level),
                 Codec.DOUBLE.fieldOf("xp").forGetter(s -> s.xp),
-                Codec.LONG.optionalFieldOf("lastAbilityUse", 0L).forGetter(s -> s.lastAbilityUse))
+                Codec.LONG.optionalFieldOf("lastAbilityUse", 0L).forGetter(s -> s.lastAbilityUse),
+                Codec.INT.optionalFieldOf("prestige", 0).forGetter(s -> s.prestige))
                 .apply(instance, SkillStats::new));
 
         // Logic moved to respect dynamic cap

@@ -1,5 +1,4 @@
 {
-    "item.murilloskills.dick": "Dick Tester",
     "_comment_keybinds": "=== KEYBINDS ===",
     "key.category.murilloskills.keybinds": "MurilloSkills",
     "key.murilloskills.open_gui": "Abrir Menú de Habilidades",
@@ -100,7 +99,6 @@
     "_comment_xp_sources": "=== XP SOURCE NAMES ===",
     "murilloskills.xp.traveler": "Viajero",
     "murilloskills.explorer.need_level_10_step": "¡Necesitas ser Nivel 10 de Explorador para Paso Ligero!",
-    
     "_comment_gui_icons": "=== GUI ICONS ===",
     "murilloskills.gui.icon.warning": "⚠",
     "murilloskills.gui.icon.reset": "⟳",
@@ -110,7 +108,6 @@
     "murilloskills.gui.time.minutes": "m",
     "murilloskills.gui.time.seconds": "s",
     "murilloskills.hud.area_planting": "🌱 3x3",
-
     "_comment_notifications": "=== NOTIFICATIONS ===",
     "murilloskills.notify.level_up": "¡SUBIDA DE NIVEL!",
     "murilloskills.notify.milestone": "HITO",

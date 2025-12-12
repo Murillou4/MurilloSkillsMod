@@ -24,7 +24,9 @@
     "ExplorerBreathMixin",
     "SoulSandMixin",
     "GrindstoneScreenHandlerMixin",
-    "FurnaceOutputMixin"
+    "FurnaceOutputMixin",
+    "PlayerEventsMixin",
+    "CraftingResultMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -45,8 +45,9 @@ public class WarriorSkill extends AbstractSkill {
     @Override
     public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
         try {
-            // 1. Verifica Nível
-            if (stats.level < SkillConfig.WARRIOR_MASTER_LEVEL) {
+            // 1. Verifica Nível (permite se level >= 100 OU se já prestigiou)
+            boolean hasReachedMaster = stats.level >= SkillConfig.WARRIOR_MASTER_LEVEL || stats.prestige > 0;
+            if (!hasReachedMaster) {
                 player.sendMessage(Text.translatable("murilloskills.error.level_required", 100,
                         Text.translatable("murilloskills.skill.name.warrior")).formatted(Formatting.RED), true);
                 return;
@@ -116,8 +117,13 @@ public class WarriorSkill extends AbstractSkill {
     @Override
     public void updateAttributes(ServerPlayerEntity player, int level) {
         try {
-            // --- 1. DANO (por level) ---
-            double damageBonus = level * SkillConfig.WARRIOR_DAMAGE_PER_LEVEL;
+            // Get prestige level for passive multiplier
+            var state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+            int prestige = state.getPlayerData(player).getSkill(MurilloSkillsList.WARRIOR).prestige;
+            float prestigeMultiplier = com.murilloskills.utils.PrestigeManager.getPassiveMultiplier(prestige);
+
+            // --- 1. DANO (por level) - Apply prestige bonus ---
+            double damageBonus = level * SkillConfig.WARRIOR_DAMAGE_PER_LEVEL * prestigeMultiplier;
 
             var damageAttr = player.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE);
             if (damageAttr != null) {

@@ -17,7 +17,7 @@ public class SkillConfig {
 
     // Valores (tempos em SEGUNDOS - converter com toTicks() quando necessário)
     public static final float MINER_DURABILITY_CHANCE = 0.15f; // 15% chance de ignorar dano
-    public static final int MINER_ABILITY_COOLDOWN_SECONDS = 3600; // 1 hora (3600 segundos)
+    public static final int MINER_ABILITY_COOLDOWN_SECONDS = 1200; // 20 minutos (reduzido de 1h)
     public static final int MINER_ABILITY_RADIUS = 30; // Raio do Master Miner
     public static final int MINER_ABILITY_DURATION_SECONDS = 10; // 10 segundos
 
@@ -34,7 +34,7 @@ public class SkillConfig {
 
     // Master Skill (Warrior Berserk - Level 100)
     public static final int WARRIOR_MASTER_LEVEL = 100;
-    public static final int WARRIOR_ABILITY_COOLDOWN_SECONDS = 3600; // 1 hora (3600 segundos)
+    public static final int WARRIOR_ABILITY_COOLDOWN_SECONDS = 1200; // 20 minutos (reduzido de 1h)
     public static final int WARRIOR_BERSERK_DURATION_SECONDS = 10; // 10 segundos
     public static final float WARRIOR_BERSERK_LIFESTEAL = 0.50f; // 50% de roubo de vida durante Berserk
     public static final int WARRIOR_EXHAUSTION_DURATION_SECONDS = 5; // 5 segundos de debuff após Berserk
@@ -55,7 +55,7 @@ public class SkillConfig {
     public static final float ARCHER_ARROW_SPEED_MULTIPLIER = 1.25f; // 25% mais rápido
     public static final float ARCHER_BONUS_DAMAGE_AMOUNT = 0.05f; // +5% de bônus no nível 25
     public static final float ARCHER_SPREAD_REDUCTION = 0.50f; // 50% menos spread
-    public static final int ARCHER_ABILITY_COOLDOWN_SECONDS = 3600; // 1 hora (3600 segundos)
+    public static final int ARCHER_ABILITY_COOLDOWN_SECONDS = 1200; // 20 minutos (reduzido de 1h)
     public static final int ARCHER_MASTER_RANGER_DURATION_SECONDS = 30; // 30 segundos
     public static final float ARCHER_HEADSHOT_DAMAGE_BONUS = 0.30f; // 30% extra damage on headshots
 
@@ -107,7 +107,7 @@ public class SkillConfig {
 
     // Habilidade Ativa (Titanium Aura)
     public static final int BLACKSMITH_ABILITY_DURATION_SECONDS = 15; // 15 segundos
-    public static final int BLACKSMITH_ABILITY_COOLDOWN_SECONDS = 3600; // 1 hora
+    public static final int BLACKSMITH_ABILITY_COOLDOWN_SECONDS = 1200; // 20 minutos (reduzido de 1h)
     public static final float BLACKSMITH_TITANIUM_RESISTANCE = 0.30f; // +30% resistência a todo dano
     public static final float BLACKSMITH_TITANIUM_REGEN = 1.0f; // 0.5 coração/seg = 1 HP/seg
 
@@ -191,7 +191,7 @@ public class SkillConfig {
 
     // Habilidade Ativa (Rain Dance)
     public static final int FISHER_ABILITY_DURATION_SECONDS = 60; // 60 segundos de efeito
-    public static final int FISHER_ABILITY_COOLDOWN_SECONDS = 1800; // 30 minutos (1800 segundos)
+    public static final int FISHER_ABILITY_COOLDOWN_SECONDS = 900; // 15 minutos (reduzido de 30min)
     public static final float FISHER_RAIN_DANCE_SPEED_BONUS = 0.50f; // +50% velocidade de pesca
     public static final float FISHER_RAIN_DANCE_TREASURE_BONUS = 0.30f; // +30% chance de tesouro
     public static final int FISHER_RAIN_DANCE_BUNDLE_MULTIPLIER = 2; // Chance dobrada de Bundle Épico (reduzido de 3x)
@@ -234,5 +234,33 @@ public class SkillConfig {
             case 100 -> MILESTONE_XP_LEVEL_100;
             default -> 0;
         };
+    }
+
+    // --- DYNAMIC COOLDOWN SYSTEM ---
+    /** Redução de cooldown por nível (0.5% por nível = 50% máximo no nível 100) */
+    public static final float COOLDOWN_REDUCTION_PER_LEVEL = 0.005f;
+
+    /**
+     * Calcula o cooldown reduzido baseado no nível do jogador.
+     * Aplica redução de 0.5% por nível (máximo 50% no nível 100).
+     * 
+     * @param baseCooldownSeconds Cooldown base em segundos
+     * @param level               Nível atual da skill do jogador
+     * @return Cooldown reduzido em segundos
+     */
+    public static int getDynamicCooldown(int baseCooldownSeconds, int level) {
+        float reduction = Math.min(level * COOLDOWN_REDUCTION_PER_LEVEL, 0.50f); // Max 50%
+        return (int) (baseCooldownSeconds * (1.0f - reduction));
+    }
+
+    /**
+     * Calcula o cooldown reduzido em ticks.
+     * 
+     * @param baseCooldownSeconds Cooldown base em segundos
+     * @param level               Nível atual da skill do jogador
+     * @return Cooldown reduzido em ticks
+     */
+    public static long getDynamicCooldownTicks(int baseCooldownSeconds, int level) {
+        return toTicksLong(getDynamicCooldown(baseCooldownSeconds, level));
     }
 }

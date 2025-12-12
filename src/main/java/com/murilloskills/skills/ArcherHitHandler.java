@@ -5,6 +5,7 @@ import com.murilloskills.models.SkillReceptorResult;
 import com.murilloskills.utils.ArcherXpGetter;
 import com.murilloskills.utils.SkillNotifier;
 import com.murilloskills.utils.SkillsNetworkUtils;
+import com.murilloskills.utils.XpStreakManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -34,7 +35,11 @@ public class ArcherHitHandler {
         SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
         var data = state.getPlayerData(player);
 
-        SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.ARCHER, result.getXpAmount());
+        // Apply streak bonus
+        int baseXp = result.getXpAmount();
+        int streakXp = XpStreakManager.applyStreakBonus(player.getUuid(), MurilloSkillsList.ARCHER, baseXp);
+
+        SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.ARCHER, streakXp);
 
         // Check for milestone rewards
         com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(player, "Arqueiro", xpResult);
@@ -46,6 +51,12 @@ public class ArcherHitHandler {
 
         state.markDirty();
         SkillsNetworkUtils.syncSkills(player);
+
+        // Send XP toast notification (with streak indicator)
+        String targetName = target.getName().getString();
+        int streak = XpStreakManager.getCurrentStreak(player.getUuid(), MurilloSkillsList.ARCHER);
+        String source = streak > 1 ? targetName + " (x" + streak + ")" : targetName;
+        com.murilloskills.utils.XpToastSender.send(player, MurilloSkillsList.ARCHER, streakXp, source);
     }
 
     /**
@@ -68,7 +79,11 @@ public class ArcherHitHandler {
         SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
         var data = state.getPlayerData(player);
 
-        SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.ARCHER, result.getXpAmount());
+        // Apply streak bonus
+        int baseXp = result.getXpAmount();
+        int streakXp = XpStreakManager.applyStreakBonus(player.getUuid(), MurilloSkillsList.ARCHER, baseXp);
+
+        SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.ARCHER, streakXp);
 
         // Check for milestone rewards
         com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(player, "Arqueiro", xpResult);
@@ -80,5 +95,11 @@ public class ArcherHitHandler {
 
         state.markDirty();
         SkillsNetworkUtils.syncSkills(player);
+
+        // Send XP toast notification (with streak indicator)
+        String targetName = target.getName().getString();
+        int streak = XpStreakManager.getCurrentStreak(player.getUuid(), MurilloSkillsList.ARCHER);
+        String source = streak > 1 ? targetName + " Kill (x" + streak + ")" : targetName + " Kill";
+        com.murilloskills.utils.XpToastSender.send(player, MurilloSkillsList.ARCHER, streakXp, source);
     }
 }

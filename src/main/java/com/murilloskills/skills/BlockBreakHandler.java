@@ -11,6 +11,7 @@ import net.minecraft.util.Formatting;
 import com.murilloskills.MurilloSkills;
 import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.utils.MinerXpGetter;
+import com.murilloskills.utils.XpStreakManager;
 import net.minecraft.block.BlockState;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
@@ -47,9 +48,13 @@ public class BlockBreakHandler {
             SkillGlobalState skillState = SkillGlobalState.getServerState(server);
             SkillGlobalState.PlayerSkillData data = skillState.getPlayerData(serverPlayerEntity);
 
+            // Apply streak bonus
+            int baseXp = result.getXpAmount();
+            int streakXp = XpStreakManager.applyStreakBonus(serverPlayerEntity.getUuid(), MurilloSkillsList.MINER,
+                    baseXp);
+
             // --- UPDATED CALL: Handles Paragon Logic Internally ---
-            final SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.MINER,
-                    result.getXpAmount());
+            final SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.MINER, streakXp);
             SkillGlobalState.SkillStats stats = data.getSkill(MurilloSkillsList.MINER);
 
             // Check for milestone rewards
@@ -78,6 +83,33 @@ public class BlockBreakHandler {
 
             skillState.markDirty();
             SkillsNetworkUtils.syncSkills(serverPlayerEntity);
+
+            // Send XP toast notification (show streak bonus if any)
+            String blockName = state.getBlock().getName().getString();
+            int streak = XpStreakManager.getCurrentStreak(serverPlayerEntity.getUuid(), MurilloSkillsList.MINER);
+            String source = streak > 1 ? blockName + " (x" + streak + ")" : blockName;
+            com.murilloskills.utils.XpToastSender.send(serverPlayerEntity, MurilloSkillsList.MINER, streakXp, source);
+
+            // Track daily challenge progress - Miner challenges
+            com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayerEntity,
+                    com.murilloskills.utils.DailyChallengeManager.ChallengeType.MINE_BLOCKS, 1);
+
+            // Check for ore types
+            String blockId = net.minecraft.registry.Registries.BLOCK.getId(state.getBlock()).toString();
+            if (blockId.contains("_ore") || blockId.contains("ancient_debris")) {
+                com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayerEntity,
+                        com.murilloskills.utils.DailyChallengeManager.ChallengeType.MINE_ORES, 1);
+            }
+            if (blockId.contains("deepslate")) {
+                com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayerEntity,
+                        com.murilloskills.utils.DailyChallengeManager.ChallengeType.MINE_DEEPSLATE, 1);
+            }
+            if (blockId.contains("diamond_ore")) {
+                com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayerEntity,
+                        com.murilloskills.utils.DailyChallengeManager.ChallengeType.FIND_DIAMONDS, 1);
+            }
+
+            com.murilloskills.utils.DailyChallengeManager.syncChallenges(serverPlayerEntity);
         }
         return ActionResult.PASS;
     }

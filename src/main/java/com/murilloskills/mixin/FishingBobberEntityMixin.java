@@ -58,11 +58,13 @@ public abstract class FishingBobberEntityMixin {
             }
 
             int level = playerData.getSkill(MurilloSkillsList.FISHER).level;
+            int prestige = playerData.getSkill(MurilloSkillsList.FISHER).prestige;
 
             // Only modify if we have wait countdown active
             if (this.waitCountdown > 0) {
-                // Calculate speed multiplier from passive bonus (0.5% per level)
-                float speedBonus = FisherSkill.getFishingSpeedBonus(level);
+                // Calculate speed multiplier from passive bonus (0.5% per level, with prestige
+                // bonus)
+                float speedBonus = FisherSkill.getFishingSpeedBonus(level, prestige);
 
                 // Level 10 perk: -25% wait time
                 float waitReduction = 1.0f - FisherSkill.getWaitTimeMultiplier(level);

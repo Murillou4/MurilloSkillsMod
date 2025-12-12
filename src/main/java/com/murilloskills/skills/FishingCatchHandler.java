@@ -94,6 +94,15 @@ public class FishingCatchHandler {
                         caughtItem.getName().getString(),
                         category,
                         xpAmount);
+
+                // Send XP toast notification
+                com.murilloskills.utils.XpToastSender.send(serverPlayer, MurilloSkillsList.FISHER,
+                        xpAmount, caughtItem.getName().getString());
+
+                // Track daily challenge progress - Fisher challenges
+                boolean isFish = FisherXpGetter.isFish(caughtItem);
+                boolean isTreasure = FisherXpGetter.isTreasure(caughtItem);
+                com.murilloskills.events.ChallengeEventsHandler.onFishCaught(serverPlayer, isFish, isTreasure);
             }
 
             // Level 25 & 75: Bonus treasure chance

@@ -43,7 +43,9 @@ public class FisherSkill extends AbstractSkill {
     public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
         try {
             // 1. Check Level
-            if (stats.level < SkillConfig.FISHER_MASTER_LEVEL) {
+            // 1. Verifica Nível (permite se level >= 100 OU se já prestigiou)
+            boolean hasReachedMaster = stats.level >= SkillConfig.FISHER_MASTER_LEVEL || stats.prestige > 0;
+            if (!hasReachedMaster) {
                 player.sendMessage(Text.translatable("murilloskills.error.level_required", 100,
                         Text.translatable("murilloskills.skill.name.fisher")).formatted(Formatting.RED), true);
                 return;
@@ -142,18 +144,30 @@ public class FisherSkill extends AbstractSkill {
     /**
      * Calculates the fishing speed bonus based on level.
      * +0.5% per level = 50% at level 100
+     * 
+     * @param level    The player's fisher level
+     * @param prestige The player's prestige level for passive bonus
      */
-    public static float getFishingSpeedBonus(int level) {
-        float bonus = level * SkillConfig.FISHER_SPEED_PER_LEVEL;
-        return Math.min(bonus, 0.50f); // Cap at 50%
+    public static float getFishingSpeedBonus(int level, int prestige) {
+        // Get prestige passive multiplier (+2% per prestige level)
+        float prestigeMultiplier = com.murilloskills.utils.PrestigeManager.getPassiveMultiplier(prestige);
+
+        float bonus = level * SkillConfig.FISHER_SPEED_PER_LEVEL * prestigeMultiplier;
+        return Math.min(bonus, 0.60f); // Cap at 60% (slightly higher with prestige)
     }
 
     /**
      * Calculates the Epic Bundle chance based on level.
      * +0.3% per level = 30% at level 100
+     * 
+     * @param level    The player's fisher level
+     * @param prestige The player's prestige level for passive bonus
      */
-    public static float getEpicBundleChance(int level) {
-        return level * SkillConfig.FISHER_EPIC_BUNDLE_PER_LEVEL;
+    public static float getEpicBundleChance(int level, int prestige) {
+        // Get prestige passive multiplier (+2% per prestige level)
+        float prestigeMultiplier = com.murilloskills.utils.PrestigeManager.getPassiveMultiplier(prestige);
+
+        return level * SkillConfig.FISHER_EPIC_BUNDLE_PER_LEVEL * prestigeMultiplier;
     }
 
     /**
