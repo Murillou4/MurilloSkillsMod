@@ -47,7 +47,7 @@ public class DailyChallengeManager {
 
         // Verificar se precisa gerar novos desafios (novo dia)
         if (data == null || !data.dateKey.equals(today)) {
-            data = generateNewChallenges(playerId, today);
+            data = generateNewChallenges(player, today);
             playerChallenges.put(playerId, data);
         }
 
@@ -93,12 +93,31 @@ public class DailyChallengeManager {
 
     // ============ MÉTODOS PRIVADOS ============
 
-    private static PlayerChallengeData generateNewChallenges(UUID playerId, String dateKey) {
+    private static PlayerChallengeData generateNewChallenges(ServerPlayerEntity player, String dateKey) {
+        UUID playerId = player.getUuid();
         Random random = new Random(playerId.hashCode() + dateKey.hashCode());
         List<DailyChallenge> challenges = new ArrayList<>();
 
-        // Lista de tipos disponíveis
-        List<ChallengeType> availableTypes = new ArrayList<>(Arrays.asList(ChallengeType.values()));
+        // Get player's selected skills to filter challenges
+        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+        SkillGlobalState.PlayerSkillData playerData = state.getPlayerData(player);
+        List<MurilloSkillsList> selectedSkills = playerData.getSelectedSkills();
+
+        // Filter available challenge types based on selected skills
+        List<ChallengeType> availableTypes = new ArrayList<>();
+        for (ChallengeType type : ChallengeType.values()) {
+            MurilloSkillsList skill = getSkillForType(type);
+            // Include if: skill is null (general challenge) OR skill is in selected skills
+            if (skill == null || selectedSkills.contains(skill)) {
+                availableTypes.add(type);
+            }
+        }
+
+        // If no skills selected yet, use a subset of general challenges
+        if (availableTypes.isEmpty()) {
+            availableTypes.add(ChallengeType.EAT_FOOD);
+            availableTypes.add(ChallengeType.SLEEP_NIGHTS);
+        }
 
         for (int i = 0; i < CHALLENGES_PER_DAY && !availableTypes.isEmpty(); i++) {
             int index = random.nextInt(availableTypes.size());
