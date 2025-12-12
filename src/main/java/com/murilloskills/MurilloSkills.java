@@ -188,6 +188,9 @@ public class MurilloSkills implements ModInitializer {
 
                         SkillsNetworkUtils.syncSkills(player);
 
+                        // Force regenerate daily challenges to match newly selected skills
+                        com.murilloskills.utils.DailyChallengeManager.forceRegenerate(player);
+
                         // Feedback Messages
                         int currentCount = data.getSelectedSkills().size();
                         if (currentCount == SkillSelectionC2SPayload.MAX_SELECTED_SKILLS) {

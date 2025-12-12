@@ -45,7 +45,7 @@ public abstract class AbstractFurnaceBlockEntityMixin {
         }
 
         // Validate this is an ore that would grant XP (logging only)
-        var xpResult = BlacksmithXpGetter.getSmeltingXp(inputStack.getItem());
+        BlacksmithXpGetter.getSmeltingXp(inputStack.getItem());
         // XP is granted in FurnaceOutputMixin when player retrieves the output
     }
 }

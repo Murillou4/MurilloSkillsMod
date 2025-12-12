@@ -28,6 +28,7 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 
+@SuppressWarnings("deprecation") // HudRenderCallback is deprecated but still functional, migration to HudElementRegistry pending
 public class MurilloSkillsClient implements ClientModInitializer {
 
     // Custom keybinding category for mod - groups all keybinds together in Controls
@@ -108,7 +109,12 @@ public class MurilloSkillsClient implements ClientModInitializer {
         // 6. XP Gain Toast Notifications
         ClientPlayNetworking.registerGlobalReceiver(XpGainS2CPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
-                XpToastRenderer.addToast(payload.getSkill(), payload.xpAmount(), payload.source());
+                // Only show toast for selected skills
+                MurilloSkillsList skill = payload.getSkill();
+                if (skill == null || !com.murilloskills.data.ClientSkillData.isSkillSelected(skill)) {
+                    return;
+                }
+                XpToastRenderer.addToast(skill, payload.xpAmount(), payload.source());
             });
         });
 

@@ -24,6 +24,15 @@ public class XpToastSender {
             return;
 
         try {
+            // Only send toast if player has selected this skill
+            com.murilloskills.data.SkillGlobalState state = com.murilloskills.data.SkillGlobalState
+                    .getServerState(player.getEntityWorld().getServer());
+            var playerData = state.getPlayerData(player);
+
+            if (!playerData.isSkillSelected(skill)) {
+                return; // Don't show toast for unselected skills
+            }
+
             ServerPlayNetworking.send(player, new XpGainS2CPayload(
                     skill.name(),
                     xpAmount,

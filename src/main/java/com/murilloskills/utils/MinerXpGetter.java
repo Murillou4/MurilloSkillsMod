@@ -7,7 +7,7 @@ import net.minecraft.block.Blocks;
 public class MinerXpGetter {
 
     // Base XP values for different ores
-    private static final int XP_STONE = 1500000;
+    private static final int XP_STONE = 2;
     private static final int XP_COAL = 5;
     private static final int XP_COPPER = 5;
     private static final int XP_IRON = 10;
@@ -17,8 +17,8 @@ public class MinerXpGetter {
     private static final int XP_DIAMOND = 60;
     private static final int XP_EMERALD = 100;
     private static final int XP_ANCIENT_DEBRIS = 150;
-    private static final int XP_NETHER_QUARTZ = 5;
-    private static final int XP_NETHER_GOLD = 5;
+    private static final int XP_NETHER_QUARTZ = 10;
+    private static final int XP_NETHER_GOLD = 10;
 
     public static SkillReceptorResult isMinerXpBlock(Block block, boolean hasSilkTouch,
             boolean excludeStoneAndDeepSlate) {

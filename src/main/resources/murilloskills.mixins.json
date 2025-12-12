@@ -26,7 +26,8 @@
     "GrindstoneScreenHandlerMixin",
     "FurnaceOutputMixin",
     "PlayerEventsMixin",
-    "CraftingResultMixin"
+    "CraftingResultMixin",
+    "FoodEatMixin"
   ],
   "injectors": {
     "defaultRequire": 1

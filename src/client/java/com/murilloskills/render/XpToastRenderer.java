@@ -27,7 +27,6 @@ public class XpToastRenderer {
     // Toast colors
     private static final int BG_COLOR = 0xCC101018;
     private static final int BORDER_COLOR = 0xFF2A2A3A;
-    private static final int XP_COLOR = 0xFF44FF66;
 
     private static final Deque<XpToast> toasts = new ArrayDeque<>();
 

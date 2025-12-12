@@ -85,6 +85,10 @@ public abstract class FurnaceOutputMixin {
         SkillGlobalState.XpAddResult xpAddResult = playerData.addXpToSkill(MurilloSkillsList.BLACKSMITH, totalXp);
         state.markDirty();
 
+        // Send XP toast notification
+        String source = outputStack.getName().getString();
+        com.murilloskills.utils.XpToastSender.send(serverPlayer, MurilloSkillsList.BLACKSMITH, totalXp, source);
+
         // Check for milestone rewards
         com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Ferreiro", xpAddResult);
 

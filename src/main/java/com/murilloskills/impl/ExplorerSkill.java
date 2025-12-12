@@ -284,6 +284,22 @@ public class ExplorerSkill extends AbstractSkill {
     }
 
     /**
+     * Called when player joins or respawns.
+     * Reapplies night vision effect if enabled to ensure persistence across
+     * death/respawn.
+     */
+    @Override
+    public void onPlayerJoin(ServerPlayerEntity player, int level) {
+        // Call parent to update attributes (includes step assist)
+        super.onPlayerJoin(player, level);
+
+        // Explicitly reapply night vision if enabled and level requirement met
+        if (level >= SkillConfig.EXPLORER_NIGHT_VISION_LEVEL && isNightVisionEnabled(player)) {
+            applyNightVision(player);
+        }
+    }
+
+    /**
      * Toggles night vision for the player (persistent across death/logout)
      */
     public void toggleNightVision(ServerPlayerEntity player) {

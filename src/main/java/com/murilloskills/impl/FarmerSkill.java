@@ -3,7 +3,6 @@ package com.murilloskills.impl;
 import com.murilloskills.api.AbstractSkill;
 import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.skills.MurilloSkillsList;
-import com.murilloskills.utils.FarmerXpGetter;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;

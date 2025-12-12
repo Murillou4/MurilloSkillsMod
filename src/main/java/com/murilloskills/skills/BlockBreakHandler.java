@@ -78,7 +78,7 @@ public class BlockBreakHandler {
 
                 serverPlayerEntity.sendMessage(message, true);
                 world.playSound(null, pos, SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.0f, 1.0f);
-                com.murilloskills.utils.SkillAttributes.updateMinerStats(serverPlayerEntity);
+                com.murilloskills.utils.SkillAttributes.updateAllStats(serverPlayerEntity);
             }
 
             skillState.markDirty();

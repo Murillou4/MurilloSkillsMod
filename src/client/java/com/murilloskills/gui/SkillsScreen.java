@@ -163,8 +163,6 @@ public class SkillsScreen extends Screen {
     // === MODERN PREMIUM COLOR PALETTE ===
     // Background & Overlay
     private static final int BG_OVERLAY = 0xF0080810;
-    private static final int BG_VIGNETTE_INNER = 0x00000000;
-    private static final int BG_VIGNETTE_OUTER = 0x60000000;
 
     // Card Colors - Elegant dark theme with subtle color tints
     private static final int CARD_BG_NORMAL = 0xE8141420;
@@ -188,14 +186,8 @@ public class SkillsScreen extends Screen {
     // XP Bar Colors
     private static final int XP_BAR_BG = 0xFF0A0A12;
     private static final int XP_BAR_BORDER = 0xFF1A1A25;
-    private static final int XP_BAR_FILL_START = 0xFF00AA44;
-    private static final int XP_BAR_FILL_END = 0xFF00DD66;
-    private static final int XP_BAR_GLOW = 0x4000FF66;
-    private static final int XP_BAR_MAX = 0xFFFFAA00;
 
     // Header
-    private static final int HEADER_BG_TOP = 0xF0101018;
-    private static final int HEADER_BG_BOTTOM = 0xC0080810;
     private static final int HEADER_ACCENT = 0xFFDDA520;
 
     // Text Colors
@@ -1215,50 +1207,11 @@ public class SkillsScreen extends Screen {
         }
     }
 
-    /**
-     * Gets cumulative XP needed to reach a specific level from 0
-     */
-    private double getXpForLevel(int level) {
-        double total = 0;
-        for (int i = 0; i < level; i++) {
-            total += 60 + (i * 15) + (2 * i * i);
-        }
-        return total;
-    }
-
-    /**
-     * Gets total XP accumulated at current level (excluding current level's
-     * progress)
-     */
-    private double getTotalXpForLevel(int level) {
-        return getXpForLevel(level);
-    }
-
-    /**
-     * Gets milestone color based on milestone level
-     */
-    private int getMilestoneColor(int milestone) {
-        return switch (milestone) {
-            case 10 -> 0xFF44AA44; // Green - first milestone
-            case 25 -> 0xFF44AAAA; // Cyan - second milestone
-            case 50 -> 0xFF4488FF; // Blue - halfway
-            case 75 -> 0xFFAA44AA; // Purple - advanced
-            case 100 -> 0xFFFFAA00; // Gold - master
-            default -> XP_BAR_FILL_START;
-        };
-    }
-
     private void drawBorder(DrawContext context, int x, int y, int width, int height, int color) {
         context.fill(x, y, x + width, y + 1, color);
         context.fill(x, y + height - 1, x + width, y + height, color);
         context.fill(x, y, x + 1, y + height, color);
         context.fill(x + width - 1, y, x + width, y + height, color);
-    }
-
-    private String capitalize(String str) {
-        if (str == null || str.isEmpty())
-            return str;
-        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
     }
 
     private ItemStack getSkillIcon(MurilloSkillsList skill) {
@@ -1300,16 +1253,6 @@ public class SkillsScreen extends Screen {
         // Render each challenge
         int y = panelY + 22;
         for (var challenge : challenges) {
-            // Challenge icon
-            String skillName = challenge.skillName();
-            MurilloSkillsList skill = null;
-            if (!skillName.isEmpty()) {
-                try {
-                    skill = MurilloSkillsList.valueOf(skillName);
-                } catch (Exception ignored) {
-                }
-            }
-
             // Challenge type text
             Text typeText = Text.translatable("murilloskills.challenge." + challenge.type().toLowerCase());
             int typeColor = challenge.completed() ? 0xFF44AA44 : 0xFFCCCCCC;

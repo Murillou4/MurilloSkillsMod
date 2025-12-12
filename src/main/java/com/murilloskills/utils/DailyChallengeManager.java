@@ -91,6 +91,19 @@ public class DailyChallengeManager {
         return (int) challenges.stream().filter(c -> c.completed).count();
     }
 
+    /**
+     * Forces regeneration of daily challenges for a player.
+     * Call this when skills are selected/changed to ensure challenges match
+     * selected skills.
+     */
+    public static void forceRegenerate(ServerPlayerEntity player) {
+        UUID playerId = player.getUuid();
+        playerChallenges.remove(playerId);
+        // Next call to getDailyChallenges will generate new challenges
+        getDailyChallenges(player);
+        syncChallenges(player);
+    }
+
     // ============ MÉTODOS PRIVADOS ============
 
     private static PlayerChallengeData generateNewChallenges(ServerPlayerEntity player, String dateKey) {
