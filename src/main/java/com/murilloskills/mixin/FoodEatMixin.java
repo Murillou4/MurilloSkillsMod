@@ -20,8 +20,11 @@ public abstract class FoodEatMixin {
     /**
      * Called when an item finishes being used.
      * For food items, this is when eating is complete.
+     * 
+     * IMPORTANT: We inject at HEAD because after finishUsing completes,
+     * the item stack count may have decreased and food component checks may fail.
      */
-    @Inject(method = "finishUsing", at = @At("RETURN"))
+    @Inject(method = "finishUsing", at = @At("HEAD"))
     private void onFinishUsing(World world, net.minecraft.entity.LivingEntity user,
             CallbackInfoReturnable<ItemStack> cir) {
         if (world.isClient()) {
@@ -34,8 +37,9 @@ public abstract class FoodEatMixin {
 
         ItemStack self = (ItemStack) (Object) this;
 
-        // Check if the item was food (has food component)
-        if (self.getComponents().contains(net.minecraft.component.DataComponentTypes.FOOD)) {
+        // Check if the item is food BEFORE it's consumed (at HEAD, not RETURN)
+        // Using get() != null is more reliable than contains()
+        if (self.get(net.minecraft.component.DataComponentTypes.FOOD) != null) {
             // Track eating for daily challenges
             ChallengeEventsHandler.onFoodEaten(serverPlayer);
         }

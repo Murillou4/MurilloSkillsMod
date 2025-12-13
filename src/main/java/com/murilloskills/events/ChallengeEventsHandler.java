@@ -230,4 +230,12 @@ public class ChallengeEventsHandler {
         DailyChallengeManager.recordProgress(player, ChallengeType.SHEAR_SHEEP, 1);
         DailyChallengeManager.syncChallenges(player);
     }
+
+    /**
+     * Called when player repairs an item (on anvil).
+     */
+    public static void onItemRepaired(ServerPlayerEntity player) {
+        DailyChallengeManager.recordProgress(player, ChallengeType.REPAIR_ITEMS, 1);
+        DailyChallengeManager.syncChallenges(player);
+    }
 }

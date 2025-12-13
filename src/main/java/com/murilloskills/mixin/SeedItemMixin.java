@@ -125,6 +125,11 @@ public class SeedItemMixin {
             // Play sound
             world.playSound(null, clickedPos, SoundEvents.ITEM_CROP_PLANT, SoundCategory.BLOCKS, 1.0f, 1.0f);
 
+            // Track planting for daily challenges
+            for (int i = 0; i < planted; i++) {
+                com.murilloskills.events.ChallengeEventsHandler.onSeedsPlanted(serverPlayer);
+            }
+
             // Mark state as dirty and sync
             state.markDirty();
             SkillsNetworkUtils.syncSkills(serverPlayer);

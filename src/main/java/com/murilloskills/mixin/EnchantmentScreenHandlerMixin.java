@@ -35,6 +35,10 @@ public abstract class EnchantmentScreenHandlerMixin {
             return;
         }
 
+        // Track enchanting for daily challenges (before skill check - challenges are
+        // for all players)
+        com.murilloskills.events.ChallengeEventsHandler.onItemEnchanted(serverPlayer);
+
         SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
         var playerData = state.getPlayerData(serverPlayer);
 

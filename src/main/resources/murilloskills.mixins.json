@@ -27,7 +27,12 @@
     "FurnaceOutputMixin",
     "PlayerEventsMixin",
     "CraftingResultMixin",
-    "FoodEatMixin"
+    "FoodEatMixin",
+    "DamageDealtMixin",
+    "AnimalBreedMixin",
+    "SheepShearMixin",
+    "PlayerSleepMixin",
+    "SeedPlantMixin"
   ],
   "injectors": {
     "defaultRequire": 1
