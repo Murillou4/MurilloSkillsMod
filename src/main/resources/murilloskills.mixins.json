@@ -32,7 +32,8 @@
     "AnimalBreedMixin",
     "SheepShearMixin",
     "PlayerSleepMixin",
-    "SeedPlantMixin"
+    "SeedPlantMixin",
+    "ForgingScreenHandlerAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

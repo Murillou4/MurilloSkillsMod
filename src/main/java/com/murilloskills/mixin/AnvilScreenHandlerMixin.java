@@ -23,18 +23,58 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Mixin for AnvilScreenHandler to grant Blacksmith XP and apply perks.
  * - XP when taking output from anvil
- * - Level 25: 25% XP discount (level cost reduction)
+ * - Level 25: 25% XP cost reduction
+ * - Tracks item repairs for daily challenges
  */
 @Mixin(AnvilScreenHandler.class)
 public abstract class AnvilScreenHandlerMixin {
 
-    // Shadow the input field from ForgingScreenHandler (parent class)
-    @Shadow
-    protected Inventory input;
-
+    // Shadow the levelCost property from AnvilScreenHandler
     @Shadow
     @Final
     private Property levelCost;
+
+    /**
+     * Apply Blacksmith XP cost discount after vanilla calculates the cost.
+     * Injects at the end of updateResult() to modify the cost before it's
+     * displayed.
+     */
+    @Inject(method = "updateResult", at = @At("TAIL"))
+    private void applyBlacksmithAnvilDiscount(CallbackInfo ci) {
+        // Use accessor to get player from parent class
+        ForgingScreenHandlerAccessor accessor = (ForgingScreenHandlerAccessor) this;
+        PlayerEntity player = accessor.getPlayer();
+
+        // Only apply on server side
+        if (player == null || player.getEntityWorld().isClient()) {
+            return;
+        }
+
+        if (!(player instanceof ServerPlayerEntity serverPlayer)) {
+            return;
+        }
+
+        SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
+        var playerData = state.getPlayerData(serverPlayer);
+
+        // Only apply discount if player has BLACKSMITH selected and meets level
+        // requirement
+        if (!playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
+            return;
+        }
+
+        int level = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
+        if (level < SkillConfig.BLACKSMITH_EFFICIENT_ANVIL_LEVEL) {
+            return;
+        }
+
+        // Apply 25% discount to the XP cost
+        int currentCost = this.levelCost.get();
+        if (currentCost > 0) {
+            int discountedCost = Math.max(1, (int) (currentCost * (1 - SkillConfig.BLACKSMITH_ANVIL_XP_DISCOUNT)));
+            this.levelCost.set(discountedCost);
+        }
+    }
 
     /**
      * Grant XP when player takes item from anvil output.
@@ -45,9 +85,12 @@ public abstract class AnvilScreenHandlerMixin {
             return;
         }
 
+        // Use accessor to get input from parent class
+        ForgingScreenHandlerAccessor accessor = (ForgingScreenHandlerAccessor) this;
+        Inventory input = accessor.getInput();
+
         // Check if this was actually a repair operation
-        // Get the first input slot item to check if it was damageable and damaged
-        ItemStack inputItem = this.input.getStack(0);
+        ItemStack inputItem = input.getStack(0);
         boolean wasRepair = false;
 
         // An item is considered "repaired" if:
@@ -58,7 +101,7 @@ public abstract class AnvilScreenHandlerMixin {
             wasRepair = true;
         } else {
             // Also check if there's a material in slot 1 that could repair this item
-            ItemStack repairMaterial = this.input.getStack(1);
+            ItemStack repairMaterial = input.getStack(1);
             if (!repairMaterial.isEmpty() && inputItem.isDamageable()) {
                 // If there's a repair material and the item is damageable, it's likely a repair
                 // (Could be combining two of the same item, or using repair material)
@@ -97,15 +140,5 @@ public abstract class AnvilScreenHandlerMixin {
 
         // Sync skill data with client
         SkillsNetworkUtils.syncSkills(serverPlayer);
-
-        // Apply 25% XP discount at level 25+ (reduce the cost shown)
-        int level = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
-        if (level >= SkillConfig.BLACKSMITH_EFFICIENT_ANVIL_LEVEL) {
-            int currentCost = this.levelCost.get();
-            if (currentCost > 0) {
-                int discountedCost = Math.max(1, (int) (currentCost * (1 - SkillConfig.BLACKSMITH_ANVIL_XP_DISCOUNT)));
-                this.levelCost.set(discountedCost);
-            }
-        }
     }
 }

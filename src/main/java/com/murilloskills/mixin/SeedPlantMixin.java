@@ -3,7 +3,7 @@ package com.murilloskills.mixin;
 import com.murilloskills.events.ChallengeEventsHandler;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.CropBlock;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -25,11 +25,17 @@ public abstract class SeedPlantMixin {
 
     /**
      * Track when a crop block is placed (seed planted).
+     * Note: In MC 1.21+ the placer parameter changed from LivingEntity to
+     * PlayerEntity
      */
     @Inject(method = "postPlacement", at = @At("HEAD"))
-    private void onPostPlacement(BlockPos pos, World world, LivingEntity placer, ItemStack itemStack,
+    private void onPostPlacement(BlockPos pos, World world, PlayerEntity placer, ItemStack itemStack,
             BlockState state, CallbackInfoReturnable<Boolean> cir) {
         if (world.isClient()) {
+            return;
+        }
+
+        if (placer == null) {
             return;
         }
 
