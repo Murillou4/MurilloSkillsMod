@@ -564,6 +564,21 @@ public class SkillsScreen extends Screen {
                 .dimensions(toastBtnX, toastBtnY, toastBtnWidth, toastBtnHeight)
                 .build();
         this.addDrawableChild(toastToggleButton);
+
+        // Info button - opens ModInfoScreen with all mod details
+        int infoBtnWidth = 50;
+        int infoBtnHeight = 16;
+        int infoBtnX = toastBtnX - infoBtnWidth - 8;
+        int infoBtnY = 8;
+
+        ButtonWidget infoButton = ButtonWidget.builder(
+                Text.translatable("murilloskills.gui.info_button"),
+                (button) -> {
+                    MinecraftClient.getInstance().setScreen(new ModInfoScreen(this));
+                })
+                .dimensions(infoBtnX, infoBtnY, infoBtnWidth, infoBtnHeight)
+                .build();
+        this.addDrawableChild(infoButton);
     }
 
     @Override
@@ -884,16 +899,25 @@ public class SkillsScreen extends Screen {
 
             // Passives section (only in expanded mode)
             if (isExpanded) {
+                // Get prestige multiplier for this skill (prestige variable already declared
+                // above at line 817)
+                float prestigeMultiplier = 1.0f + (prestige * 0.02f); // +2% per prestige level
+                boolean hasPrestigeBonus = prestige > 0;
+                String prestigeIndicator = hasPrestigeBonus ? " (+P)" : "";
 
                 switch (skill) {
                     case MINER -> {
-                        int speed = (int) (level * SkillConfig.MINER_SPEED_PER_LEVEL * 100);
+                        int baseSpeed = (int) (level * SkillConfig.MINER_SPEED_PER_LEVEL * 100);
+                        int speed = (int) (baseSpeed * prestigeMultiplier);
                         tooltip.add(Text.translatable("murilloskills.passive.miner.mining_speed", speed)
+                                .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                 .formatted(Formatting.GREEN));
 
-                        int fortune = (int) (level * SkillConfig.MINER_FORTUNE_PER_LEVEL);
+                        int baseFortune = (int) (level * SkillConfig.MINER_FORTUNE_PER_LEVEL);
+                        int fortune = (int) (baseFortune * prestigeMultiplier);
                         if (fortune > 0)
                             tooltip.add(Text.translatable("murilloskills.passive.miner.extra_fortune", fortune)
+                                    .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                     .formatted(Formatting.GREEN));
 
                         if (level >= SkillConfig.MINER_NIGHT_VISION_LEVEL)
@@ -909,10 +933,12 @@ public class SkillsScreen extends Screen {
                                             .formatted(Formatting.AQUA));
                     }
                     case WARRIOR -> {
-                        double damage = level * SkillConfig.WARRIOR_DAMAGE_PER_LEVEL;
+                        double baseDamage = level * SkillConfig.WARRIOR_DAMAGE_PER_LEVEL;
+                        double damage = baseDamage * prestigeMultiplier;
                         tooltip.add(Text
                                 .translatable("murilloskills.passive.warrior.base_damage",
                                         String.format("%.1f", damage))
+                                .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                 .formatted(Formatting.RED));
 
                         int extraHearts = 0;
@@ -934,13 +960,17 @@ public class SkillsScreen extends Screen {
                                     .formatted(Formatting.DARK_PURPLE));
                     }
                     case FARMER -> {
-                        int doubleChance = (int) (level * SkillConfig.FARMER_DOUBLE_HARVEST_PER_LEVEL * 100);
+                        int baseDoubleChance = (int) (level * SkillConfig.FARMER_DOUBLE_HARVEST_PER_LEVEL * 100);
+                        int doubleChance = (int) (baseDoubleChance * prestigeMultiplier);
                         tooltip.add(Text.translatable("murilloskills.passive.farmer.double_harvest", doubleChance)
+                                .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                 .formatted(Formatting.GREEN));
 
-                        int goldenChance = (int) (level * SkillConfig.FARMER_GOLDEN_CROP_PER_LEVEL * 100);
+                        int baseGoldenChance = (int) (level * SkillConfig.FARMER_GOLDEN_CROP_PER_LEVEL * 100);
+                        int goldenChance = (int) (baseGoldenChance * prestigeMultiplier);
                         if (goldenChance > 0)
                             tooltip.add(Text.translatable("murilloskills.passive.farmer.golden_crop", goldenChance)
+                                    .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                     .formatted(Formatting.GOLD));
 
                         if (level >= SkillConfig.FARMER_GREEN_THUMB_LEVEL)
@@ -964,9 +994,11 @@ public class SkillsScreen extends Screen {
                         }
                     }
                     case ARCHER -> {
-                        // Dano base por flecha (+2% por level)
-                        int arrowDamage = (int) (level * SkillConfig.ARCHER_DAMAGE_PER_LEVEL * 100);
+                        // Dano base por flecha (+2% por level) com bônus de prestígio
+                        int baseArrowDamage = (int) (level * SkillConfig.ARCHER_DAMAGE_PER_LEVEL * 100);
+                        int arrowDamage = (int) (baseArrowDamage * prestigeMultiplier);
                         tooltip.add(Text.translatable("murilloskills.passive.archer.arrow_damage", arrowDamage)
+                                .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                 .formatted(Formatting.GREEN));
 
                         // Nível 10: Flechas mais rápidas
@@ -1004,8 +1036,10 @@ public class SkillsScreen extends Screen {
                         }
                     }
                     case FISHER -> {
-                        int fishingSpeed = (int) (level * SkillConfig.FISHER_SPEED_PER_LEVEL * 100);
+                        int baseFishingSpeed = (int) (level * SkillConfig.FISHER_SPEED_PER_LEVEL * 100);
+                        int fishingSpeed = (int) (baseFishingSpeed * prestigeMultiplier);
                         tooltip.add(Text.translatable("murilloskills.passive.fisher.fishing_speed", fishingSpeed)
+                                .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                 .formatted(Formatting.AQUA));
                         if (level >= SkillConfig.FISHER_WAIT_REDUCTION_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.fisher.wait_reduction")
@@ -1021,9 +1055,11 @@ public class SkillsScreen extends Screen {
                                     .formatted(Formatting.AQUA));
                     }
                     case BLACKSMITH -> {
-                        int resistance = (int) (level * SkillConfig.BLACKSMITH_RESISTANCE_PER_LEVEL * 100);
+                        int baseResistance = (int) (level * SkillConfig.BLACKSMITH_RESISTANCE_PER_LEVEL * 100);
+                        int resistance = (int) (baseResistance * prestigeMultiplier);
                         tooltip.add(
                                 Text.translatable("murilloskills.passive.blacksmith.physical_resistance", resistance)
+                                        .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                         .formatted(Formatting.GOLD));
                         if (level >= SkillConfig.BLACKSMITH_IRON_SKIN_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.blacksmith.iron_skin")
@@ -1039,10 +1075,12 @@ public class SkillsScreen extends Screen {
                                     .formatted(Formatting.AQUA));
                     }
                     case BUILDER -> {
-                        double reach = level * SkillConfig.BUILDER_REACH_PER_LEVEL;
+                        double baseReach = level * SkillConfig.BUILDER_REACH_PER_LEVEL;
+                        double reach = baseReach * prestigeMultiplier;
                         tooltip.add(
                                 Text.translatable("murilloskills.passive.builder.extra_reach",
                                         String.format("%.1f", reach))
+                                        .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                         .formatted(Formatting.AQUA));
                         if (level >= SkillConfig.BUILDER_EXTENDED_REACH_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.builder.extended_reach")
@@ -1068,9 +1106,11 @@ public class SkillsScreen extends Screen {
                         }
                     }
                     case EXPLORER -> {
-                        // Velocidade base
-                        int speedBonus = (int) (level * SkillConfig.EXPLORER_SPEED_PER_LEVEL * 100);
-                        tooltip.add(Text.translatable("murilloskills.passive.explorer.speed", speedBonus)
+                        // Velocidade base com bônus de prestígio
+                        int baseSpeedBonus = (int) (level * SkillConfig.EXPLORER_SPEED_PER_LEVEL * 100);
+                        int speedBonusExplorer = (int) (baseSpeedBonus * prestigeMultiplier);
+                        tooltip.add(Text.translatable("murilloskills.passive.explorer.speed", speedBonusExplorer)
+                                .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                 .formatted(Formatting.GREEN));
 
                         int luck = level / SkillConfig.EXPLORER_LUCK_INTERVAL;
