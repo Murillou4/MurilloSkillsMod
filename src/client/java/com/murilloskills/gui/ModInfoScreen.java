@@ -2,6 +2,7 @@ package com.murilloskills.gui;
 
 import com.murilloskills.data.ClientSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.gui.renderer.RenderingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -21,44 +22,8 @@ import java.util.List;
  */
 public class ModInfoScreen extends Screen {
 
-        // === PREMIUM COLOR PALETTE ===
-        // Background & Overlay
-        private static final int BG_OVERLAY = 0xF0080810;
-        private static final int BG_GRADIENT_TOP = 0xFF101018;
-        private static final int BG_GRADIENT_BOTTOM = 0xFF080810;
-
-        // Panel Colors
-        private static final int PANEL_BG = 0xE8141420;
-        private static final int PANEL_BG_HEADER = 0xF0181828;
-        private static final int PANEL_HIGHLIGHT = 0x20FFFFFF;
-        private static final int PANEL_SHADOW = 0x40000000;
-
-        // Card/Section Colors
-        private static final int SECTION_BG = 0xD0181825;
-        private static final int SECTION_BG_ACTIVE = 0xE0202030;
-        private static final int SECTION_BORDER = 0xFF2A2A3A;
-        private static final int SECTION_BORDER_ACTIVE = 0xFF3A4A5A;
-
-        // Text Colors
-        private static final int TEXT_GOLD = 0xFFFFD700;
-        private static final int TEXT_WHITE = 0xFFFFFFFF;
-        private static final int TEXT_LIGHT = 0xFFDDDDEE;
-        private static final int TEXT_GRAY = 0xFFBBBBCC;
-        private static final int TEXT_MUTED = 0xFF666680;
-        private static final int TEXT_GREEN = 0xFF32CD32;
-        private static final int TEXT_AQUA = 0xFF00DDDD;
-        private static final int TEXT_YELLOW = 0xFFFFEE44;
-        private static final int TEXT_PURPLE = 0xFFDD88FF;
-
-        // Accent Colors
-        private static final int ACCENT_GOLD = 0xFFDDA520;
-        private static final int ACCENT_GREEN = 0xFF22AA44;
-        private static final int ACCENT_BLUE = 0xFF4488DD;
-
-        // UI Elements
-        private static final int SCROLLBAR_BG = 0x30FFFFFF;
-        private static final int SCROLLBAR_FG = 0x80FFFFFF;
-        private static final int DIVIDER_COLOR = 0x40FFFFFF;
+        // === COLOR PALETTE (Java 21 Record) ===
+        private static final ColorPalette PALETTE = ColorPalette.premium();
 
         // Tab system
         private enum Tab {
@@ -66,9 +31,7 @@ public class ModInfoScreen extends Screen {
         }
 
         private Tab currentTab = Tab.STATUS;
-        private int scrollOffset = 0;
-        private int maxScrollOffset = 0;
-        private static final int SCROLL_SPEED = 15;
+        private final ScrollController scrollController = new ScrollController();
         private static final int LINE_HEIGHT = 12;
         private static final int SECTION_PADDING = 12;
 
@@ -251,7 +214,7 @@ public class ModInfoScreen extends Screen {
                                         if (currentTab != tab) {
                                                 lastTab = currentTab;
                                                 currentTab = tab;
-                                                scrollOffset = 0;
+                                                scrollController.reset();
                                                 tabTransition = 0f;
                                                 calculateMaxScroll();
                                         }
@@ -272,7 +235,7 @@ public class ModInfoScreen extends Screen {
                         case PRESTIGE -> calculatePrestigeHeight();
                         case PERKS -> calculatePerksHeight();
                 };
-                maxScrollOffset = Math.max(0, totalContentHeight - contentHeight + 30);
+                scrollController.updateMaxScroll(totalContentHeight, contentHeight);
         }
 
         private int calculateStatusHeight() {
@@ -348,8 +311,9 @@ public class ModInfoScreen extends Screen {
                 context.disableScissor();
 
                 // Scrollbar
-                if (maxScrollOffset > 0) {
-                        renderScrollbar(context);
+                if (scrollController.getMaxScrollOffset() > 0) {
+                        scrollController.renderScrollbar(context, contentX, contentY, contentWidth, contentHeight,
+                                        PALETTE);
                 }
 
                 // Widgets on top
@@ -407,7 +371,8 @@ public class ModInfoScreen extends Screen {
                 // Golden accent line centered
                 int accentWidth = this.width / 2;
                 int accentStart = (this.width - accentWidth) / 2;
-                context.fill(accentStart, headerHeight - 1, accentStart + accentWidth, headerHeight, ACCENT_GOLD);
+                context.fill(accentStart, headerHeight - 1, accentStart + accentWidth, headerHeight,
+                                PALETTE.accentGold());
 
                 // Title with shadow effect
                 String titleText = Text.translatable("murilloskills.info.title").getString();
@@ -419,43 +384,44 @@ public class ModInfoScreen extends Screen {
                 // Main text
                 context.drawTextWithShadow(textRenderer,
                                 Text.literal(titleText).formatted(Formatting.GOLD, Formatting.BOLD),
-                                titleX, titleY, TEXT_GOLD);
+                                titleX, titleY, PALETTE.textGold());
         }
 
         private void renderContentPanel(DrawContext context) {
                 // Outer shadow
                 context.fill(contentX - 1, contentY - 1, contentX + contentWidth + 1, contentY + contentHeight + 1,
-                                PANEL_SHADOW);
+                                PALETTE.panelShadow());
 
                 // Main panel background
-                context.fill(contentX, contentY, contentX + contentWidth, contentY + contentHeight, PANEL_BG);
+                context.fill(contentX, contentY, contentX + contentWidth, contentY + contentHeight, PALETTE.panelBg());
 
                 // Inner highlight (top edge)
-                context.fill(contentX + 1, contentY + 1, contentX + contentWidth - 1, contentY + 2, PANEL_HIGHLIGHT);
+                context.fill(contentX + 1, contentY + 1, contentX + contentWidth - 1, contentY + 2,
+                                PALETTE.panelHighlight());
 
                 // Border
-                drawPanelBorder(context, contentX, contentY, contentWidth, contentHeight, SECTION_BORDER);
+                drawPanelBorder(context, contentX, contentY, contentWidth, contentHeight, PALETTE.sectionBorder());
 
                 // Corner accents
                 int cornerSize = 6;
                 // Top-left
-                context.fill(contentX, contentY, contentX + cornerSize, contentY + 1, ACCENT_GOLD);
-                context.fill(contentX, contentY, contentX + 1, contentY + cornerSize, ACCENT_GOLD);
+                context.fill(contentX, contentY, contentX + cornerSize, contentY + 1, PALETTE.accentGold());
+                context.fill(contentX, contentY, contentX + 1, contentY + cornerSize, PALETTE.accentGold());
                 // Top-right
                 context.fill(contentX + contentWidth - cornerSize, contentY, contentX + contentWidth, contentY + 1,
-                                ACCENT_GOLD);
+                                PALETTE.accentGold());
                 context.fill(contentX + contentWidth - 1, contentY, contentX + contentWidth, contentY + cornerSize,
-                                ACCENT_GOLD);
+                                PALETTE.accentGold());
                 // Bottom-left
                 context.fill(contentX, contentY + contentHeight - 1, contentX + cornerSize, contentY + contentHeight,
-                                ACCENT_GOLD);
+                                PALETTE.accentGold());
                 context.fill(contentX, contentY + contentHeight - cornerSize, contentX + 1, contentY + contentHeight,
-                                ACCENT_GOLD);
+                                PALETTE.accentGold());
                 // Bottom-right
                 context.fill(contentX + contentWidth - cornerSize, contentY + contentHeight - 1,
-                                contentX + contentWidth, contentY + contentHeight, ACCENT_GOLD);
+                                contentX + contentWidth, contentY + contentHeight, PALETTE.accentGold());
                 context.fill(contentX + contentWidth - 1, contentY + contentHeight - cornerSize,
-                                contentX + contentWidth, contentY + contentHeight, ACCENT_GOLD);
+                                contentX + contentWidth, contentY + contentHeight, PALETTE.accentGold());
         }
 
         private void drawPanelBorder(DrawContext context, int x, int y, int w, int h, int color) {
@@ -465,27 +431,10 @@ public class ModInfoScreen extends Screen {
                 context.fill(x + w - 1, y, x + w, y + h, color); // Right
         }
 
-        private void renderScrollbar(DrawContext context) {
-                int scrollbarX = contentX + contentWidth - 8;
-                int scrollbarY = contentY + 4;
-                int scrollbarHeight = contentHeight - 8;
-
-                // Track
-                context.fill(scrollbarX, scrollbarY, scrollbarX + 5, scrollbarY + scrollbarHeight, SCROLLBAR_BG);
-
-                // Thumb
-                float contentRatio = (float) contentHeight / (contentHeight + maxScrollOffset);
-                int thumbHeight = Math.max(20, (int) (scrollbarHeight * contentRatio));
-                float scrollRatio = maxScrollOffset > 0 ? (float) scrollOffset / maxScrollOffset : 0;
-                int thumbY = scrollbarY + (int) ((scrollbarHeight - thumbHeight) * scrollRatio);
-
-                context.fill(scrollbarX, thumbY, scrollbarX + 5, thumbY + thumbHeight, SCROLLBAR_FG);
-        }
-
         // === TAB CONTENT RENDERING ===
 
         private void renderStatusTab(DrawContext context) {
-                int y = contentY + SECTION_PADDING - scrollOffset;
+                int y = contentY + SECTION_PADDING - scrollController.getScrollOffset();
                 int x = contentX + SECTION_PADDING;
 
                 // Section title with decorative line
@@ -502,7 +451,7 @@ public class ModInfoScreen extends Screen {
                         context.drawText(textRenderer,
                                         Text.translatable("murilloskills.info.status.none_selected")
                                                         .formatted(Formatting.ITALIC),
-                                        x + 12, y, TEXT_MUTED, false);
+                                        x + 12, y, PALETTE.textMuted(), false);
                         y += 20;
                 } else {
                         for (MurilloSkillsList skill : selectedSkills) {
@@ -532,12 +481,12 @@ public class ModInfoScreen extends Screen {
                 if (!hasSynergy) {
                         context.drawText(textRenderer,
                                         Text.translatable("murilloskills.synergy.none").formatted(Formatting.ITALIC),
-                                        x + 12, y, TEXT_MUTED, false);
+                                        x + 12, y, PALETTE.textMuted(), false);
                 }
         }
 
         private void renderSynergiesTab(DrawContext context) {
-                int y = contentY + SECTION_PADDING - scrollOffset;
+                int y = contentY + SECTION_PADDING - scrollController.getScrollOffset();
                 int x = contentX + SECTION_PADDING;
 
                 renderSectionTitle(context, x, y, Text.translatable("murilloskills.info.synergies.title").getString());
@@ -545,10 +494,10 @@ public class ModInfoScreen extends Screen {
 
                 // Description in a nice box
                 int descBoxWidth = contentWidth - SECTION_PADDING * 2 - 16;
-                renderInfoBox(context, x, y, descBoxWidth, 24, ACCENT_BLUE);
+                renderInfoBox(context, x, y, descBoxWidth, 24, PALETTE.accentBlue());
                 context.drawText(textRenderer,
                                 Text.translatable("murilloskills.info.synergies.desc").formatted(Formatting.ITALIC),
-                                x + 8, y + 7, TEXT_LIGHT, false);
+                                x + 8, y + 7, PALETTE.textLight(), false);
                 y += 36;
 
                 // All synergies as improved cards
@@ -562,7 +511,7 @@ public class ModInfoScreen extends Screen {
         }
 
         private void renderPrestigeTab(DrawContext context) {
-                int y = contentY + SECTION_PADDING - scrollOffset;
+                int y = contentY + SECTION_PADDING - scrollController.getScrollOffset();
                 int x = contentX + SECTION_PADDING;
 
                 renderSectionTitle(context, x, y, Text.translatable("murilloskills.info.prestige.title").getString());
@@ -570,7 +519,7 @@ public class ModInfoScreen extends Screen {
 
                 // Description in a styled box
                 int descBoxWidth = contentWidth - SECTION_PADDING * 2 - 16;
-                renderInfoBox(context, x, y, descBoxWidth, 58, TEXT_PURPLE);
+                renderInfoBox(context, x, y, descBoxWidth, 58, PALETTE.textPurple());
 
                 List<String> descLines = List.of(
                                 Text.translatable("murilloskills.info.prestige.desc1").getString(),
@@ -580,7 +529,8 @@ public class ModInfoScreen extends Screen {
                 for (String line : descLines) {
                         List<String> wrapped = wrapText(line, descBoxWidth - 16);
                         for (String wrappedLine : wrapped) {
-                                context.drawText(textRenderer, Text.literal(wrappedLine), x + 8, descY, TEXT_LIGHT,
+                                context.drawText(textRenderer, Text.literal(wrappedLine), x + 8, descY,
+                                                PALETTE.textLight(),
                                                 false);
                                 descY += 12;
                         }
@@ -597,11 +547,11 @@ public class ModInfoScreen extends Screen {
                 int col2 = x + 80;
                 int col3 = x + 170;
                 context.drawText(textRenderer, Text.translatable("murilloskills.info.prestige.level"), col1, y,
-                                TEXT_AQUA, false);
+                                PALETTE.textAqua(), false);
                 context.drawText(textRenderer, Text.translatable("murilloskills.info.prestige.xp_bonus"), col2, y,
-                                TEXT_AQUA, false);
+                                PALETTE.textAqua(), false);
                 context.drawText(textRenderer, Text.translatable("murilloskills.info.prestige.passive_bonus"), col3, y,
-                                TEXT_AQUA, false);
+                                PALETTE.textAqua(), false);
                 y += 14;
 
                 // Divider
@@ -614,10 +564,12 @@ public class ModInfoScreen extends Screen {
                         int xpBonus = level * 5;
                         int passiveBonus = level * 2;
 
-                        int rowColor = (level == 100) ? TEXT_GOLD : TEXT_LIGHT;
+                        int rowColor = (level == 100) ? PALETTE.textGold() : PALETTE.textLight();
                         context.drawText(textRenderer, Text.literal("P" + level), col1, y, rowColor, false);
-                        context.drawText(textRenderer, Text.literal("+" + xpBonus + "%"), col2, y, TEXT_GREEN, false);
-                        context.drawText(textRenderer, Text.literal("+" + passiveBonus + "%"), col3, y, TEXT_AQUA,
+                        context.drawText(textRenderer, Text.literal("+" + xpBonus + "%"), col2, y, PALETTE.textGreen(),
+                                        false);
+                        context.drawText(textRenderer, Text.literal("+" + passiveBonus + "%"), col3, y,
+                                        PALETTE.textAqua(),
                                         false);
                         y += 14;
                 }
@@ -633,13 +585,13 @@ public class ModInfoScreen extends Screen {
                         context.drawText(textRenderer,
                                         Text.literal("  > " + Text.translatable("murilloskills.info.prestige." + req)
                                                         .getString()),
-                                        x + 8, y, TEXT_MUTED, false);
+                                        x + 8, y, PALETTE.textMuted(), false);
                         y += 14;
                 }
         }
 
         private void renderPerksTab(DrawContext context) {
-                int y = contentY + SECTION_PADDING - scrollOffset;
+                int y = contentY + SECTION_PADDING - scrollController.getScrollOffset();
                 int x = contentX + SECTION_PADDING;
 
                 renderSectionTitle(context, x, y, Text.translatable("murilloskills.info.perks.title").getString());
@@ -676,7 +628,7 @@ public class ModInfoScreen extends Screen {
                 // Title text
                 context.drawTextWithShadow(textRenderer,
                                 Text.literal(title).formatted(Formatting.GOLD, Formatting.BOLD),
-                                x + 25, y, TEXT_GOLD);
+                                x + 25, y, PALETTE.textGold());
 
                 // Decorative line after
                 int titleWidth = textRenderer.getWidth(title);
@@ -686,12 +638,12 @@ public class ModInfoScreen extends Screen {
 
         private void renderSubsectionHeader(DrawContext context, int x, int y, String title) {
                 context.drawText(textRenderer, Text.literal("> " + title).formatted(Formatting.YELLOW),
-                                x, y, TEXT_YELLOW, false);
+                                x, y, PALETTE.textYellow(), false);
         }
 
         private void renderDivider(DrawContext context, int x, int y, int width) {
                 if (width > 0) {
-                        context.fill(x, y, x + width, y + 1, DIVIDER_COLOR);
+                        context.fill(x, y, x + width, y + 1, PALETTE.dividerColor());
                 }
         }
 
@@ -714,7 +666,7 @@ public class ModInfoScreen extends Screen {
                 context.fill(x, y, x + cardWidth, y + cardHeight, bgColor);
 
                 // Border with accent
-                int borderColor = isParagon ? ACCENT_GOLD : SECTION_BORDER;
+                int borderColor = isParagon ? PALETTE.accentGold() : PALETTE.sectionBorder();
                 drawPanelBorder(context, x, y, cardWidth, cardHeight, borderColor);
 
                 // Skill icon (item)
@@ -724,31 +676,33 @@ public class ModInfoScreen extends Screen {
                 String name = Text.translatable("murilloskills.skill.name." + skill.name().toLowerCase()).getString();
                 context.drawTextWithShadow(textRenderer,
                                 Text.literal(name).formatted(isParagon ? Formatting.GOLD : Formatting.WHITE),
-                                x + 26, y + 6, isParagon ? TEXT_GOLD : TEXT_WHITE);
+                                x + 26, y + 6, isParagon ? PALETTE.textGold() : PALETTE.textWhite());
 
                 // Level badge
                 String levelStr = "Lv " + level;
-                int levelColor = level >= 100 ? TEXT_GOLD : TEXT_LIGHT;
+                int levelColor = level >= 100 ? PALETTE.textGold() : PALETTE.textLight();
                 context.drawText(textRenderer, Text.literal(levelStr), x + 26, y + 18, levelColor, false);
 
                 // Prestige badge if applicable
                 if (prestige > 0) {
                         String prestigeStr = " P" + prestige;
                         int prestigeX = x + 26 + textRenderer.getWidth(levelStr);
-                        context.drawText(textRenderer, Text.literal(prestigeStr), prestigeX, y + 18, TEXT_PURPLE,
+                        context.drawText(textRenderer, Text.literal(prestigeStr), prestigeX, y + 18,
+                                        PALETTE.textPurple(),
                                         false);
 
                         // Bonus info
                         int xpBonus = prestige * 5;
                         int passiveBonus = prestige * 2;
                         String bonusStr = "(+" + xpBonus + "% XP, +" + passiveBonus + "% Passive)";
-                        context.drawText(textRenderer, Text.literal(bonusStr), x + 26, y + 28, TEXT_AQUA, false);
+                        context.drawText(textRenderer, Text.literal(bonusStr), x + 26, y + 28, PALETTE.textAqua(),
+                                        false);
                 }
 
                 // Paragon crown
                 if (isParagon) {
                         context.drawTextWithShadow(textRenderer, Text.literal("[P]").formatted(Formatting.GOLD),
-                                        x + cardWidth - 20, y + 6, ACCENT_GOLD);
+                                        x + cardWidth - 20, y + 6, PALETTE.accentGold());
                 }
         }
 
@@ -759,11 +713,11 @@ public class ModInfoScreen extends Screen {
                 // Badge background
                 int width = Math.max(textRenderer.getWidth(name), textRenderer.getWidth(bonus)) + 20;
                 context.fill(x, y, x + width, y + 18, 0xC0103010);
-                drawPanelBorder(context, x, y, width, 18, ACCENT_GREEN);
+                drawPanelBorder(context, x, y, width, 18, PALETTE.accentGreen());
 
                 // Check mark and text
-                context.drawText(textRenderer, Text.literal("[+] " + name), x + 4, y + 2, TEXT_GREEN, false);
-                context.drawText(textRenderer, Text.literal("    " + bonus), x + 4, y + 10, TEXT_AQUA, false);
+                context.drawText(textRenderer, Text.literal("[+] " + name), x + 4, y + 2, PALETTE.textGreen(), false);
+                context.drawText(textRenderer, Text.literal("    " + bonus), x + 4, y + 10, PALETTE.textAqua(), false);
         }
 
         private void renderImprovedSynergyCard(DrawContext context, int x, int y, SynergyInfo synergy,
@@ -781,12 +735,13 @@ public class ModInfoScreen extends Screen {
                 }
 
                 // Border with accent color
-                int borderColor = isActive ? ACCENT_GREEN : SECTION_BORDER;
+                int borderColor = isActive ? PALETTE.accentGreen() : PALETTE.sectionBorder();
                 drawPanelBorder(context, x, y, cardWidth, cardHeight, borderColor);
 
                 // Left accent bar (thicker for active)
                 int accentWidth = isActive ? 4 : 3;
-                context.fill(x, y + 2, x + accentWidth, y + cardHeight - 2, isActive ? ACCENT_GREEN : TEXT_MUTED);
+                context.fill(x, y + 2, x + accentWidth, y + cardHeight - 2,
+                                isActive ? PALETTE.accentGreen() : PALETTE.textMuted());
 
                 // === CONTENT SECTION ===
                 int iconAreaX = x + 10;
@@ -798,12 +753,12 @@ public class ModInfoScreen extends Screen {
 
                 // Plus sign between icons (centered)
                 context.drawText(textRenderer, Text.literal("+").formatted(Formatting.WHITE),
-                                iconAreaX + 19, y + 13, TEXT_WHITE, false);
+                                iconAreaX + 19, y + 13, PALETTE.textWhite(), false);
 
                 // Synergy name with status indicator
                 String statusIcon = isActive ? "[+]" : "[ ]";
                 String name = Text.translatable("murilloskills.synergy." + synergy.id).getString();
-                int nameColor = isActive ? TEXT_GREEN : TEXT_GRAY;
+                int nameColor = isActive ? PALETTE.textGreen() : PALETTE.textGray();
                 context.drawTextWithShadow(textRenderer, Text.literal(statusIcon + " " + name),
                                 textAreaX, y + 8, nameColor);
 
@@ -814,7 +769,7 @@ public class ModInfoScreen extends Screen {
                                 .getString();
                 String skillsText = skill1Name + " + " + skill2Name;
                 context.drawText(textRenderer, Text.literal(skillsText).formatted(Formatting.GRAY),
-                                textAreaX, y + 22, TEXT_MUTED, false);
+                                textAreaX, y + 22, PALETTE.textMuted(), false);
 
                 // === BONUS BAR SECTION ===
                 int bonusBarY = y + 40;
@@ -838,7 +793,7 @@ public class ModInfoScreen extends Screen {
                 String bonusText = "+" + synergy.bonus + "% " + bonusType;
                 int textWidth = textRenderer.getWidth(bonusText);
                 int textX = x + 12 + (bonusBarWidth - textWidth) / 2;
-                int bonusColor = isActive ? TEXT_AQUA : TEXT_MUTED;
+                int bonusColor = isActive ? PALETTE.textAqua() : PALETTE.textMuted();
                 context.drawText(textRenderer, Text.literal(bonusText), textX, bonusBarY + 5, bonusColor, false);
 
                 // Active indicator on the right
@@ -847,7 +802,7 @@ public class ModInfoScreen extends Screen {
                         int activeX = x + cardWidth - textRenderer.getWidth(activeText) - 12;
                         context.drawTextWithShadow(textRenderer,
                                         Text.literal(activeText).formatted(Formatting.GREEN, Formatting.BOLD),
-                                        activeX, y + 8, TEXT_GREEN);
+                                        activeX, y + 8, PALETTE.textGreen());
                 }
         }
 
@@ -855,8 +810,8 @@ public class ModInfoScreen extends Screen {
                 int width = contentWidth - SECTION_PADDING * 2 - 16;
 
                 // Header background
-                context.fill(x, y, x + width, y + 20, SECTION_BG);
-                drawPanelBorder(context, x, y, width, 20, SECTION_BORDER);
+                context.fill(x, y, x + width, y + 20, PALETTE.sectionBg());
+                drawPanelBorder(context, x, y, width, 20, PALETTE.sectionBorder());
 
                 // Skill name with color
                 String skillName = Text.translatable("murilloskills.skill.name." + skill.name().toLowerCase())
@@ -868,12 +823,13 @@ public class ModInfoScreen extends Screen {
 
         private void renderPerkItem(DrawContext context, int x, int y, PerkInfo perk, boolean unlocked) {
                 String prefix = unlocked ? "[+]" : "[ ]";
-                int prefixColor = unlocked ? TEXT_GREEN : TEXT_MUTED;
+                int prefixColor = unlocked ? PALETTE.textGreen() : PALETTE.textMuted();
 
                 context.drawText(textRenderer, Text.literal(prefix), x, y, prefixColor, false);
 
                 String levelStr = "Lv" + perk.level + ": ";
-                context.drawText(textRenderer, Text.literal(levelStr), x + 18, y, unlocked ? TEXT_YELLOW : TEXT_MUTED,
+                context.drawText(textRenderer, Text.literal(levelStr), x + 18, y,
+                                unlocked ? PALETTE.textYellow() : PALETTE.textMuted(),
                                 false);
 
                 String perkName = Text.translatable(perk.nameKey).getString();
@@ -888,7 +844,7 @@ public class ModInfoScreen extends Screen {
                 }
 
                 context.drawText(textRenderer, Text.literal(perkName), x + nameWidth, y,
-                                unlocked ? TEXT_WHITE : TEXT_MUTED, false);
+                                unlocked ? PALETTE.textWhite() : PALETTE.textMuted(), false);
         }
 
         private int getSkillColor(MurilloSkillsList skill) {
@@ -936,13 +892,9 @@ public class ModInfoScreen extends Screen {
 
         @Override
         public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-                if (mouseX >= contentX && mouseX <= contentX + contentWidth &&
-                                mouseY >= contentY && mouseY <= contentY + contentHeight) {
-                        scrollOffset -= (int) (verticalAmount * SCROLL_SPEED);
-                        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
-                        return true;
-                }
-                return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+                return scrollController.handleMouseScroll(mouseX, mouseY, verticalAmount,
+                                contentX, contentY, contentWidth, contentHeight) ||
+                                super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
         }
 
         private net.minecraft.item.ItemStack getSkillIcon(MurilloSkillsList skill) {

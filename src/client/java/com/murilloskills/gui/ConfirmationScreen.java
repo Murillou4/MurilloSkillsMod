@@ -1,5 +1,6 @@
 package com.murilloskills.gui;
 
+import com.murilloskills.gui.renderer.RenderingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -13,23 +14,8 @@ import net.minecraft.text.Text;
  */
 public class ConfirmationScreen extends Screen {
 
-    // === MODERN PREMIUM COLOR PALETTE ===
-    private static final int BG_OVERLAY = 0xE8000008;
-
-    // Modal Colors
-    private static final int MODAL_BG = 0xF8101018;
-    private static final int MODAL_INNER_SHADOW = 0x40000000;
-    private static final int MODAL_HIGHLIGHT = 0x15FFFFFF;
-
-    // Border & Accent
-    private static final int BORDER_OUTER = 0xFF1A1A25;
-    private static final int BORDER_ACCENT = 0xFFDD8800;
-    private static final int BORDER_GLOW = 0x40FFAA00;
-
-    // Text Colors
-    private static final int TITLE_COLOR = 0xFFFFCC44;
-    private static final int MESSAGE_COLOR = 0xFFCCCCDD;
-    private static final int WARNING_ICON_COLOR = 0xFFFFAA00;
+    // === PREMIUM COLOR PALETTE (consistent with ModInfoScreen) ===
+    private static final ColorPalette PALETTE = ColorPalette.premium();
 
     private final Screen parent;
     private final Text title;
@@ -89,8 +75,8 @@ public class ConfirmationScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // 1. Dark overlay with fade effect
-        context.fill(0, 0, this.width, this.height, BG_OVERLAY);
+        // 1. Background gradient with vignette (same as ModInfoScreen)
+        renderGradientBackground(context);
 
         // 2. Modal outer glow/shadow
         int glowSize = 4;
@@ -101,46 +87,53 @@ public class ConfirmationScreen extends Screen {
         }
 
         // 3. Modal background with depth
-        // Outer border
-        context.fill(modalX - 1, modalY - 1, modalX + modalWidth + 1, modalY + modalHeight + 1, BORDER_OUTER);
+        // Outer shadow
+        context.fill(modalX - 1, modalY - 1, modalX + modalWidth + 1, modalY + modalHeight + 1, PALETTE.panelShadow());
 
         // Main background
-        context.fill(modalX, modalY, modalX + modalWidth, modalY + modalHeight, MODAL_BG);
+        context.fill(modalX, modalY, modalX + modalWidth, modalY + modalHeight, PALETTE.panelBg());
 
         // Inner highlight (top edge)
-        context.fill(modalX + 1, modalY + 1, modalX + modalWidth - 1, modalY + 2, MODAL_HIGHLIGHT);
+        context.fill(modalX + 1, modalY + 1, modalX + modalWidth - 1, modalY + 2, PALETTE.panelHighlight());
 
-        // Inner shadow (bottom)
-        context.fill(modalX + 1, modalY + modalHeight - 2, modalX + modalWidth - 1, modalY + modalHeight - 1,
-                MODAL_INNER_SHADOW);
+        // 4. Border with RenderingHelper
+        RenderingHelper.drawPanelBorder(context, modalX, modalY, modalWidth, modalHeight, PALETTE.sectionBorder());
 
-        // 4. Accent border at top
-        context.fill(modalX, modalY, modalX + modalWidth, modalY + 2, BORDER_ACCENT);
+        // 5. Accent border at top
+        context.fill(modalX, modalY, modalX + modalWidth, modalY + 2, PALETTE.accentGold());
 
-        // Corner accents
+        // 6. Corner accents (same as ModInfoScreen content panel)
         int cornerSize = 6;
         // Top-left corner
-        context.fill(modalX, modalY, modalX + cornerSize, modalY + 2, BORDER_GLOW);
-        context.fill(modalX, modalY, modalX + 2, modalY + cornerSize, BORDER_GLOW);
+        context.fill(modalX, modalY, modalX + cornerSize, modalY + 1, PALETTE.accentGold());
+        context.fill(modalX, modalY, modalX + 1, modalY + cornerSize, PALETTE.accentGold());
         // Top-right corner
-        context.fill(modalX + modalWidth - cornerSize, modalY, modalX + modalWidth, modalY + 2, BORDER_GLOW);
-        context.fill(modalX + modalWidth - 2, modalY, modalX + modalWidth, modalY + cornerSize, BORDER_GLOW);
+        context.fill(modalX + modalWidth - cornerSize, modalY, modalX + modalWidth, modalY + 1, PALETTE.accentGold());
+        context.fill(modalX + modalWidth - 1, modalY, modalX + modalWidth, modalY + cornerSize, PALETTE.accentGold());
+        // Bottom-left corner
+        context.fill(modalX, modalY + modalHeight - 1, modalX + cornerSize, modalY + modalHeight, PALETTE.accentGold());
+        context.fill(modalX, modalY + modalHeight - cornerSize, modalX + 1, modalY + modalHeight, PALETTE.accentGold());
+        // Bottom-right corner
+        context.fill(modalX + modalWidth - cornerSize, modalY + modalHeight - 1, modalX + modalWidth,
+                modalY + modalHeight, PALETTE.accentGold());
+        context.fill(modalX + modalWidth - 1, modalY + modalHeight - cornerSize, modalX + modalWidth,
+                modalY + modalHeight, PALETTE.accentGold());
 
-        // 5. Warning icon
+        // 7. Warning icon
         Text warningIcon = Text.translatable("murilloskills.gui.icon.warning");
         int iconWidth = this.textRenderer.getWidth(warningIcon);
         context.drawTextWithShadow(this.textRenderer, warningIcon,
-                modalX + (modalWidth - iconWidth) / 2, modalY + 12, WARNING_ICON_COLOR);
+                modalX + (modalWidth - iconWidth) / 2, modalY + 12, 0xFFFFAA00);
 
-        // 6. Title
+        // 8. Title
         context.drawCenteredTextWithShadow(this.textRenderer, this.title,
-                modalX + modalWidth / 2, modalY + 28, TITLE_COLOR);
+                modalX + modalWidth / 2, modalY + 28, PALETTE.textGold());
 
-        // 7. Separator line
+        // 9. Separator line
         int separatorY = modalY + 42;
-        context.fill(modalX + 20, separatorY, modalX + modalWidth - 20, separatorY + 1, 0x30FFFFFF);
+        RenderingHelper.renderDivider(context, modalX + 20, separatorY, modalWidth - 40, PALETTE.dividerColor());
 
-        // 8. Message (wrapped if needed)
+        // 10. Message (wrapped if needed)
         int messageY = modalY + 50;
         int maxWidth = modalWidth - 30;
 
@@ -149,12 +142,47 @@ public class ConfirmationScreen extends Screen {
 
         for (String line : lines) {
             context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(line),
-                    modalX + modalWidth / 2, messageY, MESSAGE_COLOR);
+                    modalX + modalWidth / 2, messageY, PALETTE.textLight());
             messageY += 11;
         }
 
-        // 9. Render widgets (buttons) - must be last for proper layering
+        // 11. Render widgets (buttons) - must be last for proper layering
         super.render(context, mouseX, mouseY, delta);
+    }
+
+    private void renderGradientBackground(DrawContext context) {
+        // Vertical gradient (same as ModInfoScreen)
+        for (int y = 0; y < this.height; y++) {
+            float ratio = (float) y / this.height;
+            int r = (int) (8 + ratio * 4);
+            int g = (int) (8 + ratio * 4);
+            int b = (int) (16 + ratio * 8);
+            int color = 0xF0000000 | (r << 16) | (g << 8) | b;
+            context.fill(0, y, this.width, y + 1, color);
+        }
+
+        // Subtle vignette effect
+        renderVignette(context);
+    }
+
+    private void renderVignette(DrawContext context) {
+        int size = Math.min(this.width, this.height) / 3;
+        // Corner darkening
+        for (int i = 0; i < 6; i++) {
+            int alpha = (int) (0x12 * (1 - (float) i / 6));
+            if (alpha <= 0)
+                continue;
+            int color = alpha << 24;
+            int offset = size * i / 6;
+            // Top-left
+            context.fill(0, 0, size - offset, size - offset, color);
+            // Top-right
+            context.fill(this.width - size + offset, 0, this.width, size - offset, color);
+            // Bottom-left
+            context.fill(0, this.height - size + offset, size - offset, this.height, color);
+            // Bottom-right
+            context.fill(this.width - size + offset, this.height - size + offset, this.width, this.height, color);
+        }
     }
 
     private java.util.List<String> wrapText(String text, int maxWidth) {

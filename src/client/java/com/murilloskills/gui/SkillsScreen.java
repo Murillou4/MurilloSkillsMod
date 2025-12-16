@@ -2,6 +2,8 @@ package com.murilloskills.gui;
 
 import com.murilloskills.data.ClientSkillData;
 import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.gui.ColorPalette;
+import com.murilloskills.gui.renderer.RenderingHelper;
 import com.murilloskills.network.ParagonActivationC2SPayload;
 import com.murilloskills.network.SkillResetC2SPayload;
 import com.murilloskills.network.SkillSelectionC2SPayload;
@@ -160,40 +162,12 @@ public class SkillsScreen extends Screen {
         return Text.translatable("murilloskills.skill.name." + skill.name().toLowerCase());
     }
 
-    // === MODERN PREMIUM COLOR PALETTE ===
-    // Background & Overlay
-    private static final int BG_OVERLAY = 0xF0080810;
+    // === PREMIUM COLOR PALETTE (consistent with ModInfoScreen) ===
+    private static final ColorPalette PALETTE = ColorPalette.premium();
 
-    // Card Colors - Elegant dark theme with subtle color tints
-    private static final int CARD_BG_NORMAL = 0xE8141420;
-    private static final int CARD_BG_HOVER = 0xF0202035;
-    private static final int CARD_BG_PARAGON = 0xF0201810;
-    private static final int CARD_BG_SELECTED = 0xE8102018;
-    private static final int CARD_BG_LOCKED = 0xD0101015;
-    private static final int CARD_BG_PENDING_SELECT = 0xE8181830;
-
-    // Card Inner Highlight (top edge glow)
-    private static final int CARD_HIGHLIGHT = 0x20FFFFFF;
-    private static final int CARD_SHADOW = 0x40000000;
-
-    // Border Colors - Refined gradients
-    private static final int BORDER_NORMAL = 0xFF2A2A3A;
-    private static final int BORDER_HOVER = 0xFFDDA520;
-    private static final int BORDER_SELECTED = 0xFF32CD32;
-    private static final int BORDER_LOCKED = 0xFF1A1A20;
-    private static final int BORDER_PARAGON = 0xFFFFD700;
-
-    // XP Bar Colors
+    // Custom XP Bar Colors (specific to skills screen)
     private static final int XP_BAR_BG = 0xFF0A0A12;
     private static final int XP_BAR_BORDER = 0xFF1A1A25;
-
-    // Header
-    private static final int HEADER_ACCENT = 0xFFDDA520;
-
-    // Text Colors
-    private static final int TEXT_TITLE = 0xFFFFD700;
-    private static final int TEXT_SUBTITLE = 0xFFBBBBCC;
-    private static final int TEXT_MUTED = 0xFF666680;
 
     // Layout responsivo - calculado dinamicamente
     private int cardWidth;
@@ -583,8 +557,8 @@ public class SkillsScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // 1. Background with vignette effect
-        context.fill(0, 0, this.width, this.height, BG_OVERLAY);
+        // 1. Background gradient with vignette (same as ModInfoScreen)
+        renderGradientBackground(context);
 
         // Subtle vignette corners (darkening towards edges)
         int vignetteSize = Math.min(this.width, this.height) / 3;
@@ -620,33 +594,33 @@ public class SkillsScreen extends Screen {
             boolean isPendingSelect = pendingSelection.contains(skill);
             boolean isLocked = !selectionMode && !isSelected && ClientSkillData.hasSelectedSkills();
 
-            // Determine card background color
+            // Determine card background color (using PALETTE)
             int cardBg;
             int borderColor;
 
             if (selectionMode) {
                 // Selection mode colors
                 if (isPendingSelect) {
-                    cardBg = isHovered ? CARD_BG_HOVER : CARD_BG_PENDING_SELECT;
-                    borderColor = BORDER_SELECTED;
+                    cardBg = isHovered ? PALETTE.sectionBgActive() : 0xE8181830;
+                    borderColor = PALETTE.accentGreen();
                 } else {
-                    cardBg = isHovered ? CARD_BG_HOVER : CARD_BG_NORMAL;
-                    borderColor = isHovered ? BORDER_HOVER : BORDER_NORMAL;
+                    cardBg = isHovered ? PALETTE.sectionBgActive() : PALETTE.sectionBg();
+                    borderColor = isHovered ? PALETTE.accentGold() : PALETTE.sectionBorder();
                 }
             } else {
                 // Normal mode colors
                 if (isParagon) {
-                    cardBg = CARD_BG_PARAGON;
-                    borderColor = isHovered ? BORDER_HOVER : BORDER_PARAGON;
+                    cardBg = 0xF0201810; // Special paragon tint
+                    borderColor = isHovered ? PALETTE.accentGold() : 0xFFFFD700;
                 } else if (isLocked) {
-                    cardBg = CARD_BG_LOCKED;
-                    borderColor = BORDER_LOCKED;
+                    cardBg = 0xD0101015; // Darker for locked
+                    borderColor = 0xFF1A1A20;
                 } else if (isSelected) {
-                    cardBg = isHovered ? CARD_BG_HOVER : CARD_BG_SELECTED;
-                    borderColor = isHovered ? BORDER_HOVER : BORDER_SELECTED;
+                    cardBg = isHovered ? PALETTE.sectionBgActive() : 0xE8102018;
+                    borderColor = isHovered ? PALETTE.accentGold() : PALETTE.accentGreen();
                 } else {
-                    cardBg = isHovered ? CARD_BG_HOVER : CARD_BG_NORMAL;
-                    borderColor = isHovered ? BORDER_HOVER : BORDER_NORMAL;
+                    cardBg = isHovered ? PALETTE.sectionBgActive() : PALETTE.sectionBg();
+                    borderColor = isHovered ? PALETTE.accentGold() : PALETTE.sectionBorder();
                 }
             }
 
@@ -656,25 +630,26 @@ public class SkillsScreen extends Screen {
             // Skill Icon with subtle glow for active skills
             if (!isLocked && (isSelected || isParagon)) {
                 // Subtle item glow
-                context.fill(x + 3, y + 12, x + 23, y + 32, 0x15FFFFFF);
+                context.fill(x + 3, y + 12, x + 23, y + 32, PALETTE.panelHighlight());
             }
             context.drawItem(getSkillIcon(skill), x + 5, y + 14);
 
             // Skill Name with better typography
-            int titleColor = isLocked ? TEXT_MUTED : TEXT_TITLE;
+            int titleColor = isLocked ? PALETTE.textMuted() : PALETTE.textGold();
             context.drawTextWithShadow(this.textRenderer, getTranslatableSkillName(skill), x + 28, y + 6, titleColor);
 
             // Lock icon for non-selected skills (normal mode only)
             if (!selectionMode && isLocked) {
                 context.drawTextWithShadow(this.textRenderer, Text.translatable("murilloskills.gui.icon.lock"),
-                        x + cardWidth - 16, y + 6, TEXT_MUTED);
+                        x + cardWidth - 16, y + 6, PALETTE.textMuted());
             }
 
             // Level badge with better positioning
             String lvlStr = String.valueOf(stats.level);
             Text fullLevelText = Text.translatable("murilloskills.gui.level_prefix").append(lvlStr);
             int lvlWidth = this.textRenderer.getWidth(fullLevelText);
-            int lvlColor = isLocked ? TEXT_MUTED : (stats.level >= 100 ? TEXT_TITLE : 0xFFDDDDDD);
+            int lvlColor = isLocked ? PALETTE.textMuted()
+                    : (stats.level >= 100 ? PALETTE.textGold() : PALETTE.textLight());
             context.drawTextWithShadow(this.textRenderer, fullLevelText, x + cardWidth - lvlWidth - 6, y + 6,
                     lvlColor);
 
@@ -1288,7 +1263,7 @@ public class SkillsScreen extends Screen {
         // Header
         int completed = ClientSkillData.getCompletedChallengeCount();
         Text header = Text.translatable("murilloskills.gui.challenges.title", completed, challenges.size());
-        context.drawTextWithShadow(textRenderer, header, panelX + 6, panelY + 6, 0xFFDDA520);
+        context.drawTextWithShadow(textRenderer, header, panelX + 6, panelY + 6, PALETTE.accentGold());
 
         // Render each challenge
         int y = panelY + 22;
@@ -1388,22 +1363,22 @@ public class SkillsScreen extends Screen {
 
         // Decorative accent line at bottom
         context.fill(0, headerHeight - 2, this.width, headerHeight - 1, 0x30FFFFFF);
-        context.fill(this.width / 4, headerHeight - 1, this.width * 3 / 4, headerHeight, HEADER_ACCENT);
+        context.fill(this.width / 4, headerHeight - 1, this.width * 3 / 4, headerHeight, PALETTE.accentGold());
 
         // Title
         int titleY = (headerHeight - 20) / 2;
         if (selectionMode) {
             context.drawCenteredTextWithShadow(this.textRenderer,
                     Text.translatable("murilloskills.gui.choose_skills").formatted(Formatting.GOLD, Formatting.BOLD),
-                    this.width / 2, titleY, TEXT_TITLE);
+                    this.width / 2, titleY, PALETTE.textGold());
             int count = pendingSelection.size();
             context.drawCenteredTextWithShadow(this.textRenderer,
                     Text.translatable("murilloskills.gui.select_skills_count", count).formatted(Formatting.YELLOW),
-                    this.width / 2, titleY + 12, TEXT_SUBTITLE);
+                    this.width / 2, titleY + 12, PALETTE.textGray());
         } else {
             context.drawCenteredTextWithShadow(this.textRenderer,
                     Text.translatable("murilloskills.gui.title").formatted(Formatting.GOLD, Formatting.BOLD),
-                    this.width / 2, titleY + 5, TEXT_TITLE);
+                    this.width / 2, titleY + 5, PALETTE.textGold());
         }
     }
 
@@ -1440,19 +1415,19 @@ public class SkillsScreen extends Screen {
             int bgColor, int borderColor, boolean isHovered) {
         // Outer shadow (only visible on hover)
         if (isHovered) {
-            context.fill(x - 1, y - 1, x + width + 1, y + height + 1, CARD_SHADOW);
+            context.fill(x - 1, y - 1, x + width + 1, y + height + 1, PALETTE.panelShadow());
         }
 
         // Main card background
         context.fill(x, y, x + width, y + height, bgColor);
 
         // Inner highlight (top edge)
-        context.fill(x + 1, y + 1, x + width - 1, y + 2, CARD_HIGHLIGHT);
+        context.fill(x + 1, y + 1, x + width - 1, y + 2, PALETTE.panelHighlight());
 
         // Border
         drawBorder(context, x, y, width, height, borderColor);
 
-        // Corner accents for hover state
+        // Corner accents for hover state (same as ModInfoScreen)
         if (isHovered) {
             int accentSize = 4;
             // Top-left
@@ -1467,6 +1442,41 @@ public class SkillsScreen extends Screen {
             // Bottom-right
             context.fill(x + width - accentSize, y + height - 1, x + width, y + height, borderColor);
             context.fill(x + width - 1, y + height - accentSize, x + width, y + height, borderColor);
+        }
+    }
+
+    private void renderXpBar(DrawContext context, int x, int y, ClientSkillData.SkillStats stats, boolean isLocked) {
+        int barWidth = 115;
+        int barHeight = 6;
+
+        // Background
+        context.fill(x, y, x + barWidth, y + barHeight, XP_BAR_BG);
+
+        // Border using RenderingHelper
+        RenderingHelper.drawPanelBorder(context, x, y, barWidth, barHeight, XP_BAR_BORDER);
+
+        if (!isLocked) {
+            // Fill based on progress
+            int progress = (int) (stats.getXpProgress() * (barWidth - 2));
+            if (progress > 0) {
+                int fillColor = stats.level >= 100 ? PALETTE.accentGold() : PALETTE.accentGreen();
+                context.fill(x + 1, y + 1, x + 1 + Math.min(progress, barWidth - 2), y + barHeight - 1, fillColor);
+            }
+        }
+    }
+
+    /**
+     * Renders gradient background identical to ModInfoScreen
+     */
+    private void renderGradientBackground(DrawContext context) {
+        // Vertical gradient (same as ModInfoScreen)
+        for (int y = 0; y < this.height; y++) {
+            float ratio = (float) y / this.height;
+            int r = (int) (8 + ratio * 4);
+            int g = (int) (8 + ratio * 4);
+            int b = (int) (16 + ratio * 8);
+            int color = 0xF0000000 | (r << 16) | (g << 8) | b;
+            context.fill(0, y, this.width, y + 1, color);
         }
     }
 }
