@@ -207,40 +207,35 @@ public class MinerSkill extends AbstractSkill {
         return ores;
     }
 
+    // Map instead of long if-else chain for O(1) lookup and cleaner code
+    private static final java.util.Map<net.minecraft.block.Block, MinerScanResultPayload.OreType> ORE_MAP = new java.util.HashMap<>();
+
+    static {
+        ORE_MAP.put(net.minecraft.block.Blocks.COAL_ORE, MinerScanResultPayload.OreType.COAL);
+        ORE_MAP.put(net.minecraft.block.Blocks.DEEPSLATE_COAL_ORE, MinerScanResultPayload.OreType.COAL);
+        ORE_MAP.put(net.minecraft.block.Blocks.COPPER_ORE, MinerScanResultPayload.OreType.COPPER);
+        ORE_MAP.put(net.minecraft.block.Blocks.DEEPSLATE_COPPER_ORE, MinerScanResultPayload.OreType.COPPER);
+        ORE_MAP.put(net.minecraft.block.Blocks.IRON_ORE, MinerScanResultPayload.OreType.IRON);
+        ORE_MAP.put(net.minecraft.block.Blocks.DEEPSLATE_IRON_ORE, MinerScanResultPayload.OreType.IRON);
+        ORE_MAP.put(net.minecraft.block.Blocks.GOLD_ORE, MinerScanResultPayload.OreType.GOLD);
+        ORE_MAP.put(net.minecraft.block.Blocks.DEEPSLATE_GOLD_ORE, MinerScanResultPayload.OreType.GOLD);
+        ORE_MAP.put(net.minecraft.block.Blocks.LAPIS_ORE, MinerScanResultPayload.OreType.LAPIS);
+        ORE_MAP.put(net.minecraft.block.Blocks.DEEPSLATE_LAPIS_ORE, MinerScanResultPayload.OreType.LAPIS);
+        ORE_MAP.put(net.minecraft.block.Blocks.REDSTONE_ORE, MinerScanResultPayload.OreType.REDSTONE);
+        ORE_MAP.put(net.minecraft.block.Blocks.DEEPSLATE_REDSTONE_ORE, MinerScanResultPayload.OreType.REDSTONE);
+        ORE_MAP.put(net.minecraft.block.Blocks.DIAMOND_ORE, MinerScanResultPayload.OreType.DIAMOND);
+        ORE_MAP.put(net.minecraft.block.Blocks.DEEPSLATE_DIAMOND_ORE, MinerScanResultPayload.OreType.DIAMOND);
+        ORE_MAP.put(net.minecraft.block.Blocks.EMERALD_ORE, MinerScanResultPayload.OreType.EMERALD);
+        ORE_MAP.put(net.minecraft.block.Blocks.DEEPSLATE_EMERALD_ORE, MinerScanResultPayload.OreType.EMERALD);
+        ORE_MAP.put(net.minecraft.block.Blocks.ANCIENT_DEBRIS, MinerScanResultPayload.OreType.ANCIENT_DEBRIS);
+        ORE_MAP.put(net.minecraft.block.Blocks.NETHER_QUARTZ_ORE, MinerScanResultPayload.OreType.NETHER_QUARTZ);
+        ORE_MAP.put(net.minecraft.block.Blocks.NETHER_GOLD_ORE, MinerScanResultPayload.OreType.NETHER_GOLD);
+    }
+
     /**
      * Determines the ore type from a block for color-coded highlighting
      */
     private MinerScanResultPayload.OreType getOreType(net.minecraft.block.Block block) {
-        if (block == net.minecraft.block.Blocks.COAL_ORE || block == net.minecraft.block.Blocks.DEEPSLATE_COAL_ORE) {
-            return MinerScanResultPayload.OreType.COAL;
-        } else if (block == net.minecraft.block.Blocks.COPPER_ORE
-                || block == net.minecraft.block.Blocks.DEEPSLATE_COPPER_ORE) {
-            return MinerScanResultPayload.OreType.COPPER;
-        } else if (block == net.minecraft.block.Blocks.IRON_ORE
-                || block == net.minecraft.block.Blocks.DEEPSLATE_IRON_ORE) {
-            return MinerScanResultPayload.OreType.IRON;
-        } else if (block == net.minecraft.block.Blocks.GOLD_ORE
-                || block == net.minecraft.block.Blocks.DEEPSLATE_GOLD_ORE) {
-            return MinerScanResultPayload.OreType.GOLD;
-        } else if (block == net.minecraft.block.Blocks.LAPIS_ORE
-                || block == net.minecraft.block.Blocks.DEEPSLATE_LAPIS_ORE) {
-            return MinerScanResultPayload.OreType.LAPIS;
-        } else if (block == net.minecraft.block.Blocks.REDSTONE_ORE
-                || block == net.minecraft.block.Blocks.DEEPSLATE_REDSTONE_ORE) {
-            return MinerScanResultPayload.OreType.REDSTONE;
-        } else if (block == net.minecraft.block.Blocks.DIAMOND_ORE
-                || block == net.minecraft.block.Blocks.DEEPSLATE_DIAMOND_ORE) {
-            return MinerScanResultPayload.OreType.DIAMOND;
-        } else if (block == net.minecraft.block.Blocks.EMERALD_ORE
-                || block == net.minecraft.block.Blocks.DEEPSLATE_EMERALD_ORE) {
-            return MinerScanResultPayload.OreType.EMERALD;
-        } else if (block == net.minecraft.block.Blocks.ANCIENT_DEBRIS) {
-            return MinerScanResultPayload.OreType.ANCIENT_DEBRIS;
-        } else if (block == net.minecraft.block.Blocks.NETHER_QUARTZ_ORE) {
-            return MinerScanResultPayload.OreType.NETHER_QUARTZ;
-        } else if (block == net.minecraft.block.Blocks.NETHER_GOLD_ORE) {
-            return MinerScanResultPayload.OreType.NETHER_GOLD;
-        }
-        return MinerScanResultPayload.OreType.OTHER;
+        return ORE_MAP.getOrDefault(block, MinerScanResultPayload.OreType.OTHER);
     }
 }

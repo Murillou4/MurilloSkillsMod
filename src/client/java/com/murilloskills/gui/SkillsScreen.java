@@ -4,6 +4,7 @@ import com.murilloskills.data.ClientSkillData;
 import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.gui.ColorPalette;
 import com.murilloskills.gui.renderer.RenderingHelper;
+import com.murilloskills.gui.data.SkillUiData;
 import com.murilloskills.network.ParagonActivationC2SPayload;
 import com.murilloskills.network.SkillResetC2SPayload;
 import com.murilloskills.network.SkillSelectionC2SPayload;
@@ -31,129 +32,7 @@ import java.util.Set;
 
 public class SkillsScreen extends Screen {
 
-    // Perk info record for next perk tooltip - stores translation keys instead of
-    // hardcoded strings
-    private record PerkInfo(int level, String nameKey, String descKey) {
-    }
-
-    // Static perk definitions per skill (ordered by level) - uses translation keys
-    private static final java.util.Map<MurilloSkillsList, List<PerkInfo>> SKILL_PERKS = new java.util.HashMap<>();
-    static {
-        // MINER
-        SKILL_PERKS.put(MurilloSkillsList.MINER, List.of(
-                new PerkInfo(10, "murilloskills.perk.name.miner.night_vision",
-                        "murilloskills.perk.desc.miner.night_vision"),
-                new PerkInfo(30, "murilloskills.perk.name.miner.durability",
-                        "murilloskills.perk.desc.miner.durability"),
-                new PerkInfo(60, "murilloskills.perk.name.miner.ore_radar", "murilloskills.perk.desc.miner.ore_radar"),
-                new PerkInfo(100, "murilloskills.perk.name.miner.master", "murilloskills.perk.desc.miner.master")));
-
-        // WARRIOR
-        SKILL_PERKS.put(MurilloSkillsList.WARRIOR, List.of(
-                new PerkInfo(10, "murilloskills.perk.name.warrior.heart_1", "murilloskills.perk.desc.warrior.heart_1"),
-                new PerkInfo(25, "murilloskills.perk.name.warrior.iron_skin",
-                        "murilloskills.perk.desc.warrior.iron_skin"),
-                new PerkInfo(50, "murilloskills.perk.name.warrior.heart_2", "murilloskills.perk.desc.warrior.heart_2"),
-                new PerkInfo(75, "murilloskills.perk.name.warrior.vampirism",
-                        "murilloskills.perk.desc.warrior.vampirism"),
-                new PerkInfo(100, "murilloskills.perk.name.warrior.master", "murilloskills.perk.desc.warrior.master")));
-
-        // FARMER
-        SKILL_PERKS.put(MurilloSkillsList.FARMER, List.of(
-                new PerkInfo(10, "murilloskills.perk.name.farmer.green_thumb",
-                        "murilloskills.perk.desc.farmer.green_thumb"),
-                new PerkInfo(25, "murilloskills.perk.name.farmer.fertile_ground",
-                        "murilloskills.perk.desc.farmer.fertile_ground"),
-                new PerkInfo(50, "murilloskills.perk.name.farmer.nutrient_cycle",
-                        "murilloskills.perk.desc.farmer.nutrient_cycle"),
-                new PerkInfo(75, "murilloskills.perk.name.farmer.abundant_harvest",
-                        "murilloskills.perk.desc.farmer.abundant_harvest"),
-                new PerkInfo(100, "murilloskills.perk.name.farmer.master", "murilloskills.perk.desc.farmer.master")));
-
-        // ARCHER
-        SKILL_PERKS.put(MurilloSkillsList.ARCHER, List.of(
-                new PerkInfo(10, "murilloskills.perk.name.archer.fast_arrows",
-                        "murilloskills.perk.desc.archer.fast_arrows"),
-                new PerkInfo(25, "murilloskills.perk.name.archer.bonus_damage",
-                        "murilloskills.perk.desc.archer.bonus_damage"),
-                new PerkInfo(50, "murilloskills.perk.name.archer.penetration",
-                        "murilloskills.perk.desc.archer.penetration"),
-                new PerkInfo(75, "murilloskills.perk.name.archer.stable_shot",
-                        "murilloskills.perk.desc.archer.stable_shot"),
-                new PerkInfo(100, "murilloskills.perk.name.archer.master", "murilloskills.perk.desc.archer.master")));
-
-        // FISHER
-        SKILL_PERKS.put(MurilloSkillsList.FISHER, List.of(
-                new PerkInfo(10, "murilloskills.perk.name.fisher.fast_fishing",
-                        "murilloskills.perk.desc.fisher.fast_fishing"),
-                new PerkInfo(25, "murilloskills.perk.name.fisher.treasure_hunter",
-                        "murilloskills.perk.desc.fisher.treasure_hunter"),
-                new PerkInfo(50, "murilloskills.perk.name.fisher.dolphins_grace",
-                        "murilloskills.perk.desc.fisher.dolphins_grace"),
-                new PerkInfo(75, "murilloskills.perk.name.fisher.luck_of_sea",
-                        "murilloskills.perk.desc.fisher.luck_of_sea"),
-                new PerkInfo(100, "murilloskills.perk.name.fisher.master", "murilloskills.perk.desc.fisher.master")));
-
-        // BLACKSMITH
-        SKILL_PERKS.put(MurilloSkillsList.BLACKSMITH, List.of(
-                new PerkInfo(10, "murilloskills.perk.name.blacksmith.iron_skin",
-                        "murilloskills.perk.desc.blacksmith.iron_skin"),
-                new PerkInfo(25, "murilloskills.perk.name.blacksmith.efficient_anvil",
-                        "murilloskills.perk.desc.blacksmith.efficient_anvil"),
-                new PerkInfo(50, "murilloskills.perk.name.blacksmith.forged_resilience",
-                        "murilloskills.perk.desc.blacksmith.forged_resilience"),
-                new PerkInfo(75, "murilloskills.perk.name.blacksmith.thorns_master",
-                        "murilloskills.perk.desc.blacksmith.thorns_master"),
-                new PerkInfo(100, "murilloskills.perk.name.blacksmith.master",
-                        "murilloskills.perk.desc.blacksmith.master")));
-
-        // BUILDER
-        SKILL_PERKS.put(MurilloSkillsList.BUILDER, List.of(
-                new PerkInfo(10, "murilloskills.perk.name.builder.extended_reach",
-                        "murilloskills.perk.desc.builder.extended_reach"),
-                new PerkInfo(15, "murilloskills.perk.name.builder.efficient_crafting",
-                        "murilloskills.perk.desc.builder.efficient_crafting"),
-                new PerkInfo(25, "murilloskills.perk.name.builder.safe_landing",
-                        "murilloskills.perk.desc.builder.safe_landing"),
-                new PerkInfo(50, "murilloskills.perk.name.builder.scaffold_master",
-                        "murilloskills.perk.desc.builder.scaffold_master"),
-                new PerkInfo(75, "murilloskills.perk.name.builder.master_reach",
-                        "murilloskills.perk.desc.builder.master_reach"),
-                new PerkInfo(100, "murilloskills.perk.name.builder.master", "murilloskills.perk.desc.builder.master")));
-
-        // EXPLORER
-        SKILL_PERKS.put(MurilloSkillsList.EXPLORER, List.of(
-                new PerkInfo(10, "murilloskills.perk.name.explorer.step_assist",
-                        "murilloskills.perk.desc.explorer.step_assist"),
-                new PerkInfo(20, "murilloskills.perk.name.explorer.aquatic",
-                        "murilloskills.perk.desc.explorer.aquatic"),
-                new PerkInfo(35, "murilloskills.perk.name.explorer.night_vision",
-                        "murilloskills.perk.desc.explorer.night_vision"),
-                new PerkInfo(65, "murilloskills.perk.name.explorer.feather_feet",
-                        "murilloskills.perk.desc.explorer.feather_feet"),
-                new PerkInfo(80, "murilloskills.perk.name.explorer.nether_walker",
-                        "murilloskills.perk.desc.explorer.nether_walker"),
-                new PerkInfo(100, "murilloskills.perk.name.explorer.master",
-                        "murilloskills.perk.desc.explorer.master")));
-    }
-
-    /**
-     * Gets the next perk for a skill based on current level
-     * 
-     * @return PerkInfo of next perk, or null if all perks unlocked
-     */
-    private static PerkInfo getNextPerk(MurilloSkillsList skill, int currentLevel) {
-        List<PerkInfo> perks = SKILL_PERKS.get(skill);
-        if (perks == null)
-            return null;
-
-        for (PerkInfo perk : perks) {
-            if (perk.level() > currentLevel) {
-                return perk;
-            }
-        }
-        return null; // All perks unlocked
-    }
+    // Static perk definitions definition removed (migrated to SkillUiData)
 
     /**
      * Gets the translatable skill name for i18n support
@@ -632,7 +511,7 @@ public class SkillsScreen extends Screen {
                 // Subtle item glow
                 context.fill(x + 3, y + 12, x + 23, y + 32, PALETTE.panelHighlight());
             }
-            context.drawItem(getSkillIcon(skill), x + 5, y + 14);
+            context.drawItem(SkillUiData.getSkillIcon(skill), x + 5, y + 14);
 
             // Skill Name with better typography
             int titleColor = isLocked ? PALETTE.textMuted() : PALETTE.textGold();
@@ -824,7 +703,7 @@ public class SkillsScreen extends Screen {
                     .formatted(Formatting.GRAY));
 
             // === NEXT PERK SECTION (always shown) ===
-            PerkInfo nextPerk = getNextPerk(skill, level);
+            SkillUiData.PerkInfo nextPerk = SkillUiData.getNextPerk(skill, level);
             if (nextPerk != null) {
                 int levelsRemaining = nextPerk.level() - level;
                 tooltip.add(Text.literal("→ ").append(Text.translatable(nextPerk.nameKey()))
@@ -1185,7 +1064,7 @@ public class SkillsScreen extends Screen {
         if (isLocked)
             return;
 
-        List<PerkInfo> perks = SKILL_PERKS.get(skill);
+        List<SkillUiData.PerkInfo> perks = SkillUiData.SKILL_PERKS.get(skill);
         if (perks == null || perks.isEmpty())
             return;
 
@@ -1196,7 +1075,7 @@ public class SkillsScreen extends Screen {
 
         // Show up to 4 perk indicators
         int shown = 0;
-        for (PerkInfo perk : perks) {
+        for (SkillUiData.PerkInfo perk : perks) {
             if (shown >= 4)
                 break;
 
@@ -1227,20 +1106,6 @@ public class SkillsScreen extends Screen {
         context.fill(x, y + height - 1, x + width, y + height, color);
         context.fill(x, y, x + 1, y + height, color);
         context.fill(x + width - 1, y, x + width, y + height, color);
-    }
-
-    private ItemStack getSkillIcon(MurilloSkillsList skill) {
-        Item item = switch (skill) {
-            case MINER -> Items.IRON_PICKAXE;
-            case FARMER -> Items.IRON_HOE;
-            case WARRIOR -> Items.IRON_SWORD;
-            case FISHER -> Items.FISHING_ROD;
-            case BUILDER -> Items.BRICKS;
-            case BLACKSMITH -> Items.ANVIL;
-            case ARCHER -> Items.BOW;
-            default -> Items.BOOK;
-        };
-        return new ItemStack(item);
     }
 
     /**
@@ -1442,26 +1307,6 @@ public class SkillsScreen extends Screen {
             // Bottom-right
             context.fill(x + width - accentSize, y + height - 1, x + width, y + height, borderColor);
             context.fill(x + width - 1, y + height - accentSize, x + width, y + height, borderColor);
-        }
-    }
-
-    private void renderXpBar(DrawContext context, int x, int y, ClientSkillData.SkillStats stats, boolean isLocked) {
-        int barWidth = 115;
-        int barHeight = 6;
-
-        // Background
-        context.fill(x, y, x + barWidth, y + barHeight, XP_BAR_BG);
-
-        // Border using RenderingHelper
-        RenderingHelper.drawPanelBorder(context, x, y, barWidth, barHeight, XP_BAR_BORDER);
-
-        if (!isLocked) {
-            // Fill based on progress
-            int progress = (int) (stats.getXpProgress() * (barWidth - 2));
-            if (progress > 0) {
-                int fillColor = stats.level >= 100 ? PALETTE.accentGold() : PALETTE.accentGreen();
-                context.fill(x + 1, y + 1, x + 1 + Math.min(progress, barWidth - 2), y + barHeight - 1, fillColor);
-            }
         }
     }
 

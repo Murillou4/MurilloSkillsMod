@@ -1,8 +1,10 @@
 package com.murilloskills.gui;
 
-import com.murilloskills.data.ClientSkillData;
+import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.gui.renderer.RenderingHelper;
+import com.murilloskills.gui.data.SkillUiData;
+import com.murilloskills.data.ClientSkillData;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -45,124 +47,8 @@ public class ModInfoScreen extends Screen {
         private float tabTransition = 0f;
         private Tab lastTab = Tab.STATUS;
 
-        // === SYNERGY DEFINITIONS ===
-        private static final List<SynergyInfo> SYNERGIES = List.of(
-                        new SynergyInfo("iron_will", MurilloSkillsList.WARRIOR, MurilloSkillsList.BLACKSMITH, 10,
-                                        "murilloskills.synergy.type.damage_reduction"),
-                        new SynergyInfo("forge_master", MurilloSkillsList.MINER, MurilloSkillsList.BLACKSMITH, 15,
-                                        "murilloskills.synergy.type.ore_drops"),
-                        new SynergyInfo("ranger", MurilloSkillsList.ARCHER, MurilloSkillsList.EXPLORER, 20,
-                                        "murilloskills.synergy.type.movement_speed"),
-                        new SynergyInfo("natures_bounty", MurilloSkillsList.FARMER, MurilloSkillsList.FISHER, 10,
-                                        "murilloskills.synergy.type.all_drops"),
-                        new SynergyInfo("treasure_hunter", MurilloSkillsList.MINER, MurilloSkillsList.EXPLORER, 25,
-                                        "murilloskills.synergy.type.rare_finds"),
-                        new SynergyInfo("combat_master", MurilloSkillsList.WARRIOR, MurilloSkillsList.ARCHER, 10,
-                                        "murilloskills.synergy.type.all_damage"),
-                        new SynergyInfo("master_crafter", MurilloSkillsList.BUILDER, MurilloSkillsList.BLACKSMITH, 20,
-                                        "murilloskills.synergy.type.crafting"));
-
-        // === PERK DEFINITIONS ===
-        private static final java.util.Map<MurilloSkillsList, List<PerkInfo>> SKILL_PERKS = new java.util.HashMap<>();
-        static {
-                SKILL_PERKS.put(MurilloSkillsList.MINER, List.of(
-                                new PerkInfo(10, "murilloskills.perk.name.miner.night_vision",
-                                                "murilloskills.perk.desc.miner.night_vision"),
-                                new PerkInfo(30, "murilloskills.perk.name.miner.durability",
-                                                "murilloskills.perk.desc.miner.durability"),
-                                new PerkInfo(60, "murilloskills.perk.name.miner.ore_radar",
-                                                "murilloskills.perk.desc.miner.ore_radar"),
-                                new PerkInfo(100, "murilloskills.perk.name.miner.master",
-                                                "murilloskills.perk.desc.miner.master")));
-
-                SKILL_PERKS.put(MurilloSkillsList.WARRIOR, List.of(
-                                new PerkInfo(10, "murilloskills.perk.name.warrior.heart_1",
-                                                "murilloskills.perk.desc.warrior.heart_1"),
-                                new PerkInfo(25, "murilloskills.perk.name.warrior.iron_skin",
-                                                "murilloskills.perk.desc.warrior.iron_skin"),
-                                new PerkInfo(50, "murilloskills.perk.name.warrior.heart_2",
-                                                "murilloskills.perk.desc.warrior.heart_2"),
-                                new PerkInfo(75, "murilloskills.perk.name.warrior.vampirism",
-                                                "murilloskills.perk.desc.warrior.vampirism"),
-                                new PerkInfo(100, "murilloskills.perk.name.warrior.master",
-                                                "murilloskills.perk.desc.warrior.master")));
-
-                SKILL_PERKS.put(MurilloSkillsList.FARMER, List.of(
-                                new PerkInfo(10, "murilloskills.perk.name.farmer.green_thumb",
-                                                "murilloskills.perk.desc.farmer.green_thumb"),
-                                new PerkInfo(25, "murilloskills.perk.name.farmer.fertile_ground",
-                                                "murilloskills.perk.desc.farmer.fertile_ground"),
-                                new PerkInfo(50, "murilloskills.perk.name.farmer.nutrient_cycle",
-                                                "murilloskills.perk.desc.farmer.nutrient_cycle"),
-                                new PerkInfo(75, "murilloskills.perk.name.farmer.abundant_harvest",
-                                                "murilloskills.perk.desc.farmer.abundant_harvest"),
-                                new PerkInfo(100, "murilloskills.perk.name.farmer.master",
-                                                "murilloskills.perk.desc.farmer.master")));
-
-                SKILL_PERKS.put(MurilloSkillsList.ARCHER, List.of(
-                                new PerkInfo(10, "murilloskills.perk.name.archer.fast_arrows",
-                                                "murilloskills.perk.desc.archer.fast_arrows"),
-                                new PerkInfo(25, "murilloskills.perk.name.archer.bonus_damage",
-                                                "murilloskills.perk.desc.archer.bonus_damage"),
-                                new PerkInfo(50, "murilloskills.perk.name.archer.penetration",
-                                                "murilloskills.perk.desc.archer.penetration"),
-                                new PerkInfo(75, "murilloskills.perk.name.archer.stable_shot",
-                                                "murilloskills.perk.desc.archer.stable_shot"),
-                                new PerkInfo(100, "murilloskills.perk.name.archer.master",
-                                                "murilloskills.perk.desc.archer.master")));
-
-                SKILL_PERKS.put(MurilloSkillsList.FISHER, List.of(
-                                new PerkInfo(10, "murilloskills.perk.name.fisher.fast_fishing",
-                                                "murilloskills.perk.desc.fisher.fast_fishing"),
-                                new PerkInfo(25, "murilloskills.perk.name.fisher.treasure_hunter",
-                                                "murilloskills.perk.desc.fisher.treasure_hunter"),
-                                new PerkInfo(50, "murilloskills.perk.name.fisher.dolphins_grace",
-                                                "murilloskills.perk.desc.fisher.dolphins_grace"),
-                                new PerkInfo(75, "murilloskills.perk.name.fisher.luck_of_sea",
-                                                "murilloskills.perk.desc.fisher.luck_of_sea"),
-                                new PerkInfo(100, "murilloskills.perk.name.fisher.master",
-                                                "murilloskills.perk.desc.fisher.master")));
-
-                SKILL_PERKS.put(MurilloSkillsList.BLACKSMITH, List.of(
-                                new PerkInfo(10, "murilloskills.perk.name.blacksmith.iron_skin",
-                                                "murilloskills.perk.desc.blacksmith.iron_skin"),
-                                new PerkInfo(25, "murilloskills.perk.name.blacksmith.efficient_anvil",
-                                                "murilloskills.perk.desc.blacksmith.efficient_anvil"),
-                                new PerkInfo(50, "murilloskills.perk.name.blacksmith.forged_resilience",
-                                                "murilloskills.perk.desc.blacksmith.forged_resilience"),
-                                new PerkInfo(75, "murilloskills.perk.name.blacksmith.thorns_master",
-                                                "murilloskills.perk.desc.blacksmith.thorns_master"),
-                                new PerkInfo(100, "murilloskills.perk.name.blacksmith.master",
-                                                "murilloskills.perk.desc.blacksmith.master")));
-
-                SKILL_PERKS.put(MurilloSkillsList.BUILDER, List.of(
-                                new PerkInfo(10, "murilloskills.perk.name.builder.extended_reach",
-                                                "murilloskills.perk.desc.builder.extended_reach"),
-                                new PerkInfo(15, "murilloskills.perk.name.builder.efficient_crafting",
-                                                "murilloskills.perk.desc.builder.efficient_crafting"),
-                                new PerkInfo(25, "murilloskills.perk.name.builder.safe_landing",
-                                                "murilloskills.perk.desc.builder.safe_landing"),
-                                new PerkInfo(50, "murilloskills.perk.name.builder.scaffold_master",
-                                                "murilloskills.perk.desc.builder.scaffold_master"),
-                                new PerkInfo(75, "murilloskills.perk.name.builder.master_reach",
-                                                "murilloskills.perk.desc.builder.master_reach"),
-                                new PerkInfo(100, "murilloskills.perk.name.builder.master",
-                                                "murilloskills.perk.desc.builder.master")));
-
-                SKILL_PERKS.put(MurilloSkillsList.EXPLORER, List.of(
-                                new PerkInfo(10, "murilloskills.perk.name.explorer.step_assist",
-                                                "murilloskills.perk.desc.explorer.step_assist"),
-                                new PerkInfo(20, "murilloskills.perk.name.explorer.aquatic",
-                                                "murilloskills.perk.desc.explorer.aquatic"),
-                                new PerkInfo(35, "murilloskills.perk.name.explorer.night_vision",
-                                                "murilloskills.perk.desc.explorer.night_vision"),
-                                new PerkInfo(65, "murilloskills.perk.name.explorer.feather_feet",
-                                                "murilloskills.perk.desc.explorer.feather_feet"),
-                                new PerkInfo(80, "murilloskills.perk.name.explorer.nether_walker",
-                                                "murilloskills.perk.desc.explorer.nether_walker"),
-                                new PerkInfo(100, "murilloskills.perk.name.explorer.master",
-                                                "murilloskills.perk.desc.explorer.master")));
-        }
+        // === SYNERGY & PERK DEFINITIONS ===
+        // Removed duplicated definitions - migrated to SkillUiData
 
         public ModInfoScreen(Screen parent) {
                 super(Text.translatable("murilloskills.info.title"));
@@ -252,8 +138,8 @@ public class ModInfoScreen extends Screen {
                         }
                 }
                 height += 50;
-                for (SynergyInfo synergy : SYNERGIES) {
-                        if (selectedSkills.contains(synergy.skill1) && selectedSkills.contains(synergy.skill2)) {
+                for (SkillUiData.SynergyInfo synergy : SkillUiData.SYNERGIES) {
+                        if (selectedSkills.contains(synergy.skill1()) && selectedSkills.contains(synergy.skill2())) {
                                 height += 25;
                         }
                 }
@@ -261,7 +147,7 @@ public class ModInfoScreen extends Screen {
         }
 
         private int calculateSynergiesHeight() {
-                return 80 + SYNERGIES.size() * 78; // Updated for taller cards
+                return 80 + SkillUiData.SYNERGIES.size() * 78; // Updated for taller cards
         }
 
         private int calculatePrestigeHeight() {
@@ -272,7 +158,7 @@ public class ModInfoScreen extends Screen {
                 int height = 40;
                 for (MurilloSkillsList skill : MurilloSkillsList.values()) {
                         height += 30;
-                        List<PerkInfo> perks = SKILL_PERKS.get(skill);
+                        List<SkillUiData.PerkInfo> perks = SkillUiData.SKILL_PERKS.get(skill);
                         if (perks != null)
                                 height += perks.size() * 22;
                         height += 15;
@@ -471,8 +357,8 @@ public class ModInfoScreen extends Screen {
                 y += 18;
 
                 boolean hasSynergy = false;
-                for (SynergyInfo synergy : SYNERGIES) {
-                        if (selectedSkills.contains(synergy.skill1) && selectedSkills.contains(synergy.skill2)) {
+                for (SkillUiData.SynergyInfo synergy : SkillUiData.SYNERGIES) {
+                        if (selectedSkills.contains(synergy.skill1()) && selectedSkills.contains(synergy.skill2())) {
                                 renderActiveSynergyBadge(context, x + 8, y, synergy);
                                 y += 22;
                                 hasSynergy = true;
@@ -502,9 +388,9 @@ public class ModInfoScreen extends Screen {
 
                 // All synergies as improved cards
                 List<MurilloSkillsList> selectedSkills = ClientSkillData.getSelectedSkills();
-                for (SynergyInfo synergy : SYNERGIES) {
-                        boolean isActive = selectedSkills.contains(synergy.skill1)
-                                        && selectedSkills.contains(synergy.skill2);
+                for (SkillUiData.SynergyInfo synergy : SkillUiData.SYNERGIES) {
+                        boolean isActive = selectedSkills.contains(synergy.skill1())
+                                        && selectedSkills.contains(synergy.skill2());
                         renderImprovedSynergyCard(context, x, y, synergy, isActive);
                         y += 78; // More spacing between cards
                 }
@@ -604,13 +490,13 @@ public class ModInfoScreen extends Screen {
                         y += 26;
 
                         // Perks list
-                        List<PerkInfo> perks = SKILL_PERKS.get(skill);
+                        List<SkillUiData.PerkInfo> perks = SkillUiData.SKILL_PERKS.get(skill);
                         if (perks != null) {
                                 var stats = ClientSkillData.get(skill);
                                 int playerLevel = stats != null ? stats.level : 0;
 
-                                for (PerkInfo perk : perks) {
-                                        boolean unlocked = playerLevel >= perk.level;
+                                for (SkillUiData.PerkInfo perk : perks) {
+                                        boolean unlocked = playerLevel >= perk.level();
                                         renderPerkItem(context, x + 12, y, perk, unlocked);
                                         y += 20;
                                 }
@@ -670,7 +556,7 @@ public class ModInfoScreen extends Screen {
                 drawPanelBorder(context, x, y, cardWidth, cardHeight, borderColor);
 
                 // Skill icon (item)
-                context.drawItem(getSkillIcon(skill), x + 4, y + 12);
+                context.drawItem(SkillUiData.getSkillIcon(skill), x + 4, y + 12);
 
                 // Skill name
                 String name = Text.translatable("murilloskills.skill.name." + skill.name().toLowerCase()).getString();
@@ -706,9 +592,9 @@ public class ModInfoScreen extends Screen {
                 }
         }
 
-        private void renderActiveSynergyBadge(DrawContext context, int x, int y, SynergyInfo synergy) {
-                String name = Text.translatable("murilloskills.synergy." + synergy.id).getString();
-                String bonus = "+" + synergy.bonus + "% " + Text.translatable(synergy.typeKey).getString();
+        private void renderActiveSynergyBadge(DrawContext context, int x, int y, SkillUiData.SynergyInfo synergy) {
+                String name = Text.translatable("murilloskills.synergy." + synergy.id()).getString();
+                String bonus = "+" + synergy.bonus() + "% " + Text.translatable(synergy.typeKey()).getString();
 
                 // Badge background
                 int width = Math.max(textRenderer.getWidth(name), textRenderer.getWidth(bonus)) + 20;
@@ -720,7 +606,7 @@ public class ModInfoScreen extends Screen {
                 context.drawText(textRenderer, Text.literal("    " + bonus), x + 4, y + 10, PALETTE.textAqua(), false);
         }
 
-        private void renderImprovedSynergyCard(DrawContext context, int x, int y, SynergyInfo synergy,
+        private void renderImprovedSynergyCard(DrawContext context, int x, int y, SkillUiData.SynergyInfo synergy,
                         boolean isActive) {
                 int cardWidth = contentWidth - SECTION_PADDING * 2 - 16;
                 int cardHeight = 68; // Taller card
@@ -748,8 +634,8 @@ public class ModInfoScreen extends Screen {
                 int textAreaX = x + 58;
 
                 // Render skill icons side by side with more spacing
-                context.drawItem(getSkillIcon(synergy.skill1), iconAreaX, y + 8);
-                context.drawItem(getSkillIcon(synergy.skill2), iconAreaX + 28, y + 8);
+                context.drawItem(SkillUiData.getSkillIcon(synergy.skill1()), iconAreaX, y + 8);
+                context.drawItem(SkillUiData.getSkillIcon(synergy.skill2()), iconAreaX + 28, y + 8);
 
                 // Plus sign between icons (centered)
                 context.drawText(textRenderer, Text.literal("+").formatted(Formatting.WHITE),
@@ -757,15 +643,17 @@ public class ModInfoScreen extends Screen {
 
                 // Synergy name with status indicator
                 String statusIcon = isActive ? "[+]" : "[ ]";
-                String name = Text.translatable("murilloskills.synergy." + synergy.id).getString();
+                String name = Text.translatable("murilloskills.synergy." + synergy.id()).getString();
                 int nameColor = isActive ? PALETTE.textGreen() : PALETTE.textGray();
                 context.drawTextWithShadow(textRenderer, Text.literal(statusIcon + " " + name),
                                 textAreaX, y + 8, nameColor);
 
                 // Skills required (smaller text below)
-                String skill1Name = Text.translatable("murilloskills.skill.name." + synergy.skill1.name().toLowerCase())
+                String skill1Name = Text
+                                .translatable("murilloskills.skill.name." + synergy.skill1().name().toLowerCase())
                                 .getString();
-                String skill2Name = Text.translatable("murilloskills.skill.name." + synergy.skill2.name().toLowerCase())
+                String skill2Name = Text
+                                .translatable("murilloskills.skill.name." + synergy.skill2().name().toLowerCase())
                                 .getString();
                 String skillsText = skill1Name + " + " + skill2Name;
                 context.drawText(textRenderer, Text.literal(skillsText).formatted(Formatting.GRAY),
@@ -789,8 +677,8 @@ public class ModInfoScreen extends Screen {
                                 barBorderColor);
 
                 // Bonus text centered in bar
-                String bonusType = Text.translatable(synergy.typeKey).getString();
-                String bonusText = "+" + synergy.bonus + "% " + bonusType;
+                String bonusType = Text.translatable(synergy.typeKey()).getString();
+                String bonusText = "+" + synergy.bonus() + "% " + bonusType;
                 int textWidth = textRenderer.getWidth(bonusText);
                 int textX = x + 12 + (bonusBarWidth - textWidth) / 2;
                 int bonusColor = isActive ? PALETTE.textAqua() : PALETTE.textMuted();
@@ -821,18 +709,18 @@ public class ModInfoScreen extends Screen {
                                 x + 4, y + 6, skillColor);
         }
 
-        private void renderPerkItem(DrawContext context, int x, int y, PerkInfo perk, boolean unlocked) {
+        private void renderPerkItem(DrawContext context, int x, int y, SkillUiData.PerkInfo perk, boolean unlocked) {
                 String prefix = unlocked ? "[+]" : "[ ]";
                 int prefixColor = unlocked ? PALETTE.textGreen() : PALETTE.textMuted();
 
                 context.drawText(textRenderer, Text.literal(prefix), x, y, prefixColor, false);
 
-                String levelStr = "Lv" + perk.level + ": ";
+                String levelStr = "Lv" + perk.level() + ": ";
                 context.drawText(textRenderer, Text.literal(levelStr), x + 18, y,
                                 unlocked ? PALETTE.textYellow() : PALETTE.textMuted(),
                                 false);
 
-                String perkName = Text.translatable(perk.nameKey).getString();
+                String perkName = Text.translatable(perk.nameKey()).getString();
                 int nameWidth = textRenderer.getWidth(levelStr) + 18;
                 int maxNameWidth = textMaxWidth - nameWidth - 20;
 
@@ -897,23 +785,5 @@ public class ModInfoScreen extends Screen {
                                 super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
         }
 
-        private net.minecraft.item.ItemStack getSkillIcon(MurilloSkillsList skill) {
-                return switch (skill) {
-                        case MINER -> new net.minecraft.item.ItemStack(net.minecraft.item.Items.IRON_PICKAXE);
-                        case WARRIOR -> new net.minecraft.item.ItemStack(net.minecraft.item.Items.IRON_SWORD);
-                        case FARMER -> new net.minecraft.item.ItemStack(net.minecraft.item.Items.WHEAT);
-                        case ARCHER -> new net.minecraft.item.ItemStack(net.minecraft.item.Items.BOW);
-                        case FISHER -> new net.minecraft.item.ItemStack(net.minecraft.item.Items.FISHING_ROD);
-                        case BUILDER -> new net.minecraft.item.ItemStack(net.minecraft.item.Items.BRICKS);
-                        case BLACKSMITH -> new net.minecraft.item.ItemStack(net.minecraft.item.Items.ANVIL);
-                        case EXPLORER -> new net.minecraft.item.ItemStack(net.minecraft.item.Items.COMPASS);
-                };
-        }
-
-        private record SynergyInfo(String id, MurilloSkillsList skill1, MurilloSkillsList skill2, int bonus,
-                        String typeKey) {
-        }
-
-        private record PerkInfo(int level, String nameKey, String descKey) {
-        }
+        // SynergyInfo and PerkInfo records removed (migrated to SkillUiData)
 }
