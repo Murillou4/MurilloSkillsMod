@@ -503,8 +503,9 @@ public class SkillsScreen extends Screen {
                 }
             }
 
-            // Modern Card with depth effects
-            renderModernCard(context, x, y, cardWidth, cardHeight, cardBg, borderColor, isHovered);
+            // Modern Card with depth effects and glow for special states
+            renderModernCard(context, x, y, cardWidth, cardHeight, cardBg, borderColor, isHovered,
+                    isSelected && !isLocked, isParagon);
 
             // Skill Icon with subtle glow for active skills
             if (!isLocked && (isSelected || isParagon)) {
@@ -1020,44 +1021,90 @@ public class SkillsScreen extends Screen {
     }
 
     private void renderXpBar(DrawContext context, int x, int y, SkillGlobalState.SkillStats stats, boolean isLocked) {
-        int width = 100;
-        int height = 6;
+        // 1. Calculate text first to determine layout
+        String text = "";
+        int textColor = PALETTE.textMuted();
 
-        // Background with subtle border
-        context.fill(x - 1, y - 1, x + width + 1, y + height + 1, XP_BAR_BORDER);
-        context.fill(x, y, x + width, y + height, XP_BAR_BG);
-
-        // Simple progress calculation based on current level progress
+        // XP Calculation
         double xpNeeded = 60 + (stats.level * 15) + (2 * stats.level * stats.level);
         float progress = (float) MathHelper.clamp(stats.xp / xpNeeded, 0, 1);
-        int filledWidth = (int) (width * progress);
 
-        // Elegant single-color fill with subtle gradient effect
-        if (filledWidth > 0 && stats.level < 100) {
-            int fillColor = isLocked ? 0xFF663333 : 0xFF22AA66; // Elegant teal/green
-            int glowColor = isLocked ? 0x20FF4444 : 0x3022DDAA;
-
-            // Subtle outer glow
-            context.fill(x - 1, y - 1, x + filledWidth + 1, y + height + 1, glowColor);
-            // Main fill
-            context.fill(x, y, x + filledWidth, y + height, fillColor);
-            // Top highlight for gradient effect
-            context.fill(x, y, x + filledWidth, y + 1, 0x30FFFFFF);
-            // Bottom shadow for depth
-            context.fill(x, y + height - 1, x + filledWidth, y + height, 0x20000000);
+        // Override progress for MAX level
+        if (stats.level >= 100 && !isLocked) {
+            progress = 1.0f;
+            text = "MAX";
+            textColor = PALETTE.textGold();
+        } else if (!isLocked) {
+            int percent = (int) (progress * 100);
+            text = percent + "%";
         }
 
-        // Max level - elegant gold fill
-        if (stats.level >= 100 && !isLocked) {
-            int goldColor = 0xFFDDA520;
-            context.fill(x - 1, y - 1, x + width + 1, y + height + 1, 0x30FFD700);
-            context.fill(x, y, x + width, y + height, goldColor);
-            context.fill(x, y, x + width, y + 1, 0x40FFFFFF);
+        // 2. Calculate widths
+        int textWidth = 0;
+        if (!text.isEmpty()) {
+            textWidth = this.textRenderer.getWidth(text);
+        }
+
+        // Layout: [Bar] [Gap] [Text] [Padding]
+        // x passed is (cardStartX + 28), so relative to card start is 28
+        // We want 6px padding on the right edge of the card
+
+        int barWidth;
+        int textX = 0;
+
+        if (!text.isEmpty()) {
+            // Calculate position from absolute coordinates
+            // We know x = cardStartX + 28, so cardStartX = x - 28
+            int cardStartX = x - 28;
+            int cardRightEdge = cardStartX + cardWidth;
+
+            int paddingRight = 6;
+            int gap = 4;
+
+            // Text position (right aligned with padding)
+            textX = cardRightEdge - paddingRight - textWidth;
+
+            // Bar width fills up to the text (minus gap)
+            barWidth = (textX - gap) - x;
+        } else {
+            // Default width: cardWidth - (28 left + 8 right) = cardWidth - 36
+            barWidth = cardWidth - 36;
+        }
+
+        int height = 8;
+
+        // 3. Determine colors based on state
+        int emptyColor = PALETTE.progressBarEmpty();
+        int fillColor;
+        int shineColor = PALETTE.progressBarShine();
+
+        if (isLocked) {
+            fillColor = 0xFF663344;
+            shineColor = 0x20FF4444;
+        } else if (stats.level >= 100) {
+            fillColor = PALETTE.accentGold();
+            shineColor = 0x60FFFFFF;
+        } else {
+            fillColor = PALETTE.progressBarFill();
+        }
+
+        // 4. Render
+        RenderingHelper.renderProgressBar(context, x, y, barWidth, height, progress, emptyColor, fillColor, shineColor);
+
+        // Add percentage/status text
+        if (!text.isEmpty()) {
+            if (text.equals("MAX")) {
+                context.drawText(this.textRenderer, Text.literal(text).formatted(Formatting.GOLD), textX, y, textColor,
+                        false);
+            } else {
+                context.drawText(this.textRenderer, Text.literal(text), textX, y, textColor, false);
+            }
         }
     }
 
     /**
-     * Renders a mini perk roadmap showing upcoming perks as small colored dots
+     * Renders a mini perk roadmap showing upcoming perks as styled milestone
+     * markers
      */
     private void renderPerkRoadmap(DrawContext context, int x, int y, MurilloSkillsList skill, int currentLevel,
             boolean isLocked) {
@@ -1068,35 +1115,38 @@ public class SkillsScreen extends Screen {
         if (perks == null || perks.isEmpty())
             return;
 
-        int dotSize = 4;
-        int spacing = 6;
-        int dotY = y;
-        int dotX = x;
+        int markerSize = 6;
+        int spacing = 10;
+        int markerY = y;
+        int markerX = x;
 
-        // Show up to 4 perk indicators
+        // Draw connecting line
+        int lineLength = Math.min(perks.size(), 5) * spacing - spacing + markerSize;
+        context.fill(markerX, markerY + markerSize / 2, markerX + lineLength, markerY + markerSize / 2 + 1,
+                PALETTE.textMuted());
+
+        // Show up to 5 perk indicators with styled markers
         int shown = 0;
         for (SkillUiData.PerkInfo perk : perks) {
-            if (shown >= 4)
+            if (shown >= 5)
                 break;
 
-            // Determine dot color based on unlock status
-            int dotColor;
-            if (currentLevel >= perk.level()) {
-                // Unlocked - green
-                dotColor = 0xFF44AA44;
-            } else if (currentLevel >= perk.level() - 15) {
-                // Close to unlock - yellow
-                dotColor = 0xFFAAAA44;
+            boolean unlocked = currentLevel >= perk.level();
+            boolean isMaster = perk.level() == 100;
+            boolean isClose = !unlocked && currentLevel >= perk.level() - 15;
+
+            // Use different colors for close-to-unlock perks
+            if (isClose && !unlocked) {
+                // Yellow marker for close perks
+                context.fill(markerX, markerY, markerX + markerSize, markerY + markerSize, PALETTE.textYellow());
+                RenderingHelper.drawPanelBorder(context, markerX, markerY, markerSize, markerSize, 0xFFAAAA44);
             } else {
-                // Locked - gray
-                dotColor = 0xFF555555;
+                // Use styled milestone marker
+                RenderingHelper.renderMilestoneMarker(context, markerX, markerY, markerSize, unlocked, isMaster,
+                        PALETTE);
             }
 
-            // Draw dot with subtle border
-            context.fill(dotX, dotY, dotX + dotSize, dotY + dotSize, 0x80000000);
-            context.fill(dotX + 1, dotY, dotX + dotSize, dotY + dotSize - 1, dotColor);
-
-            dotX += spacing;
+            markerX += spacing;
             shown++;
         }
     }
@@ -1116,59 +1166,81 @@ public class SkillsScreen extends Screen {
         if (challenges.isEmpty())
             return;
 
-        int panelWidth = 200;
-        int panelHeight = 30 + (challenges.size() * 35);
+        int panelWidth = 220;
+        int panelHeight = 35 + (challenges.size() * 38);
         int panelX = 8; // Left side
         int panelY = this.height - panelHeight - 8; // Bottom aligned
 
-        // Panel background
-        context.fill(panelX - 1, panelY - 1, panelX + panelWidth + 1, panelY + panelHeight + 1, 0xFF1A1A25);
-        context.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, 0xE8141420);
+        // Panel background with enhanced styling
+        context.fill(panelX - 2, panelY - 2, panelX + panelWidth + 2, panelY + panelHeight + 2, PALETTE.panelShadow());
+        context.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, PALETTE.panelBg());
 
-        // Header
+        // Border
+        RenderingHelper.drawPanelBorder(context, panelX, panelY, panelWidth, panelHeight, PALETTE.sectionBorder());
+
+        // Corner accents
+        RenderingHelper.renderCornerAccents(context, panelX, panelY, panelWidth, panelHeight, 4, PALETTE.accentGold());
+
+        // Inner highlight
+        context.fill(panelX + 1, panelY + 1, panelX + panelWidth - 1, panelY + 2, PALETTE.panelHighlight());
+
+        // Header with icon
         int completed = ClientSkillData.getCompletedChallengeCount();
         Text header = Text.translatable("murilloskills.gui.challenges.title", completed, challenges.size());
-        context.drawTextWithShadow(textRenderer, header, panelX + 6, panelY + 6, PALETTE.accentGold());
+        context.drawTextWithShadow(textRenderer, header, panelX + 8, panelY + 8, PALETTE.textGold());
 
-        // Render each challenge
-        int y = panelY + 22;
+        // Header divider
+        RenderingHelper.renderDivider(context, panelX + 8, panelY + 22, panelWidth - 16, PALETTE.dividerColor());
+
+        // Render each challenge with improved styling
+        int y = panelY + 28;
         for (var challenge : challenges) {
+            // Challenge background on hover or complete
+            if (challenge.completed()) {
+                context.fill(panelX + 4, y - 2, panelX + panelWidth - 4, y + 30, PALETTE.successBg());
+            }
+
             // Challenge type text
             Text typeText = Text.translatable("murilloskills.challenge." + challenge.type().toLowerCase());
-            int typeColor = challenge.completed() ? 0xFF44AA44 : 0xFFCCCCCC;
-            context.drawTextWithShadow(textRenderer, typeText, panelX + 6, y, typeColor);
+            int typeColor = challenge.completed() ? PALETTE.textGreen() : PALETTE.textLight();
+            context.drawTextWithShadow(textRenderer, typeText, panelX + 8, y + 2, typeColor);
 
-            // Progress bar
-            int barX = panelX + 6;
-            int barY = y + 11;
-            int barWidth = panelWidth - 12;
-            int barHeight = 4;
-
-            context.fill(barX, barY, barX + barWidth, barY + barHeight, 0xFF0A0A12);
-
-            if (challenge.progress() > 0) {
-                int fillWidth = (int) (barWidth * challenge.getProgressPercentage());
-                int fillColor = challenge.completed() ? 0xFF44AA44 : 0xFF00AA44;
-                context.fill(barX, barY, barX + Math.min(fillWidth, barWidth), barY + barHeight, fillColor);
+            // Status icon
+            if (challenge.completed()) {
+                context.drawText(textRenderer, Text.literal("✓"), panelX + panelWidth - 16, y + 2, PALETTE.textGreen(),
+                        false);
             }
 
-            // Progress text
+            // Progress bar using RenderingHelper
+            int barX = panelX + 8;
+            int barY = y + 14;
+            int barWidth = panelWidth - 50;
+            int barHeight = 8;
+
+            float progress = challenge.getProgressPercentage();
+            int fillColor = challenge.completed() ? PALETTE.accentGreen() : PALETTE.progressBarFill();
+            RenderingHelper.renderProgressBar(context, barX, barY, barWidth, barHeight, progress,
+                    PALETTE.progressBarEmpty(), fillColor, PALETTE.progressBarShine());
+
+            // Progress text (X/Y format)
             String progressStr = challenge.progress() + "/" + challenge.target();
             int progressWidth = textRenderer.getWidth(progressStr);
-            context.drawText(textRenderer, progressStr, panelX + panelWidth - progressWidth - 6, y, 0xFFAAAAAA, false);
+            context.drawText(textRenderer, Text.literal(progressStr),
+                    panelX + panelWidth - progressWidth - 8, y + 14,
+                    challenge.completed() ? PALETTE.textGreen() : PALETTE.textMuted(), false);
 
-            // Checkmark if complete
-            if (challenge.completed()) {
-                context.drawText(textRenderer, "✓", panelX + panelWidth - 10, y + 10, 0xFF44AA44, false);
-            }
-
-            y += 35;
+            y += 38;
         }
 
-        // Bonus indicator if all complete
+        // Bonus indicator if all complete with glow effect
         if (ClientSkillData.areAllChallengesComplete()) {
+            int bonusY = y + 4;
+            // Glow background
+            context.fill(panelX + 4, bonusY - 2, panelX + panelWidth - 4, bonusY + 14, 0x40FFD700);
             Text bonus = Text.translatable("murilloskills.gui.challenges.all_complete");
-            context.drawTextWithShadow(textRenderer, bonus, panelX + 6, y, 0xFFFFAA00);
+            int bonusWidth = textRenderer.getWidth(bonus);
+            context.drawTextWithShadow(textRenderer, bonus,
+                    panelX + (panelWidth - bonusWidth) / 2, bonusY + 2, PALETTE.textGold());
         }
     }
 
@@ -1274,12 +1346,30 @@ public class SkillsScreen extends Screen {
     }
 
     /**
-     * Renders a modern card with depth effects
+     * Renders a modern card with depth effects and optional glow for special states
      */
     private void renderModernCard(DrawContext context, int x, int y, int width, int height,
             int bgColor, int borderColor, boolean isHovered) {
-        // Outer shadow (only visible on hover)
-        if (isHovered) {
+        renderModernCard(context, x, y, width, height, bgColor, borderColor, isHovered, false, false);
+    }
+
+    /**
+     * Renders a modern card with depth effects, optional glow, and special state
+     * styling
+     */
+    private void renderModernCard(DrawContext context, int x, int y, int width, int height,
+            int bgColor, int borderColor, boolean isHovered, boolean isActive, boolean isParagon) {
+        long worldTime = MinecraftClient.getInstance().world != null ? MinecraftClient.getInstance().world.getTime()
+                : 0;
+
+        // Glowing border for paragon cards (pulsing animation)
+        if (isParagon) {
+            RenderingHelper.renderGlowingBorder(context, x, y, width, height, PALETTE.cardGlowParagon(), worldTime);
+        } else if (isActive) {
+            // Subtle static glow for active cards
+            context.fill(x - 2, y - 2, x + width + 2, y + height + 2, PALETTE.cardGlowActive());
+        } else if (isHovered) {
+            // Outer shadow on hover
             context.fill(x - 1, y - 1, x + width + 1, y + height + 1, PALETTE.panelShadow());
         }
 
@@ -1292,21 +1382,10 @@ public class SkillsScreen extends Screen {
         // Border
         drawBorder(context, x, y, width, height, borderColor);
 
-        // Corner accents for hover state (same as ModInfoScreen)
-        if (isHovered) {
-            int accentSize = 4;
-            // Top-left
-            context.fill(x, y, x + accentSize, y + 1, borderColor);
-            context.fill(x, y, x + 1, y + accentSize, borderColor);
-            // Top-right
-            context.fill(x + width - accentSize, y, x + width, y + 1, borderColor);
-            context.fill(x + width - 1, y, x + width, y + accentSize, borderColor);
-            // Bottom-left
-            context.fill(x, y + height - 1, x + accentSize, y + height, borderColor);
-            context.fill(x, y + height - accentSize, x + 1, y + height, borderColor);
-            // Bottom-right
-            context.fill(x + width - accentSize, y + height - 1, x + width, y + height, borderColor);
-            context.fill(x + width - 1, y + height - accentSize, x + width, y + height, borderColor);
+        // Corner accents for hover/active/paragon states
+        if (isHovered || isActive || isParagon) {
+            int accentColor = isParagon ? PALETTE.accentGold() : (isActive ? PALETTE.accentGreen() : borderColor);
+            RenderingHelper.renderCornerAccents(context, x, y, width, height, 4, accentColor);
         }
     }
 

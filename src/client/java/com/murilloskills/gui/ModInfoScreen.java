@@ -132,9 +132,9 @@ public class ModInfoScreen extends Screen {
                 } else {
                         for (MurilloSkillsList skill : selectedSkills) {
                                 var stats = ClientSkillData.get(skill);
-                                height += 50;
+                                height += 56; // 50px card + 6px spacing
                                 if (stats.prestige > 0)
-                                        height += 14;
+                                        height += 10;
                         }
                 }
                 height += 50;
@@ -545,50 +545,85 @@ public class ModInfoScreen extends Screen {
         private void renderSkillMiniCard(DrawContext context, int x, int y, MurilloSkillsList skill, int level,
                         int prestige, boolean isParagon) {
                 int cardWidth = contentWidth - SECTION_PADDING * 2 - 24;
-                int cardHeight = 40;
+                int cardHeight = 50; // Taller to fit XP bar
 
-                // Card background
+                var stats = ClientSkillData.get(skill);
+
+                // Card background with glow for paragon
                 int bgColor = isParagon ? 0xE0201810 : 0xD0181825;
+                if (isParagon) {
+                        // Subtle paragon glow
+                        context.fill(x - 1, y - 1, x + cardWidth + 1, y + cardHeight + 1, PALETTE.cardGlowParagon());
+                }
                 context.fill(x, y, x + cardWidth, y + cardHeight, bgColor);
 
                 // Border with accent
                 int borderColor = isParagon ? PALETTE.accentGold() : PALETTE.sectionBorder();
                 drawPanelBorder(context, x, y, cardWidth, cardHeight, borderColor);
 
-                // Skill icon (item)
-                context.drawItem(SkillUiData.getSkillIcon(skill), x + 4, y + 12);
-
-                // Skill name
-                String name = Text.translatable("murilloskills.skill.name." + skill.name().toLowerCase()).getString();
-                context.drawTextWithShadow(textRenderer,
-                                Text.literal(name).formatted(isParagon ? Formatting.GOLD : Formatting.WHITE),
-                                x + 26, y + 6, isParagon ? PALETTE.textGold() : PALETTE.textWhite());
-
-                // Level badge
-                String levelStr = "Lv " + level;
-                int levelColor = level >= 100 ? PALETTE.textGold() : PALETTE.textLight();
-                context.drawText(textRenderer, Text.literal(levelStr), x + 26, y + 18, levelColor, false);
-
-                // Prestige badge if applicable
-                if (prestige > 0) {
-                        String prestigeStr = " P" + prestige;
-                        int prestigeX = x + 26 + textRenderer.getWidth(levelStr);
-                        context.drawText(textRenderer, Text.literal(prestigeStr), prestigeX, y + 18,
-                                        PALETTE.textPurple(),
-                                        false);
-
-                        // Bonus info
-                        int xpBonus = prestige * 5;
-                        int passiveBonus = prestige * 2;
-                        String bonusStr = "(+" + xpBonus + "% XP, +" + passiveBonus + "% Passive)";
-                        context.drawText(textRenderer, Text.literal(bonusStr), x + 26, y + 28, PALETTE.textAqua(),
-                                        false);
+                // Corner accents for paragon
+                if (isParagon) {
+                        RenderingHelper.renderCornerAccents(context, x, y, cardWidth, cardHeight, 4,
+                                        PALETTE.accentGold());
                 }
 
-                // Paragon crown
+                // Skill icon (item)
+                context.drawItem(SkillUiData.getSkillIcon(skill), x + 4, y + 8);
+
+                // Skill name with skill color
+                String name = Text.translatable("murilloskills.skill.name." + skill.name().toLowerCase()).getString();
+                int nameColor = isParagon ? PALETTE.textGold() : PALETTE.getSkillColor(skill);
+                context.drawTextWithShadow(textRenderer, Text.literal(name).formatted(Formatting.BOLD),
+                                x + 26, y + 5, nameColor);
+
+                // Level badge + Prestige
+                String levelStr = "Lv " + level;
+                int levelColor = level >= 100 ? PALETTE.textGold() : PALETTE.textLight();
+                context.drawText(textRenderer, Text.literal(levelStr), x + 26, y + 17, levelColor, false);
+
+                if (prestige > 0) {
+                        // Star rating for prestige
+                        int starsX = x + 26 + textRenderer.getWidth(levelStr) + 5;
+                        RenderingHelper.renderStarRating(context, textRenderer, starsX, y + 17,
+                                        Math.min(prestige, 5), 5, PALETTE.textGold(), PALETTE.textMuted());
+                }
+
+                // XP Progress bar
+                int barX = x + 26;
+                int barY = y + 30;
+                int barWidth = cardWidth - 75;
+                int barHeight = 6;
+
+                double xpNeeded = 60 + (level * 15) + (2 * level * level);
+                float progress = level >= 100 ? 1.0f : (float) (stats.xp / xpNeeded);
+                int fillColor = level >= 100 ? PALETTE.accentGold() : PALETTE.progressBarFill();
+
+                RenderingHelper.renderProgressBar(context, barX, barY, barWidth, barHeight, progress,
+                                PALETTE.progressBarEmpty(), fillColor, PALETTE.progressBarShine());
+
+                // XP text or MAX
+                if (level >= 100) {
+                        context.drawText(textRenderer, Text.literal("MAX").formatted(Formatting.GOLD),
+                                        barX + barWidth + 4, barY, PALETTE.textGold(), false);
+                } else {
+                        int percent = (int) (progress * 100);
+                        context.drawText(textRenderer, Text.literal(percent + "%"),
+                                        barX + barWidth + 4, barY, PALETTE.textMuted(), false);
+                }
+
+                // Paragon crown with glow
                 if (isParagon) {
-                        context.drawTextWithShadow(textRenderer, Text.literal("[P]").formatted(Formatting.GOLD),
-                                        x + cardWidth - 20, y + 6, PALETTE.accentGold());
+                        context.drawTextWithShadow(textRenderer, Text.literal("👑").formatted(Formatting.GOLD),
+                                        x + cardWidth - 18, y + 5, PALETTE.accentGold());
+                }
+
+                // Prestige bonus summary (compact)
+                if (prestige > 0) {
+                        int xpBonus = prestige * 5;
+                        String bonusStr = "+" + xpBonus + "% XP";
+                        int bonusX = x + cardWidth - textRenderer.getWidth(bonusStr) - 8;
+                        context.drawText(textRenderer, Text.literal(bonusStr), bonusX, y + 38, PALETTE.textAqua(),
+                                        false);
                 }
         }
 

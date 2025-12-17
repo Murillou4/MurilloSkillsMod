@@ -177,6 +177,8 @@
     "murilloskills.synergy.treasure_hunter": "Caçador de Tesouros (Minerador+Explorador)",
     "murilloskills.synergy.combat_master": "Mestre do Combate (Guerreiro+Arqueiro)",
     "murilloskills.synergy.master_crafter": "Mestre Artesão (Construtor+Ferreiro)",
+    "murilloskills.synergy.master_crafter.proc": "Mestre Artesão duplicou seu item!",
+    "murilloskills.synergy.master_crafter.proc_full": "Mestre Artesão duplicou seu item! (Inventário Cheio)",
     "_comment_skill_descriptions": "=== SKILL DESCRIPTIONS ===",
     "murilloskills.skill.desc.miner": "Mestre das profundezas. Aumenta velocidade de mineração e fortuna.",
     "murilloskills.skill.desc.warrior": "Combatente valoroso. Aumenta dano corpo-a-corpo e vida máxima.",
@@ -445,5 +447,12 @@
     "murilloskills.info.prestige.req1": "Alcançar Nível 100 na skill",
     "murilloskills.info.prestige.req2": "Skill deve ser sua skill Paragon",
     "murilloskills.info.prestige.req3": "Nível de prestígio anterior < 100",
-    "murilloskills.info.perks.title": "Guia Completo de Perks"
+    "murilloskills.info.perks.title": "Guia Completo de Perks",
+    "_comment_gui_enhanced": "=== ENHANCED GUI ELEMENTS ===",
+    "murilloskills.gui.total_xp_bonus": "Bônus Total de XP",
+    "murilloskills.gui.passive_effectiveness": "Efetividade das Passivas: +%s%%",
+    "murilloskills.gui.synergy_summary": "Resumo das Sinergias",
+    "murilloskills.gui.estimated_next_level": "~%s para próximo nível",
+    "murilloskills.gui.challenge_progress": "%s/%s",
+    "murilloskills.gui.max_level": "MAX"
 }

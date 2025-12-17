@@ -38,6 +38,7 @@ public record ColorPalette(
         int textAqua,
         int textYellow,
         int textPurple,
+        int textRed,
 
         // Accent Colors
         int accentGold,
@@ -47,7 +48,32 @@ public record ColorPalette(
         // UI Elements
         int scrollbarBg,
         int scrollbarFg,
-        int dividerColor) {
+        int dividerColor,
+
+        // Progress Bar Colors
+        int progressBarEmpty,
+        int progressBarFill,
+        int progressBarShine,
+
+        // Status Background Colors
+        int warningBg,
+        int successBg,
+        int infoBg,
+
+        // Card Glow Effects
+        int cardGlowActive,
+        int cardGlowParagon,
+        int cardGlowHover,
+
+        // Skill-specific Colors (for consistent visual identity)
+        int skillMiner,
+        int skillWarrior,
+        int skillFarmer,
+        int skillArcher,
+        int skillFisher,
+        int skillBuilder,
+        int skillBlacksmith,
+        int skillExplorer) {
     /**
      * Factory method for the premium dark theme.
      * This is the default color scheme used throughout the mod.
@@ -81,6 +107,7 @@ public record ColorPalette(
                 0xFF00DDDD,
                 0xFFFFEE44,
                 0xFFDD88FF,
+                0xFFFF6666,
 
                 // Accent Colors
                 0xFFDDA520,
@@ -90,6 +117,48 @@ public record ColorPalette(
                 // UI Elements
                 0x30FFFFFF,
                 0x80FFFFFF,
-                0x40FFFFFF);
+                0x40FFFFFF,
+
+                // Progress Bar Colors
+                0xFF1A1A25,
+                0xFF44AA66,
+                0x40FFFFFF,
+
+                // Status Background Colors
+                0xD0302010,
+                0xD0103020,
+                0xD0102030,
+
+                // Card Glow Effects
+                0x3044FF66,
+                0x40FFD700,
+                0x20FFFFFF,
+
+                // Skill-specific Colors
+                0xFF88CCFF, // Miner - Light blue
+                0xFFFF6666, // Warrior - Red
+                0xFF88FF88, // Farmer - Green
+                0xFFFFCC66, // Archer - Orange/Gold
+                0xFF66CCFF, // Fisher - Cyan
+                0xFFCC9966, // Builder - Brown/Tan
+                0xFFCCCCCC, // Blacksmith - Silver
+                0xFF66FF99 // Explorer - Mint green
+        );
+    }
+
+    /**
+     * Gets the color associated with a specific skill.
+     */
+    public int getSkillColor(com.murilloskills.skills.MurilloSkillsList skill) {
+        return switch (skill) {
+            case MINER -> skillMiner;
+            case WARRIOR -> skillWarrior;
+            case FARMER -> skillFarmer;
+            case ARCHER -> skillArcher;
+            case FISHER -> skillFisher;
+            case BUILDER -> skillBuilder;
+            case BLACKSMITH -> skillBlacksmith;
+            case EXPLORER -> skillExplorer;
+        };
     }
 }

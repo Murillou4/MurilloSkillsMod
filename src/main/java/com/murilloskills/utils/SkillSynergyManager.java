@@ -52,7 +52,7 @@ public class SkillSynergyManager {
 
             new SkillSynergy("master_crafter",
                     Set.of(MurilloSkillsList.BUILDER, MurilloSkillsList.BLACKSMITH),
-                    0.20f, SynergyType.CRAFTING_EFFICIENCY));
+                    0.30f, SynergyType.CRAFTING_EFFICIENCY));
 
     /**
      * Obtém todas as sinergias ativas para um jogador.

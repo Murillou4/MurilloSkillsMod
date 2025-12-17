@@ -99,31 +99,22 @@ public class ConfirmationScreen extends Screen {
         // 4. Border with RenderingHelper
         RenderingHelper.drawPanelBorder(context, modalX, modalY, modalWidth, modalHeight, PALETTE.sectionBorder());
 
-        // 5. Accent border at top
-        context.fill(modalX, modalY, modalX + modalWidth, modalY + 2, PALETTE.accentGold());
+        // 5. Accent border at top (warning color)
+        context.fill(modalX, modalY, modalX + modalWidth, modalY + 2, PALETTE.textRed());
 
-        // 6. Corner accents (same as ModInfoScreen content panel)
-        int cornerSize = 6;
-        // Top-left corner
-        context.fill(modalX, modalY, modalX + cornerSize, modalY + 1, PALETTE.accentGold());
-        context.fill(modalX, modalY, modalX + 1, modalY + cornerSize, PALETTE.accentGold());
-        // Top-right corner
-        context.fill(modalX + modalWidth - cornerSize, modalY, modalX + modalWidth, modalY + 1, PALETTE.accentGold());
-        context.fill(modalX + modalWidth - 1, modalY, modalX + modalWidth, modalY + cornerSize, PALETTE.accentGold());
-        // Bottom-left corner
-        context.fill(modalX, modalY + modalHeight - 1, modalX + cornerSize, modalY + modalHeight, PALETTE.accentGold());
-        context.fill(modalX, modalY + modalHeight - cornerSize, modalX + 1, modalY + modalHeight, PALETTE.accentGold());
-        // Bottom-right corner
-        context.fill(modalX + modalWidth - cornerSize, modalY + modalHeight - 1, modalX + modalWidth,
-                modalY + modalHeight, PALETTE.accentGold());
-        context.fill(modalX + modalWidth - 1, modalY + modalHeight - cornerSize, modalX + modalWidth,
-                modalY + modalHeight, PALETTE.accentGold());
+        // 6. Corner accents using RenderingHelper
+        RenderingHelper.renderCornerAccents(context, modalX, modalY, modalWidth, modalHeight, 6, PALETTE.accentGold());
 
-        // 7. Warning icon
+        // 7. Warning icon with subtle pulse animation
+        long tick = MinecraftClient.getInstance().world != null ? MinecraftClient.getInstance().world.getTime() : 0;
+        float pulse = 0.8f + 0.2f * (float) Math.sin(tick * 0.15);
+        int pulseAlpha = (int) (255 * pulse);
+        int warningColor = (pulseAlpha << 24) | 0xFFAA00;
+
         Text warningIcon = Text.translatable("murilloskills.gui.icon.warning");
         int iconWidth = this.textRenderer.getWidth(warningIcon);
         context.drawTextWithShadow(this.textRenderer, warningIcon,
-                modalX + (modalWidth - iconWidth) / 2, modalY + 12, 0xFFFFAA00);
+                modalX + (modalWidth - iconWidth) / 2, modalY + 12, warningColor);
 
         // 8. Title
         context.drawCenteredTextWithShadow(this.textRenderer, this.title,

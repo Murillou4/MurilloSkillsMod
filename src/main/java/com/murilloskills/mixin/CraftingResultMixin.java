@@ -5,6 +5,9 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.CraftingResultSlot;
 import net.minecraft.server.network.ServerPlayerEntity;
+import com.murilloskills.utils.SkillSynergyManager;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -27,5 +30,22 @@ public abstract class CraftingResultMixin {
 
         int craftedAmount = stack.getCount();
         ChallengeEventsHandler.onItemCrafted(serverPlayer, craftedAmount);
+
+        // [New Feature] Master Crafter Synergy (Builder + Blacksmith)
+        // Chance to duplicate the crafted item
+        float duplicateChance = SkillSynergyManager.getTotalBonus(serverPlayer,
+                SkillSynergyManager.SynergyType.CRAFTING_EFFICIENCY);
+
+        if (duplicateChance > 0 && serverPlayer.getRandom().nextFloat() < duplicateChance) {
+            ItemStack bonusStack = stack.copy();
+            if (serverPlayer.getInventory().insertStack(bonusStack)) {
+                serverPlayer.sendMessage(Text.translatable("murilloskills.synergy.master_crafter.proc")
+                        .formatted(Formatting.GOLD), true);
+            } else {
+                serverPlayer.dropItem(bonusStack, false);
+                serverPlayer.sendMessage(Text.translatable("murilloskills.synergy.master_crafter.proc_full")
+                        .formatted(Formatting.GOLD), true);
+            }
+        }
     }
 }

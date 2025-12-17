@@ -164,6 +164,8 @@
   "murilloskills.synergy.treasure_hunter": "Treasure Hunter (Miner+Explorer)",
   "murilloskills.synergy.combat_master": "Combat Master (Warrior+Archer)",
   "murilloskills.synergy.master_crafter": "Master Crafter (Builder+Blacksmith)",
+  "murilloskills.synergy.master_crafter.proc": "Master Crafter duplicated your item!",
+  "murilloskills.synergy.master_crafter.proc_full": "Master Crafter duplicated your item! (Inventory Full)",
   "murilloskills.challenge.all_complete": "ALL DAILY CHALLENGES COMPLETE!",
   "_comment_skill_descriptions": "=== SKILL DESCRIPTIONS ===",
   "murilloskills.skill.desc.miner": "Master of the depths. Increases mining speed and ore fortune.",
@@ -445,5 +447,12 @@
   "murilloskills.info.prestige.req1": "Reach Level 100 in the skill",
   "murilloskills.info.prestige.req2": "Skill must be your Paragon skill",
   "murilloskills.info.prestige.req3": "Previous prestige level < 100",
-  "murilloskills.info.perks.title": "Complete Perk Guide"
+  "murilloskills.info.perks.title": "Complete Perk Guide",
+  "_comment_gui_enhanced": "=== ENHANCED GUI ELEMENTS ===",
+  "murilloskills.gui.total_xp_bonus": "Total XP Bonus",
+  "murilloskills.gui.passive_effectiveness": "Passive Effectiveness: +%s%%",
+  "murilloskills.gui.synergy_summary": "Synergy Summary",
+  "murilloskills.gui.estimated_next_level": "~%s to next level",
+  "murilloskills.gui.challenge_progress": "%s/%s",
+  "murilloskills.gui.max_level": "MAX"
 }
