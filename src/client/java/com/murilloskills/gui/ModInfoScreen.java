@@ -1,6 +1,5 @@
 package com.murilloskills.gui;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.gui.renderer.RenderingHelper;
 import com.murilloskills.gui.data.SkillUiData;
@@ -34,7 +33,6 @@ public class ModInfoScreen extends Screen {
 
         private Tab currentTab = Tab.STATUS;
         private final ScrollController scrollController = new ScrollController();
-        private static final int LINE_HEIGHT = 12;
         private static final int SECTION_PADDING = 12;
 
         // Layout
@@ -45,7 +43,6 @@ public class ModInfoScreen extends Screen {
 
         // Animation
         private float tabTransition = 0f;
-        private Tab lastTab = Tab.STATUS;
 
         // === SYNERGY & PERK DEFINITIONS ===
         // Removed duplicated definitions - migrated to SkillUiData
@@ -98,7 +95,6 @@ public class ModInfoScreen extends Screen {
                                 Text.translatable(translationKey),
                                 btn -> {
                                         if (currentTab != tab) {
-                                                lastTab = currentTab;
                                                 currentTab = tab;
                                                 scrollController.reset();
                                                 tabTransition = 0f;

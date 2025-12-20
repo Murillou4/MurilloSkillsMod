@@ -1,10 +1,7 @@
 package com.murilloskills.mixin;
 
 import com.murilloskills.events.ChallengeEventsHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-
-import java.io.IOException;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,18 +22,13 @@ public abstract class PlayerSleepMixin {
      */
     @Inject(method = "wakeSleepingPlayers", at = @At("HEAD"))
     private void onWakeSleepingPlayers(CallbackInfo ci) {
-        try (ServerWorld world = (ServerWorld) (Object) this) {
-            // Only count if it's transitioning from night to day (actual sleep, not just
-            // waking up)
-            // The wakeSleepingPlayers is called when the night is successfully skipped
-            for (var player : world.getPlayers()) {
-                if (player.isSleeping()) {
-                    ChallengeEventsHandler.onSleepComplete(player);
-                }
+        // Only count if it's transitioning from night to day (actual sleep, not just
+        // waking up)
+        // The wakeSleepingPlayers is called when the night is successfully skipped
+        for (var player : ((ServerWorld) (Object) this).getPlayers()) {
+            if (player.isSleeping()) {
+                ChallengeEventsHandler.onSleepComplete(player);
             }
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
         }
     }
 }

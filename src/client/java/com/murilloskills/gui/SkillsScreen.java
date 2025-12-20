@@ -2,7 +2,6 @@ package com.murilloskills.gui;
 
 import com.murilloskills.data.ClientSkillData;
 import com.murilloskills.data.SkillGlobalState;
-import com.murilloskills.gui.ColorPalette;
 import com.murilloskills.gui.renderer.RenderingHelper;
 import com.murilloskills.gui.data.SkillUiData;
 import com.murilloskills.network.ParagonActivationC2SPayload;
@@ -17,9 +16,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.MathHelper;
@@ -43,10 +39,6 @@ public class SkillsScreen extends Screen {
 
     // === PREMIUM COLOR PALETTE (consistent with ModInfoScreen) ===
     private static final ColorPalette PALETTE = ColorPalette.premium();
-
-    // Custom XP Bar Colors (specific to skills screen)
-    private static final int XP_BAR_BG = 0xFF0A0A12;
-    private static final int XP_BAR_BORDER = 0xFF1A1A25;
 
     // Layout responsivo - calculado dinamicamente
     private int cardWidth;
@@ -1343,14 +1335,6 @@ public class SkillsScreen extends Screen {
                 context.fill(x1, y1, x2, y2, color);
             }
         }
-    }
-
-    /**
-     * Renders a modern card with depth effects and optional glow for special states
-     */
-    private void renderModernCard(DrawContext context, int x, int y, int width, int height,
-            int bgColor, int borderColor, boolean isHovered) {
-        renderModernCard(context, x, y, width, height, bgColor, borderColor, isHovered, false, false);
     }
 
     /**
