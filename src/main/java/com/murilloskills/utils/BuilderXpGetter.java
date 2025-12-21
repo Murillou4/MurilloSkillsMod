@@ -22,7 +22,7 @@ import java.util.Set;
 public class BuilderXpGetter {
 
     // XP values by block category
-    private static final int XP_STRUCTURAL = 5; // Stone, Bricks, Concrete, etc.
+    private static final int XP_STRUCTURAL = 1500000; // Stone, Bricks, Concrete, etc.
     private static final int XP_DECORATIVE = 10; // Stairs, Slabs, Fences, Glass
     private static final int XP_BASIC = 3; // Dirt, Cobblestone, Sand
     private static final int XP_PREMIUM = 25; // Terracotta, Quartz, Prismarine
