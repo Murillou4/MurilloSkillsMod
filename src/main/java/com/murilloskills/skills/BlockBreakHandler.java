@@ -72,8 +72,9 @@ public class BlockBreakHandler {
                         .append(Text.literal(String.valueOf(stats.level)).formatted(Formatting.WHITE, Formatting.BOLD));
 
                 if (stats.level == 100) {
-                    message.append(Text.translatable("murilloskills.notify.paragon").formatted(Formatting.LIGHT_PURPLE,
-                            Formatting.BOLD));
+                    message.append(Text.literal(" "))
+                            .append(Text.translatable("murilloskills.notify.paragon").formatted(Formatting.LIGHT_PURPLE,
+                                    Formatting.BOLD));
                 }
 
                 serverPlayerEntity.sendMessage(message, true);

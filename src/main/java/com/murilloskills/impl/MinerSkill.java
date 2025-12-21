@@ -64,8 +64,9 @@ public class MinerSkill extends AbstractSkill {
 
             // 3. Executa Habilidade
             stats.lastAbilityUse = worldTime;
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            state.markDirty();
+            // Note: markDirty() is called automatically by SkillGlobalState when data
+            // changes
+            // No need to force immediate save here
 
             List<MinerScanResultPayload.OreEntry> ores = scanForOres(player);
 
@@ -187,21 +188,44 @@ public class MinerSkill extends AbstractSkill {
 
     /**
      * Scans for ores in a large radius around the player, identifying ore types for
-     * color-coded display
+     * color-coded display.
+     * Uses optimized scanning with early exit to prevent lag spikes.
      */
     private List<MinerScanResultPayload.OreEntry> scanForOres(ServerPlayerEntity player) {
         List<MinerScanResultPayload.OreEntry> ores = new ArrayList<>();
         BlockPos center = player.getBlockPos();
         int radius = SkillConfig.MINER_ABILITY_RADIUS;
 
-        for (BlockPos pos : BlockPos.iterate(center.add(-radius, -radius, -radius),
-                center.add(radius, radius, radius))) {
-            net.minecraft.block.Block block = player.getEntityWorld().getBlockState(pos).getBlock();
-            var result = MinerXpGetter.isMinerXpBlock(block, false, true);
-            if (result.didGainXp()) {
-                MinerScanResultPayload.OreType oreType = getOreType(block);
-                ores.add(new MinerScanResultPayload.OreEntry(pos.toImmutable(), oreType));
+        // Limit blocks scanned per invocation to prevent lag (5000 blocks max)
+        int maxBlocksToScan = 5000;
+        int blocksScanned = 0;
+
+        // Scan in a spiral pattern from center outward for better UX
+        // (finds nearby ores first even if we hit the limit)
+        for (int r = 0; r <= radius && blocksScanned < maxBlocksToScan; r++) {
+            for (int dx = -r; dx <= r && blocksScanned < maxBlocksToScan; dx++) {
+                for (int dy = -r; dy <= r && blocksScanned < maxBlocksToScan; dy++) {
+                    for (int dz = -r; dz <= r && blocksScanned < maxBlocksToScan; dz++) {
+                        // Only check blocks at the current radius shell
+                        if (Math.abs(dx) == r || Math.abs(dy) == r || Math.abs(dz) == r) {
+                            BlockPos pos = center.add(dx, dy, dz);
+                            blocksScanned++;
+
+                            net.minecraft.block.Block block = player.getEntityWorld().getBlockState(pos).getBlock();
+                            var result = MinerXpGetter.isMinerXpBlock(block, false, true);
+                            if (result.didGainXp()) {
+                                MinerScanResultPayload.OreType oreType = getOreType(block);
+                                ores.add(new MinerScanResultPayload.OreEntry(pos.toImmutable(), oreType));
+                            }
+                        }
+                    }
+                }
             }
+        }
+
+        if (blocksScanned >= maxBlocksToScan) {
+            LOGGER.debug("Miner scan hit block limit ({} blocks scanned, {} ores found)",
+                    blocksScanned, ores.size());
         }
 
         return ores;

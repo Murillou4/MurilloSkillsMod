@@ -51,6 +51,12 @@ public class BuilderSkill extends AbstractSkill {
     // Map to track hollow mode preference (UUID → hollow enabled)
     private static final Map<UUID, Boolean> hollowModeEnabled = new HashMap<>();
 
+    // Map to track fill mode preference (UUID → mode)
+    private static final Map<UUID, BuilderFillMode> fillModePreference = new HashMap<>();
+
+    // Map to track cylinder orientation (UUID → is horizontal)
+    private static final Map<UUID, Boolean> cylinderHorizontal = new HashMap<>();
+
     /**
      * Toggle hollow mode for a player
      * 
@@ -68,6 +74,51 @@ public class BuilderSkill extends AbstractSkill {
      */
     public static boolean isHollowModeEnabled(ServerPlayerEntity player) {
         return hollowModeEnabled.getOrDefault(player.getUuid(), false);
+    }
+
+    /**
+     * Get the current fill mode for a player
+     */
+    public static BuilderFillMode getFillMode(ServerPlayerEntity player) {
+        return fillModePreference.getOrDefault(player.getUuid(), BuilderFillMode.CUBOID);
+    }
+
+    /**
+     * Set the fill mode for a player
+     */
+    public static void setFillMode(ServerPlayerEntity player, BuilderFillMode mode) {
+        fillModePreference.put(player.getUuid(), mode);
+    }
+
+    /**
+     * Cycle to the next fill mode
+     * 
+     * @return the new mode
+     */
+    public static BuilderFillMode cycleNextFillMode(ServerPlayerEntity player) {
+        BuilderFillMode currentMode = getFillMode(player);
+        BuilderFillMode newMode = currentMode.next();
+        setFillMode(player, newMode);
+        return newMode;
+    }
+
+    /**
+     * Toggle cylinder orientation between vertical and horizontal
+     * 
+     * @return true if now horizontal, false if now vertical
+     */
+    public static boolean toggleCylinderOrientation(ServerPlayerEntity player) {
+        UUID uuid = player.getUuid();
+        boolean currentlyHorizontal = cylinderHorizontal.getOrDefault(uuid, false);
+        cylinderHorizontal.put(uuid, !currentlyHorizontal);
+        return !currentlyHorizontal;
+    }
+
+    /**
+     * Check if cylinder orientation is horizontal
+     */
+    public static boolean isCylinderHorizontal(ServerPlayerEntity player) {
+        return cylinderHorizontal.getOrDefault(player.getUuid(), false);
     }
 
     @Override
@@ -337,6 +388,8 @@ public class BuilderSkill extends AbstractSkill {
         }
 
         boolean hollow = isHollowModeEnabled(player);
+        BuilderFillMode fillMode = getFillMode(player);
+        boolean isHorizontalCylinder = isCylinderHorizontal(player);
 
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
@@ -347,14 +400,10 @@ public class BuilderSkill extends AbstractSkill {
                         continue;
                     }
 
-                    // Check hollow mode - skip interior blocks
-                    if (hollow) {
-                        boolean isEdge = (x == minX || x == maxX ||
-                                y == minY || y == maxY ||
-                                z == minZ || z == maxZ);
-                        if (!isEdge) {
-                            continue; // Skip interior blocks in hollow mode
-                        }
+                    // Check if this position should have a block based on the selected shape
+                    if (!shouldPlaceBlock(fillMode, hollow, fillPos, minX, minY, minZ, maxX, maxY, maxZ,
+                            isHorizontalCylinder)) {
+                        continue; // Skip this position
                     }
 
                     int slot = findBlockInInventory(player, blockItem.getBlock());
@@ -383,7 +432,146 @@ public class BuilderSkill extends AbstractSkill {
         return blocksPlaced;
     }
 
+    /**
+     * Determines if a block should be placed at the given position based on the
+     * fill mode.
+     * Uses mathematical formulas to create different geometric shapes.
+     *
+     * @param mode                 The fill mode (shape type)
+     * @param hollow               Whether to only fill the outer shell
+     * @param pos                  Current position being tested
+     * @param minX,                minY, minZ Minimum coordinates of bounding box
+     * @param maxX,                maxY, maxZ Maximum coordinates of bounding box
+     * @param isHorizontalCylinder Whether cylinder is horizontal (only used for
+     *                             CYLINDER mode)
+     * @return true if block should be placed at this position
+     */
+    private static boolean shouldPlaceBlock(BuilderFillMode mode, boolean hollow,
+            BlockPos pos, int minX, int minY, int minZ, int maxX, int maxY, int maxZ,
+            boolean isHorizontalCylinder) {
+
+        int x = pos.getX();
+        int y = pos.getY();
+        int z = pos.getZ();
+
+        double centerX = (minX + maxX) / 2.0;
+        double centerY = (minY + maxY) / 2.0;
+        double centerZ = (minZ + maxZ) / 2.0;
+
+        switch (mode) {
+            case CUBOID -> {
+                // Standard rectangular box - current behavior
+                if (hollow) {
+                    boolean isEdge = (x == minX || x == maxX ||
+                            y == minY || y == maxY ||
+                            z == minZ || z == maxZ);
+                    return isEdge;
+                }
+                return true; // Fill all blocks in cuboid
+            }
+
+            case SPHERE -> {
+                // Ellipsoid formula: (x-cx)²/rx² + (y-cy)²/ry² + (z-cz)²/rz² ≤ 1
+                double radiusX = (maxX - minX + 1) / 2.0;
+                double radiusY = (maxY - minY + 1) / 2.0;
+                double radiusZ = (maxZ - minZ + 1) / 2.0;
+
+                double dx = (x - centerX) / radiusX;
+                double dy = (y - centerY) / radiusY;
+                double dz = (z - centerZ) / radiusZ;
+
+                double distanceSquared = dx * dx + dy * dy + dz * dz;
+
+                if (hollow) {
+                    // Shell thickness: between 85% and 100% of radius
+                    return distanceSquared <= 1.0 && distanceSquared >= 0.72; // 0.85²
+                }
+                return distanceSquared <= 1.0;
+            }
+
+            case CYLINDER -> {
+                if (isHorizontalCylinder) {
+                    // Horizontal cylinder (along X axis)
+                    // Circle in YZ plane
+                    double radiusY = (maxY - minY + 1) / 2.0;
+                    double radiusZ = (maxZ - minZ + 1) / 2.0;
+
+                    double dy = (y - centerY) / radiusY;
+                    double dz = (z - centerZ) / radiusZ;
+
+                    double distanceSquared = dy * dy + dz * dz;
+
+                    if (hollow) {
+                        return distanceSquared <= 1.0 && distanceSquared >= 0.72;
+                    }
+                    return distanceSquared <= 1.0;
+                } else {
+                    // Vertical cylinder (along Y axis) - default
+                    // Circle in XZ plane
+                    double radiusX = (maxX - minX + 1) / 2.0;
+                    double radiusZ = (maxZ - minZ + 1) / 2.0;
+
+                    double dx = (x - centerX) / radiusX;
+                    double dz = (z - centerZ) / radiusZ;
+
+                    double distanceSquared = dx * dx + dz * dz;
+
+                    if (hollow) {
+                        return distanceSquared <= 1.0 && distanceSquared >= 0.72;
+                    }
+                    return distanceSquared <= 1.0;
+                }
+            }
+
+            case PYRAMID -> {
+                // Pyramid: base at minY, tip at maxY
+                // At each height level, reduce the allowed radius
+                int height = maxY - minY + 1;
+                int currentHeight = y - minY;
+
+                // Calculate how much the pyramid should shrink at this height
+                // At base (y=minY): full size, at tip (y=maxY): 1 block
+                double ratio = 1.0 - (currentHeight / (double) height);
+
+                double allowedRadiusX = ((maxX - minX + 1) / 2.0) * ratio;
+                double allowedRadiusZ = ((maxZ - minZ + 1) / 2.0) * ratio;
+
+                double dx = Math.abs(x - centerX);
+                double dz = Math.abs(z - centerZ);
+
+                boolean insidePyramid = dx <= allowedRadiusX && dz <= allowedRadiusZ;
+
+                if (hollow && insidePyramid) {
+                    // For hollow pyramids, only place blocks on the outer edge at this level
+                    boolean isOuterEdge = dx >= allowedRadiusX - 1 || dz >= allowedRadiusZ - 1;
+                    return isOuterEdge || y == maxY; // Always fill the tip
+                }
+
+                return insidePyramid;
+            }
+
+            case WALL -> {
+                // Only vertical walls (XZ planes), no floor or ceiling
+                // This is different from hollow cuboid which includes floor/ceiling
+                boolean isVerticalEdge = (x == minX || x == maxX || z == minZ || z == maxZ);
+
+                if (hollow) {
+                    // Hollow walls: only the outer perimeter (corners)
+                    boolean isCorner = (x == minX || x == maxX) && (z == minZ || z == maxZ);
+                    return isCorner && isVerticalEdge;
+                }
+
+                return isVerticalEdge;
+            }
+
+            default -> {
+                return false;
+            }
+        }
+    }
+
     private static int findBlockInInventory(ServerPlayerEntity player, Block block) {
+
         for (int i = 0; i < player.getInventory().size(); i++) {
             ItemStack stack = player.getInventory().getStack(i);
             if (stack.getItem() instanceof BlockItem blockItem) {

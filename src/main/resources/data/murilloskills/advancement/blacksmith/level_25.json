@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:iron_block"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.blacksmith.level25.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.blacksmith.level25.description"
+        },
+        "frame": "task",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:blacksmith/level_10",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

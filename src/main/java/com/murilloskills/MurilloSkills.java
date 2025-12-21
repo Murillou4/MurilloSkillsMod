@@ -28,6 +28,9 @@ public class MurilloSkills implements ModInitializer {
         LOGGER.info("Inicializando MurilloSkills...");
 
         try {
+            // 0. Load configuration from file
+            com.murilloskills.config.ModConfig.load();
+
             // 1. Registrar Skills no Registry
             registerSkills();
 

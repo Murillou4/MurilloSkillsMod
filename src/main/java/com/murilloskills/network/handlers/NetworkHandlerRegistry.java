@@ -55,8 +55,9 @@ public final class NetworkHandlerRegistry {
             registerHandler("HollowFill", HollowFillToggleC2SPayload.ID, HollowFillNetworkHandler.create());
             registerHandler("NightVision", NightVisionToggleC2SPayload.ID, NightVisionToggleNetworkHandler.create());
             registerHandler("StepAssist", StepAssistToggleC2SPayload.ID, StepAssistToggleNetworkHandler.create());
+            registerHandler("FillModeCycle", FillModeCycleC2SPayload.ID, FillModeCycleNetworkHandler.create());
 
-            LOGGER.info("Successfully registered 9 network handlers");
+            LOGGER.info("Successfully registered 10 network handlers");
 
         } catch (Exception e) {
             LOGGER.error("CRITICAL: Failed to register network handlers!", e);

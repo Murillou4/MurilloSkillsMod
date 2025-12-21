@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:golden_carrot"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.farmer.level100.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.farmer.level100.description"
+        },
+        "frame": "challenge",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:farmer/level_75",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

@@ -45,6 +45,10 @@ public class FarmerSkill extends AbstractSkill {
     // Map to track players with Area Planting (3x3) enabled
     private static final Map<UUID, Boolean> areaPlantingEnabled = new HashMap<>();
 
+    // Rate limiting for area planting (UUID → last plant time in millis)
+    private static final Map<UUID, Long> areaPlantingLastUse = new HashMap<>();
+    private static final long AREA_PLANTING_COOLDOWN_MS = 100; // 100ms between area plants
+
     @Override
     public MurilloSkillsList getSkillType() {
         return MurilloSkillsList.FARMER;
@@ -85,8 +89,7 @@ public class FarmerSkill extends AbstractSkill {
 
             // 4. Activate Harvest Moon
             stats.lastAbilityUse = worldTime;
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            state.markDirty();
+            // Note: State is saved automatically, no need to force immediate save
 
             startHarvestMoon(player);
 
@@ -256,6 +259,21 @@ public class FarmerSkill extends AbstractSkill {
     }
 
     /**
+     * Checks if player can use area planting now (rate limit check).
+     * Returns true if allowed, false if on cooldown.
+     */
+    public static boolean canUseAreaPlanting(UUID playerUuid) {
+        long now = System.currentTimeMillis();
+        long lastUse = areaPlantingLastUse.getOrDefault(playerUuid, 0L);
+
+        if (now - lastUse >= AREA_PLANTING_COOLDOWN_MS) {
+            areaPlantingLastUse.put(playerUuid, now);
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Starts Harvest Moon ability
      */
     private void startHarvestMoon(ServerPlayerEntity player) {
@@ -274,17 +292,24 @@ public class FarmerSkill extends AbstractSkill {
     }
 
     /**
-     * Performs the Harvest Moon auto-harvest in radius
+     * Performs the Harvest Moon auto-harvest in radius.
+     * Limited to 50 blocks per tick to prevent lag.
      */
     private void performHarvestMoon(ServerPlayerEntity player) {
         ServerWorld world = player.getEntityWorld();
         BlockPos playerPos = player.getBlockPos();
         int radius = SkillConfig.FARMER_ABILITY_RADIUS;
         int harvested = 0;
+        int maxHarvestPerTick = 50; // Prevent lag
 
         for (BlockPos pos : BlockPos.iterate(
                 playerPos.add(-radius, -2, -radius),
                 playerPos.add(radius, 2, radius))) {
+
+            // Early exit to prevent lag
+            if (harvested >= maxHarvestPerTick) {
+                break;
+            }
 
             BlockState state = world.getBlockState(pos);
             Block block = state.getBlock();
@@ -302,10 +327,6 @@ public class FarmerSkill extends AbstractSkill {
                     harvested++;
                 }
             }
-
-            // Limit to avoid lag
-            if (harvested >= 50)
-                break;
         }
     }
 
@@ -369,5 +390,24 @@ public class FarmerSkill extends AbstractSkill {
                 true);
 
         LOGGER.debug("Player {} saiu do Harvest Moon", player.getName().getString());
+    }
+
+    /**
+     * Cleanup player state when they disconnect to prevent memory leaks.
+     * Should be called from player disconnect event.
+     */
+    public static void cleanupPlayerState(UUID playerUuid) {
+        harvestMoonPlayers.remove(playerUuid);
+        areaPlantingEnabled.remove(playerUuid);
+        areaPlantingLastUse.remove(playerUuid);
+    }
+
+    /**
+     * Cleanup all player states (for server shutdown).
+     */
+    public static void cleanupAllStates() {
+        harvestMoonPlayers.clear();
+        areaPlantingEnabled.clear();
+        areaPlantingLastUse.clear();
     }
 }

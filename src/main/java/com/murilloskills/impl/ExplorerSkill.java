@@ -21,6 +21,8 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 
 /**
@@ -404,25 +406,62 @@ public class ExplorerSkill extends AbstractSkill {
     }
 
     /**
-     * Handles the Treasure Hunter passive - finds and highlights chests/spawners
+     * Scans for treasure chests in a large radius around the player.
+     * Limited to 10000 blocks per scan to prevent lag.
      */
-    private void handleTreasureHunter(ServerPlayerEntity player) {
-        List<BlockPos> treasurePositions = new ArrayList<>();
+    private List<BlockPos> scanForTreasures(ServerPlayerEntity player) {
+        List<BlockPos> treasures = new ArrayList<>();
         BlockPos center = player.getBlockPos();
         int radius = SkillConfig.EXPLORER_TREASURE_RADIUS;
 
-        // Get server world
-        net.minecraft.server.world.ServerWorld world = (net.minecraft.server.world.ServerWorld) player.getEntityWorld();
+        // Limit blocks scanned to prevent lag
+        int maxBlocksToScan = 10000;
+        int blocksScanned = 0;
+        int maxTreasuresFound = 100; // Also limit results
 
-        // Scan for chests and spawners
-        for (BlockPos pos : BlockPos.iterate(
-                center.add(-radius, -radius, -radius),
-                center.add(radius, radius, radius))) {
-            BlockEntity blockEntity = world.getBlockEntity(pos);
-            if (blockEntity instanceof ChestBlockEntity || blockEntity instanceof MobSpawnerBlockEntity) {
-                treasurePositions.add(pos.toImmutable());
+        // Scan in shells from center outward (finds nearby treasures first)
+        for (int r = 0; r <= radius && blocksScanned < maxBlocksToScan && treasures.size() < maxTreasuresFound; r++) {
+            for (int dx = -r; dx <= r && blocksScanned < maxBlocksToScan
+                    && treasures.size() < maxTreasuresFound; dx++) {
+                for (int dy = -r; dy <= r && blocksScanned < maxBlocksToScan
+                        && treasures.size() < maxTreasuresFound; dy++) {
+                    for (int dz = -r; dz <= r && blocksScanned < maxBlocksToScan
+                            && treasures.size() < maxTreasuresFound; dz++) {
+                        // Only check blocks at current shell radius
+                        if (Math.abs(dx) == r || Math.abs(dy) == r || Math.abs(dz) == r) {
+                            BlockPos pos = center.add(dx, dy, dz);
+                            blocksScanned++;
+
+                            if (isChest(pos, player)) {
+                                treasures.add(pos.toImmutable());
+                            }
+                        }
+                    }
+                }
             }
         }
+
+        if (blocksScanned >= maxBlocksToScan) {
+            LOGGER.debug("Explorer scan hit block limit ({} blocks scanned, {} treasures found)",
+                    blocksScanned, treasures.size());
+        }
+
+        return treasures;
+    }
+
+    /**
+     * Helper to check if a block position contains a chest or spawner.
+     */
+    private boolean isChest(BlockPos pos, ServerPlayerEntity player) {
+        BlockEntity blockEntity = player.getEntityWorld().getBlockEntity(pos);
+        return blockEntity instanceof ChestBlockEntity || blockEntity instanceof MobSpawnerBlockEntity;
+    }
+
+    /**
+     * Handles the Treasure Hunter passive - finds and highlights chests/spawners
+     */
+    private void handleTreasureHunter(ServerPlayerEntity player) {
+        List<BlockPos> treasurePositions = scanForTreasures(player);
 
         // Send to client for rendering
         if (!treasurePositions.isEmpty()) {
@@ -456,6 +495,44 @@ public class ExplorerSkill extends AbstractSkill {
             return SkillConfig.EXPLORER_BREATH_MULTIPLIER;
         }
         return 1.0f;
+    }
+
+    /**
+     * Handles the Aquatic perk water breathing logic.
+     * Called from ExplorerBreathMixin to keep business logic in Skill class.
+     * 
+     * @param player      The player to check
+     * @param previousAir The air value before baseTick processed
+     */
+    public static void handleWaterBreathing(ServerPlayerEntity player, int previousAir) {
+        int currentAir = player.getAir();
+
+        // Only act if air was actually lost
+        if (previousAir <= 0 || currentAir >= previousAir) {
+            return;
+        }
+
+        try {
+            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
+            var playerData = state.getPlayerData(player);
+
+            // Check if Explorer is selected
+            if (!playerData.isSkillSelected(MurilloSkillsList.EXPLORER)) {
+                return;
+            }
+
+            int level = playerData.getSkill(MurilloSkillsList.EXPLORER).level;
+
+            // If Aquatic perk is unlocked, restore half the lost air (every other tick)
+            if (hasAquatic(level) && player.age % 2 == 0) {
+                int airLost = previousAir - currentAir;
+                player.setAir(currentAir + airLost);
+            }
+        } catch (Exception e) {
+            // Log at debug level to avoid spamming but allow troubleshooting
+            LoggerFactory.getLogger("MurilloSkills-ExplorerSkill")
+                    .debug("Error handling water breathing for {}: {}", player.getName().getString(), e.getMessage());
+        }
     }
 
     /**

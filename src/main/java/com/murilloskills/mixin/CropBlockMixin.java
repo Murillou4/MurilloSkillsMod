@@ -5,11 +5,15 @@ import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.CropBlock;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -21,6 +25,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(CropBlock.class)
 public class CropBlockMixin {
 
+    @Unique
+    private static final Logger LOGGER = LoggerFactory.getLogger("MurilloSkills-CropBlockMixin");
+
     /**
      * Injects at the start of randomTick to potentially add extra growth.
      * For players with Fertile Ground perk, there's a 25% chance to grow again.
@@ -29,8 +36,9 @@ public class CropBlockMixin {
     private void accelerateCropGrowth(BlockState state, ServerWorld world, BlockPos pos, Random random,
             CallbackInfo ci) {
         // Find the nearest player who might have planted this crop
-        // (Using a radius check since we can't track who planted each crop)
-        ServerPlayerEntity nearestFarmer = findNearestFarmer(world, pos, 32);
+        // Using optimized spatial search instead of iterating all players
+        ServerPlayerEntity nearestFarmer = murilloskills$findNearestFarmer(world, pos,
+                SkillConfig.FARMER_FERTILE_GROUND_RADIUS);
 
         if (nearestFarmer == null) {
             return;
@@ -67,22 +75,29 @@ public class CropBlockMixin {
 
     /**
      * Finds the nearest player with Farmer skill in the given radius.
+     * Uses Minecraft's optimized spatial partitioning for O(log n) performance
+     * instead of O(n) iteration over all players.
      */
-    private ServerPlayerEntity findNearestFarmer(ServerWorld world, BlockPos pos, int radius) {
-        ServerPlayerEntity nearest = null;
-        double nearestDist = Double.MAX_VALUE;
+    @Unique
+    private ServerPlayerEntity murilloskills$findNearestFarmer(ServerWorld world, BlockPos pos, int radius) {
+        // Use Minecraft's optimized getClosestPlayer with spatial partitioning
+        PlayerEntity closest = world.getClosestPlayer(
+                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                radius,
+                player -> {
+                    if (!(player instanceof ServerPlayerEntity serverPlayer)) {
+                        return false;
+                    }
+                    try {
+                        SkillGlobalState state = SkillGlobalState.getServerState(world.getServer());
+                        return state.getPlayerData(serverPlayer).isSkillSelected(MurilloSkillsList.FARMER);
+                    } catch (Exception e) {
+                        LOGGER.debug("Error checking farmer skill for {}: {}", player.getName().getString(),
+                                e.getMessage());
+                        return false;
+                    }
+                });
 
-        for (ServerPlayerEntity player : world.getPlayers()) {
-            double dist = player.squaredDistanceTo(pos.getX(), pos.getY(), pos.getZ());
-            if (dist < radius * radius && dist < nearestDist) {
-                SkillGlobalState state = SkillGlobalState.getServerState(world.getServer());
-                if (state.getPlayerData(player).isSkillSelected(MurilloSkillsList.FARMER)) {
-                    nearest = player;
-                    nearestDist = dist;
-                }
-            }
-        }
-
-        return nearest;
+        return closest instanceof ServerPlayerEntity sp ? sp : null;
     }
 }

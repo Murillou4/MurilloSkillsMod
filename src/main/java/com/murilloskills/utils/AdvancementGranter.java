@@ -31,6 +31,11 @@ public class AdvancementGranter {
                 grantSkillAdvancement(player, skill, milestone);
             }
         }
+
+        // Special case: Explorer level 35 (Night Vision unlock)
+        if (skill == MurilloSkillsList.EXPLORER && oldLevel < 35 && newLevel >= 35) {
+            grantSkillAdvancement(player, skill, 35);
+        }
     }
 
     /**

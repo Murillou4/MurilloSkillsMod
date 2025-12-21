@@ -70,6 +70,11 @@ public class SeedItemMixin {
             return; // Toggle is off, let vanilla handle it
         }
 
+        // Rate limiting check to prevent abuse
+        if (!FarmerSkill.canUseAreaPlanting(serverPlayer.getUuid())) {
+            return; // On cooldown, let vanilla handle single plant
+        }
+
         // Area planting is enabled - intercept and plant in 3x3
         BlockPos clickedPos = context.getBlockPos();
         int radius = SkillConfig.FARMER_AREA_PLANTING_RADIUS;
@@ -130,8 +135,7 @@ public class SeedItemMixin {
                 com.murilloskills.events.ChallengeEventsHandler.onSeedsPlanted(serverPlayer);
             }
 
-            // Mark state as dirty and sync
-            state.markDirty();
+            // Sync to client
             SkillsNetworkUtils.syncSkills(serverPlayer);
 
             // Cancel vanilla behavior

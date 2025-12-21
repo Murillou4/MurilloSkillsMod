@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:recovery_compass"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.explorer.level100.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.explorer.level100.description"
+        },
+        "frame": "challenge",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:explorer/level_75",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

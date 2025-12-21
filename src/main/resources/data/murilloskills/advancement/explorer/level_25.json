@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:turtle_helmet"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.explorer.level25.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.explorer.level25.description"
+        },
+        "frame": "task",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:explorer/level_10",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

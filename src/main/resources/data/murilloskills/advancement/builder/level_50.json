@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:polished_deepslate"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.builder.level50.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.builder.level50.description"
+        },
+        "frame": "goal",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:builder/level_25",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

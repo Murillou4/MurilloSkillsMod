@@ -390,6 +390,24 @@ public class SkillsScreen extends Screen {
                             .build();
 
                     this.addDrawableChild(resetBtn);
+
+                    // Miner: Add ore filter config button (gear icon)
+                    if (skill == MurilloSkillsList.MINER) {
+                        int configBtnSize = resetBtnSize;
+                        int configBtnX = x + 4;
+                        int configBtnY = y + cardHeight - configBtnSize - 4;
+
+                        ButtonWidget configBtn = ButtonWidget
+                                .builder(Text.literal("⚙"), (button) -> {
+                                    MinecraftClient.getInstance().setScreen(new OreFilterScreen(this));
+                                })
+                                .dimensions(configBtnX, configBtnY, configBtnSize, configBtnSize)
+                                .tooltip(net.minecraft.client.gui.tooltip.Tooltip.of(
+                                        Text.translatable("murilloskills.ore_filter.title")))
+                                .build();
+
+                        this.addDrawableChild(configBtn);
+                    }
                 }
             }
         }

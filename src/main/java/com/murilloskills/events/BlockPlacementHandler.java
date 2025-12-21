@@ -4,6 +4,7 @@ import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.impl.BuilderSkill;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.BuilderXpGetter;
+import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillNotifier;
 import com.murilloskills.utils.SkillsNetworkUtils;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -81,7 +82,7 @@ public class BlockPlacementHandler {
                     com.murilloskills.utils.SkillAttributes.updateAllStats(serverPlayer);
                 }
 
-                state.markDirty();
+                // Note: markDirty() is called automatically when state changes
                 SkillsNetworkUtils.syncSkills(serverPlayer);
 
                 LOGGER.debug("Awarded {} XP to {} for placing {}",
@@ -92,7 +93,7 @@ public class BlockPlacementHandler {
                         com.murilloskills.utils.DailyChallengeManager.ChallengeType.PLACE_BLOCKS, 1);
 
                 // Check for high building
-                if (placementPos.getY() > 100) {
+                if (placementPos.getY() > SkillConfig.BUILDER_HIGH_BUILD_Y_THRESHOLD) {
                     com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
                             com.murilloskills.utils.DailyChallengeManager.ChallengeType.BUILD_HEIGHT, 1);
                 }

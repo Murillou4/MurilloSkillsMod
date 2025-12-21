@@ -1,8 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.impl.ExplorerSkill;
-import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Part of the "Aquatic" perk.
  * 
  * Uses @Inject at HEAD to track air and at TAIL to restore air for Aquatic perk
- * holders.
+ * holders. Business logic is delegated to ExplorerSkill.handleWaterBreathing().
  */
 @Mixin(LivingEntity.class)
 public abstract class ExplorerBreathMixin {
@@ -34,8 +32,7 @@ public abstract class ExplorerBreathMixin {
     }
 
     /**
-     * After baseTick, if air was lost and player has Aquatic perk, restore half the
-     * lost air.
+     * After baseTick, delegate to ExplorerSkill for Aquatic perk logic.
      * This effectively gives 50% longer breath time underwater.
      */
     @Inject(method = "baseTick", at = @At("TAIL"))
@@ -50,35 +47,7 @@ public abstract class ExplorerBreathMixin {
             return;
         }
 
-        int currentAir = player.getAir();
-        int previousAir = this.murilloskills$previousAir;
-
-        // Only act if air was actually lost
-        if (previousAir <= 0 || currentAir >= previousAir) {
-            return;
-        }
-
-        try {
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            var playerData = state.getPlayerData(player);
-
-            // Check if Explorer is selected
-            if (!playerData.isSkillSelected(MurilloSkillsList.EXPLORER)) {
-                return;
-            }
-
-            int level = playerData.getSkill(MurilloSkillsList.EXPLORER).level;
-
-            // If Aquatic perk is unlocked, restore half the lost air
-            if (ExplorerSkill.hasAquatic(level)) {
-                int airLost = previousAir - currentAir;
-                // Every other tick, restore the lost air (effectively 50% slower air loss)
-                if (player.age % 2 == 0) {
-                    player.setAir(currentAir + airLost);
-                }
-            }
-        } catch (Exception e) {
-            // Silent fail - don't crash the game for perk logic
-        }
+        // Delegate all business logic to ExplorerSkill
+        ExplorerSkill.handleWaterBreathing(player, this.murilloskills$previousAir);
     }
 }

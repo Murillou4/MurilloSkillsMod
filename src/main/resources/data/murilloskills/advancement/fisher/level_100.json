@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:enchanted_golden_apple"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.fisher.level100.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.fisher.level100.description"
+        },
+        "frame": "challenge",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:fisher/level_75",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

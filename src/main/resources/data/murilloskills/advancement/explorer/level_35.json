@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:ender_eye"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.explorer.level35.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.explorer.level35.description"
+        },
+        "frame": "task",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:explorer/level_25",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

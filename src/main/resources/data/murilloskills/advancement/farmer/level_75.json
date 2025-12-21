@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:netherite_hoe"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.farmer.level75.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.farmer.level75.description"
+        },
+        "frame": "goal",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:farmer/level_50",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:diamond_chestplate"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.blacksmith.level50.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.blacksmith.level50.description"
+        },
+        "frame": "goal",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:blacksmith/level_25",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

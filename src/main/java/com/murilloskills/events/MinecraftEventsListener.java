@@ -64,6 +64,11 @@ public class MinecraftEventsListener {
             // Sincroniza os desafios diários ao entrar
             com.murilloskills.utils.DailyChallengeManager.syncChallenges(handler.getPlayer());
         });
+
+        // Cleanup on disconnect to prevent memory leaks
+        net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            com.murilloskills.impl.FarmerSkill.cleanupPlayerState(handler.getPlayer().getUuid());
+        });
     }
 
     /**

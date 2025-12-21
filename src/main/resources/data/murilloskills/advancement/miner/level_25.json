@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:golden_pickaxe"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.miner.level25.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.miner.level25.description"
+        },
+        "frame": "task",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:miner/level_10",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

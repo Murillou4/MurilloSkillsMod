@@ -28,7 +28,8 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 
-@SuppressWarnings("deprecation") // HudRenderCallback is deprecated but still functional, migration to HudElementRegistry pending
+@SuppressWarnings("deprecation") // HudRenderCallback is deprecated but still functional, migration to
+                                 // HudElementRegistry pending
 public class MurilloSkillsClient implements ClientModInitializer {
 
     // Custom keybinding category for mod - groups all keybinds together in Controls
@@ -42,6 +43,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
     private static KeyBinding hollowFillToggleKey;
     private static KeyBinding nightVisionToggleKey;
     private static KeyBinding stepAssistToggleKey;
+    private static KeyBinding fillModeCycleKey;
 
     @Override
     public void onInitializeClient() {
@@ -170,6 +172,12 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_V,
                 KEYBIND_CATEGORY));
 
+        fillModeCycleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.murilloskills.fill_mode_cycle",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_J,
+                KEYBIND_CATEGORY));
+
         // --- EVENTS ---
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -198,6 +206,10 @@ public class MurilloSkillsClient implements ClientModInitializer {
             while (stepAssistToggleKey.wasPressed()) {
                 // Envia pacote para toggle de step assist (Explorer)
                 ClientPlayNetworking.send(new StepAssistToggleC2SPayload());
+            }
+            while (fillModeCycleKey.wasPressed()) {
+                // Envia pacote para ciclar entre modos de preenchimento (Builder)
+                ClientPlayNetworking.send(new com.murilloskills.network.FillModeCycleC2SPayload());
             }
         });
 

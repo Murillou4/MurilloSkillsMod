@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:arrow"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.archer.level25.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.archer.level25.description"
+        },
+        "frame": "task",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:archer/level_10",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

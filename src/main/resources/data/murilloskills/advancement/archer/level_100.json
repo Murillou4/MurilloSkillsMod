@@ -1,0 +1,27 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:tipped_arrow",
+            "components": {
+                "potion_contents": {
+                    "potion": "minecraft:strong_strength"
+                }
+            }
+        },
+        "title": {
+            "translate": "murilloskills.advancement.archer.level100.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.archer.level100.description"
+        },
+        "frame": "challenge",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:archer/level_75",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

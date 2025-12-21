@@ -15,6 +15,9 @@ import java.util.List;
  * Client-side renderer for Explorer's Treasure Hunter passive.
  * Highlights chests and spawners with a glowing purple/teal outline through
  * walls.
+ * 
+ * Note: Uses GL11 for depth control as RenderSystem doesn't expose these
+ * methods in MC 1.21.
  */
 public class TreasureHighlighter {
 
@@ -52,9 +55,10 @@ public class TreasureHighlighter {
         Vec3d cameraPos = client.gameRenderer.getCamera().getPos();
         MatrixStack matrices = context.matrices();
 
-        // Enable X-Ray style rendering (draw through blocks)
+        // X-Ray rendering (GL11 depth control - RenderSystem doesn't expose these in MC
+        // 1.21)
         GL11.glEnable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthFunc(GL11.GL_ALWAYS); // Always draw, ignoring depth
+        GL11.glDepthFunc(GL11.GL_ALWAYS);
         GL11.glLineWidth(2.5f);
 
         VertexConsumer consumer = client.getBufferBuilders().getEntityVertexConsumers()
