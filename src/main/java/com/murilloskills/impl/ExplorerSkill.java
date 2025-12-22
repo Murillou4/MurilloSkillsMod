@@ -1,7 +1,7 @@
 package com.murilloskills.impl;
 
 import com.murilloskills.api.AbstractSkill;
-import com.murilloskills.data.SkillGlobalState;
+
 import com.murilloskills.network.TreasureHunterS2CPayload;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillConfig;
@@ -61,7 +61,7 @@ public class ExplorerSkill extends AbstractSkill {
     private static final int TREASURE_HUNTER_COOLDOWN_SECONDS = 300; // 5 minutes
 
     @Override
-    public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
+    public void onActiveAbility(ServerPlayerEntity player, com.murilloskills.data.PlayerSkillData.SkillStats stats) {
         // Level 100 OR prestiged: Treasure Hunter ability
         boolean hasReachedMaster = stats.level >= SkillConfig.EXPLORER_MASTER_LEVEL || stats.prestige > 0;
         if (hasReachedMaster) {
@@ -80,7 +80,8 @@ public class ExplorerSkill extends AbstractSkill {
      * Activates the Treasure Hunter ability with cooldown.
      * Uses stats.lastAbilityUse for persistent cooldown across server restarts.
      */
-    private void activateTreasureHunter(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
+    private void activateTreasureHunter(ServerPlayerEntity player,
+            com.murilloskills.data.PlayerSkillData.SkillStats stats) {
         UUID uuid = player.getUuid();
         long worldTime = player.getEntityWorld().getTime();
         long cooldownTicks = SkillConfig.toTicksLong(TREASURE_HUNTER_COOLDOWN_SECONDS);
@@ -101,8 +102,7 @@ public class ExplorerSkill extends AbstractSkill {
 
         // Activate ability - update persistent cooldown
         stats.lastAbilityUse = worldTime;
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        state.markDirty();
+        // Persistence handled automatically by attachment system
 
         int durationTicks = SkillConfig.toTicks(TREASURE_HUNTER_DURATION_SECONDS);
         treasureHunterActive.put(uuid, worldTime + durationTicks);
@@ -206,10 +206,9 @@ public class ExplorerSkill extends AbstractSkill {
      * Awards XP to the player for Explorer skill
      */
     private void awardXp(ServerPlayerEntity player, int amount, String source) {
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        SkillGlobalState.PlayerSkillData playerData = state.getPlayerData(player);
+        var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
-        SkillGlobalState.XpAddResult xpResult = playerData.addXpToSkill(getSkillType(), amount);
+        com.murilloskills.data.PlayerSkillData.XpAddResult xpResult = playerData.addXpToSkill(getSkillType(), amount);
 
         // Check for milestone rewards
         com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(player, "Explorador", xpResult);
@@ -221,7 +220,7 @@ public class ExplorerSkill extends AbstractSkill {
         }
 
         // Sync with client
-        state.markDirty();
+        // state.markDirty(); // Auto-persisted
         SkillsNetworkUtils.syncSkills(player);
     }
 
@@ -229,8 +228,8 @@ public class ExplorerSkill extends AbstractSkill {
     public void updateAttributes(ServerPlayerEntity player, int level) {
         try {
             // Get prestige level for passive multiplier
-            var state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            int prestige = state.getPlayerData(player).getSkill(MurilloSkillsList.EXPLORER).prestige;
+            var data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+            int prestige = data.getSkill(MurilloSkillsList.EXPLORER).prestige;
             float prestigeMultiplier = com.murilloskills.utils.PrestigeManager.getPassiveMultiplier(prestige);
 
             // --- MOVEMENT SPEED - Apply prestige bonus ---
@@ -305,13 +304,12 @@ public class ExplorerSkill extends AbstractSkill {
      * Toggles night vision for the player (persistent across death/logout)
      */
     public void toggleNightVision(ServerPlayerEntity player) {
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        var playerData = state.getPlayerData(player);
+        var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         boolean currentlyEnabled = playerData.getToggle(MurilloSkillsList.EXPLORER, TOGGLE_NIGHT_VISION, true);
         boolean newState = !currentlyEnabled;
         playerData.setToggle(MurilloSkillsList.EXPLORER, TOGGLE_NIGHT_VISION, newState);
-        state.markDirty();
+        // state.markDirty(); // Auto-persisted
 
         if (newState) {
             player.sendMessage(
@@ -328,13 +326,12 @@ public class ExplorerSkill extends AbstractSkill {
      * Toggles step assist for the player (persistent across death/logout)
      */
     public void toggleStepAssist(ServerPlayerEntity player) {
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        var playerData = state.getPlayerData(player);
+        var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         boolean currentlyEnabled = playerData.getToggle(MurilloSkillsList.EXPLORER, TOGGLE_STEP_ASSIST, true);
         boolean newState = !currentlyEnabled;
         playerData.setToggle(MurilloSkillsList.EXPLORER, TOGGLE_STEP_ASSIST, newState);
-        state.markDirty();
+        // state.markDirty(); // Auto-persisted
 
         if (newState) {
             player.sendMessage(
@@ -354,8 +351,7 @@ public class ExplorerSkill extends AbstractSkill {
      */
     public static boolean isStepAssistEnabled(ServerPlayerEntity player) {
         try {
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            var playerData = state.getPlayerData(player);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
             return playerData.getToggle(MurilloSkillsList.EXPLORER, TOGGLE_STEP_ASSIST, true); // Default: enabled
         } catch (Exception e) {
             return true; // Default: enabled on error
@@ -367,8 +363,7 @@ public class ExplorerSkill extends AbstractSkill {
      */
     public static boolean isNightVisionEnabled(ServerPlayerEntity player) {
         try {
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            var playerData = state.getPlayerData(player);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
             return playerData.getToggle(MurilloSkillsList.EXPLORER, TOGGLE_NIGHT_VISION, true); // Default: enabled
         } catch (Exception e) {
             return true; // Default: enabled on error
@@ -513,8 +508,7 @@ public class ExplorerSkill extends AbstractSkill {
         }
 
         try {
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            var playerData = state.getPlayerData(player);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             // Check if Explorer is selected
             if (!playerData.isSkillSelected(MurilloSkillsList.EXPLORER)) {

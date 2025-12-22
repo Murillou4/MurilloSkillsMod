@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -16,18 +16,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(EnchantmentHelper.class)
 public class EnchantmentHelperMixin {
 
-
     // Injeta na verificação de nível de encantamento
     @Inject(method = "getEquipmentLevel", at = @At("RETURN"), cancellable = true)
-    private static void getEquipmentLevel(RegistryEntry<Enchantment> enchantment, LivingEntity entity, CallbackInfoReturnable<Integer> cir) {
+    private static void getEquipmentLevel(RegistryEntry<Enchantment> enchantment, LivingEntity entity,
+            CallbackInfoReturnable<Integer> cir) {
 
         // 1. Verifica se estamos no servidor e se a entidade é um Player
         if (!entity.getEntityWorld().isClient() && entity instanceof ServerPlayerEntity player) {
 
-
             if (enchantment.matchesKey(Enchantments.LOOTING)) {
-                SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-                int warriorLevel = state.getPlayerData(player).getSkill(MurilloSkillsList.WARRIOR).level;
+                PlayerSkillData playerData = player
+                        .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+                int warriorLevel = playerData.getSkill(MurilloSkillsList.WARRIOR).level;
 
                 // 0.03 Looting por level
                 // Level 10 = Looting 0.3

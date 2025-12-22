@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:end_crystal"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.special.first_synergy.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.special.first_synergy.description"
+        },
+        "frame": "goal",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:special/trio_chosen",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

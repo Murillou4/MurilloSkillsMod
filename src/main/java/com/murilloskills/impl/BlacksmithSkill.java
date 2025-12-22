@@ -1,7 +1,7 @@
 package com.murilloskills.impl;
 
 import com.murilloskills.api.AbstractSkill;
-import com.murilloskills.data.SkillGlobalState;
+
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
@@ -44,7 +44,7 @@ public class BlacksmithSkill extends AbstractSkill {
     }
 
     @Override
-    public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
+    public void onActiveAbility(ServerPlayerEntity player, com.murilloskills.data.PlayerSkillData.SkillStats stats) {
         try {
             // 1. Check Level
             // 1. Verifica Nível (permite se level >= 100 OU se já prestigiou)
@@ -80,8 +80,9 @@ public class BlacksmithSkill extends AbstractSkill {
 
             // 4. Activate Titanium Aura
             stats.lastAbilityUse = worldTime;
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            state.markDirty();
+            // 4. Activate Titanium Aura
+            stats.lastAbilityUse = worldTime;
+            // Persistence handled automatically
 
             startTitaniumAura(player);
 

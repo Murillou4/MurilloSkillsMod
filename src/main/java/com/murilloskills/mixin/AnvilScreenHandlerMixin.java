@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.events.ChallengeEventsHandler;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.BlacksmithXpGetter;
@@ -54,8 +54,7 @@ public abstract class AnvilScreenHandlerMixin {
             return;
         }
 
-        SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
-        var playerData = state.getPlayerData(serverPlayer);
+        var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         // Only apply discount if player has BLACKSMITH selected and meets level
         // requirement
@@ -114,8 +113,7 @@ public abstract class AnvilScreenHandlerMixin {
             ChallengeEventsHandler.onItemRepaired(serverPlayer);
         }
 
-        SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
-        var playerData = state.getPlayerData(serverPlayer);
+        var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         // Only grant XP if player has BLACKSMITH selected
         if (!playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
@@ -126,8 +124,7 @@ public abstract class AnvilScreenHandlerMixin {
         int xp = BlacksmithXpGetter.getAnvilXp(wasRepair, false, false);
 
         // Add XP using the central method that handles paragon constraints
-        SkillGlobalState.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.BLACKSMITH, xp);
-        state.markDirty();
+        PlayerSkillData.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.BLACKSMITH, xp);
 
         // Check for milestone rewards
         com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Ferreiro", xpResult);
@@ -140,5 +137,8 @@ public abstract class AnvilScreenHandlerMixin {
 
         // Sync skill data with client
         SkillsNetworkUtils.syncSkills(serverPlayer);
+
+        // Grant "First Forge" advancement (first anvil use)
+        com.murilloskills.utils.AdvancementGranter.grantFirstForge(serverPlayer);
     }
 }

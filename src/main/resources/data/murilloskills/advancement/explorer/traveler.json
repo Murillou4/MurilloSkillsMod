@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:map"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.explorer.traveler.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.explorer.traveler.description"
+        },
+        "frame": "goal",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:explorer/level_25",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

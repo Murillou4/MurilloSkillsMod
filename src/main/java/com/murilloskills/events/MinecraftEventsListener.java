@@ -2,7 +2,7 @@ package com.murilloskills.events;
 
 import com.murilloskills.api.AbstractSkill;
 import com.murilloskills.api.SkillRegistry;
-import com.murilloskills.data.SkillGlobalState;
+
 import com.murilloskills.skills.BlockBreakHandler;
 import com.murilloskills.skills.CropHarvestHandler;
 import com.murilloskills.skills.MobKillHandler;
@@ -58,6 +58,10 @@ public class MinecraftEventsListener {
                 });
 
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            // IMPORTANT: Migrate legacy data BEFORE processing player join
+            // This ensures old murilloskills.dat data is moved to the new attachment system
+            com.murilloskills.data.LegacyDataMigration.migrateIfNeeded(handler.getPlayer(), server);
+
             handlePlayerJoin(handler.getPlayer());
             // Sincroniza as skills ao entrar
             SkillsNetworkUtils.syncSkills(handler.getPlayer());
@@ -83,8 +87,7 @@ public class MinecraftEventsListener {
                         newPlayer.getName().getString(), alive);
 
                 // Mesmo comportamento do handlePlayerJoin - reaplicar todos os atributos
-                SkillGlobalState state = SkillGlobalState.getServerState(newPlayer.getEntityWorld().getServer());
-                var playerData = state.getPlayerData(newPlayer);
+                var playerData = newPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
                 // Reaplicar atributos para todas as skills selecionadas
                 if (playerData.hasSelectedSkills()) {
@@ -128,8 +131,7 @@ public class MinecraftEventsListener {
      */
     private static void handlePlayerJoin(ServerPlayerEntity player) {
         try {
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            var playerData = state.getPlayerData(player);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             // Update attributes for all selected skills
             if (playerData.hasSelectedSkills()) {
@@ -151,8 +153,7 @@ public class MinecraftEventsListener {
      */
     private static void handlePlayerTick(ServerPlayerEntity player) {
         try {
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            var playerData = state.getPlayerData(player);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             // Em vez de chamar MinerAbilityHandler.tick(), WarriorAbilityHandler.tick()...
             // Nós iteramos sobre as skills selecionadas do jogador

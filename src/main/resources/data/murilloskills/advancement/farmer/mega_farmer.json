@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:hay_block"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.farmer.mega_farmer.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.farmer.mega_farmer.description"
+        },
+        "frame": "challenge",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:farmer/first_harvest",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

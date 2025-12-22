@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:name_tag"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.fisher.treasure_catch.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.fisher.treasure_catch.description"
+        },
+        "frame": "goal",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:fisher/level_25",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

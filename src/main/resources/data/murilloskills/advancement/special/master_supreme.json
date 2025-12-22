@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:dragon_egg"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.special.master_supreme.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.special.master_supreme.description"
+        },
+        "frame": "challenge",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:special/first_prestige",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

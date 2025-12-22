@@ -22,14 +22,7 @@ import java.util.Set;
 public class BuilderXpGetter {
 
     // XP values by block category
-    private static final int XP_STRUCTURAL = 1500000; // Stone, Bricks, Concrete, etc.
-    private static final int XP_DECORATIVE = 10; // Stairs, Slabs, Fences, Glass
-    private static final int XP_BASIC = 3; // Dirt, Cobblestone, Sand
-    private static final int XP_PREMIUM = 25; // Terracotta, Quartz, Prismarine
-
-    // Crafting XP (based on output block type)
-    private static final int XP_CRAFT_STRUCTURAL = 20;
-    private static final int XP_CRAFT_DECORATIVE = 12;
+    // Note: Constants replaced by SkillConfig getters
 
     // Set of structural blocks that give higher XP
     private static final Set<Block> STRUCTURAL_BLOCKS = Set.of(
@@ -104,23 +97,23 @@ public class BuilderXpGetter {
     public static SkillReceptorResult getBlockPlacementXp(Block block) {
         // Premium blocks
         if (PREMIUM_BLOCKS.contains(block)) {
-            return new SkillReceptorResult(true, XP_PREMIUM);
+            return new SkillReceptorResult(true, SkillConfig.getBuilderXpPremium());
         }
         // Structural blocks
         if (STRUCTURAL_BLOCKS.contains(block)) {
-            return new SkillReceptorResult(true, XP_STRUCTURAL);
+            return new SkillReceptorResult(true, SkillConfig.getBuilderXpStructural());
         }
         // Decorative blocks or stairs/slabs/fences/walls
         if (DECORATIVE_BLOCKS.contains(block) || isDecorativeVariant(block)) {
-            return new SkillReceptorResult(true, XP_DECORATIVE);
+            return new SkillReceptorResult(true, SkillConfig.getBuilderXpDecorative());
         }
         // Basic blocks
         if (BASIC_BLOCKS.contains(block)) {
-            return new SkillReceptorResult(true, XP_BASIC);
+            return new SkillReceptorResult(true, SkillConfig.getBuilderXpBasic());
         }
         // Default: some XP for any solid block
         if (block.getDefaultState().isSolidBlock(null, null)) {
-            return new SkillReceptorResult(true, XP_BASIC);
+            return new SkillReceptorResult(true, SkillConfig.getBuilderXpBasic());
         }
 
         return new SkillReceptorResult(false, 0);
@@ -134,10 +127,10 @@ public class BuilderXpGetter {
      */
     public static SkillReceptorResult getCraftingXp(Item item) {
         if (isStructuralItem(item)) {
-            return new SkillReceptorResult(true, XP_CRAFT_STRUCTURAL);
+            return new SkillReceptorResult(true, SkillConfig.getBuilderXpCraftStructural());
         }
         if (isDecorativeItem(item)) {
-            return new SkillReceptorResult(true, XP_CRAFT_DECORATIVE);
+            return new SkillReceptorResult(true, SkillConfig.getBuilderXpCraftDecorative());
         }
         return new SkillReceptorResult(false, 0);
     }

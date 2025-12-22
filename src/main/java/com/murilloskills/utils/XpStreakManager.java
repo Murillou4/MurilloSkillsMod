@@ -13,9 +13,8 @@ import java.util.UUID;
 public class XpStreakManager {
 
     // Configurações
-    private static final long STREAK_TIMEOUT_MS = 5000; // 5 segundos para manter streak
-    private static final int MAX_STREAK = 10; // Streak máximo
-    private static final float STREAK_BONUS_PER_LEVEL = 0.10f; // +10% por nível de streak
+    // Configurações
+    // Note: Constants replaced by SkillConfig getters
 
     // Dados por jogador
     private static final Map<UUID, Map<MurilloSkillsList, StreakData>> playerStreaks = new HashMap<>();
@@ -36,12 +35,12 @@ public class XpStreakManager {
         long now = System.currentTimeMillis();
 
         // Verificar se o streak continua ou reseta
-        if (now - data.lastActionTime > STREAK_TIMEOUT_MS) {
+        if (now - data.lastActionTime > SkillConfig.getStreakTimeoutMs()) {
             // Timeout - resetar streak
             data.currentStreak = 1;
         } else {
             // Dentro do tempo - aumentar streak
-            data.currentStreak = Math.min(data.currentStreak + 1, MAX_STREAK);
+            data.currentStreak = Math.min(data.currentStreak + 1, SkillConfig.getMaxStreak());
         }
 
         data.lastActionTime = now;
@@ -67,7 +66,7 @@ public class XpStreakManager {
             return 0;
 
         // Verificar timeout
-        if (System.currentTimeMillis() - data.lastActionTime > STREAK_TIMEOUT_MS) {
+        if (System.currentTimeMillis() - data.lastActionTime > SkillConfig.getStreakTimeoutMs()) {
             return 0;
         }
 
@@ -85,7 +84,7 @@ public class XpStreakManager {
             return 1.0f;
 
         // Streak 2 = +10%, Streak 3 = +20%, ..., Streak 10 = +90%
-        float bonus = (streak - 1) * STREAK_BONUS_PER_LEVEL;
+        float bonus = (streak - 1) * SkillConfig.getStreakBonusPerLevel();
         return 1.0f + Math.min(bonus, 1.0f); // Max 2x (100% bonus)
     }
 

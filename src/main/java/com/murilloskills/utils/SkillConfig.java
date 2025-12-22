@@ -10,6 +10,14 @@ public class SkillConfig {
     // --- CONSTANTS (never change) ---
     public static final int TICKS_PER_SECOND = 20;
 
+    // --- XP CALCULATION ---
+    // --- XP CALCULATION ---
+    // Formula: Base + (Level * Multiplier) + (Exponent * Level^2)
+    public static int getXpForLevel(int level) {
+        var config = ModConfig.get().xp;
+        return config.base + (level * config.multiplier) + (config.exponent * level * level);
+    }
+
     // --- GENERAL ---
     public static int getMaxLevel() {
         return ModConfig.get().general.maxLevel;
@@ -56,6 +64,10 @@ public class SkillConfig {
 
     public static int getMinerAbilityDurationSeconds() {
         return ModConfig.get().miner.abilityDurationSeconds;
+    }
+
+    public static int getMinerScanLimit() {
+        return ModConfig.get().miner.scanLimit;
     }
 
     // Legacy constants for backward compatibility
@@ -750,5 +762,395 @@ public class SkillConfig {
      */
     public static long getDynamicCooldownTicks(int baseCooldownSeconds, int level) {
         return toTicksLong(getDynamicCooldown(baseCooldownSeconds, level));
+    }
+
+    // --- PRESTIGE ---
+    public static float getPrestigeXpBonus() {
+        return ModConfig.get().prestige.xpBonus;
+    }
+
+    public static float getPrestigePassiveBonus() {
+        return ModConfig.get().prestige.passiveBonus;
+    }
+
+    public static int getMaxPrestigeLevel() {
+        return ModConfig.get().prestige.maxPrestigeLevel;
+    }
+
+    public static String[] getPrestigeSymbols() {
+        return ModConfig.get().prestige.prestigeSymbols;
+    }
+
+    public static int[] getPrestigeColors() {
+        return ModConfig.get().prestige.prestigeColors;
+    }
+
+    // --- NOTIFICATIONS ---
+    public static float getLevelUpVolume() {
+        return ModConfig.get().notifications.levelUpVolume;
+    }
+
+    public static float getLevelUpPitch() {
+        return ModConfig.get().notifications.levelUpPitch;
+    }
+
+    // --- DAILY CHALLENGES ---
+    public static int getChallengesPerDay() {
+        return ModConfig.get().dailyChallenges.challengesPerDay;
+    }
+
+    public static int getBaseXpReward() {
+        return ModConfig.get().dailyChallenges.baseXpReward;
+    }
+
+    public static int getBonusXpAllComplete() {
+        return ModConfig.get().dailyChallenges.bonusXpAllComplete;
+    }
+
+    // --- XP STREAK ---
+    public static int getStreakTimeoutMs() {
+        return ModConfig.get().xpStreak.streakTimeoutMs;
+    }
+
+    public static int getMaxStreak() {
+        return ModConfig.get().xpStreak.maxStreak;
+    }
+
+    public static float getStreakBonusPerLevel() {
+        return ModConfig.get().xpStreak.streakBonusPerLevel;
+    }
+
+    // --- MINER SOURCE ---
+    public static int getMinerXpStone() {
+        return ModConfig.get().minerSource.xpStone;
+    }
+
+    public static int getMinerXpCoal() {
+        return ModConfig.get().minerSource.xpCoal;
+    }
+
+    public static int getMinerXpCopper() {
+        return ModConfig.get().minerSource.xpCopper;
+    }
+
+    public static int getMinerXpIron() {
+        return ModConfig.get().minerSource.xpIron;
+    }
+
+    public static int getMinerXpGold() {
+        return ModConfig.get().minerSource.xpGold;
+    }
+
+    public static int getMinerXpLapis() {
+        return ModConfig.get().minerSource.xpLapis;
+    }
+
+    public static int getMinerXpRedstone() {
+        return ModConfig.get().minerSource.xpRedstone;
+    }
+
+    public static int getMinerXpDiamond() {
+        return ModConfig.get().minerSource.xpDiamond;
+    }
+
+    public static int getMinerXpEmerald() {
+        return ModConfig.get().minerSource.xpEmerald;
+    }
+
+    public static int getMinerXpAncientDebris() {
+        return ModConfig.get().minerSource.xpAncientDebris;
+    }
+
+    public static int getMinerXpNetherQuartz() {
+        return ModConfig.get().minerSource.xpNetherQuartz;
+    }
+
+    public static int getMinerXpNetherGold() {
+        return ModConfig.get().minerSource.xpNetherGold;
+    }
+
+    // --- WARRIOR SOURCE ---
+    public static int getWarriorXpEnderDragon() {
+        return ModConfig.get().warriorSource.xpEnderDragon;
+    }
+
+    public static int getWarriorXpWither() {
+        return ModConfig.get().warriorSource.xpWither;
+    }
+
+    public static int getWarriorXpWarden() {
+        return ModConfig.get().warriorSource.xpWarden;
+    }
+
+    public static int getWarriorXpEnderman() {
+        return ModConfig.get().warriorSource.xpEnderman;
+    }
+
+    public static int getWarriorXpBlaze() {
+        return ModConfig.get().warriorSource.xpBlaze;
+    }
+
+    public static int getWarriorXpMonsterDefault() {
+        return ModConfig.get().warriorSource.xpMonsterDefault;
+    }
+
+    // --- ARCHER SOURCE ---
+    public static int getArcherXpHitBase() {
+        return ModConfig.get().archerSource.xpHitBase;
+    }
+
+    public static int getArcherXpHitHostile() {
+        return ModConfig.get().archerSource.xpHitHostile;
+    }
+
+    public static int getArcherXpKillBase() {
+        return ModConfig.get().archerSource.xpKillBase;
+    }
+
+    public static int getArcherXpKillHostile() {
+        return ModConfig.get().archerSource.xpKillHostile;
+    }
+
+    public static int getArcherLongRangeTier1() {
+        return ModConfig.get().archerSource.longRangeTier1;
+    }
+
+    public static int getArcherLongRangeTier2() {
+        return ModConfig.get().archerSource.longRangeTier2;
+    }
+
+    public static int getArcherLongRangeTier3() {
+        return ModConfig.get().archerSource.longRangeTier3;
+    }
+
+    public static double getArcherLongRangeMultiplier1() {
+        return ModConfig.get().archerSource.longRangeMultiplier1;
+    }
+
+    public static double getArcherLongRangeMultiplier2() {
+        return ModConfig.get().archerSource.longRangeMultiplier2;
+    }
+
+    public static double getArcherLongRangeMultiplier3() {
+        return ModConfig.get().archerSource.longRangeMultiplier3;
+    }
+
+    // --- FARMER SOURCE ---
+    public static int getFarmerXpWheat() {
+        return ModConfig.get().farmerSource.xpWheat;
+    }
+
+    public static int getFarmerXpCarrot() {
+        return ModConfig.get().farmerSource.xpCarrot;
+    }
+
+    public static int getFarmerXpPotato() {
+        return ModConfig.get().farmerSource.xpPotato;
+    }
+
+    public static int getFarmerXpBeetroot() {
+        return ModConfig.get().farmerSource.xpBeetroot;
+    }
+
+    public static int getFarmerXpMelon() {
+        return ModConfig.get().farmerSource.xpMelon;
+    }
+
+    public static int getFarmerXpPumpkin() {
+        return ModConfig.get().farmerSource.xpPumpkin;
+    }
+
+    public static int getFarmerXpNetherWart() {
+        return ModConfig.get().farmerSource.xpNetherWart;
+    }
+
+    public static int getFarmerXpSweetBerry() {
+        return ModConfig.get().farmerSource.xpSweetBerry;
+    }
+
+    public static int getFarmerXpCocoa() {
+        return ModConfig.get().farmerSource.xpCocoa;
+    }
+
+    // --- FISHER SOURCE ---
+    public static int getFisherXpTreasure() {
+        return ModConfig.get().fisherSource.xpTreasure;
+    }
+
+    public static int getFisherXpFish() {
+        return ModConfig.get().fisherSource.xpFish;
+    }
+
+    public static int getFisherXpJunk() {
+        return ModConfig.get().fisherSource.xpJunk;
+    }
+
+    // --- BLACKSMITH SOURCE ---
+    public static int getBlacksmithXpAnvilRepair() {
+        return ModConfig.get().blacksmithSource.xpAnvilRepair;
+    }
+
+    public static int getBlacksmithXpAnvilRename() {
+        return ModConfig.get().blacksmithSource.xpAnvilRename;
+    }
+
+    public static int getBlacksmithXpAnvilEnchantCombine() {
+        return ModConfig.get().blacksmithSource.xpAnvilEnchantCombine;
+    }
+
+    public static int getBlacksmithXpEnchantLevel1() {
+        return ModConfig.get().blacksmithSource.xpEnchantLevel1;
+    }
+
+    public static int getBlacksmithXpEnchantLevel2() {
+        return ModConfig.get().blacksmithSource.xpEnchantLevel2;
+    }
+
+    public static int getBlacksmithXpEnchantLevel3() {
+        return ModConfig.get().blacksmithSource.xpEnchantLevel3;
+    }
+
+    public static int getBlacksmithXpSmeltIron() {
+        return ModConfig.get().blacksmithSource.xpSmeltIron;
+    }
+
+    public static int getBlacksmithXpSmeltGold() {
+        return ModConfig.get().blacksmithSource.xpSmeltGold;
+    }
+
+    public static int getBlacksmithXpSmeltCopper() {
+        return ModConfig.get().blacksmithSource.xpSmeltCopper;
+    }
+
+    public static int getBlacksmithXpSmeltAncientDebris() {
+        return ModConfig.get().blacksmithSource.xpSmeltAncientDebris;
+    }
+
+    public static int getBlacksmithXpGrindstoneUse() {
+        return ModConfig.get().blacksmithSource.xpGrindstoneUse;
+    }
+
+    // --- BUILDER SOURCE ---
+    public static int getBuilderXpStructural() {
+        return ModConfig.get().builderSource.xpStructural;
+    }
+
+    public static int getBuilderXpDecorative() {
+        return ModConfig.get().builderSource.xpDecorative;
+    }
+
+    public static int getBuilderXpBasic() {
+        return ModConfig.get().builderSource.xpBasic;
+    }
+
+    public static int getBuilderXpPremium() {
+        return ModConfig.get().builderSource.xpPremium;
+    }
+
+    public static int getBuilderXpCraftStructural() {
+        return ModConfig.get().builderSource.xpCraftStructural;
+    }
+
+    public static int getBuilderXpCraftDecorative() {
+        return ModConfig.get().builderSource.xpCraftDecorative;
+    }
+
+    // --- EPIC BUNDLE ---
+    public static int getEpicBundleWeightEnchantedBook() {
+        return ModConfig.get().epicBundle.weightEnchantedBook;
+    }
+
+    public static int getEpicBundleWeightGoldBlock() {
+        return ModConfig.get().epicBundle.weightGoldBlock;
+    }
+
+    public static int getEpicBundleWeightDiamondBlock() {
+        return ModConfig.get().epicBundle.weightDiamondBlock;
+    }
+
+    public static int getEpicBundleWeightTrident() {
+        return ModConfig.get().epicBundle.weightTrident;
+    }
+
+    public static int getEpicBundleWeightHeartOfSea() {
+        return ModConfig.get().epicBundle.weightHeartOfSea;
+    }
+
+    public static int getEpicBundleWeightGoldenApple() {
+        return ModConfig.get().epicBundle.weightGoldenApple;
+    }
+
+    public static int getEpicBundleLevelDiamondBlock() {
+        return ModConfig.get().epicBundle.levelDiamondBlock;
+    }
+
+    public static int getEpicBundleLevelTrident() {
+        return ModConfig.get().epicBundle.levelTrident;
+    }
+
+    public static int getEpicBundleLevelHeartOfSea() {
+        return ModConfig.get().epicBundle.levelHeartOfSea;
+    }
+
+    public static int getEpicBundleLevelGoldenApple() {
+        return ModConfig.get().epicBundle.levelGoldenApple;
+    }
+
+    // --- SYNERGIES ---
+    public static float getSynergyIronWill() {
+        return ModConfig.get().synergies.ironWill;
+    }
+
+    public static float getSynergyForgeMaster() {
+        return ModConfig.get().synergies.forgeMaster;
+    }
+
+    public static float getSynergyRanger() {
+        return ModConfig.get().synergies.ranger;
+    }
+
+    public static float getSynergyNaturesBounty() {
+        return ModConfig.get().synergies.naturesBounty;
+    }
+
+    public static float getSynergyTreasureHunter() {
+        return ModConfig.get().synergies.treasureHunter;
+    }
+
+    public static float getSynergyCombatMaster() {
+        return ModConfig.get().synergies.combatMaster;
+    }
+
+    public static float getSynergyMasterCrafter() {
+        return ModConfig.get().synergies.masterCrafter;
+    }
+
+    // --- NEW SYNERGIES ---
+    public static float getSynergySurvivor() {
+        return ModConfig.get().synergies.survivor;
+    }
+
+    public static float getSynergyIndustrial() {
+        return ModConfig.get().synergies.industrial;
+    }
+
+    public static float getSynergySeaWarrior() {
+        return ModConfig.get().synergies.seaWarrior;
+    }
+
+    public static float getSynergyGreenArcher() {
+        return ModConfig.get().synergies.greenArcher;
+    }
+
+    public static float getSynergyProspector() {
+        return ModConfig.get().synergies.prospector;
+    }
+
+    public static float getSynergyAdventurer() {
+        return ModConfig.get().synergies.adventurer;
+    }
+
+    public static float getSynergyHermit() {
+        return ModConfig.get().synergies.hermit;
     }
 }

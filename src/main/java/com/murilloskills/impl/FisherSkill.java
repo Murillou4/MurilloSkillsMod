@@ -1,7 +1,7 @@
 package com.murilloskills.impl;
 
 import com.murilloskills.api.AbstractSkill;
-import com.murilloskills.data.SkillGlobalState;
+
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.network.RainDanceS2CPayload;
 import com.murilloskills.utils.SkillConfig;
@@ -40,7 +40,7 @@ public class FisherSkill extends AbstractSkill {
     }
 
     @Override
-    public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
+    public void onActiveAbility(ServerPlayerEntity player, com.murilloskills.data.PlayerSkillData.SkillStats stats) {
         try {
             // 1. Check Level
             // 1. Verifica Nível (permite se level >= 100 OU se já prestigiou)
@@ -74,8 +74,9 @@ public class FisherSkill extends AbstractSkill {
 
             // 4. Activate Rain Dance
             stats.lastAbilityUse = worldTime;
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            state.markDirty();
+            // 4. Activate Rain Dance
+            stats.lastAbilityUse = worldTime;
+            // Persistence handled automatically
 
             startRainDance(player);
 

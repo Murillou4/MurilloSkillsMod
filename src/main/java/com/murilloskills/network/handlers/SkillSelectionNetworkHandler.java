@@ -1,6 +1,5 @@
 package com.murilloskills.network.handlers;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.network.SkillSelectionC2SPayload;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.DailyChallengeManager;
@@ -35,8 +34,7 @@ public final class SkillSelectionNetworkHandler {
             context.server().execute(() -> {
                 try {
                     var player = context.player();
-                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-                    var data = state.getPlayerData(player);
+                    var data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
                     // Validation: Check if player already has 3 skills selected (maxed out)
                     if (data.hasSelectedSkills()) {
@@ -65,7 +63,6 @@ public final class SkillSelectionNetworkHandler {
                     // Apply the selection (Overwrite existing selection with new cumulative list)
                     // Note: Client should send the FULL list of selected skills (old + new)
                     if (data.setSelectedSkills(incoming)) {
-                        state.markDirty();
 
                         // Apply attributes for selected skills immediately
                         SkillAttributes.updateAllStats(player);
@@ -83,6 +80,21 @@ public final class SkillSelectionNetworkHandler {
                                     .formatted(Formatting.GREEN, Formatting.BOLD), false);
                             player.sendMessage(Text.translatable("murilloskills.selection.chose_3")
                                     .formatted(Formatting.YELLOW), false);
+
+                            // Grant "Trio Chosen" advancement
+                            com.murilloskills.utils.AdvancementGranter.grantTrioChosen(player);
+
+                            // Check for active synergies and grant First Synergy achievement
+                            var activeSynergies = com.murilloskills.utils.SkillSynergyManager
+                                    .getActiveSynergies(player);
+                            if (!activeSynergies.isEmpty()) {
+                                com.murilloskills.utils.AdvancementGranter.grantFirstSynergy(player);
+
+                                // Track unique synergies activated for Synergy Master achievement
+                                for (var synergy : activeSynergies) {
+                                    trackSynergyForMaster(player, synergy.id(), data);
+                                }
+                            }
                         } else {
                             // Partial selection
                             int remaining = SkillSelectionC2SPayload.MAX_SELECTED_SKILLS - currentCount;
@@ -105,5 +117,44 @@ public final class SkillSelectionNetworkHandler {
                 }
             });
         };
+    }
+
+    /**
+     * Tracks unique synergies activated for Synergy Master achievement.
+     * Uses a bitmask to track which synergies have been activated.
+     */
+    private static void trackSynergyForMaster(net.minecraft.server.network.ServerPlayerEntity player,
+            String synergyId, com.murilloskills.data.PlayerSkillData data) {
+        // Map synergy ID to bit position
+        int bit = switch (synergyId) {
+            case "iron_will" -> 1;
+            case "forge_master" -> 2;
+            case "ranger" -> 4;
+            case "natures_bounty" -> 8;
+            case "treasure_hunter" -> 16;
+            case "combat_master" -> 32;
+            case "master_crafter" -> 64;
+            default -> 0;
+        };
+
+        if (bit == 0)
+            return;
+
+        // Get current synergy bitmask from achievement stats
+        int currentMask = 0;
+        if (data.achievementStats != null) {
+            currentMask = data.achievementStats.getOrDefault("synergies_activated", 0);
+        } else {
+            data.achievementStats = new java.util.HashMap<>();
+        }
+
+        // Add new synergy to mask
+        int newMask = currentMask | bit;
+        data.achievementStats.put("synergies_activated", newMask);
+
+        // Check if all 7 synergies activated (bitmask = 127 = 1+2+4+8+16+32+64)
+        if (newMask == 127) {
+            com.murilloskills.utils.AdvancementGranter.grantSynergyMaster(player);
+        }
     }
 }

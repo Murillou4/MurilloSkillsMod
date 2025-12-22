@@ -1,6 +1,5 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.impl.ArcherSkill;
 import com.murilloskills.skills.ArcherHitHandler;
 import com.murilloskills.skills.MurilloSkillsList;
@@ -39,8 +38,9 @@ public abstract class ArrowEntityMixin {
         }
 
         // Aplica bônus de dano baseado no nível do Archer
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        int level = state.getPlayerData(player).getSkill(MurilloSkillsList.ARCHER).level;
+        com.murilloskills.data.PlayerSkillData data = player
+                .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+        int level = data.getSkill(MurilloSkillsList.ARCHER).level;
 
         // IMPORTANTE: Aplica piercing ANTES de processar o hit para evitar que a flecha
         // volte
@@ -64,7 +64,7 @@ public abstract class ArrowEntityMixin {
         }
 
         if (level > 0) {
-            int prestige = state.getPlayerData(player).getSkill(MurilloSkillsList.ARCHER).prestige;
+            int prestige = data.getSkill(MurilloSkillsList.ARCHER).prestige;
             double damageMultiplier = ArcherSkill.getRangedDamageMultiplier(level, prestige);
 
             // Headshot detection: check if arrow hit near the target's eye level

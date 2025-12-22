@@ -27,6 +27,11 @@ public abstract class AnimalBreedMixin {
         // Get the player who caused the breeding (the one who fed this animal)
         if (self.getLovingPlayer() instanceof ServerPlayerEntity serverPlayer) {
             ChallengeEventsHandler.onAnimalBred(serverPlayer);
+
+            // Track animal breeding for Animal Breeder achievement
+            com.murilloskills.utils.AchievementTracker.incrementAndCheck(
+                    serverPlayer, com.murilloskills.skills.MurilloSkillsList.FARMER,
+                    com.murilloskills.utils.AchievementTracker.KEY_ANIMALS_BRED, 1);
         }
     }
 }

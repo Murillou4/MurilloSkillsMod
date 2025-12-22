@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:enchanting_table"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.blacksmith.master_enchanter.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.blacksmith.master_enchanter.description"
+        },
+        "frame": "goal",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:blacksmith/first_forge",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

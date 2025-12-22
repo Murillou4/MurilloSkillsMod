@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:wheat"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.farmer.animal_breeder.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.farmer.animal_breeder.description"
+        },
+        "frame": "goal",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:farmer/first_harvest",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

@@ -1,6 +1,5 @@
 package com.murilloskills.skills;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.models.SkillReceptorResult;
 import com.murilloskills.utils.ArcherXpGetter;
 import com.murilloskills.utils.SkillNotifier;
@@ -32,14 +31,14 @@ public class ArcherHitHandler {
         if (!result.didGainXp())
             return;
 
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        var data = state.getPlayerData(player);
+        var data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         // Apply streak bonus
         int baseXp = result.getXpAmount();
         int streakXp = XpStreakManager.applyStreakBonus(player.getUuid(), MurilloSkillsList.ARCHER, baseXp);
 
-        SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.ARCHER, streakXp);
+        com.murilloskills.data.PlayerSkillData.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.ARCHER,
+                streakXp);
 
         // Check for milestone rewards
         com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(player, "Arqueiro", xpResult);
@@ -49,7 +48,6 @@ public class ArcherHitHandler {
             SkillNotifier.notifyLevelUp(player, MurilloSkillsList.ARCHER, stats.level);
         }
 
-        state.markDirty();
         SkillsNetworkUtils.syncSkills(player);
 
         // Send XP toast notification (with streak indicator)
@@ -76,14 +74,14 @@ public class ArcherHitHandler {
         if (!result.didGainXp())
             return;
 
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        var data = state.getPlayerData(player);
+        var data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         // Apply streak bonus
         int baseXp = result.getXpAmount();
         int streakXp = XpStreakManager.applyStreakBonus(player.getUuid(), MurilloSkillsList.ARCHER, baseXp);
 
-        SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.ARCHER, streakXp);
+        com.murilloskills.data.PlayerSkillData.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.ARCHER,
+                streakXp);
 
         // Check for milestone rewards
         com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(player, "Arqueiro", xpResult);
@@ -93,7 +91,6 @@ public class ArcherHitHandler {
             SkillNotifier.notifyLevelUp(player, MurilloSkillsList.ARCHER, stats.level);
         }
 
-        state.markDirty();
         SkillsNetworkUtils.syncSkills(player);
 
         // Send XP toast notification (with streak indicator)
@@ -101,5 +98,20 @@ public class ArcherHitHandler {
         int streak = XpStreakManager.getCurrentStreak(player.getUuid(), MurilloSkillsList.ARCHER);
         String source = streak > 1 ? targetName + " Kill (x" + streak + ")" : targetName + " Kill";
         com.murilloskills.utils.XpToastSender.send(player, MurilloSkillsList.ARCHER, streakXp, source);
+
+        // Track Archer achievements
+        // Sharpshooter: headshot detection (approximation using vertical angle)
+        if (target.getEyeY() > player.getEyeY() - 0.5 && target.getEyeY() < player.getEyeY() + 0.5) {
+            com.murilloskills.utils.AchievementTracker.incrementAndCheck(
+                    player, MurilloSkillsList.ARCHER,
+                    com.murilloskills.utils.AchievementTracker.KEY_HEADSHOTS, 1);
+        }
+
+        // Sniper: long distance kill (>50 blocks)
+        if (distance >= com.murilloskills.utils.AchievementTracker.SNIPER_DISTANCE) {
+            com.murilloskills.utils.AchievementTracker.incrementAndCheck(
+                    player, MurilloSkillsList.ARCHER,
+                    com.murilloskills.utils.AchievementTracker.KEY_LONG_SHOTS, 1);
+        }
     }
 }

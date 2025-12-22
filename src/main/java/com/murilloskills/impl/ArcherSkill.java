@@ -1,7 +1,7 @@
 package com.murilloskills.impl;
 
 import com.murilloskills.api.AbstractSkill;
-import com.murilloskills.data.SkillGlobalState;
+
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -39,7 +39,7 @@ public class ArcherSkill extends AbstractSkill {
     }
 
     @Override
-    public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
+    public void onActiveAbility(ServerPlayerEntity player, com.murilloskills.data.PlayerSkillData.SkillStats stats) {
         try {
             // 1. Verifica Nível
             // 1. Verifica Nível (permite se level >= 100 OU se já prestigiou)
@@ -71,8 +71,9 @@ public class ArcherSkill extends AbstractSkill {
 
             // 4. Ativa o Master Ranger
             stats.lastAbilityUse = worldTime;
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            state.markDirty();
+            // 4. Ativa o Master Ranger
+            stats.lastAbilityUse = worldTime;
+            // Persistence handled automatically
 
             startMasterRanger(player);
 

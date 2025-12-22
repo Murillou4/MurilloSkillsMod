@@ -1,6 +1,5 @@
 package com.murilloskills.events;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.impl.BuilderSkill;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.BuilderXpGetter;
@@ -49,8 +48,7 @@ public class BlockPlacementHandler {
             }
 
             // Check if player has Builder skill selected
-            SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
-            var playerData = state.getPlayerData(serverPlayer);
+            var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             if (!playerData.isSkillSelected(MurilloSkillsList.BUILDER)) {
                 return ActionResult.PASS;
@@ -68,7 +66,8 @@ public class BlockPlacementHandler {
                 var builderStats = playerData.getSkill(MurilloSkillsList.BUILDER);
 
                 // Use proper addXpToSkill method for level-up handling
-                SkillGlobalState.XpAddResult xpAddResult = playerData.addXpToSkill(MurilloSkillsList.BUILDER,
+                com.murilloskills.data.PlayerSkillData.XpAddResult xpAddResult = playerData.addXpToSkill(
+                        MurilloSkillsList.BUILDER,
                         xpResult.getXpAmount());
 
                 // Check for milestone rewards
@@ -82,7 +81,7 @@ public class BlockPlacementHandler {
                     com.murilloskills.utils.SkillAttributes.updateAllStats(serverPlayer);
                 }
 
-                // Note: markDirty() is called automatically when state changes
+                // Note: Persistence is handled automatically by attachments
                 SkillsNetworkUtils.syncSkills(serverPlayer);
 
                 LOGGER.debug("Awarded {} XP to {} for placing {}",
@@ -106,6 +105,16 @@ public class BlockPlacementHandler {
                 }
 
                 com.murilloskills.utils.DailyChallengeManager.syncChallenges(serverPlayer);
+
+                // Track blocks placed for Builder achievements
+                com.murilloskills.utils.AchievementTracker.incrementAndCheck(
+                        serverPlayer, MurilloSkillsList.BUILDER,
+                        com.murilloskills.utils.AchievementTracker.KEY_BLOCKS_PLACED, 1);
+
+                // Check for Height Master achievement (block placed above Y=200)
+                if (placementPos.getY() > 200) {
+                    com.murilloskills.utils.AdvancementGranter.grantHeightMaster(serverPlayer);
+                }
             }
 
             // Handle Creative Brush line placement
@@ -115,7 +124,8 @@ public class BlockPlacementHandler {
 
                 if (extraBlocks > 0) {
                     // Award bonus XP for extra blocks placed
-                    SkillGlobalState.XpAddResult brushResult = playerData.addXpToSkill(MurilloSkillsList.BUILDER,
+                    com.murilloskills.data.PlayerSkillData.XpAddResult brushResult = playerData.addXpToSkill(
+                            MurilloSkillsList.BUILDER,
                             xpResult.getXpAmount() * extraBlocks);
 
                     // Check for milestone rewards
@@ -126,7 +136,7 @@ public class BlockPlacementHandler {
                         var builderStats = playerData.getSkill(MurilloSkillsList.BUILDER);
                         SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.BUILDER, builderStats.level);
                     }
-                    state.markDirty();
+
                     SkillsNetworkUtils.syncSkills(serverPlayer);
 
                     LOGGER.debug("Creative Brush placed {} extra blocks for {}",

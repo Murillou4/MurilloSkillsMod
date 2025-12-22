@@ -27,15 +27,36 @@ public class ModConfig {
     public static class ConfigData {
         // --- GENERAL ---
         public GeneralConfig general = new GeneralConfig();
+        public XpConfig xp = new XpConfig();
+        public PrestigeConfig prestige = new PrestigeConfig();
+        public SynergiesConfig synergies = new SynergiesConfig();
+        public NotificationConfig notifications = new NotificationConfig();
+        public DailyChallengeConfig dailyChallenges = new DailyChallengeConfig();
+        public XpStreakConfig xpStreak = new XpStreakConfig();
+        public EpicBundleConfig epicBundle = new EpicBundleConfig();
 
         // --- SKILLS ---
         public MinerConfig miner = new MinerConfig();
+        public MinerSourceConfig minerSource = new MinerSourceConfig(); // Separated for cleaner JSON
+
         public WarriorConfig warrior = new WarriorConfig();
+        public WarriorSourceConfig warriorSource = new WarriorSourceConfig();
+
         public ArcherConfig archer = new ArcherConfig();
+        public ArcherSourceConfig archerSource = new ArcherSourceConfig();
+
         public FarmerConfig farmer = new FarmerConfig();
+        public FarmerSourceConfig farmerSource = new FarmerSourceConfig();
+
         public FisherConfig fisher = new FisherConfig();
+        public FisherSourceConfig fisherSource = new FisherSourceConfig();
+
         public BlacksmithConfig blacksmith = new BlacksmithConfig();
+        public BlacksmithSourceConfig blacksmithSource = new BlacksmithSourceConfig();
+
         public BuilderConfig builder = new BuilderConfig();
+        public BuilderSourceConfig builderSource = new BuilderSourceConfig();
+
         public ExplorerConfig explorer = new ExplorerConfig();
 
         // --- MILESTONES ---
@@ -45,6 +66,12 @@ public class ModConfig {
     public static class GeneralConfig {
         public int maxLevel = 100;
         public float cooldownReductionPerLevel = 0.005f;
+    }
+
+    public static class XpConfig {
+        public int base = 60;
+        public int multiplier = 15;
+        public int exponent = 2;
     }
 
     public static class MinerConfig {
@@ -58,6 +85,7 @@ public class ModConfig {
         public int abilityCooldownSeconds = 1200;
         public int abilityRadius = 30;
         public int abilityDurationSeconds = 10;
+        public int scanLimit = 5000;
     }
 
     public static class WarriorConfig {
@@ -202,6 +230,152 @@ public class ModConfig {
         public int xpLevel50 = 50;
         public int xpLevel75 = 75;
         public int xpLevel100 = 150;
+    }
+
+    public static class PrestigeConfig {
+        public float xpBonus = 0.05f;
+        public float passiveBonus = 0.02f;
+        public int maxPrestigeLevel = 10;
+        public String[] prestigeSymbols = {
+                "⚔", "⚔⚔", "★", "★★", "✦", "✦✦", "✦✦✦", "♦", "♦♦", "👑"
+        };
+        // Hex colors: Green, Green, Cyan, Cyan, Yellow, Yellow, Magenta, Magenta, Gold,
+        // Gold
+        public int[] prestigeColors = {
+                0xFF88FF88, 0xFF88FF88,
+                0xFF88FFFF, 0xFF88FFFF,
+                0xFFFFFF88, 0xFFFFFF88,
+                0xFFFF88FF, 0xFFFF88FF,
+                0xFFFFDD00, 0xFFFFDD00
+        };
+    }
+
+    public static class NotificationConfig {
+        public float levelUpVolume = 1.0f;
+        public float levelUpPitch = 1.0f;
+    }
+
+    public static class DailyChallengeConfig {
+        public int challengesPerDay = 3;
+        public int baseXpReward = 500;
+        public int bonusXpAllComplete = 1000;
+    }
+
+    public static class XpStreakConfig {
+        public int streakTimeoutMs = 5000;
+        public int maxStreak = 10;
+        public float streakBonusPerLevel = 0.10f;
+    }
+
+    // --- XP SOURCES ---
+    public static class MinerSourceConfig {
+        public int xpStone = 150000;
+        public int xpCoal = 5;
+        public int xpCopper = 5;
+        public int xpIron = 10;
+        public int xpGold = 15;
+        public int xpLapis = 10;
+        public int xpRedstone = 10;
+        public int xpDiamond = 60;
+        public int xpEmerald = 100;
+        public int xpAncientDebris = 150;
+        public int xpNetherQuartz = 10;
+        public int xpNetherGold = 10;
+    }
+
+    public static class WarriorSourceConfig {
+        public int xpEnderDragon = 1000;
+        public int xpWither = 500;
+        public int xpWarden = 500;
+        public int xpEnderman = 20;
+        public int xpBlaze = 25;
+        public int xpMonsterDefault = 15;
+    }
+
+    public static class ArcherSourceConfig {
+        public int xpHitBase = 5;
+        public int xpHitHostile = 10;
+        public int xpKillBase = 15;
+        public int xpKillHostile = 25;
+        public int longRangeTier1 = 20;
+        public int longRangeTier2 = 40;
+        public int longRangeTier3 = 60;
+        public double longRangeMultiplier1 = 1.5;
+        public double longRangeMultiplier2 = 2.0;
+        public double longRangeMultiplier3 = 2.0;
+    }
+
+    public static class FarmerSourceConfig {
+        public int xpWheat = 3;
+        public int xpCarrot = 3;
+        public int xpPotato = 3;
+        public int xpBeetroot = 3;
+        public int xpMelon = 8;
+        public int xpPumpkin = 8;
+        public int xpNetherWart = 5;
+        public int xpSweetBerry = 2;
+        public int xpCocoa = 4;
+    }
+
+    public static class FisherSourceConfig {
+        public int xpTreasure = 50;
+        public int xpFish = 15;
+        public int xpJunk = 5;
+    }
+
+    public static class BlacksmithSourceConfig {
+        public int xpAnvilRepair = 80;
+        public int xpAnvilRename = 50;
+        public int xpAnvilEnchantCombine = 100;
+        public int xpEnchantLevel1 = 40;
+        public int xpEnchantLevel2 = 70;
+        public int xpEnchantLevel3 = 100;
+        public int xpSmeltIron = 4;
+        public int xpSmeltGold = 6;
+        public int xpSmeltCopper = 3;
+        public int xpSmeltAncientDebris = 80;
+        public int xpGrindstoneUse = 30;
+    }
+
+    public static class BuilderSourceConfig {
+        public int xpStructural = 150000;
+        public int xpDecorative = 10;
+        public int xpBasic = 3;
+        public int xpPremium = 25;
+        public int xpCraftStructural = 20;
+        public int xpCraftDecorative = 12;
+    }
+
+    public static class EpicBundleConfig {
+        public int weightEnchantedBook = 40;
+        public int weightGoldBlock = 25;
+        public int weightDiamondBlock = 20;
+        public int weightTrident = 10;
+        public int weightHeartOfSea = 4;
+        public int weightGoldenApple = 1;
+
+        public int levelDiamondBlock = 25;
+        public int levelTrident = 50;
+        public int levelHeartOfSea = 75;
+        public int levelGoldenApple = 90;
+    }
+
+    public static class SynergiesConfig {
+        public float ironWill = 0.10f;
+        public float forgeMaster = 0.15f;
+        public float ranger = 0.20f;
+        public float naturesBounty = 0.10f;
+        public float treasureHunter = 0.25f;
+        public float combatMaster = 0.10f;
+        public float masterCrafter = 0.30f;
+        // New synergies
+        public float survivor = 0.15f; // Warrior + Explorer
+        public float industrial = 0.20f; // Miner + Builder
+        public float seaWarrior = 0.12f; // Warrior + Fisher
+        public float greenArcher = 0.15f; // Farmer + Archer
+        public float prospector = 0.20f; // Miner + Warrior
+        public float adventurer = 0.18f; // Builder + Explorer
+        public float hermit = 0.15f; // Farmer + Builder
     }
 
     /**

@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:anvil"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.blacksmith.first_forge.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.blacksmith.first_forge.description"
+        },
+        "frame": "task",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:blacksmith/level_10",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:dragon_head"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.warrior.dragon_slayer.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.warrior.dragon_slayer.description"
+        },
+        "frame": "challenge",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:warrior/level_50",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

@@ -16,15 +16,7 @@ import net.minecraft.block.Blocks;
 public class FarmerXpGetter {
 
     // Base XP values for different crops
-    private static final int XP_WHEAT = 3;
-    private static final int XP_CARROT = 3;
-    private static final int XP_POTATO = 3;
-    private static final int XP_BEETROOT = 3;
-    private static final int XP_MELON = 8; // Mantido - crescimento lento
-    private static final int XP_PUMPKIN = 8; // Mantido - crescimento lento
-    private static final int XP_NETHER_WART = 5;
-    private static final int XP_SWEET_BERRY = 2;
-    private static final int XP_COCOA = 4;
+    // Note: Constants replaced by SkillConfig getters
 
     /**
      * Checks if a block is a harvestable crop and returns the XP reward.
@@ -42,39 +34,39 @@ public class FarmerXpGetter {
 
         // Wheat
         if (block == Blocks.WHEAT) {
-            return new SkillReceptorResult(true, XP_WHEAT);
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpWheat());
         }
         // Carrots
         else if (block == Blocks.CARROTS) {
-            return new SkillReceptorResult(true, XP_CARROT);
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpCarrot());
         }
         // Potatoes
         else if (block == Blocks.POTATOES) {
-            return new SkillReceptorResult(true, XP_POTATO);
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpPotato());
         }
         // Beetroots
         else if (block == Blocks.BEETROOTS) {
-            return new SkillReceptorResult(true, XP_BEETROOT);
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpBeetroot());
         }
         // Melon
         else if (block == Blocks.MELON) {
-            return new SkillReceptorResult(true, XP_MELON);
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpMelon());
         }
         // Pumpkin
         else if (block == Blocks.PUMPKIN) {
-            return new SkillReceptorResult(true, XP_PUMPKIN);
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpPumpkin());
         }
         // Nether Wart
         else if (block == Blocks.NETHER_WART) {
-            return new SkillReceptorResult(true, XP_NETHER_WART);
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpNetherWart());
         }
         // Sweet Berry Bush
         else if (block == Blocks.SWEET_BERRY_BUSH) {
-            return new SkillReceptorResult(true, XP_SWEET_BERRY);
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpSweetBerry());
         }
         // Cocoa
         else if (block == Blocks.COCOA) {
-            return new SkillReceptorResult(true, XP_COCOA);
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpCocoa());
         }
 
         return new SkillReceptorResult(false, 0);
@@ -90,15 +82,15 @@ public class FarmerXpGetter {
         int baseXp = 0;
 
         if (block == Blocks.WHEAT)
-            baseXp = XP_WHEAT;
+            baseXp = SkillConfig.getFarmerXpWheat();
         else if (block == Blocks.CARROTS)
-            baseXp = XP_CARROT;
+            baseXp = SkillConfig.getFarmerXpCarrot();
         else if (block == Blocks.POTATOES)
-            baseXp = XP_POTATO;
+            baseXp = SkillConfig.getFarmerXpPotato();
         else if (block == Blocks.BEETROOTS)
-            baseXp = XP_BEETROOT;
+            baseXp = SkillConfig.getFarmerXpBeetroot();
         else if (block == Blocks.NETHER_WART)
-            baseXp = XP_NETHER_WART;
+            baseXp = SkillConfig.getFarmerXpNetherWart();
 
         if (baseXp > 0) {
             // +25% of base (minimum 1 XP)

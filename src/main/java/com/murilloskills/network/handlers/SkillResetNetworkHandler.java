@@ -1,6 +1,5 @@
 package com.murilloskills.network.handlers;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.network.SkillResetC2SPayload;
 import com.murilloskills.utils.SkillAttributes;
 import com.murilloskills.utils.SkillsNetworkUtils;
@@ -31,8 +30,7 @@ public final class SkillResetNetworkHandler {
             context.server().execute(() -> {
                 try {
                     var player = context.player();
-                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-                    var data = state.getPlayerData(player);
+                    var data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
                     // Validation: Can only reset selected skills
                     if (!data.isSkillSelected(payload.skill())) {
@@ -54,8 +52,6 @@ public final class SkillResetNetworkHandler {
 
                     // Remove skill from selection - player can now choose a new one
                     data.selectedSkills.remove(payload.skill());
-
-                    state.markDirty();
 
                     // Update attributes to reflect reset
                     SkillAttributes.updateAllStats(player);

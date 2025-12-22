@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.BlacksmithXpGetter;
 import com.murilloskills.utils.SkillNotifier;
@@ -39,8 +39,7 @@ public abstract class EnchantmentScreenHandlerMixin {
         // for all players)
         com.murilloskills.events.ChallengeEventsHandler.onItemEnchanted(serverPlayer);
 
-        SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
-        var playerData = state.getPlayerData(serverPlayer);
+        var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         // Only grant XP if player has BLACKSMITH selected
         if (!playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
@@ -51,8 +50,7 @@ public abstract class EnchantmentScreenHandlerMixin {
         int xp = BlacksmithXpGetter.getEnchantXp(id);
 
         // Add XP using the central method that handles paragon constraints
-        SkillGlobalState.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.BLACKSMITH, xp);
-        state.markDirty();
+        PlayerSkillData.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.BLACKSMITH, xp);
 
         // Check for milestone rewards
         com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Ferreiro", xpResult);
@@ -65,5 +63,10 @@ public abstract class EnchantmentScreenHandlerMixin {
 
         // Sync skill data with client
         SkillsNetworkUtils.syncSkills(serverPlayer);
+
+        // Track enchantments for Master Enchanter achievement
+        com.murilloskills.utils.AchievementTracker.incrementAndCheck(
+                serverPlayer, MurilloSkillsList.BLACKSMITH,
+                com.murilloskills.utils.AchievementTracker.KEY_ITEMS_ENCHANTED, 1);
     }
 }

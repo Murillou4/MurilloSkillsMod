@@ -1,6 +1,5 @@
 package com.murilloskills.skills;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.models.SkillReceptorResult;
 import com.murilloskills.utils.SkillAttributes;
 import com.murilloskills.utils.SkillNotifier;
@@ -22,15 +21,15 @@ public class MobKillHandler {
             return;
 
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
-        SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
-        var data = state.getPlayerData(serverPlayer);
+        var data = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         // Apply streak bonus
         int baseXp = result.getXpAmount();
         int streakXp = XpStreakManager.applyStreakBonus(serverPlayer.getUuid(), MurilloSkillsList.WARRIOR, baseXp);
 
         // --- UPDATED CALL: Handles Paragon Logic Internally ---
-        SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.WARRIOR, streakXp);
+        com.murilloskills.data.PlayerSkillData.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.WARRIOR,
+                streakXp);
 
         // Check for milestone rewards
         com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Guerreiro", xpResult);
@@ -41,7 +40,6 @@ public class MobKillHandler {
             SkillAttributes.updateAllStats(serverPlayer);
         }
 
-        state.markDirty();
         SkillsNetworkUtils.syncSkills(serverPlayer);
 
         // Send XP toast notification (with streak indicator)
@@ -67,6 +65,24 @@ public class MobKillHandler {
             com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
                     com.murilloskills.utils.DailyChallengeManager.ChallengeType.KILL_SPIDERS, 1);
         }
+
+        // Grant "First Blood" advancement (first mob kill)
+        com.murilloskills.utils.AdvancementGranter.grantFirstBlood(serverPlayer);
+
+        // Grant "Dragon Slayer" advancement if killed Ender Dragon
+        if (victim instanceof net.minecraft.entity.boss.dragon.EnderDragonEntity) {
+            com.murilloskills.utils.AdvancementGranter.grantDragonSlayer(serverPlayer);
+        }
+
+        // Grant "Wither Slayer" advancement if killed Wither
+        if (victim instanceof net.minecraft.entity.boss.WitherEntity) {
+            com.murilloskills.utils.AdvancementGranter.grantWitherSlayer(serverPlayer);
+        }
+
+        // Track mob kills for Elite Hunter achievement
+        com.murilloskills.utils.AchievementTracker.incrementAndCheck(
+                serverPlayer, MurilloSkillsList.WARRIOR,
+                com.murilloskills.utils.AchievementTracker.KEY_MOBS_KILLED, 1);
 
         com.murilloskills.utils.DailyChallengeManager.syncChallenges(serverPlayer);
     }

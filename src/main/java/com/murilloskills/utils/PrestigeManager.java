@@ -1,6 +1,6 @@
 package com.murilloskills.utils;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
@@ -23,20 +23,21 @@ import net.minecraft.util.Formatting;
 public class PrestigeManager {
 
     // Configurações
-    public static final int MAX_PRESTIGE_LEVEL = 100;
-    public static final float XP_BONUS_PER_PRESTIGE = 0.05f; // +5% XP por prestígio
-    public static final float PASSIVE_BONUS_PER_PRESTIGE = 0.02f; // +2% efetividade por prestígio
+    // Configurações
+    // Configurações
+    // MAX_PRESTIGE_LEVEL available via SkillConfig.getMaxPrestigeLevel()
+    // XP_BONUS_PER_PRESTIGE and PASSIVE_BONUS_PER_PRESTIGE are now in SkillConfig
 
     /**
      * Verifica se uma skill pode ser prestigiada.
      * Requer nível 100 e prestígio atual < 10.
      */
     public static boolean canPrestige(ServerPlayerEntity player, MurilloSkillsList skill) {
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        SkillGlobalState.PlayerSkillData data = state.getPlayerData(player);
-        SkillGlobalState.SkillStats stats = data.getSkill(skill);
+        com.murilloskills.data.PlayerSkillData data = player
+                .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+        PlayerSkillData.SkillStats stats = data.getSkill(skill);
 
-        return stats.level >= 100 && stats.prestige < MAX_PRESTIGE_LEVEL;
+        return stats.level >= 100 && stats.prestige < SkillConfig.getMaxPrestigeLevel();
     }
 
     /**
@@ -53,9 +54,9 @@ public class PrestigeManager {
             return false;
         }
 
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        SkillGlobalState.PlayerSkillData data = state.getPlayerData(player);
-        SkillGlobalState.SkillStats stats = data.getSkill(skill);
+        com.murilloskills.data.PlayerSkillData data = player
+                .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+        PlayerSkillData.SkillStats stats = data.getSkill(skill);
 
         // Incrementar prestígio
         int newPrestige = stats.prestige + 1;
@@ -65,7 +66,6 @@ public class PrestigeManager {
         stats.level = 1;
         stats.xp = 0;
 
-        state.markDirty();
         SkillsNetworkUtils.syncSkills(player);
 
         // Notificar jogador
@@ -86,7 +86,7 @@ public class PrestigeManager {
      * Usado ao adicionar XP para aplicar bônus de prestígio.
      */
     public static float getXpMultiplier(int prestigeLevel) {
-        return 1.0f + (prestigeLevel * XP_BONUS_PER_PRESTIGE);
+        return 1.0f + (prestigeLevel * SkillConfig.getPrestigeXpBonus());
     }
 
     /**
@@ -94,7 +94,7 @@ public class PrestigeManager {
      * Usado para melhorar passivas da skill.
      */
     public static float getPassiveMultiplier(int prestigeLevel) {
-        return 1.0f + (prestigeLevel * PASSIVE_BONUS_PER_PRESTIGE);
+        return 1.0f + (prestigeLevel * SkillConfig.getPrestigePassiveBonus());
     }
 
     /**
@@ -104,33 +104,27 @@ public class PrestigeManager {
         if (prestigeLevel <= 0)
             return "";
 
-        return switch (prestigeLevel) {
-            case 1 -> "⚔";
-            case 2 -> "⚔⚔";
-            case 3 -> "★";
-            case 4 -> "★★";
-            case 5 -> "✦";
-            case 6 -> "✦✦";
-            case 7 -> "✦✦✦";
-            case 8 -> "♦";
-            case 9 -> "♦♦";
-            case 10 -> "👑";
-            default -> "P" + prestigeLevel;
-        };
+        String[] symbols = SkillConfig.getPrestigeSymbols();
+        if (prestigeLevel <= symbols.length) {
+            return symbols[prestigeLevel - 1]; // 0-indexed
+        }
+
+        return "P" + prestigeLevel;
     }
 
     /**
      * Retorna a cor associada ao nível de prestígio.
      */
     public static int getPrestigeColor(int prestigeLevel) {
-        return switch (prestigeLevel) {
-            case 1, 2 -> 0xFF88FF88; // Verde claro
-            case 3, 4 -> 0xFF88FFFF; // Ciano
-            case 5, 6 -> 0xFFFFFF88; // Amarelo
-            case 7, 8 -> 0xFFFF88FF; // Magenta
-            case 9, 10 -> 0xFFFFDD00; // Dourado
-            default -> 0xFFFFFFFF; // Branco
-        };
+        if (prestigeLevel <= 0)
+            return 0xFFFFFFFF;
+
+        int[] colors = SkillConfig.getPrestigeColors();
+        if (prestigeLevel <= colors.length) {
+            return colors[prestigeLevel - 1]; // 0-indexed
+        }
+
+        return 0xFFFFFFFF; // Branco
     }
 
     private static void notifyPrestige(ServerPlayerEntity player, MurilloSkillsList skill, int newPrestige) {
@@ -147,8 +141,8 @@ public class PrestigeManager {
         player.sendMessage(message, false);
 
         // Bônus info
-        int xpBonus = (int) (newPrestige * XP_BONUS_PER_PRESTIGE * 100);
-        int passiveBonus = (int) (newPrestige * PASSIVE_BONUS_PER_PRESTIGE * 100);
+        int xpBonus = (int) (newPrestige * SkillConfig.getPrestigeXpBonus() * 100);
+        int passiveBonus = (int) (newPrestige * SkillConfig.getPrestigePassiveBonus() * 100);
 
         Text bonusText = Text.translatable("murilloskills.prestige.bonus", xpBonus, passiveBonus)
                 .formatted(Formatting.GRAY);

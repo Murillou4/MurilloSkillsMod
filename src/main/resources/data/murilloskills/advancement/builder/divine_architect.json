@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:beacon"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.builder.divine_architect.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.builder.divine_architect.description"
+        },
+        "frame": "challenge",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:builder/first_build",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

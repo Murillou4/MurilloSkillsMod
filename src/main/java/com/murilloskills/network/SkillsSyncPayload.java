@@ -1,7 +1,7 @@
 package com.murilloskills.network;
 
 import com.murilloskills.MurilloSkills;
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 public record SkillsSyncPayload(
-        Map<MurilloSkillsList, SkillGlobalState.SkillStats> skills,
+        Map<MurilloSkillsList, PlayerSkillData.SkillStats> skills,
         String paragonSkillName,
         List<MurilloSkillsList> selectedSkills) implements CustomPayload {
 
@@ -44,13 +44,13 @@ public record SkillsSyncPayload(
             (buf) -> {
                 // Read skills map
                 int skillsSize = buf.readInt();
-                Map<MurilloSkillsList, SkillGlobalState.SkillStats> skills = new HashMap<>();
+                Map<MurilloSkillsList, PlayerSkillData.SkillStats> skills = new HashMap<>();
                 for (int i = 0; i < skillsSize; i++) {
                     MurilloSkillsList key = buf.readEnumConstant(MurilloSkillsList.class);
                     int level = buf.readInt();
                     double xp = buf.readDouble();
                     long lastUse = buf.readLong();
-                    skills.put(key, new SkillGlobalState.SkillStats(level, xp, lastUse));
+                    skills.put(key, new PlayerSkillData.SkillStats(level, xp, lastUse));
                 }
 
                 // Read paragon skill name

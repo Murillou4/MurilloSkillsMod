@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.impl.FisherSkill;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillConfig;
@@ -50,8 +50,8 @@ public abstract class FishingBobberEntityMixin {
         }
 
         try {
-            SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
-            var playerData = state.getPlayerData(serverPlayer);
+            PlayerSkillData playerData = serverPlayer
+                    .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             if (!playerData.isSkillSelected(MurilloSkillsList.FISHER)) {
                 return;

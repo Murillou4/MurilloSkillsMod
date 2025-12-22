@@ -1,6 +1,5 @@
 package com.murilloskills.api;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -61,7 +60,7 @@ public abstract class AbstractSkill {
      * @param player The player using the ability
      * @param stats  The player's skill stats
      */
-    public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
+    public void onActiveAbility(ServerPlayerEntity player, com.murilloskills.data.PlayerSkillData.SkillStats stats) {
         try {
             // Default implementation: inform that the skill has no active ability yet
             player.sendMessage(Text.translatable("murilloskills.notify.no_active_ability")

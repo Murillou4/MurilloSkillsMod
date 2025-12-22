@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -44,8 +44,8 @@ public abstract class PlayerEntityReachMixin {
         }
 
         try {
-            SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
-            var playerData = state.getPlayerData(serverPlayer);
+            PlayerSkillData playerData = serverPlayer
+                    .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             // Check if player has Builder skill selected
             if (!playerData.isSkillSelected(MurilloSkillsList.BUILDER)) {

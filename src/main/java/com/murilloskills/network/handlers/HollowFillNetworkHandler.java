@@ -1,6 +1,5 @@
 package com.murilloskills.network.handlers;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.impl.BuilderSkill;
 import com.murilloskills.network.HollowFillToggleC2SPayload;
 import com.murilloskills.skills.MurilloSkillsList;
@@ -31,8 +30,7 @@ public final class HollowFillNetworkHandler {
             context.server().execute(() -> {
                 try {
                     var player = context.player();
-                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-                    var playerData = state.getPlayerData(player);
+                    var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
                     // Check if player has BUILDER selected
                     if (!playerData.isSkillSelected(MurilloSkillsList.BUILDER)) {

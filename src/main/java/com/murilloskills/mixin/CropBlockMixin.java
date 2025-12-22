@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.block.BlockState;
@@ -44,8 +44,8 @@ public class CropBlockMixin {
             return;
         }
 
-        SkillGlobalState skillState = SkillGlobalState.getServerState(world.getServer());
-        var playerData = skillState.getPlayerData(nearestFarmer);
+        PlayerSkillData playerData = nearestFarmer
+                .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         // Check if player has Farmer as a selected skill
         if (!playerData.isSkillSelected(MurilloSkillsList.FARMER)) {
@@ -89,8 +89,8 @@ public class CropBlockMixin {
                         return false;
                     }
                     try {
-                        SkillGlobalState state = SkillGlobalState.getServerState(world.getServer());
-                        return state.getPlayerData(serverPlayer).isSkillSelected(MurilloSkillsList.FARMER);
+                        return serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS)
+                                .isSkillSelected(MurilloSkillsList.FARMER);
                     } catch (Exception e) {
                         LOGGER.debug("Error checking farmer skill for {}: {}", player.getName().getString(),
                                 e.getMessage());

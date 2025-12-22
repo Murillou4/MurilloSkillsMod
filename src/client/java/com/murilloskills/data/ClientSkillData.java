@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ClientSkillData {
-    private static final Map<MurilloSkillsList, SkillGlobalState.SkillStats> skills = new HashMap<>();
+    private static final Map<MurilloSkillsList, PlayerSkillData.SkillStats> skills = new HashMap<>();
     private static MurilloSkillsList paragonSkill = null;
     private static List<MurilloSkillsList> selectedSkills = new ArrayList<>();
 
@@ -17,7 +17,7 @@ public class ClientSkillData {
     private static String challengeDateKey = "";
     private static boolean allChallengesComplete = false;
 
-    public static void update(Map<MurilloSkillsList, SkillGlobalState.SkillStats> newSkills) {
+    public static void update(Map<MurilloSkillsList, PlayerSkillData.SkillStats> newSkills) {
         skills.clear();
         skills.putAll(newSkills);
     }
@@ -49,11 +49,11 @@ public class ClientSkillData {
         return selectedSkills != null && selectedSkills.contains(skill);
     }
 
-    public static SkillGlobalState.SkillStats get(MurilloSkillsList skill) {
-        return skills.getOrDefault(skill, new SkillGlobalState.SkillStats(0, 0));
+    public static PlayerSkillData.SkillStats get(MurilloSkillsList skill) {
+        return skills.getOrDefault(skill, new PlayerSkillData.SkillStats(0, 0));
     }
 
-    public static Map<MurilloSkillsList, SkillGlobalState.SkillStats> getAll() {
+    public static Map<MurilloSkillsList, PlayerSkillData.SkillStats> getAll() {
         return skills;
     }
 
@@ -63,7 +63,7 @@ public class ClientSkillData {
      * Gets prestige level for a skill.
      */
     public static int getPrestige(MurilloSkillsList skill) {
-        SkillGlobalState.SkillStats stats = skills.get(skill);
+        PlayerSkillData.SkillStats stats = skills.get(skill);
         return stats != null ? stats.prestige : 0;
     }
 
@@ -71,7 +71,7 @@ public class ClientSkillData {
      * Checks if skill can prestige (level 100, not at max prestige).
      */
     public static boolean canPrestige(MurilloSkillsList skill) {
-        SkillGlobalState.SkillStats stats = skills.get(skill);
+        PlayerSkillData.SkillStats stats = skills.get(skill);
         if (stats == null)
             return false;
         return stats.level >= 100 && stats.prestige < 10 && skill == paragonSkill;

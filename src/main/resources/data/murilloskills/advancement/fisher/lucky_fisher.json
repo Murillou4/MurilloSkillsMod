@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:heart_of_the_sea"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.fisher.lucky_fisher.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.fisher.lucky_fisher.description"
+        },
+        "frame": "goal",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:fisher/treasure_catch",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

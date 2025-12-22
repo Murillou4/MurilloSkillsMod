@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.impl.FarmerSkill;
 import com.murilloskills.models.SkillReceptorResult;
 import com.murilloskills.skills.MurilloSkillsList;
@@ -54,8 +54,8 @@ public class SeedItemMixin {
         }
 
         // Check if player has Farmer skill selected and area planting enabled
-        SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
-        var playerData = state.getPlayerData(serverPlayer);
+        PlayerSkillData playerData = serverPlayer
+                .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         if (!playerData.isSkillSelected(MurilloSkillsList.FARMER)) {
             return; // Let vanilla handle it

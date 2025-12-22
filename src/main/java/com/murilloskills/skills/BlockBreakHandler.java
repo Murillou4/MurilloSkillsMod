@@ -9,7 +9,7 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import com.murilloskills.MurilloSkills;
-import com.murilloskills.data.SkillGlobalState;
+
 import com.murilloskills.utils.MinerXpGetter;
 import com.murilloskills.utils.XpStreakManager;
 import net.minecraft.block.BlockState;
@@ -45,8 +45,8 @@ public class BlockBreakHandler {
                 return ActionResult.FAIL;
 
             final ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity) player;
-            SkillGlobalState skillState = SkillGlobalState.getServerState(server);
-            SkillGlobalState.PlayerSkillData data = skillState.getPlayerData(serverPlayerEntity);
+            com.murilloskills.data.PlayerSkillData data = serverPlayerEntity
+                    .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             // Apply streak bonus
             int baseXp = result.getXpAmount();
@@ -54,8 +54,9 @@ public class BlockBreakHandler {
                     baseXp);
 
             // --- UPDATED CALL: Handles Paragon Logic Internally ---
-            final SkillGlobalState.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.MINER, streakXp);
-            SkillGlobalState.SkillStats stats = data.getSkill(MurilloSkillsList.MINER);
+            final com.murilloskills.data.PlayerSkillData.XpAddResult xpResult = data
+                    .addXpToSkill(MurilloSkillsList.MINER, streakXp);
+            com.murilloskills.data.PlayerSkillData.SkillStats stats = data.getSkill(MurilloSkillsList.MINER);
 
             // Check for milestone rewards
             com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayerEntity, "Minerador",
@@ -79,10 +80,9 @@ public class BlockBreakHandler {
 
                 serverPlayerEntity.sendMessage(message, true);
                 world.playSound(null, pos, SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.0f, 1.0f);
-                com.murilloskills.utils.SkillAttributes.updateAllStats(serverPlayerEntity);
+                com.murilloskills.utils.SkillAttributes.updateAllStats(serverPlayerEntity, data);
             }
 
-            skillState.markDirty();
             SkillsNetworkUtils.syncSkills(serverPlayerEntity);
 
             // Send XP toast notification (show streak bonus if any)
@@ -108,6 +108,14 @@ public class BlockBreakHandler {
             if (blockId.contains("diamond_ore")) {
                 com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayerEntity,
                         com.murilloskills.utils.DailyChallengeManager.ChallengeType.FIND_DIAMONDS, 1);
+                // Grant "First Diamond" advancement
+                com.murilloskills.utils.AdvancementGranter.grantFirstDiamond(serverPlayerEntity);
+            }
+            if (blockId.contains("emerald_ore")) {
+                // Track emerald count and check for achievement
+                com.murilloskills.utils.AchievementTracker.incrementAndCheck(
+                        serverPlayerEntity, MurilloSkillsList.MINER,
+                        com.murilloskills.utils.AchievementTracker.KEY_EMERALDS_MINED, 1);
             }
 
             com.murilloskills.utils.DailyChallengeManager.syncChallenges(serverPlayerEntity);

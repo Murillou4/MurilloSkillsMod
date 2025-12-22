@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:netherite_sword"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.warrior.elite_hunter.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.warrior.elite_hunter.description"
+        },
+        "frame": "goal",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:warrior/first_blood",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

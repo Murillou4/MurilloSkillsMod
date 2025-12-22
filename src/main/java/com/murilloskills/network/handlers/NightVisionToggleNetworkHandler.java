@@ -1,7 +1,7 @@
 package com.murilloskills.network.handlers;
 
 import com.murilloskills.api.SkillRegistry;
-import com.murilloskills.data.SkillGlobalState;
+
 import com.murilloskills.impl.ExplorerSkill;
 import com.murilloskills.network.NightVisionToggleC2SPayload;
 import com.murilloskills.skills.MurilloSkillsList;
@@ -33,8 +33,7 @@ public final class NightVisionToggleNetworkHandler {
             context.server().execute(() -> {
                 try {
                     var player = context.player();
-                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-                    var playerData = state.getPlayerData(player);
+                    var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
                     // Check if player has EXPLORER selected
                     if (!playerData.isSkillSelected(MurilloSkillsList.EXPLORER)) {

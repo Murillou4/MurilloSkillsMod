@@ -1,6 +1,5 @@
 package com.murilloskills.network.handlers;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.network.PrestigeC2SPayload;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.PrestigeManager;
@@ -31,8 +30,7 @@ public final class PrestigeNetworkHandler {
             context.server().execute(() -> {
                 try {
                     var player = context.player();
-                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-                    var data = state.getPlayerData(player);
+                    var data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
                     MurilloSkillsList skill = payload.skill();
 
@@ -48,7 +46,7 @@ public final class PrestigeNetworkHandler {
                     // Validation: Check if prestige is possible
                     if (!PrestigeManager.canPrestige(player, skill)) {
                         var stats = data.getSkill(skill);
-                        if (stats.prestige >= PrestigeManager.MAX_PRESTIGE_LEVEL) {
+                        if (stats.prestige >= com.murilloskills.utils.SkillConfig.getMaxPrestigeLevel()) {
                             player.sendMessage(
                                     Text.translatable("murilloskills.prestige.max_reached")
                                             .formatted(Formatting.RED),
@@ -70,6 +68,9 @@ public final class PrestigeNetworkHandler {
                                 false);
                         LOGGER.info("Player {} prestiged skill {} to level {}",
                                 player.getName().getString(), skill.name(), data.getSkill(skill).prestige);
+
+                        // Grant "First Prestige" advancement
+                        com.murilloskills.utils.AdvancementGranter.grantFirstPrestige(player);
                     }
 
                 } catch (Exception e) {

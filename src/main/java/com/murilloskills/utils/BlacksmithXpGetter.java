@@ -10,23 +10,7 @@ import net.minecraft.item.Items;
 public class BlacksmithXpGetter {
 
     // Base XP values for anvil actions
-    private static final int XP_ANVIL_REPAIR = 80;
-    private static final int XP_ANVIL_RENAME = 50;
-    private static final int XP_ANVIL_ENCHANT_COMBINE = 100;
-
-    // XP for enchanting table
-    private static final int XP_ENCHANT_LEVEL_1 = 40;
-    private static final int XP_ENCHANT_LEVEL_2 = 70;
-    private static final int XP_ENCHANT_LEVEL_3 = 100;
-
-    // XP for smelting ores (only ores that produce ingots/materials)
-    private static final int XP_SMELT_IRON = 4;
-    private static final int XP_SMELT_GOLD = 6;
-    private static final int XP_SMELT_COPPER = 3;
-    private static final int XP_SMELT_ANCIENT_DEBRIS = 80;
-
-    // XP for grindstone
-    private static final int XP_GRINDSTONE_USE = 30;
+    // Note: Constants replaced by SkillConfig getters
 
     /**
      * Get XP for anvil use based on the action type.
@@ -40,16 +24,16 @@ public class BlacksmithXpGetter {
         int xp = 0;
 
         if (isRepair) {
-            xp += XP_ANVIL_REPAIR;
+            xp += SkillConfig.getBlacksmithXpAnvilRepair();
         }
         if (isEnchantCombine) {
-            xp += XP_ANVIL_ENCHANT_COMBINE;
+            xp += SkillConfig.getBlacksmithXpAnvilEnchantCombine();
         }
         if (isRename && !isRepair && !isEnchantCombine) {
-            xp += XP_ANVIL_RENAME;
+            xp += SkillConfig.getBlacksmithXpAnvilRename();
         }
 
-        return Math.max(xp, XP_ANVIL_RENAME); // Minimum XP for any anvil action
+        return Math.max(xp, SkillConfig.getBlacksmithXpAnvilRename()); // Minimum XP for any anvil action
     }
 
     /**
@@ -60,10 +44,10 @@ public class BlacksmithXpGetter {
      */
     public static int getEnchantXp(int slot) {
         return switch (slot) {
-            case 0 -> XP_ENCHANT_LEVEL_1;
-            case 1 -> XP_ENCHANT_LEVEL_2;
-            case 2 -> XP_ENCHANT_LEVEL_3;
-            default -> XP_ENCHANT_LEVEL_1;
+            case 0 -> SkillConfig.getBlacksmithXpEnchantLevel1();
+            case 1 -> SkillConfig.getBlacksmithXpEnchantLevel2();
+            case 2 -> SkillConfig.getBlacksmithXpEnchantLevel3();
+            default -> SkillConfig.getBlacksmithXpEnchantLevel1();
         };
     }
 
@@ -76,17 +60,17 @@ public class BlacksmithXpGetter {
      */
     public static SkillReceptorResult getSmeltingXp(Item inputItem) {
         if (inputItem == Items.RAW_IRON || inputItem == Items.IRON_ORE || inputItem == Items.DEEPSLATE_IRON_ORE) {
-            return new SkillReceptorResult(true, XP_SMELT_IRON);
+            return new SkillReceptorResult(true, SkillConfig.getBlacksmithXpSmeltIron());
         }
         if (inputItem == Items.RAW_GOLD || inputItem == Items.GOLD_ORE || inputItem == Items.DEEPSLATE_GOLD_ORE
                 || inputItem == Items.NETHER_GOLD_ORE) {
-            return new SkillReceptorResult(true, XP_SMELT_GOLD);
+            return new SkillReceptorResult(true, SkillConfig.getBlacksmithXpSmeltGold());
         }
         if (inputItem == Items.RAW_COPPER || inputItem == Items.COPPER_ORE || inputItem == Items.DEEPSLATE_COPPER_ORE) {
-            return new SkillReceptorResult(true, XP_SMELT_COPPER);
+            return new SkillReceptorResult(true, SkillConfig.getBlacksmithXpSmeltCopper());
         }
         if (inputItem == Items.ANCIENT_DEBRIS) {
-            return new SkillReceptorResult(true, XP_SMELT_ANCIENT_DEBRIS);
+            return new SkillReceptorResult(true, SkillConfig.getBlacksmithXpSmeltAncientDebris());
         }
 
         return new SkillReceptorResult(false, 0);
@@ -98,6 +82,6 @@ public class BlacksmithXpGetter {
      * @return XP amount
      */
     public static int getGrindstoneXp() {
-        return XP_GRINDSTONE_USE;
+        return SkillConfig.getBlacksmithXpGrindstoneUse();
     }
 }

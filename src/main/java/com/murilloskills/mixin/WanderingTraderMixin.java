@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.ExplorerXpGetter;
 import com.murilloskills.utils.SkillNotifier;
@@ -35,8 +35,7 @@ public abstract class WanderingTraderMixin {
         if (!(customer instanceof ServerPlayerEntity serverPlayer))
             return;
 
-        SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
-        var playerData = state.getPlayerData(serverPlayer);
+        var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         // Check if Explorer is selected
         if (!playerData.isSkillSelected(MurilloSkillsList.EXPLORER))
@@ -44,8 +43,7 @@ public abstract class WanderingTraderMixin {
 
         // Award XP for trading
         int xp = ExplorerXpGetter.getWanderingTradeXp();
-        SkillGlobalState.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.EXPLORER, xp);
-        state.markDirty();
+        PlayerSkillData.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.EXPLORER, xp);
 
         // Check for milestone rewards
         com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Explorador", xpResult);

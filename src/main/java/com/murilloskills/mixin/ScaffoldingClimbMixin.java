@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.impl.BuilderSkill;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.block.BlockState;
@@ -43,8 +43,8 @@ public abstract class ScaffoldingClimbMixin {
         }
 
         try {
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            var playerData = state.getPlayerData(player);
+            PlayerSkillData playerData = player
+                    .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             if (!playerData.isSkillSelected(MurilloSkillsList.BUILDER)) {
                 return;

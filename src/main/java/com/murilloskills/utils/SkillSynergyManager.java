@@ -1,6 +1,6 @@
 package com.murilloskills.utils;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -25,46 +25,77 @@ import java.util.*;
 public class SkillSynergyManager {
 
     // Definição de sinergias
-    public static final List<SkillSynergy> SYNERGIES = List.of(
-            new SkillSynergy("iron_will",
-                    Set.of(MurilloSkillsList.WARRIOR, MurilloSkillsList.BLACKSMITH),
-                    0.10f, SynergyType.DAMAGE_REDUCTION),
+    // Definição de sinergias (Dynamic to support config reload)
+    public static List<SkillSynergy> getAll() {
+        return List.of(
+                new SkillSynergy("iron_will",
+                        Set.of(MurilloSkillsList.WARRIOR, MurilloSkillsList.BLACKSMITH),
+                        SkillConfig.getSynergyIronWill(), SynergyType.DAMAGE_REDUCTION),
 
-            new SkillSynergy("forge_master",
-                    Set.of(MurilloSkillsList.MINER, MurilloSkillsList.BLACKSMITH),
-                    0.15f, SynergyType.ORE_DROPS),
+                new SkillSynergy("forge_master",
+                        Set.of(MurilloSkillsList.MINER, MurilloSkillsList.BLACKSMITH),
+                        SkillConfig.getSynergyForgeMaster(), SynergyType.ORE_DROPS),
 
-            new SkillSynergy("ranger",
-                    Set.of(MurilloSkillsList.ARCHER, MurilloSkillsList.EXPLORER),
-                    0.20f, SynergyType.MOVEMENT_SPEED),
+                new SkillSynergy("ranger",
+                        Set.of(MurilloSkillsList.ARCHER, MurilloSkillsList.EXPLORER),
+                        SkillConfig.getSynergyRanger(), SynergyType.MOVEMENT_SPEED),
 
-            new SkillSynergy("natures_bounty",
-                    Set.of(MurilloSkillsList.FARMER, MurilloSkillsList.FISHER),
-                    0.10f, SynergyType.ALL_DROPS),
+                new SkillSynergy("natures_bounty",
+                        Set.of(MurilloSkillsList.FARMER, MurilloSkillsList.FISHER),
+                        SkillConfig.getSynergyNaturesBounty(), SynergyType.ALL_DROPS),
 
-            new SkillSynergy("treasure_hunter",
-                    Set.of(MurilloSkillsList.MINER, MurilloSkillsList.EXPLORER),
-                    0.25f, SynergyType.RARE_FINDS),
+                new SkillSynergy("treasure_hunter",
+                        Set.of(MurilloSkillsList.MINER, MurilloSkillsList.EXPLORER),
+                        SkillConfig.getSynergyTreasureHunter(), SynergyType.RARE_FINDS),
 
-            new SkillSynergy("combat_master",
-                    Set.of(MurilloSkillsList.WARRIOR, MurilloSkillsList.ARCHER),
-                    0.10f, SynergyType.ALL_DAMAGE),
+                new SkillSynergy("combat_master",
+                        Set.of(MurilloSkillsList.WARRIOR, MurilloSkillsList.ARCHER),
+                        SkillConfig.getSynergyCombatMaster(), SynergyType.ALL_DAMAGE),
 
-            new SkillSynergy("master_crafter",
-                    Set.of(MurilloSkillsList.BUILDER, MurilloSkillsList.BLACKSMITH),
-                    0.30f, SynergyType.CRAFTING_EFFICIENCY));
+                new SkillSynergy("master_crafter",
+                        Set.of(MurilloSkillsList.BUILDER, MurilloSkillsList.BLACKSMITH),
+                        SkillConfig.getSynergyMasterCrafter(), SynergyType.CRAFTING_EFFICIENCY),
+
+                // === NEW SYNERGIES ===
+                new SkillSynergy("survivor",
+                        Set.of(MurilloSkillsList.WARRIOR, MurilloSkillsList.EXPLORER),
+                        SkillConfig.getSynergySurvivor(), SynergyType.DAMAGE_REDUCTION),
+
+                new SkillSynergy("industrial",
+                        Set.of(MurilloSkillsList.MINER, MurilloSkillsList.BUILDER),
+                        SkillConfig.getSynergyIndustrial(), SynergyType.CRAFTING_EFFICIENCY),
+
+                new SkillSynergy("sea_warrior",
+                        Set.of(MurilloSkillsList.WARRIOR, MurilloSkillsList.FISHER),
+                        SkillConfig.getSynergySeaWarrior(), SynergyType.ALL_DAMAGE),
+
+                new SkillSynergy("green_archer",
+                        Set.of(MurilloSkillsList.FARMER, MurilloSkillsList.ARCHER),
+                        SkillConfig.getSynergyGreenArcher(), SynergyType.MOVEMENT_SPEED),
+
+                new SkillSynergy("prospector",
+                        Set.of(MurilloSkillsList.MINER, MurilloSkillsList.WARRIOR),
+                        SkillConfig.getSynergyProspector(), SynergyType.ORE_DROPS),
+
+                new SkillSynergy("adventurer",
+                        Set.of(MurilloSkillsList.BUILDER, MurilloSkillsList.EXPLORER),
+                        SkillConfig.getSynergyAdventurer(), SynergyType.ALL_DROPS),
+
+                new SkillSynergy("hermit",
+                        Set.of(MurilloSkillsList.FARMER, MurilloSkillsList.BUILDER),
+                        SkillConfig.getSynergyHermit(), SynergyType.CRAFTING_EFFICIENCY));
+    }
 
     /**
      * Obtém todas as sinergias ativas para um jogador.
      */
     public static List<SkillSynergy> getActiveSynergies(ServerPlayerEntity player) {
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        SkillGlobalState.PlayerSkillData data = state.getPlayerData(player);
+        PlayerSkillData data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         Set<MurilloSkillsList> selectedSkills = new HashSet<>(data.getSelectedSkills());
         List<SkillSynergy> activeSynergies = new ArrayList<>();
 
-        for (SkillSynergy synergy : SYNERGIES) {
+        for (SkillSynergy synergy : getAll()) {
             if (selectedSkills.containsAll(synergy.requiredSkills())) {
                 activeSynergies.add(synergy);
             }

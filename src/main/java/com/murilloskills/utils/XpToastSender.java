@@ -25,9 +25,7 @@ public class XpToastSender {
 
         try {
             // Only send toast if player has selected this skill
-            com.murilloskills.data.SkillGlobalState state = com.murilloskills.data.SkillGlobalState
-                    .getServerState(player.getEntityWorld().getServer());
-            var playerData = state.getPlayerData(player);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             if (!playerData.isSkillSelected(skill)) {
                 return; // Don't show toast for unselected skills

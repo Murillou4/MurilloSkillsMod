@@ -1,6 +1,5 @@
 package com.murilloskills.utils;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.network.SkillsSyncPayload;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -12,8 +11,8 @@ import java.util.List;
 public class SkillsNetworkUtils {
 
     public static void syncSkills(ServerPlayerEntity player) {
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        SkillGlobalState.PlayerSkillData data = state.getPlayerData(player);
+        com.murilloskills.data.PlayerSkillData data = player
+                .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         String paragonName = (data.paragonSkill != null) ? data.paragonSkill.name() : "null";
 

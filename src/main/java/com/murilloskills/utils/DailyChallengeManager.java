@@ -1,6 +1,6 @@
 package com.murilloskills.utils;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
@@ -29,9 +29,7 @@ import java.util.*;
 public class DailyChallengeManager {
 
     // Configurações
-    public static final int CHALLENGES_PER_DAY = 3;
-    public static final int BASE_XP_REWARD = 500;
-    public static final int BONUS_XP_ALL_COMPLETE = 1000;
+    // Note: Constants replaced by SkillConfig getters
 
     // Dados de desafios por jogador - mapa de UUID para dados do player
     private static final Map<UUID, PlayerChallengeData> playerChallenges = new HashMap<>();
@@ -112,8 +110,7 @@ public class DailyChallengeManager {
         List<DailyChallenge> challenges = new ArrayList<>();
 
         // Get player's selected skills to filter challenges
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        SkillGlobalState.PlayerSkillData playerData = state.getPlayerData(player);
+        PlayerSkillData playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
         List<MurilloSkillsList> selectedSkills = playerData.getSelectedSkills();
 
         // Filter available challenge types based on selected skills
@@ -132,7 +129,7 @@ public class DailyChallengeManager {
             availableTypes.add(ChallengeType.SLEEP_NIGHTS);
         }
 
-        for (int i = 0; i < CHALLENGES_PER_DAY && !availableTypes.isEmpty(); i++) {
+        for (int i = 0; i < SkillConfig.getChallengesPerDay() && !availableTypes.isEmpty(); i++) {
             int index = random.nextInt(availableTypes.size());
             ChallengeType type = availableTypes.remove(index);
 
@@ -209,12 +206,11 @@ public class DailyChallengeManager {
     private static void onChallengeComplete(ServerPlayerEntity player, DailyChallenge challenge) {
         // Dar XP bônus na skill relacionada (se houver)
         if (challenge.relatedSkill != null) {
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            SkillGlobalState.PlayerSkillData data = state.getPlayerData(player);
+            PlayerSkillData data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             if (data.isSkillSelected(challenge.relatedSkill)) {
-                data.addXpToSkill(challenge.relatedSkill, BASE_XP_REWARD);
-                state.markDirty();
+                data.addXpToSkill(challenge.relatedSkill, SkillConfig.getBaseXpReward());
+
                 SkillsNetworkUtils.syncSkills(player);
             }
         }
@@ -226,7 +222,7 @@ public class DailyChallengeManager {
                         Formatting.BOLD))
                 .append(Text.literal(" | ").formatted(Formatting.DARK_GRAY))
                 .append(Text.translatable("murilloskills.challenge." + challenge.type.name().toLowerCase()))
-                .append(Text.literal(" +" + BASE_XP_REWARD + " XP").formatted(Formatting.YELLOW));
+                .append(Text.literal(" +" + SkillConfig.getBaseXpReward() + " XP").formatted(Formatting.YELLOW));
 
         player.sendMessage(message, false);
         player.getEntityWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -244,17 +240,16 @@ public class DailyChallengeManager {
 
     private static void awardAllCompleteBonus(ServerPlayerEntity player) {
         // Dar bônus extra por completar todos os desafios
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        SkillGlobalState.PlayerSkillData data = state.getPlayerData(player);
+        PlayerSkillData data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         // Distribuir XP entre todas as skills selecionadas
         List<MurilloSkillsList> selected = data.getSelectedSkills();
         if (!selected.isEmpty()) {
-            int xpPerSkill = BONUS_XP_ALL_COMPLETE / selected.size();
+            int xpPerSkill = SkillConfig.getBonusXpAllComplete() / selected.size();
             for (MurilloSkillsList skill : selected) {
                 data.addXpToSkill(skill, xpPerSkill);
             }
-            state.markDirty();
+
             SkillsNetworkUtils.syncSkills(player);
         }
 
@@ -262,7 +257,7 @@ public class DailyChallengeManager {
                 .append(Text.literal("🏆 ").formatted(Formatting.GOLD))
                 .append(Text.translatable("murilloskills.challenge.all_complete").formatted(Formatting.GOLD,
                         Formatting.BOLD))
-                .append(Text.literal(" +" + BONUS_XP_ALL_COMPLETE + " XP").formatted(Formatting.YELLOW));
+                .append(Text.literal(" +" + SkillConfig.getBonusXpAllComplete() + " XP").formatted(Formatting.YELLOW));
 
         player.sendMessage(message, false);
         player.getEntityWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -283,7 +278,7 @@ public class DailyChallengeManager {
                         c.targetAmount,
                         c.currentProgress,
                         c.completed,
-                        BASE_XP_REWARD))
+                        SkillConfig.getBaseXpReward()))
                 .toList();
 
         net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player,

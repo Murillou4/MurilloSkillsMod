@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.impl.ExplorerSkill;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.block.Block;
@@ -56,8 +56,8 @@ public class SoulSandMixin {
         }
 
         try {
-            SkillGlobalState globalState = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            var playerData = globalState.getPlayerData(player);
+            PlayerSkillData playerData = player
+                    .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             if (playerData.isSkillSelected(MurilloSkillsList.EXPLORER)) {
                 int level = playerData.getSkill(MurilloSkillsList.EXPLORER).level;

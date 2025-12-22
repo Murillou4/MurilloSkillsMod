@@ -212,11 +212,6 @@ public class OreFilterScreen extends Screen {
         OreFilterConfig.setMaxOres(20);
     }
 
-    private Text getOreButtonText(OreType ore, boolean enabled) {
-        // Not used anymore - rendering manually for consistent alignment
-        return Text.empty();
-    }
-
     private Text getModeButtonText(DisplayMode mode, boolean active) {
         String name = Text.translatable("murilloskills.ore_filter.mode." + mode.name().toLowerCase()).getString();
         String prefix = active ? "● " : "○ ";

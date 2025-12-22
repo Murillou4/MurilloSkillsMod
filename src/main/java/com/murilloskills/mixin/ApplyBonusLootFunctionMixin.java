@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
@@ -41,8 +41,9 @@ public class ApplyBonusLootFunctionMixin {
         if (entity instanceof ServerPlayerEntity player) {
 
             // 3. Pega os dados da Skill
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            int minerLevel = state.getPlayerData(player).getSkill(MurilloSkillsList.MINER).level;
+            PlayerSkillData playerData = player
+                    .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+            int minerLevel = playerData.getSkill(MurilloSkillsList.MINER).level;
 
             // 4. Calcula o bônus (0.1 por nível)
             // Ex: Nível 30 * 0.1 = 3.0 -> +3 Fortuna

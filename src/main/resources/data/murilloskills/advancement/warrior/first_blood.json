@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:bone"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.warrior.first_blood.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.warrior.first_blood.description"
+        },
+        "frame": "task",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:warrior/level_10",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

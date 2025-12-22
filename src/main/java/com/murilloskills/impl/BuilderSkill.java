@@ -1,7 +1,7 @@
 package com.murilloskills.impl;
 
 import com.murilloskills.api.AbstractSkill;
-import com.murilloskills.data.SkillGlobalState;
+
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.block.Block;
@@ -127,7 +127,7 @@ public class BuilderSkill extends AbstractSkill {
     }
 
     @Override
-    public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
+    public void onActiveAbility(ServerPlayerEntity player, com.murilloskills.data.PlayerSkillData.SkillStats stats) {
         try {
             // 1. Verifica Nível (permite se level >= 100 OU se já prestigiou)
             boolean hasReachedMaster = stats.level >= SkillConfig.BUILDER_MASTER_LEVEL || stats.prestige > 0;
@@ -184,8 +184,7 @@ public class BuilderSkill extends AbstractSkill {
             }
 
             stats.lastAbilityUse = worldTime;
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            state.markDirty();
+            // Persistence is handled by attachment system automatically
 
             // Clear any old paused time
             pausedRemainingTime.remove(uuid);
@@ -227,8 +226,9 @@ public class BuilderSkill extends AbstractSkill {
     public void updateAttributes(ServerPlayerEntity player, int level) {
         try {
             // Get prestige level for passive multiplier
-            var state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            int prestige = state.getPlayerData(player).getSkill(MurilloSkillsList.BUILDER).prestige;
+            // Get prestige level for passive multiplier
+            var data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+            int prestige = data.getSkill(MurilloSkillsList.BUILDER).prestige;
 
             double reachBonus = getReachBonus(level, prestige);
 

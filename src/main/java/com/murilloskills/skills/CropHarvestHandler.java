@@ -1,6 +1,5 @@
 package com.murilloskills.skills;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.impl.FarmerSkill;
 import com.murilloskills.models.SkillReceptorResult;
 import com.murilloskills.utils.FarmerXpGetter;
@@ -59,8 +58,7 @@ public class CropHarvestHandler {
         }
 
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
-        SkillGlobalState skillState = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
-        var playerData = skillState.getPlayerData(serverPlayer);
+        var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         // Check if Farmer is a selected skill
         if (!playerData.isSkillSelected(MurilloSkillsList.FARMER)) {
@@ -75,7 +73,8 @@ public class CropHarvestHandler {
         int streakXp = XpStreakManager.applyStreakBonus(serverPlayer.getUuid(), MurilloSkillsList.FARMER, baseXp);
 
         // Add XP
-        SkillGlobalState.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.FARMER, streakXp);
+        com.murilloskills.data.PlayerSkillData.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.FARMER,
+                streakXp);
 
         // Check for milestone rewards
         com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Agricultor", xpResult);
@@ -87,7 +86,6 @@ public class CropHarvestHandler {
         // Apply harvest bonuses
         applyHarvestBonuses(serverPlayer, (ServerWorld) world, pos, state, block, level);
 
-        skillState.markDirty();
         SkillsNetworkUtils.syncSkills(serverPlayer);
 
         // Send XP toast notification (with streak indicator)
@@ -100,6 +98,14 @@ public class CropHarvestHandler {
         com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
                 com.murilloskills.utils.DailyChallengeManager.ChallengeType.HARVEST_CROPS, 1);
         com.murilloskills.utils.DailyChallengeManager.syncChallenges(serverPlayer);
+
+        // Grant "First Harvest" advancement
+        com.murilloskills.utils.AdvancementGranter.grantFirstHarvest(serverPlayer);
+
+        // Track crops harvested for Mega Farmer achievement
+        com.murilloskills.utils.AchievementTracker.incrementAndCheck(
+                serverPlayer, MurilloSkillsList.FARMER,
+                com.murilloskills.utils.AchievementTracker.KEY_CROPS_HARVESTED, 1);
     }
 
     /**
@@ -142,8 +148,8 @@ public class CropHarvestHandler {
     private static void applyHarvestBonuses(ServerPlayerEntity player, ServerWorld world,
             BlockPos pos, BlockState state, Block block, int level) {
         // Get prestige for passive bonus
-        SkillGlobalState skillState = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        int prestige = skillState.getPlayerData(player).getSkill(MurilloSkillsList.FARMER).prestige;
+        int prestige = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS)
+                .getSkill(MurilloSkillsList.FARMER).prestige;
 
         // Calculate double harvest chance (with prestige bonus)
         float doubleChance = FarmerSkill.getDoubleHarvestChance(level, prestige);

@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.entity.EquipmentSlot;
@@ -30,8 +30,7 @@ public class ItemStackMixin {
         }
 
         // Recupera o estado global do servidor
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        var playerData = state.getPlayerData(player);
+        PlayerSkillData playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         // --- MINER: 15% chance to ignore tool durability loss (level 30+) ---
         int minerLevel = playerData.getSkill(MurilloSkillsList.MINER).level;

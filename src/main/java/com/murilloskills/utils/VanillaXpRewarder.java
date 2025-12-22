@@ -7,7 +7,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import com.murilloskills.data.SkillGlobalState.XpAddResult;
+import com.murilloskills.data.PlayerSkillData.XpAddResult;
 
 /**
  * Gerencia recompensas de XP vanilla (orbes de experiência do Minecraft)

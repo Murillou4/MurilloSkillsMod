@@ -1,6 +1,5 @@
 package com.murilloskills.network.handlers;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.impl.FarmerSkill;
 import com.murilloskills.network.AreaPlantingToggleC2SPayload;
 import com.murilloskills.network.AreaPlantingSyncS2CPayload;
@@ -33,8 +32,7 @@ public final class AreaPlantingNetworkHandler {
             context.server().execute(() -> {
                 try {
                     var player = context.player();
-                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-                    var playerData = state.getPlayerData(player);
+                    var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
                     // Check if player has FARMER selected
                     if (!playerData.isSkillSelected(MurilloSkillsList.FARMER)) {

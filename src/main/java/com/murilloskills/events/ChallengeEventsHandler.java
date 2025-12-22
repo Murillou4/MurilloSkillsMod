@@ -79,6 +79,11 @@ public class ChallengeEventsHandler {
                 int blocks = (int) distance;
                 DailyChallengeManager.recordProgress(player, ChallengeType.TRAVEL_BLOCKS, blocks);
 
+                // Track distance for Traveler achievement
+                com.murilloskills.utils.AchievementTracker.incrementAndCheck(
+                        player, com.murilloskills.skills.MurilloSkillsList.EXPLORER,
+                        com.murilloskills.utils.AchievementTracker.KEY_DISTANCE_TRAVELED, blocks);
+
                 // Sync less frequently for travel (every 10 blocks)
                 if (blocks >= 10) {
                     DailyChallengeManager.syncChallenges(player);
@@ -105,6 +110,11 @@ public class ChallengeEventsHandler {
             if (lastBiome != null && !lastBiome.equals(biomeId)) {
                 DailyChallengeManager.recordProgress(player, ChallengeType.DISCOVER_BIOMES, 1);
                 DailyChallengeManager.syncChallenges(player);
+
+                // Track biomes for Biome Discoverer achievement
+                com.murilloskills.utils.AchievementTracker.incrementAndCheck(
+                        player, com.murilloskills.skills.MurilloSkillsList.EXPLORER,
+                        com.murilloskills.utils.AchievementTracker.KEY_BIOMES_DISCOVERED, 1);
             }
             lastBiomes.put(playerId, biomeId);
         }

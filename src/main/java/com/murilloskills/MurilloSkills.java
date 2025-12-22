@@ -34,12 +34,16 @@ public class MurilloSkills implements ModInitializer {
             // 1. Registrar Skills no Registry
             registerSkills();
 
+            // 1.1 Registrar Attachments (New Data System)
+            com.murilloskills.data.ModAttachments.register();
+
             // 2. Registrar Items
             ModItems.registerModItems();
 
             // 2.1. Registrar Event Handlers
             com.murilloskills.events.BlockPlacementHandler.register();
             com.murilloskills.events.ChallengeEventsHandler.register();
+            com.murilloskills.events.DimensionChangeHandler.register();
 
             // 2.2. Register Admin Commands
             CommandRegistrationCallback.EVENT.register(SkillAdminCommands::register);

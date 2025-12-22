@@ -1,6 +1,5 @@
 package com.murilloskills.skills;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.impl.FisherSkill;
 import com.murilloskills.models.SkillReceptorResult;
 import com.murilloskills.utils.EpicBundleGenerator;
@@ -45,8 +44,7 @@ public class FishingCatchHandler {
         }
 
         try {
-            SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
-            var playerData = state.getPlayerData(serverPlayer);
+            var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             // Check if player has Fisher as their selected skill
             if (!playerData.isSkillSelected(MurilloSkillsList.FISHER)) {
@@ -69,7 +67,8 @@ public class FishingCatchHandler {
                 }
 
                 // Add XP using centralized logic (handles constraints and level up)
-                SkillGlobalState.XpAddResult xpAddResult = playerData.addXpToSkill(MurilloSkillsList.FISHER, xpAmount);
+                com.murilloskills.data.PlayerSkillData.XpAddResult xpAddResult = playerData
+                        .addXpToSkill(MurilloSkillsList.FISHER, xpAmount);
 
                 // Check for milestone rewards
                 com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Pescador",
@@ -79,7 +78,6 @@ public class FishingCatchHandler {
                     SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.FISHER, fisherStats.level);
                 }
 
-                state.markDirty();
                 SkillsNetworkUtils.syncSkills(serverPlayer); // Sync with client
 
                 // Notify player (action bar message)
@@ -103,6 +101,18 @@ public class FishingCatchHandler {
                 boolean isFish = FisherXpGetter.isFish(caughtItem);
                 boolean isTreasure = FisherXpGetter.isTreasure(caughtItem);
                 com.murilloskills.events.ChallengeEventsHandler.onFishCaught(serverPlayer, isFish, isTreasure);
+
+                // Track fish caught for Sea King achievement
+                com.murilloskills.utils.AchievementTracker.incrementAndCheck(
+                        serverPlayer, MurilloSkillsList.FISHER,
+                        com.murilloskills.utils.AchievementTracker.KEY_FISH_CAUGHT, 1);
+
+                // Grant Treasure Catch achievement if caught treasure
+                if (isTreasure) {
+                    com.murilloskills.utils.AchievementTracker.incrementAndCheck(
+                            serverPlayer, MurilloSkillsList.FISHER,
+                            com.murilloskills.utils.AchievementTracker.KEY_TREASURES_FISHED, 1);
+                }
             }
 
             // Level 25 & 75: Bonus treasure chance

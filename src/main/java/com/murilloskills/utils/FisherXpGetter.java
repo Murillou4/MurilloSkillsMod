@@ -15,9 +15,7 @@ import net.minecraft.item.Items;
 public class FisherXpGetter {
 
     // Base XP values for different catch categories
-    private static final int XP_TREASURE = 50;
-    private static final int XP_FISH = 15;
-    private static final int XP_JUNK = 5;
+    // Note: Constants replaced by SkillConfig getters
 
     /**
      * Gets XP for a caught item based on its category.
@@ -28,19 +26,19 @@ public class FisherXpGetter {
     public static SkillReceptorResult getFishingXp(Item item) {
         // Treasure items
         if (isTreasure(item)) {
-            return new SkillReceptorResult(true, XP_TREASURE);
+            return new SkillReceptorResult(true, SkillConfig.getFisherXpTreasure());
         }
         // Fish items
         else if (isFish(item)) {
-            return new SkillReceptorResult(true, XP_FISH);
+            return new SkillReceptorResult(true, SkillConfig.getFisherXpFish());
         }
         // Junk items
         else if (isJunk(item)) {
-            return new SkillReceptorResult(true, XP_JUNK);
+            return new SkillReceptorResult(true, SkillConfig.getFisherXpJunk());
         }
 
         // Unknown item - give base fish XP
-        return new SkillReceptorResult(true, XP_FISH);
+        return new SkillReceptorResult(true, SkillConfig.getFisherXpFish());
     }
 
     /**

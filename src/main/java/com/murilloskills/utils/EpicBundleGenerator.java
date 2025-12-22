@@ -37,21 +37,7 @@ public class EpicBundleGenerator {
 
     private static final Random random = new Random();
 
-    // Weight constants (total = 100)
-    private static final int WEIGHT_ENCHANTED_BOOK = 40;
-    private static final int WEIGHT_GOLD_BLOCK = 25;
-    private static final int WEIGHT_DIAMOND_BLOCK = 20;
-    private static final int WEIGHT_TRIDENT = 10;
-    private static final int WEIGHT_HEART_OF_SEA = 4;
-    @SuppressWarnings("unused") // Used conceptually in weight calculation (1% remainder)
-    private static final int WEIGHT_GOLDEN_APPLE = 1;
-    private static final int TOTAL_WEIGHT = 100;
-
-    // Level requirements for tier-gated items
-    private static final int LEVEL_DIAMOND_BLOCK = 25;
-    private static final int LEVEL_TRIDENT = 50;
-    private static final int LEVEL_HEART_OF_SEA = 75;
-    private static final int LEVEL_GOLDEN_APPLE = 90;
+    // Note: Constants replaced by SkillConfig getters
 
     /**
      * Generates and spawns an Epic Bundle item at the player's location.
@@ -61,8 +47,7 @@ public class EpicBundleGenerator {
      */
     public static void generateAndSpawn(ServerPlayerEntity player, ServerWorld world) {
         // Get player's Fisher level
-        var state = com.murilloskills.data.SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        var playerData = state.getPlayerData(player);
+        var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
         var fisherStats = playerData.getSkill(com.murilloskills.skills.MurilloSkillsList.FISHER);
         int playerLevel = fisherStats.level;
 
@@ -88,26 +73,33 @@ public class EpicBundleGenerator {
      * lower tier.
      */
     public static ItemStack generateRandomItem(ServerPlayerEntity player, ServerWorld world, int playerLevel) {
-        int roll = random.nextInt(TOTAL_WEIGHT);
+        int totalWeight = SkillConfig.getEpicBundleWeightEnchantedBook() +
+                SkillConfig.getEpicBundleWeightGoldBlock() +
+                SkillConfig.getEpicBundleWeightDiamondBlock() +
+                SkillConfig.getEpicBundleWeightTrident() +
+                SkillConfig.getEpicBundleWeightHeartOfSea() +
+                SkillConfig.getEpicBundleWeightGoldenApple();
+
+        int roll = random.nextInt(totalWeight);
         int cumulative = 0;
 
         // 40% - Enchanted Book (always available)
-        cumulative += WEIGHT_ENCHANTED_BOOK;
+        cumulative += SkillConfig.getEpicBundleWeightEnchantedBook();
         if (roll < cumulative) {
             return createEnchantedBook(world);
         }
 
         // 25% - Gold Block (always available)
-        cumulative += WEIGHT_GOLD_BLOCK;
+        cumulative += SkillConfig.getEpicBundleWeightGoldBlock();
         if (roll < cumulative) {
             int count = 1 + random.nextInt(3);
             return new ItemStack(Items.GOLD_BLOCK, count);
         }
 
         // 20% - Diamond Block (Level 25+)
-        cumulative += WEIGHT_DIAMOND_BLOCK;
+        cumulative += SkillConfig.getEpicBundleWeightDiamondBlock();
         if (roll < cumulative) {
-            if (playerLevel >= LEVEL_DIAMOND_BLOCK) {
+            if (playerLevel >= SkillConfig.getEpicBundleLevelDiamondBlock()) {
                 int count = 1 + random.nextInt(2);
                 return new ItemStack(Items.DIAMOND_BLOCK, count);
             }
@@ -117,47 +109,47 @@ public class EpicBundleGenerator {
         }
 
         // 10% - Trident with enchantment (Level 50+)
-        cumulative += WEIGHT_TRIDENT;
+        cumulative += SkillConfig.getEpicBundleWeightTrident();
         if (roll < cumulative) {
-            if (playerLevel >= LEVEL_TRIDENT) {
+            if (playerLevel >= SkillConfig.getEpicBundleLevelTrident()) {
                 return createEnchantedTrident(world);
             }
             // Fallback: Diamond Block for level 25+, else Gold Block
-            if (playerLevel >= LEVEL_DIAMOND_BLOCK) {
+            if (playerLevel >= SkillConfig.getEpicBundleLevelDiamondBlock()) {
                 return new ItemStack(Items.DIAMOND_BLOCK, 1);
             }
             return new ItemStack(Items.GOLD_BLOCK, 2);
         }
 
         // 4% - Heart of the Sea (Level 75+)
-        cumulative += WEIGHT_HEART_OF_SEA;
+        cumulative += SkillConfig.getEpicBundleWeightHeartOfSea();
         if (roll < cumulative) {
-            if (playerLevel >= LEVEL_HEART_OF_SEA) {
+            if (playerLevel >= SkillConfig.getEpicBundleLevelHeartOfSea()) {
                 return new ItemStack(Items.HEART_OF_THE_SEA, 1);
             }
             // Fallback: Trident for level 50+, Diamond for 25+, else Gold
-            if (playerLevel >= LEVEL_TRIDENT) {
+            if (playerLevel >= SkillConfig.getEpicBundleLevelTrident()) {
                 return createEnchantedTrident(world);
             }
-            if (playerLevel >= LEVEL_DIAMOND_BLOCK) {
+            if (playerLevel >= SkillConfig.getEpicBundleLevelDiamondBlock()) {
                 return new ItemStack(Items.DIAMOND_BLOCK, 1);
             }
             return new ItemStack(Items.GOLD_BLOCK, 2);
         }
 
         // 1% - Enchanted Golden Apple (Level 90+)
-        if (playerLevel >= LEVEL_GOLDEN_APPLE) {
+        if (playerLevel >= SkillConfig.getEpicBundleLevelGoldenApple()) {
             return new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, 1);
         }
         // Fallback: Heart of the Sea for 75+, Trident for 50+, Diamond for 25+, else
         // Gold
-        if (playerLevel >= LEVEL_HEART_OF_SEA) {
+        if (playerLevel >= SkillConfig.getEpicBundleLevelHeartOfSea()) {
             return new ItemStack(Items.HEART_OF_THE_SEA, 1);
         }
-        if (playerLevel >= LEVEL_TRIDENT) {
+        if (playerLevel >= SkillConfig.getEpicBundleLevelTrident()) {
             return createEnchantedTrident(world);
         }
-        if (playerLevel >= LEVEL_DIAMOND_BLOCK) {
+        if (playerLevel >= SkillConfig.getEpicBundleLevelDiamondBlock()) {
             return new ItemStack(Items.DIAMOND_BLOCK, 1);
         }
         return new ItemStack(Items.GOLD_BLOCK, 2);

@@ -1,7 +1,7 @@
 package com.murilloskills.gui;
 
 import com.murilloskills.data.ClientSkillData;
-import com.murilloskills.data.SkillGlobalState;
+
 import com.murilloskills.gui.renderer.RenderingHelper;
 import com.murilloskills.gui.data.SkillUiData;
 import com.murilloskills.network.ParagonActivationC2SPayload;
@@ -412,7 +412,7 @@ public class SkillsScreen extends Screen {
             }
         }
 
-        // XP Toast toggle button (both modes) - positioned in top-right corner
+        // XP Toast toggle button (both modes) - positioned // XP Toast toggle button
         int toastBtnWidth = 130;
         int toastBtnHeight = 16;
         int toastBtnX = this.width - toastBtnWidth - 10;
@@ -428,18 +428,20 @@ public class SkillsScreen extends Screen {
                 .build();
         this.addDrawableChild(toastToggleButton);
 
-        // Info button - opens ModInfoScreen with all mod details
-        int infoBtnWidth = 50;
-        int infoBtnHeight = 16;
-        int infoBtnX = toastBtnX - infoBtnWidth - 8;
-        int infoBtnY = 8;
+        // Info button - styled premium button with icon
+        int infoBtnWidth = 70;
+        int infoBtnHeight = 18;
+        int infoBtnX = toastBtnX - infoBtnWidth - 10;
+        int infoBtnY = 7;
 
         ButtonWidget infoButton = ButtonWidget.builder(
-                Text.translatable("murilloskills.gui.info_button"),
+                Text.literal("📖 ").append(Text.translatable("murilloskills.gui.info_button_short")),
                 (button) -> {
                     MinecraftClient.getInstance().setScreen(new ModInfoScreen(this));
                 })
                 .dimensions(infoBtnX, infoBtnY, infoBtnWidth, infoBtnHeight)
+                .tooltip(net.minecraft.client.gui.tooltip.Tooltip.of(
+                        Text.translatable("murilloskills.gui.info_button_tooltip")))
                 .build();
         this.addDrawableChild(infoButton);
     }
@@ -558,7 +560,8 @@ public class SkillsScreen extends Screen {
 
             // Status text below XP bar (buttons handle selection mode text)
             if (isLocked) {
-                context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.locked"), x + 28, y + 40,
+                // CHANGED: Clearer feedback that skill is inactive, not just "locked"
+                context.drawText(this.textRenderer, Text.literal("NOT ACTIVE"), x + 28, y + 40,
                         0xFFAA0000, false);
             } else if (isParagon) {
                 long cooldownTicks = getSkillCooldown(skill);
@@ -698,9 +701,11 @@ public class SkillsScreen extends Screen {
             }
 
             if (isLocked) {
-                tooltip.add(Text.translatable("murilloskills.gui.skill_locked").formatted(Formatting.RED));
-                tooltip.add(Text.translatable("murilloskills.gui.skill_not_selected").formatted(Formatting.DARK_GRAY));
-                tooltip.add(Text.translatable("murilloskills.gui.cannot_gain_xp").formatted(Formatting.DARK_GRAY));
+                tooltip.add(Text.literal("NOT ACTIVE").formatted(Formatting.RED, Formatting.BOLD));
+                tooltip.add(Text.translatable("murilloskills.gui.skill_not_selected").formatted(Formatting.GRAY));
+                tooltip.add(Text.empty());
+                tooltip.add(Text.literal("⚠ XP Gain Disabled").formatted(Formatting.RED));
+                tooltip.add(Text.literal("Only selected skills gain XP.").formatted(Formatting.DARK_GRAY));
                 return tooltip;
             }
 
@@ -1030,7 +1035,8 @@ public class SkillsScreen extends Screen {
         return Text.translatable("murilloskills.tooltip.xp_gain." + skill.name().toLowerCase());
     }
 
-    private void renderXpBar(DrawContext context, int x, int y, SkillGlobalState.SkillStats stats, boolean isLocked) {
+    private void renderXpBar(DrawContext context, int x, int y, com.murilloskills.data.PlayerSkillData.SkillStats stats,
+            boolean isLocked) {
         // 1. Calculate text first to determine layout
         String text = "";
         int textColor = PALETTE.textMuted();

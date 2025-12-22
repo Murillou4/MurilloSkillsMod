@@ -2,7 +2,7 @@ package com.murilloskills.utils;
 
 import com.murilloskills.api.AbstractSkill;
 import com.murilloskills.api.SkillRegistry;
-import com.murilloskills.data.SkillGlobalState;
+
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.slf4j.Logger;
@@ -15,17 +15,17 @@ public class SkillAttributes {
     /**
      * Updates all stats for a player using the new skill system
      */
-    public static void updateAllStats(ServerPlayerEntity player) {
+    /**
+     * Updates all stats for a player using the new skill system
+     */
+    public static void updateAllStats(ServerPlayerEntity player, com.murilloskills.data.PlayerSkillData data) {
         try {
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            var playerData = state.getPlayerData(player);
-
             // Update attributes for all selected skills using the registry
-            if (playerData.hasSelectedSkills()) {
-                for (MurilloSkillsList skillEnum : playerData.getSelectedSkills()) {
+            if (data.hasSelectedSkills()) {
+                for (MurilloSkillsList skillEnum : data.getSelectedSkills()) {
                     AbstractSkill skillObj = SkillRegistry.get(skillEnum);
                     if (skillObj != null) {
-                        int level = playerData.getSkill(skillEnum).level;
+                        int level = data.getSkill(skillEnum).level;
                         skillObj.updateAttributes(player, level);
                     }
                 }
@@ -33,6 +33,16 @@ public class SkillAttributes {
         } catch (Exception e) {
             LOGGER.error("Erro ao atualizar atributos para " + player.getName().getString(), e);
         }
+    }
+
+    /**
+     * Updates all stats for a player using the new skill system (fetches data
+     * internally)
+     */
+    public static void updateAllStats(ServerPlayerEntity player) {
+        com.murilloskills.data.PlayerSkillData data = player
+                .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+        updateAllStats(player, data);
     }
 
     /**
@@ -45,8 +55,8 @@ public class SkillAttributes {
         try {
             AbstractSkill minerSkill = SkillRegistry.get(MurilloSkillsList.MINER);
             if (minerSkill != null) {
-                SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-                int level = state.getPlayerData(player).getSkill(MurilloSkillsList.MINER).level;
+                int level = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS)
+                        .getSkill(MurilloSkillsList.MINER).level;
                 minerSkill.updateAttributes(player, level);
             }
         } catch (Exception e) {
@@ -64,8 +74,8 @@ public class SkillAttributes {
         try {
             AbstractSkill warriorSkill = SkillRegistry.get(MurilloSkillsList.WARRIOR);
             if (warriorSkill != null) {
-                SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-                int level = state.getPlayerData(player).getSkill(MurilloSkillsList.WARRIOR).level;
+                int level = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS)
+                        .getSkill(MurilloSkillsList.WARRIOR).level;
                 warriorSkill.updateAttributes(player, level);
             }
         } catch (Exception e) {

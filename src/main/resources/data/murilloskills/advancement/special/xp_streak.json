@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:blaze_powder"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.special.xp_streak.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.special.xp_streak.description"
+        },
+        "frame": "goal",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:special/trio_chosen",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

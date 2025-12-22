@@ -1,0 +1,22 @@
+{
+    "display": {
+        "icon": {
+            "id": "minecraft:wheat"
+        },
+        "title": {
+            "translate": "murilloskills.advancement.farmer.first_harvest.title"
+        },
+        "description": {
+            "translate": "murilloskills.advancement.farmer.first_harvest.description"
+        },
+        "frame": "task",
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "parent": "murilloskills:farmer/level_10",
+    "criteria": {
+        "impossible": {
+            "trigger": "minecraft:impossible"
+        }
+    }
+}

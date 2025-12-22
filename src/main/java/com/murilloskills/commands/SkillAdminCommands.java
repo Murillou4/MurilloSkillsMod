@@ -3,7 +3,7 @@ package com.murilloskills.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.murilloskills.data.SkillGlobalState;
+
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillsNetworkUtils;
 import net.minecraft.command.CommandRegistryAccess;
@@ -14,8 +14,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.UUID;
 
 /**
  * Admin commands for managing player skills.
@@ -156,9 +154,9 @@ public class SkillAdminCommands {
 
     private static int executeSetLevel(ServerCommandSource source, String target, String skillName, int level) {
         try {
-            UUID uuid = resolvePlayerUUID(source, target);
-            if (uuid == null) {
-                source.sendError(Text.literal("Player or UUID not found: " + target));
+            ServerPlayerEntity player = source.getServer().getPlayerManager().getPlayer(target);
+            if (player == null) {
+                source.sendError(Text.literal("Player not found or offline: " + target));
                 return 0;
             }
 
@@ -168,25 +166,20 @@ public class SkillAdminCommands {
                 return 0;
             }
 
-            SkillGlobalState state = SkillGlobalState.getServerState(source.getServer());
-            var playerData = state.getOrCreatePlayerData(uuid);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
             var stats = playerData.getSkill(skill);
 
             stats.level = level;
             stats.xp = 0; // Reset XP when setting level
-            state.markDirty();
 
-            // Sync if player is online
-            ServerPlayerEntity onlinePlayer = source.getServer().getPlayerManager().getPlayer(uuid);
-            if (onlinePlayer != null) {
-                com.murilloskills.utils.SkillAttributes.updateAllStats(onlinePlayer);
-                SkillsNetworkUtils.syncSkills(onlinePlayer);
-            }
+            // Sync
+            com.murilloskills.utils.SkillAttributes.updateAllStats(player, playerData);
+            SkillsNetworkUtils.syncSkills(player);
 
             source.sendFeedback(() -> Text.literal("Set " + skill.name() + " level to " + level + " for " + target)
                     .formatted(Formatting.GREEN), true);
             LOGGER.info("Admin {} set {} level to {} for {}",
-                    source.getName(), skill.name(), level, uuid);
+                    source.getName(), skill.name(), level, player.getUuid());
             return 1;
 
         } catch (Exception e) {
@@ -198,9 +191,9 @@ public class SkillAdminCommands {
 
     private static int executeSetPrestige(ServerCommandSource source, String target, String skillName, int prestige) {
         try {
-            UUID uuid = resolvePlayerUUID(source, target);
-            if (uuid == null) {
-                source.sendError(Text.literal("Player or UUID not found: " + target));
+            ServerPlayerEntity player = source.getServer().getPlayerManager().getPlayer(target);
+            if (player == null) {
+                source.sendError(Text.literal("Player not found or offline: " + target));
                 return 0;
             }
 
@@ -210,26 +203,21 @@ public class SkillAdminCommands {
                 return 0;
             }
 
-            SkillGlobalState state = SkillGlobalState.getServerState(source.getServer());
-            var playerData = state.getOrCreatePlayerData(uuid);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
             var stats = playerData.getSkill(skill);
 
             stats.prestige = prestige;
-            state.markDirty();
 
-            // Sync if player is online
-            ServerPlayerEntity onlinePlayer = source.getServer().getPlayerManager().getPlayer(uuid);
-            if (onlinePlayer != null) {
-                com.murilloskills.utils.SkillAttributes.updateAllStats(onlinePlayer);
-                SkillsNetworkUtils.syncSkills(onlinePlayer);
-            }
+            // Sync
+            com.murilloskills.utils.SkillAttributes.updateAllStats(player, playerData);
+            SkillsNetworkUtils.syncSkills(player);
 
             source.sendFeedback(
                     () -> Text.literal("Set " + skill.name() + " prestige to " + prestige + " for " + target)
                             .formatted(Formatting.LIGHT_PURPLE),
                     true);
             LOGGER.info("Admin {} set {} prestige to {} for {}",
-                    source.getName(), skill.name(), prestige, uuid);
+                    source.getName(), skill.name(), prestige, player.getUuid());
             return 1;
 
         } catch (Exception e) {
@@ -241,9 +229,9 @@ public class SkillAdminCommands {
 
     private static int executeAddXp(ServerCommandSource source, String target, String skillName, int amount) {
         try {
-            UUID uuid = resolvePlayerUUID(source, target);
-            if (uuid == null) {
-                source.sendError(Text.literal("Player or UUID not found: " + target));
+            ServerPlayerEntity player = source.getServer().getPlayerManager().getPlayer(target);
+            if (player == null) {
+                source.sendError(Text.literal("Player not found or offline: " + target));
                 return 0;
             }
 
@@ -253,8 +241,7 @@ public class SkillAdminCommands {
                 return 0;
             }
 
-            SkillGlobalState state = SkillGlobalState.getServerState(source.getServer());
-            var playerData = state.getOrCreatePlayerData(uuid);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             // Force add XP even if skill is not selected
             var stats = playerData.getSkill(skill);
@@ -271,20 +258,15 @@ public class SkillAdminCommands {
                 }
             }
 
-            state.markDirty();
-
-            // Sync if player is online
-            ServerPlayerEntity onlinePlayer = source.getServer().getPlayerManager().getPlayer(uuid);
-            if (onlinePlayer != null) {
-                com.murilloskills.utils.SkillAttributes.updateAllStats(onlinePlayer);
-                SkillsNetworkUtils.syncSkills(onlinePlayer);
-            }
+            // Sync
+            com.murilloskills.utils.SkillAttributes.updateAllStats(player, playerData);
+            SkillsNetworkUtils.syncSkills(player);
 
             source.sendFeedback(() -> Text.literal("Added " + amount + " XP to " + skill.name() + " for " + target +
                     " (now level " + stats.level + ")")
                     .formatted(Formatting.GOLD), true);
             LOGGER.info("Admin {} added {} XP to {} for {} (now level {})",
-                    source.getName(), amount, skill.name(), uuid, stats.level);
+                    source.getName(), amount, skill.name(), player.getUuid(), stats.level);
             return 1;
 
         } catch (Exception e) {
@@ -296,14 +278,13 @@ public class SkillAdminCommands {
 
     private static int executeInfo(ServerCommandSource source, String target, String skillName) {
         try {
-            UUID uuid = resolvePlayerUUID(source, target);
-            if (uuid == null) {
-                source.sendError(Text.literal("Player or UUID not found: " + target));
+            ServerPlayerEntity player = source.getServer().getPlayerManager().getPlayer(target);
+            if (player == null) {
+                source.sendError(Text.literal("Player not found or offline: " + target));
                 return 0;
             }
 
-            SkillGlobalState state = SkillGlobalState.getServerState(source.getServer());
-            var playerData = state.getOrCreatePlayerData(uuid);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             if (skillName != null) {
                 // Show specific skill info
@@ -351,9 +332,9 @@ public class SkillAdminCommands {
 
     private static int executeReset(ServerCommandSource source, String target, String skillName) {
         try {
-            UUID uuid = resolvePlayerUUID(source, target);
-            if (uuid == null) {
-                source.sendError(Text.literal("Player or UUID not found: " + target));
+            ServerPlayerEntity player = source.getServer().getPlayerManager().getPlayer(target);
+            if (player == null) {
+                source.sendError(Text.literal("Player not found or offline: " + target));
                 return 0;
             }
 
@@ -363,26 +344,21 @@ public class SkillAdminCommands {
                 return 0;
             }
 
-            SkillGlobalState state = SkillGlobalState.getServerState(source.getServer());
-            var playerData = state.getOrCreatePlayerData(uuid);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
             var stats = playerData.getSkill(skill);
 
             stats.level = 0;
             stats.xp = 0;
             stats.prestige = 0;
             stats.lastAbilityUse = -1;
-            state.markDirty();
 
-            // Sync if player is online
-            ServerPlayerEntity onlinePlayer = source.getServer().getPlayerManager().getPlayer(uuid);
-            if (onlinePlayer != null) {
-                com.murilloskills.utils.SkillAttributes.updateAllStats(onlinePlayer);
-                SkillsNetworkUtils.syncSkills(onlinePlayer);
-            }
+            // Sync
+            com.murilloskills.utils.SkillAttributes.updateAllStats(player, playerData);
+            SkillsNetworkUtils.syncSkills(player);
 
             source.sendFeedback(() -> Text.literal("Reset " + skill.name() + " for " + target)
                     .formatted(Formatting.YELLOW), true);
-            LOGGER.info("Admin {} reset {} for {}", source.getName(), skill.name(), uuid);
+            LOGGER.info("Admin {} reset {} for {}", source.getName(), skill.name(), player.getUuid());
             return 1;
 
         } catch (Exception e) {
@@ -394,14 +370,13 @@ public class SkillAdminCommands {
 
     private static int executeResetAll(ServerCommandSource source, String target) {
         try {
-            UUID uuid = resolvePlayerUUID(source, target);
-            if (uuid == null) {
-                source.sendError(Text.literal("Player or UUID not found: " + target));
+            ServerPlayerEntity player = source.getServer().getPlayerManager().getPlayer(target);
+            if (player == null) {
+                source.sendError(Text.literal("Player not found or offline: " + target));
                 return 0;
             }
 
-            SkillGlobalState state = SkillGlobalState.getServerState(source.getServer());
-            var playerData = state.getOrCreatePlayerData(uuid);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             // Reset all skills
             for (MurilloSkillsList skill : MurilloSkillsList.values()) {
@@ -416,18 +391,13 @@ public class SkillAdminCommands {
             playerData.paragonSkill = null;
             playerData.selectedSkills.clear();
 
-            state.markDirty();
-
-            // Sync if player is online
-            ServerPlayerEntity onlinePlayer = source.getServer().getPlayerManager().getPlayer(uuid);
-            if (onlinePlayer != null) {
-                com.murilloskills.utils.SkillAttributes.updateAllStats(onlinePlayer);
-                SkillsNetworkUtils.syncSkills(onlinePlayer);
-            }
+            // Sync
+            com.murilloskills.utils.SkillAttributes.updateAllStats(player, playerData);
+            SkillsNetworkUtils.syncSkills(player);
 
             source.sendFeedback(() -> Text.literal("Reset ALL skills for " + target)
                     .formatted(Formatting.RED, Formatting.BOLD), true);
-            LOGGER.info("Admin {} reset ALL skills for {}", source.getName(), uuid);
+            LOGGER.info("Admin {} reset ALL skills for {}", source.getName(), player.getUuid());
             return 1;
 
         } catch (Exception e) {
@@ -439,9 +409,9 @@ public class SkillAdminCommands {
 
     private static int executeSelect(ServerCommandSource source, String target, String skillName) {
         try {
-            UUID uuid = resolvePlayerUUID(source, target);
-            if (uuid == null) {
-                source.sendError(Text.literal("Player or UUID not found: " + target));
+            ServerPlayerEntity player = source.getServer().getPlayerManager().getPlayer(target);
+            if (player == null) {
+                source.sendError(Text.literal("Player not found or offline: " + target));
                 return 0;
             }
 
@@ -451,8 +421,7 @@ public class SkillAdminCommands {
                 return 0;
             }
 
-            SkillGlobalState state = SkillGlobalState.getServerState(source.getServer());
-            var playerData = state.getOrCreatePlayerData(uuid);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             if (playerData.isSkillSelected(skill)) {
                 source.sendError(Text.literal("Skill " + skill.name() + " is already selected for " + target));
@@ -466,18 +435,15 @@ public class SkillAdminCommands {
             }
 
             playerData.selectedSkills.add(skill);
-            state.markDirty();
 
-            // Sync if player is online
-            ServerPlayerEntity onlinePlayer = source.getServer().getPlayerManager().getPlayer(uuid);
-            if (onlinePlayer != null) {
-                com.murilloskills.utils.SkillAttributes.updateAllStats(onlinePlayer);
-                SkillsNetworkUtils.syncSkills(onlinePlayer);
-            }
+            // Sync
+            com.murilloskills.utils.SkillAttributes.updateAllStats(player, playerData);
+            SkillsNetworkUtils.syncSkills(player);
 
             source.sendFeedback(() -> Text.literal("Added " + skill.name() + " to selected skills for " + target)
                     .formatted(Formatting.GREEN), true);
-            LOGGER.info("Admin {} added {} to selected skills for {}", source.getName(), skill.name(), uuid);
+            LOGGER.info("Admin {} added {} to selected skills for {}", source.getName(), skill.name(),
+                    player.getUuid());
             return 1;
 
         } catch (Exception e) {
@@ -489,9 +455,9 @@ public class SkillAdminCommands {
 
     private static int executeDeselect(ServerCommandSource source, String target, String skillName) {
         try {
-            UUID uuid = resolvePlayerUUID(source, target);
-            if (uuid == null) {
-                source.sendError(Text.literal("Player or UUID not found: " + target));
+            ServerPlayerEntity player = source.getServer().getPlayerManager().getPlayer(target);
+            if (player == null) {
+                source.sendError(Text.literal("Player not found or offline: " + target));
                 return 0;
             }
 
@@ -501,8 +467,7 @@ public class SkillAdminCommands {
                 return 0;
             }
 
-            SkillGlobalState state = SkillGlobalState.getServerState(source.getServer());
-            var playerData = state.getOrCreatePlayerData(uuid);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             if (!playerData.isSkillSelected(skill)) {
                 source.sendError(Text.literal("Skill " + skill.name() + " is not selected for " + target));
@@ -516,18 +481,14 @@ public class SkillAdminCommands {
                 playerData.paragonSkill = null;
             }
 
-            state.markDirty();
-
-            // Sync if player is online
-            ServerPlayerEntity onlinePlayer = source.getServer().getPlayerManager().getPlayer(uuid);
-            if (onlinePlayer != null) {
-                com.murilloskills.utils.SkillAttributes.updateAllStats(onlinePlayer);
-                SkillsNetworkUtils.syncSkills(onlinePlayer);
-            }
+            // Sync
+            com.murilloskills.utils.SkillAttributes.updateAllStats(player, playerData);
+            SkillsNetworkUtils.syncSkills(player);
 
             source.sendFeedback(() -> Text.literal("Removed " + skill.name() + " from selected skills for " + target)
                     .formatted(Formatting.YELLOW), true);
-            LOGGER.info("Admin {} removed {} from selected skills for {}", source.getName(), skill.name(), uuid);
+            LOGGER.info("Admin {} removed {} from selected skills for {}", source.getName(), skill.name(),
+                    player.getUuid());
             return 1;
 
         } catch (Exception e) {
@@ -539,9 +500,9 @@ public class SkillAdminCommands {
 
     private static int executeSetParagon(ServerCommandSource source, String target, String skillName) {
         try {
-            UUID uuid = resolvePlayerUUID(source, target);
-            if (uuid == null) {
-                source.sendError(Text.literal("Player or UUID not found: " + target));
+            ServerPlayerEntity player = source.getServer().getPlayerManager().getPlayer(target);
+            if (player == null) {
+                source.sendError(Text.literal("Player not found or offline: " + target));
                 return 0;
             }
 
@@ -551,8 +512,7 @@ public class SkillAdminCommands {
                 return 0;
             }
 
-            SkillGlobalState state = SkillGlobalState.getServerState(source.getServer());
-            var playerData = state.getOrCreatePlayerData(uuid);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             // Auto-select skill if not selected
             if (!playerData.isSkillSelected(skill)) {
@@ -565,18 +525,14 @@ public class SkillAdminCommands {
             }
 
             playerData.paragonSkill = skill;
-            state.markDirty();
 
-            // Sync if player is online
-            ServerPlayerEntity onlinePlayer = source.getServer().getPlayerManager().getPlayer(uuid);
-            if (onlinePlayer != null) {
-                com.murilloskills.utils.SkillAttributes.updateAllStats(onlinePlayer);
-                SkillsNetworkUtils.syncSkills(onlinePlayer);
-            }
+            // Sync
+            com.murilloskills.utils.SkillAttributes.updateAllStats(player, playerData);
+            SkillsNetworkUtils.syncSkills(player);
 
             source.sendFeedback(() -> Text.literal("Set paragon skill to " + skill.name() + " for " + target)
                     .formatted(Formatting.GOLD, Formatting.BOLD), true);
-            LOGGER.info("Admin {} set paragon to {} for {}", source.getName(), skill.name(), uuid);
+            LOGGER.info("Admin {} set paragon to {} for {}", source.getName(), skill.name(), player.getUuid());
             return 1;
 
         } catch (Exception e) {
@@ -588,14 +544,13 @@ public class SkillAdminCommands {
 
     private static int executeClearParagon(ServerCommandSource source, String target) {
         try {
-            UUID uuid = resolvePlayerUUID(source, target);
-            if (uuid == null) {
-                source.sendError(Text.literal("Player or UUID not found: " + target));
+            ServerPlayerEntity player = source.getServer().getPlayerManager().getPlayer(target);
+            if (player == null) {
+                source.sendError(Text.literal("Player not found or offline: " + target));
                 return 0;
             }
 
-            SkillGlobalState state = SkillGlobalState.getServerState(source.getServer());
-            var playerData = state.getOrCreatePlayerData(uuid);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             if (playerData.paragonSkill == null) {
                 source.sendError(Text.literal("Player " + target + " does not have a paragon skill set"));
@@ -604,17 +559,14 @@ public class SkillAdminCommands {
 
             MurilloSkillsList oldParagon = playerData.paragonSkill;
             playerData.paragonSkill = null;
-            state.markDirty();
 
-            // Sync if player is online
-            ServerPlayerEntity onlinePlayer = source.getServer().getPlayerManager().getPlayer(uuid);
-            if (onlinePlayer != null) {
-                SkillsNetworkUtils.syncSkills(onlinePlayer);
-            }
+            // Sync
+            com.murilloskills.utils.SkillAttributes.updateAllStats(player, playerData);
+            SkillsNetworkUtils.syncSkills(player);
 
             source.sendFeedback(() -> Text.literal("Cleared paragon skill (" + oldParagon.name() + ") for " + target)
                     .formatted(Formatting.YELLOW), true);
-            LOGGER.info("Admin {} cleared paragon for {}", source.getName(), uuid);
+            LOGGER.info("Admin {} cleared paragon for {}", source.getName(), player.getUuid());
             return 1;
 
         } catch (Exception e) {
@@ -626,14 +578,13 @@ public class SkillAdminCommands {
 
     private static int executeMaxAll(ServerCommandSource source, String target) {
         try {
-            UUID uuid = resolvePlayerUUID(source, target);
-            if (uuid == null) {
-                source.sendError(Text.literal("Player or UUID not found: " + target));
+            ServerPlayerEntity player = source.getServer().getPlayerManager().getPlayer(target);
+            if (player == null) {
+                source.sendError(Text.literal("Player not found or offline: " + target));
                 return 0;
             }
 
-            SkillGlobalState state = SkillGlobalState.getServerState(source.getServer());
-            var playerData = state.getOrCreatePlayerData(uuid);
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             // Max all skills
             for (MurilloSkillsList skill : MurilloSkillsList.values()) {
@@ -642,18 +593,19 @@ public class SkillAdminCommands {
                 stats.xp = 0;
             }
 
-            state.markDirty();
+            // Persistence handled automatically by attachments
 
             // Sync if player is online
-            ServerPlayerEntity onlinePlayer = source.getServer().getPlayerManager().getPlayer(uuid);
-            if (onlinePlayer != null) {
-                com.murilloskills.utils.SkillAttributes.updateAllStats(onlinePlayer);
-                SkillsNetworkUtils.syncSkills(onlinePlayer);
-            }
+            // In this command context, 'player' variable IS the target player (online or
+            // offline loaded).
+            // But since getPlayerManager().getPlayer(target) returns NULL if offline,
+            // 'player' here IS online.
+            com.murilloskills.utils.SkillAttributes.updateAllStats(player, playerData);
+            SkillsNetworkUtils.syncSkills(player);
 
             source.sendFeedback(() -> Text.literal("Maxed ALL skills (level 100) for " + target)
                     .formatted(Formatting.GOLD, Formatting.BOLD), true);
-            LOGGER.info("Admin {} maxed ALL skills for {}", source.getName(), uuid);
+            LOGGER.info("Admin {} maxed ALL skills for {}", source.getName(), target);
             return 1;
 
         } catch (Exception e) {
@@ -666,21 +618,6 @@ public class SkillAdminCommands {
     /**
      * Resolves a player name or UUID string to a UUID.
      */
-    private static UUID resolvePlayerUUID(ServerCommandSource source, String target) {
-        // Try to parse as UUID first
-        try {
-            return UUID.fromString(target);
-        } catch (IllegalArgumentException ignored) {
-        }
-
-        // Try to find online player by name
-        ServerPlayerEntity player = source.getServer().getPlayerManager().getPlayer(target);
-        if (player != null) {
-            return player.getUuid();
-        }
-
-        return null;
-    }
 
     /**
      * Parses a skill name (case-insensitive) to MurilloSkillsList enum.

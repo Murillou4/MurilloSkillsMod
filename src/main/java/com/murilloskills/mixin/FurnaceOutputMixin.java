@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.models.SkillReceptorResult;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillNotifier;
@@ -63,8 +63,7 @@ public abstract class FurnaceOutputMixin {
      */
     @Unique
     private void grantSmeltingXpByOutput(ServerPlayerEntity serverPlayer, ItemStack outputStack) {
-        SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
-        var playerData = state.getPlayerData(serverPlayer);
+        var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         // Only grant XP if player has BLACKSMITH selected
         if (!playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
@@ -82,8 +81,7 @@ public abstract class FurnaceOutputMixin {
         int totalXp = xpResult.getXpAmount() * stackCount;
 
         // Add XP using the central method that handles paragon constraints
-        SkillGlobalState.XpAddResult xpAddResult = playerData.addXpToSkill(MurilloSkillsList.BLACKSMITH, totalXp);
-        state.markDirty();
+        PlayerSkillData.XpAddResult xpAddResult = playerData.addXpToSkill(MurilloSkillsList.BLACKSMITH, totalXp);
 
         // Send XP toast notification
         String source = outputStack.getName().getString();

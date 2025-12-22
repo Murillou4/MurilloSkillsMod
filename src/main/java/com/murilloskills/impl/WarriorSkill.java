@@ -1,7 +1,7 @@
 package com.murilloskills.impl;
 
 import com.murilloskills.api.AbstractSkill;
-import com.murilloskills.data.SkillGlobalState;
+
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
@@ -43,7 +43,7 @@ public class WarriorSkill extends AbstractSkill {
     }
 
     @Override
-    public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
+    public void onActiveAbility(ServerPlayerEntity player, com.murilloskills.data.PlayerSkillData.SkillStats stats) {
         try {
             // 1. Verifica Nível (permite se level >= 100 OU se já prestigiou)
             boolean hasReachedMaster = stats.level >= SkillConfig.WARRIOR_MASTER_LEVEL || stats.prestige > 0;
@@ -75,8 +75,9 @@ public class WarriorSkill extends AbstractSkill {
 
             // 4. Ativa o Berserk
             stats.lastAbilityUse = worldTime;
-            SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            state.markDirty();
+            // 4. Ativa o Berserk
+            stats.lastAbilityUse = worldTime;
+            // Persistence handled automatically
 
             startBerserk(player);
 
@@ -118,8 +119,8 @@ public class WarriorSkill extends AbstractSkill {
     public void updateAttributes(ServerPlayerEntity player, int level) {
         try {
             // Get prestige level for passive multiplier
-            var state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            int prestige = state.getPlayerData(player).getSkill(MurilloSkillsList.WARRIOR).prestige;
+            var data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+            int prestige = data.getSkill(MurilloSkillsList.WARRIOR).prestige;
             float prestigeMultiplier = com.murilloskills.utils.PrestigeManager.getPassiveMultiplier(prestige);
 
             // --- 1. DANO (por level) - Apply prestige bonus ---

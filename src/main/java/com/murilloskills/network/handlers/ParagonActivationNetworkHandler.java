@@ -1,6 +1,5 @@
 package com.murilloskills.network.handlers;
 
-import com.murilloskills.data.SkillGlobalState;
 import com.murilloskills.network.ParagonActivationC2SPayload;
 import com.murilloskills.utils.SkillsNetworkUtils;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -30,8 +29,7 @@ public final class ParagonActivationNetworkHandler {
             context.server().execute(() -> {
                 try {
                     var player = context.player();
-                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-                    var data = state.getPlayerData(player);
+                    var data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
                     if (data.paragonSkill != null) {
                         player.sendMessage(
@@ -53,10 +51,13 @@ public final class ParagonActivationNetworkHandler {
                     // Paragon can be selected at level 99 (locks at 99 until chosen)
                     if (stats.level >= 99) {
                         data.paragonSkill = payload.skill();
-                        state.markDirty();
+
                         SkillsNetworkUtils.syncSkills(player);
                         player.sendMessage(Text.translatable("murilloskills.paragon.defined", payload.skill().name())
                                 .formatted(Formatting.GOLD, Formatting.BOLD), false);
+
+                        // Grant "First Paragon" advancement
+                        com.murilloskills.utils.AdvancementGranter.grantFirstParagon(player);
                     } else {
                         player.sendMessage(
                                 Text.translatable("murilloskills.paragon.level_insufficient").formatted(Formatting.RED),

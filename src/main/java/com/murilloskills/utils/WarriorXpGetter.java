@@ -9,32 +9,27 @@ import net.minecraft.entity.passive.AnimalEntity;
 public class WarriorXpGetter {
 
     // Base XP values for different mob types
-    private static final int XP_ENDER_DRAGON = 1000;
-    private static final int XP_WITHER = 500;
-    private static final int XP_WARDEN = 500;
-    private static final int XP_ENDERMAN = 20;
-    private static final int XP_BLAZE = 25;
-    private static final int XP_MONSTER_DEFAULT = 15;
+    // Note: Constants replaced by SkillConfig getters
 
     public static SkillReceptorResult getMobXp(LivingEntity entity) {
 
         // BOSSES
         if (entity.getType() == EntityType.ENDER_DRAGON)
-            return new SkillReceptorResult(true, XP_ENDER_DRAGON);
+            return new SkillReceptorResult(true, SkillConfig.getWarriorXpEnderDragon());
         if (entity.getType() == EntityType.WITHER)
-            return new SkillReceptorResult(true, XP_WITHER);
+            return new SkillReceptorResult(true, SkillConfig.getWarriorXpWither());
         if (entity.getType() == EntityType.WARDEN)
-            return new SkillReceptorResult(true, XP_WARDEN);
+            return new SkillReceptorResult(true, SkillConfig.getWarriorXpWarden());
 
         // MONSTROS COMUNS (Zumbi, Esqueleto, Creeper, etc)
         if (entity instanceof Monster) {
             if (entity.getType() == EntityType.ENDERMAN)
-                return new SkillReceptorResult(true, XP_ENDERMAN);
+                return new SkillReceptorResult(true, SkillConfig.getWarriorXpEnderman());
             if (entity.getType() == EntityType.BLAZE)
-                return new SkillReceptorResult(true, XP_BLAZE);
+                return new SkillReceptorResult(true, SkillConfig.getWarriorXpBlaze());
 
             // Padrão para monstros
-            return new SkillReceptorResult(true, XP_MONSTER_DEFAULT);
+            return new SkillReceptorResult(true, SkillConfig.getWarriorXpMonsterDefault());
         }
 
         // ANIMAIS (Para a skill Hunter)

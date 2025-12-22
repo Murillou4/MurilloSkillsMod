@@ -2,7 +2,7 @@ package com.murilloskills.mixin;
 
 import com.murilloskills.api.AbstractSkill;
 import com.murilloskills.api.SkillRegistry;
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.impl.WarriorSkill;
 import com.murilloskills.skills.ArcherHitHandler;
 import com.murilloskills.skills.MurilloSkillsList;
@@ -30,8 +30,8 @@ public abstract class LivingEntityMixin {
         if (!(source.getAttacker() instanceof ServerPlayerEntity attacker))
             return;
 
-        SkillGlobalState state = SkillGlobalState.getServerState(attacker.getEntityWorld().getServer());
-        int level = state.getPlayerData(attacker).getSkill(MurilloSkillsList.WARRIOR).level;
+        PlayerSkillData playerData = attacker.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+        int level = playerData.getSkill(MurilloSkillsList.WARRIOR).level;
 
         if (level <= 0)
             return;
@@ -71,8 +71,7 @@ public abstract class LivingEntityMixin {
         if (self.getEntityWorld().isClient() || !(self instanceof ServerPlayerEntity player))
             return amount;
 
-        SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-        var playerData = state.getPlayerData(player);
+        PlayerSkillData playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
         float modifiedAmount = amount;
 
         // --- WARRIOR RESISTANCE ---

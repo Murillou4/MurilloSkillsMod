@@ -1,7 +1,7 @@
 package com.murilloskills.impl;
 
 import com.murilloskills.api.AbstractSkill;
-import com.murilloskills.data.SkillGlobalState;
+
 import com.murilloskills.network.MinerScanResultPayload;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.MinerXpGetter;
@@ -39,7 +39,7 @@ public class MinerSkill extends AbstractSkill {
     }
 
     @Override
-    public void onActiveAbility(ServerPlayerEntity player, SkillGlobalState.SkillStats stats) {
+    public void onActiveAbility(ServerPlayerEntity player, com.murilloskills.data.PlayerSkillData.SkillStats stats) {
         try {
             // 1. Verifica Nível
             // 1. Verifica Nível (permite se level >= 100 OU se já prestigiou)
@@ -64,8 +64,7 @@ public class MinerSkill extends AbstractSkill {
 
             // 3. Executa Habilidade
             stats.lastAbilityUse = worldTime;
-            // Note: markDirty() is called automatically by SkillGlobalState when data
-            // changes
+            // Stats are automatically synced via Data Attachments API
             // No need to force immediate save here
 
             List<MinerScanResultPayload.OreEntry> ores = scanForOres(player);
@@ -118,8 +117,8 @@ public class MinerSkill extends AbstractSkill {
     public void updateAttributes(ServerPlayerEntity player, int level) {
         try {
             // Get prestige level for passive multiplier
-            var state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            int prestige = state.getPlayerData(player).getSkill(MurilloSkillsList.MINER).prestige;
+            var data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+            int prestige = data.getSkill(MurilloSkillsList.MINER).prestige;
             float prestigeMultiplier = com.murilloskills.utils.PrestigeManager.getPassiveMultiplier(prestige);
 
             // Apply prestige bonus to mining speed
@@ -197,7 +196,7 @@ public class MinerSkill extends AbstractSkill {
         int radius = SkillConfig.MINER_ABILITY_RADIUS;
 
         // Limit blocks scanned per invocation to prevent lag (5000 blocks max)
-        int maxBlocksToScan = 5000;
+        int maxBlocksToScan = SkillConfig.getMinerScanLimit();
         int blocksScanned = 0;
 
         // Scan in a spiral pattern from center outward for better UX

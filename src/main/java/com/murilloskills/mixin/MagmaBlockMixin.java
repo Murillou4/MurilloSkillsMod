@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.impl.ExplorerSkill;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.block.BlockState;
@@ -28,8 +28,8 @@ public class MagmaBlockMixin {
             return;
 
         if (entity instanceof ServerPlayerEntity player) {
-            SkillGlobalState state1 = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-            var playerData = state1.getPlayerData(player);
+            PlayerSkillData playerData = player
+                    .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
             // Check if Explorer is selected
             if (!playerData.isSkillSelected(MurilloSkillsList.EXPLORER))

@@ -31,10 +31,14 @@ public class SkillNotifier {
 
                 // Som (Executado no local do player para ele ouvir)
                 player.getEntityWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
-                                SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.0f, 1.0f);
+                                SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS,
+                                SkillConfig.getLevelUpVolume(), SkillConfig.getLevelUpPitch());
 
                 // Grant advancement for milestone
                 AdvancementGranter.checkAndGrantAdvancement(player, skill, oldLevel, newLevel);
+
+                // Track daily level-ups for Speed Leveler achievement
+                AchievementTracker.incrementAndCheck(player, skill, AchievementTracker.KEY_LEVELS_TODAY, 1);
         }
 
 }

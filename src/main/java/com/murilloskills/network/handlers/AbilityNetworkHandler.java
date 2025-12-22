@@ -2,7 +2,7 @@ package com.murilloskills.network.handlers;
 
 import com.murilloskills.api.AbstractSkill;
 import com.murilloskills.api.SkillRegistry;
-import com.murilloskills.data.SkillGlobalState;
+
 import com.murilloskills.network.SkillAbilityC2SPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.text.Text;
@@ -32,8 +32,7 @@ public final class AbilityNetworkHandler {
             context.server().execute(() -> {
                 try {
                     var player = context.player();
-                    SkillGlobalState state = SkillGlobalState.getServerState(player.getEntityWorld().getServer());
-                    var playerData = state.getPlayerData(player);
+                    var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
                     if (playerData.paragonSkill == null) {
                         player.sendMessage(Text.translatable("murilloskills.paragon.need_confirm")

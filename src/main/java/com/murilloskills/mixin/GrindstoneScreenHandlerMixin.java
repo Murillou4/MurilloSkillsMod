@@ -1,6 +1,6 @@
 package com.murilloskills.mixin;
 
-import com.murilloskills.data.SkillGlobalState;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.BlacksmithXpGetter;
 import com.murilloskills.utils.SkillNotifier;
@@ -90,8 +90,7 @@ public abstract class GrindstoneScreenHandlerMixin {
      */
     @Unique
     private void grantGrindstoneXp(ServerPlayerEntity serverPlayer) {
-        SkillGlobalState state = SkillGlobalState.getServerState(serverPlayer.getEntityWorld().getServer());
-        var playerData = state.getPlayerData(serverPlayer);
+        var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
         // Only grant XP if player has BLACKSMITH selected
         if (!playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
@@ -102,8 +101,7 @@ public abstract class GrindstoneScreenHandlerMixin {
         int xp = BlacksmithXpGetter.getGrindstoneXp();
 
         // Add XP using the central method that handles paragon constraints
-        SkillGlobalState.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.BLACKSMITH, xp);
-        state.markDirty();
+        PlayerSkillData.XpAddResult xpResult = playerData.addXpToSkill(MurilloSkillsList.BLACKSMITH, xp);
 
         // Check for milestone rewards
         com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Ferreiro", xpResult);
