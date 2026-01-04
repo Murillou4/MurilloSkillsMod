@@ -4,7 +4,7 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
-## [Unreleased] - 2026-01-04
+## [1.2.2] - 2026-01-04
 
 ### 🐛 Correções
 - **Corrigido valores de XP para testes**: Valores de XP para mineração de pedra (Miner) e colocação de blocos estruturais (Builder) foram restaurados para os valores padrão. Eles estavam incorretamente definidos como 150.000 XP (valor de teste) ao invés dos valores corretos:
