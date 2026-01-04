@@ -269,7 +269,7 @@ public class ModConfig {
 
     // --- XP SOURCES ---
     public static class MinerSourceConfig {
-        public int xpStone = 150000;
+        public int xpStone = 2;
         public int xpCoal = 5;
         public int xpCopper = 5;
         public int xpIron = 10;
@@ -338,7 +338,7 @@ public class ModConfig {
     }
 
     public static class BuilderSourceConfig {
-        public int xpStructural = 150000;
+        public int xpStructural = 15;
         public int xpDecorative = 10;
         public int xpBasic = 3;
         public int xpPremium = 25;
