@@ -807,6 +807,22 @@ public class SkillConfig {
         return ModConfig.get().dailyChallenges.bonusXpAllComplete;
     }
 
+    public static int getChallengeResetIntervalTicks() {
+        return ModConfig.get().dailyChallenges.resetIntervalTicks;
+    }
+
+    public static boolean isDifficultyScalingEnabled() {
+        return ModConfig.get().dailyChallenges.difficultyScalingEnabled;
+    }
+
+    public static float getChallengeMinTargetMultiplier() {
+        return ModConfig.get().dailyChallenges.minTargetMultiplier;
+    }
+
+    public static float getChallengeMaxTargetMultiplier() {
+        return ModConfig.get().dailyChallenges.maxTargetMultiplier;
+    }
+
     // --- XP STREAK ---
     public static int getStreakTimeoutMs() {
         return ModConfig.get().xpStreak.streakTimeoutMs;

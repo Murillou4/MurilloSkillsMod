@@ -3,13 +3,12 @@ package com.murilloskills.utils;
 import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.*;
 
 /**
@@ -36,17 +35,26 @@ public class DailyChallengeManager {
 
     /**
      * Obtém ou gera desafios diários para um jogador.
+     * Usa tempo de jogo do Minecraft para reset (configurável, padrão: 24000 ticks
+     * = 20 minutos).
      */
     public static List<DailyChallenge> getDailyChallenges(ServerPlayerEntity player) {
         UUID playerId = player.getUuid();
-        String today = getCurrentDateKey();
+        long currentGameDay = getCurrentGameDay((ServerWorld) player.getEntityWorld());
 
         PlayerChallengeData data = playerChallenges.get(playerId);
 
-        // Verificar se precisa gerar novos desafios (novo dia)
-        if (data == null || !data.dateKey.equals(today)) {
-            data = generateNewChallenges(player, today);
+        // Verificar se precisa gerar novos desafios (novo ciclo de jogo)
+        if (data == null || data.gameDayCycle != currentGameDay) {
+            boolean wasExisting = data != null;
+            data = generateNewChallenges(player, currentGameDay);
             playerChallenges.put(playerId, data);
+
+            // Notificar jogador sobre novos desafios (exceto primeira vez)
+            if (wasExisting) {
+                player.sendMessage(Text.translatable("murilloskills.challenge.new_available")
+                        .formatted(Formatting.GREEN), false);
+            }
         }
 
         return data.challenges;
@@ -104,14 +112,28 @@ public class DailyChallengeManager {
 
     // ============ MÉTODOS PRIVADOS ============
 
-    private static PlayerChallengeData generateNewChallenges(ServerPlayerEntity player, String dateKey) {
+    private static PlayerChallengeData generateNewChallenges(ServerPlayerEntity player, long gameDayCycle) {
         UUID playerId = player.getUuid();
-        Random random = new Random(playerId.hashCode() + dateKey.hashCode());
+        Random random = new Random(playerId.hashCode() + Long.hashCode(gameDayCycle));
         List<DailyChallenge> challenges = new ArrayList<>();
 
         // Get player's selected skills to filter challenges
         PlayerSkillData playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
         List<MurilloSkillsList> selectedSkills = playerData.getSelectedSkills();
+
+        // Calculate difficulty multiplier based on average skill level
+        float difficultyMultiplier = 1.0f;
+        if (SkillConfig.isDifficultyScalingEnabled() && !selectedSkills.isEmpty()) {
+            int totalLevel = 0;
+            for (MurilloSkillsList skill : selectedSkills) {
+                totalLevel += playerData.getSkill(skill).level;
+            }
+            float avgLevel = (float) totalLevel / selectedSkills.size();
+            // Interpolate between min and max multiplier based on level 0-100
+            float t = avgLevel / 100.0f;
+            difficultyMultiplier = SkillConfig.getChallengeMinTargetMultiplier() +
+                    t * (SkillConfig.getChallengeMaxTargetMultiplier() - SkillConfig.getChallengeMinTargetMultiplier());
+        }
 
         // Filter available challenge types based on selected skills
         List<ChallengeType> availableTypes = new ArrayList<>();
@@ -133,13 +155,14 @@ public class DailyChallengeManager {
             int index = random.nextInt(availableTypes.size());
             ChallengeType type = availableTypes.remove(index);
 
-            int target = getTargetForType(type, random);
+            int baseTarget = getTargetForType(type, random);
+            int scaledTarget = Math.max(1, (int) (baseTarget * difficultyMultiplier));
             MurilloSkillsList skill = getSkillForType(type);
 
-            challenges.add(new DailyChallenge(type, target, skill));
+            challenges.add(new DailyChallenge(type, scaledTarget, skill));
         }
 
-        return new PlayerChallengeData(dateKey, challenges, false);
+        return new PlayerChallengeData(gameDayCycle, challenges, false);
     }
 
     private static int getTargetForType(ChallengeType type, Random random) {
@@ -270,6 +293,7 @@ public class DailyChallengeManager {
      */
     public static void syncChallenges(ServerPlayerEntity player) {
         List<DailyChallenge> challenges = getDailyChallenges(player);
+        int remainingTicks = getRemainingTicks(player);
 
         List<com.murilloskills.network.DailyChallengesSyncS2CPayload.ChallengeData> clientData = challenges.stream()
                 .map(c -> new com.murilloskills.network.DailyChallengesSyncS2CPayload.ChallengeData(
@@ -283,11 +307,40 @@ public class DailyChallengeManager {
 
         net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player,
                 new com.murilloskills.network.DailyChallengesSyncS2CPayload(
-                        clientData, getCurrentDateKey(), allChallengesComplete(player)));
+                        clientData, String.valueOf(getCurrentGameDay((ServerWorld) player.getEntityWorld())),
+                        allChallengesComplete(player), remainingTicks));
     }
 
-    private static String getCurrentDateKey() {
-        return LocalDate.now(ZoneId.systemDefault()).toString();
+    /**
+     * Gets the current game day cycle based on world time.
+     */
+    private static long getCurrentGameDay(ServerWorld world) {
+        long worldTime = world.getTimeOfDay();
+        int resetInterval = SkillConfig.getChallengeResetIntervalTicks();
+        return worldTime / resetInterval;
+    }
+
+    /**
+     * Gets the remaining ticks until the next challenge reset.
+     */
+    public static int getRemainingTicks(ServerPlayerEntity player) {
+        long worldTime = ((ServerWorld) player.getEntityWorld()).getTimeOfDay();
+        int resetInterval = SkillConfig.getChallengeResetIntervalTicks();
+        return (int) (resetInterval - (worldTime % resetInterval));
+    }
+
+    /**
+     * Formats remaining ticks as a human-readable time string (e.g., "5m 30s").
+     */
+    public static String formatRemainingTime(int ticks) {
+        int totalSeconds = ticks / 20;
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        if (minutes > 0) {
+            return String.format("%dm %02ds", minutes, seconds);
+        } else {
+            return String.format("%ds", seconds);
+        }
     }
 
     // ============ CLASSES INTERNAS ============
@@ -313,12 +366,12 @@ public class DailyChallengeManager {
     }
 
     private static class PlayerChallengeData {
-        final String dateKey;
+        final long gameDayCycle;
         final List<DailyChallenge> challenges;
         boolean bonusAwarded;
 
-        PlayerChallengeData(String dateKey, List<DailyChallenge> challenges, boolean bonusAwarded) {
-            this.dateKey = dateKey;
+        PlayerChallengeData(long gameDayCycle, List<DailyChallenge> challenges, boolean bonusAwarded) {
+            this.gameDayCycle = gameDayCycle;
             this.challenges = challenges;
             this.bonusAwarded = bonusAwarded;
         }

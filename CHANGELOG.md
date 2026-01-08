@@ -4,6 +4,38 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.3] - 2026-01-08
+
+### 🎯 Desafios Diários - Melhorias
+
+- **Reset por tempo de jogo**: Os desafios agora resetam a cada **1 dia do Minecraft** (~20 minutos reais) em vez de a cada dia real. Jogue no seu ritmo!
+  
+- **XP Aumentado**: 
+  - Recompensa base por desafio: 500 → **800 XP**
+  - Bônus por completar todos: 1000 → **1500 XP**
+
+- **Dificuldade Adaptativa**: As metas dos desafios agora escalam com o seu nível médio de skills. Jogadores iniciantes terão metas mais fáceis, enquanto veteranos terão desafios mais intensos.
+
+- **Notificação de Novos Desafios**: Ao resetar, você receberá a mensagem "🎯 Novos desafios disponíveis!" para saber que há novos objetivos.
+
+- **Timer de Reset**: O cliente agora recebe informação do tempo restante até o próximo reset (base para futuro timer na GUI).
+
+### ⚙️ Configuração
+
+Novos campos no `murilloskills.json`:
+```json
+"dailyChallenges": {
+  "resetIntervalTicks": 24000,      // Intervalo de reset em ticks (24000 = 1 dia MC)
+  "baseXpReward": 800,              // XP por desafio completado
+  "bonusXpAllComplete": 1500,       // XP bônus por completar todos
+  "difficultyScalingEnabled": true, // Escalar dificuldade por nível
+  "minTargetMultiplier": 0.5,       // Multiplicador mínimo (nível 0)
+  "maxTargetMultiplier": 2.0        // Multiplicador máximo (nível 100)
+}
+```
+
+---
+
 ## [1.2.2] - 2026-01-04
 
 ### 🐛 Correções

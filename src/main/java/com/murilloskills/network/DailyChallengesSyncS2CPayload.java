@@ -15,7 +15,8 @@ import java.util.List;
 public record DailyChallengesSyncS2CPayload(
         List<ChallengeData> challenges,
         String dateKey,
-        boolean allComplete) implements CustomPayload {
+        boolean allComplete,
+        int remainingTicks) implements CustomPayload {
 
     public static final CustomPayload.Id<DailyChallengesSyncS2CPayload> ID = new CustomPayload.Id<>(
             Identifier.of("murilloskills", "daily_challenges_sync"));
@@ -36,7 +37,8 @@ public record DailyChallengesSyncS2CPayload(
             }
             String dateKey = buf.readString();
             boolean allComplete = buf.readBoolean();
-            return new DailyChallengesSyncS2CPayload(challenges, dateKey, allComplete);
+            int remainingTicks = buf.readVarInt();
+            return new DailyChallengesSyncS2CPayload(challenges, dateKey, allComplete, remainingTicks);
         }
 
         @Override
@@ -52,6 +54,7 @@ public record DailyChallengesSyncS2CPayload(
             }
             buf.writeString(payload.dateKey);
             buf.writeBoolean(payload.allComplete);
+            buf.writeVarInt(payload.remainingTicks);
         }
     };
 

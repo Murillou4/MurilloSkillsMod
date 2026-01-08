@@ -257,8 +257,15 @@ public class ModConfig {
 
     public static class DailyChallengeConfig {
         public int challengesPerDay = 3;
-        public int baseXpReward = 500;
-        public int bonusXpAllComplete = 1000;
+        public int baseXpReward = 800;
+        public int bonusXpAllComplete = 1500;
+        // Reset interval in game ticks (24000 = 1 Minecraft day = ~20 real minutes)
+        public int resetIntervalTicks = 24000;
+        // Whether to scale difficulty based on player skill level
+        public boolean difficultyScalingEnabled = true;
+        // Multipliers for target amounts based on average skill level (0-100)
+        public float minTargetMultiplier = 0.5f; // At skill level 0
+        public float maxTargetMultiplier = 2.0f; // At skill level 100
     }
 
     public static class XpStreakConfig {

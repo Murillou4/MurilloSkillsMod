@@ -533,6 +533,8 @@
   "murilloskills.challenge.travel_blocks": "Travel Distance",
   "murilloskills.challenge.use_ability": "Use Abilities",
   "murilloskills.challenge.craft_items": "Craft Items",
+  "murilloskills.challenge.reset_in": "⏱ Resets in: %s",
+  "murilloskills.challenge.new_available": "🎯 New challenges available!",
   "_comment_prestige": "=== PRESTIGE ===",
   "murilloskills.notify.prestige": "PRESTIGE!",
   "murilloskills.prestige.bonus": "+%s%% XP bonus, +%s%% passive effectiveness",

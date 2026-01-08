@@ -532,6 +532,8 @@
     "murilloskills.challenge.travel_blocks": "Distância Viajada",
     "murilloskills.challenge.use_ability": "Usar Habilidades",
     "murilloskills.challenge.craft_items": "Craftar Itens",
+    "murilloskills.challenge.reset_in": "⏱ Reseta em: %s",
+    "murilloskills.challenge.new_available": "🎯 Novos desafios disponíveis!",
     "_comment_prestige": "=== PRESTÍGIO ===",
     "murilloskills.notify.prestige": "PRESTÍGIO!",
     "murilloskills.prestige.bonus": "+%s%% bônus de XP, +%s%% efetividade dos passivos",
