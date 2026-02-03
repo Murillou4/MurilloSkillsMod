@@ -53,11 +53,12 @@ public final class NetworkHandlerRegistry {
             // Skill Toggle Handlers (Feature Activation)
             registerHandler("AreaPlanting", AreaPlantingToggleC2SPayload.ID, AreaPlantingNetworkHandler.create());
             registerHandler("HollowFill", HollowFillToggleC2SPayload.ID, HollowFillNetworkHandler.create());
+            registerHandler("VeinMiner", VeinMinerToggleC2SPayload.ID, VeinMinerToggleNetworkHandler.create());
             registerHandler("NightVision", NightVisionToggleC2SPayload.ID, NightVisionToggleNetworkHandler.create());
             registerHandler("StepAssist", StepAssistToggleC2SPayload.ID, StepAssistToggleNetworkHandler.create());
             registerHandler("FillModeCycle", FillModeCycleC2SPayload.ID, FillModeCycleNetworkHandler.create());
 
-            LOGGER.info("Successfully registered 10 network handlers");
+            LOGGER.info("Successfully registered 11 network handlers");
 
         } catch (Exception e) {
             LOGGER.error("CRITICAL: Failed to register network handlers!", e);

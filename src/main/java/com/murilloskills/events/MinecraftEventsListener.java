@@ -7,6 +7,7 @@ import com.murilloskills.skills.BlockBreakHandler;
 import com.murilloskills.skills.CropHarvestHandler;
 import com.murilloskills.skills.MobKillHandler;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.skills.VeinMinerHandler;
 import com.murilloskills.utils.SkillsNetworkUtils;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
@@ -32,6 +33,10 @@ public class MinecraftEventsListener {
     public static void blockBreakedListen() {
         // Usando o evento oficial da Fabric API
         PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
+            ServerPlayerEntity serverPlayer = player instanceof ServerPlayerEntity castPlayer ? castPlayer : null;
+            if (serverPlayer != null) {
+                VeinMinerHandler.handle(serverPlayer, world, pos, state);
+            }
             // Handler do Minerador
             BlockBreakHandler.handle(player, world, pos, state);
             // Handler do Agricultor (Farmer)

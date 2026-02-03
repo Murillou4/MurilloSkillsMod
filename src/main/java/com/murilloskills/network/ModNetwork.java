@@ -29,6 +29,7 @@ public class ModNetwork {
         PayloadTypeRegistry.playC2S().register(SkillSelectionC2SPayload.ID, SkillSelectionC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(AreaPlantingToggleC2SPayload.ID, AreaPlantingToggleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(HollowFillToggleC2SPayload.ID, HollowFillToggleC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(VeinMinerToggleC2SPayload.ID, VeinMinerToggleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SkillResetC2SPayload.ID, SkillResetC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(NightVisionToggleC2SPayload.ID, NightVisionToggleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(StepAssistToggleC2SPayload.ID, StepAssistToggleC2SPayload.CODEC);
