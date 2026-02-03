@@ -10,6 +10,7 @@ import com.murilloskills.network.RainDanceS2CPayload;
 import com.murilloskills.network.SkillAbilityC2SPayload;
 import com.murilloskills.network.SkillsSyncPayload;
 import com.murilloskills.network.TreasureHunterS2CPayload;
+import com.murilloskills.network.VeinMinerToggleC2SPayload;
 import com.murilloskills.network.XpGainS2CPayload;
 import com.murilloskills.render.AreaPlantingHud;
 import com.murilloskills.render.OreHighlighter;
@@ -44,6 +45,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
     private static KeyBinding nightVisionToggleKey;
     private static KeyBinding stepAssistToggleKey;
     private static KeyBinding fillModeCycleKey;
+    private static KeyBinding veinMinerToggleKey;
 
     @Override
     public void onInitializeClient() {
@@ -178,6 +180,12 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_J,
                 KEYBIND_CATEGORY));
 
+        veinMinerToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.murilloskills.vein_miner_toggle",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_PERIOD,
+                KEYBIND_CATEGORY));
+
         // --- EVENTS ---
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -210,6 +218,10 @@ public class MurilloSkillsClient implements ClientModInitializer {
             while (fillModeCycleKey.wasPressed()) {
                 // Envia pacote para ciclar entre modos de preenchimento (Builder)
                 ClientPlayNetworking.send(new com.murilloskills.network.FillModeCycleC2SPayload());
+            }
+            while (veinMinerToggleKey.wasPressed()) {
+                // Envia pacote para toggle do Vein Miner
+                ClientPlayNetworking.send(new VeinMinerToggleC2SPayload());
             }
         });
 

@@ -4,6 +4,15 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.4] - 2026-01-10
+
+### ⛏️ Vein Miner
+
+- **Vein Miner global**: adicionada quebra em lote de blocos conectados do mesmo tipo, com limite configurável via `murilloskills.json`.
+- **XP do Minerador e drops consistentes**: a mineração em sequência aplica XP por bloco e respeita a ferramenta/fortuna usada.
+
+---
+
 ## [1.2.3] - 2026-01-08
 
 ### 🎯 Desafios Diários - Melhorias

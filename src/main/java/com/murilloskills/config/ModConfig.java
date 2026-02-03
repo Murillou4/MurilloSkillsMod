@@ -58,6 +58,7 @@ public class ModConfig {
         public BuilderSourceConfig builderSource = new BuilderSourceConfig();
 
         public ExplorerConfig explorer = new ExplorerConfig();
+        public VeinMinerConfig veinMiner = new VeinMinerConfig();
 
         // --- MILESTONES ---
         public MilestoneConfig milestones = new MilestoneConfig();
@@ -221,6 +222,10 @@ public class ModConfig {
         public int xpWanderingTrade = 400;
         public double distanceThreshold = 50.0;
         public int xpPerDistance = 35;
+    }
+
+    public static class VeinMinerConfig {
+        public int maxBlocks = 64;
     }
 
     public static class MilestoneConfig {
