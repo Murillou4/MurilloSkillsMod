@@ -226,6 +226,7 @@ public class ModConfig {
 
     public static class VeinMinerConfig {
         public int maxBlocks = 64;
+        public boolean dropsToInventory = false;
     }
 
     public static class MilestoneConfig {
