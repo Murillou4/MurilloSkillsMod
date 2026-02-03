@@ -1,15 +1,19 @@
 package com.murilloskills.skills;
 
 import com.murilloskills.utils.SkillConfig;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.server.world.ServerWorld;
 
 import java.util.ArrayDeque;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,7 +78,7 @@ public final class VeinMinerHandler {
         }
 
         int maxBlocks = Math.max(1, SkillConfig.getVeinMinerMaxBlocks());
-        Set<BlockPos> targets = collectConnectedBlocks(world, origin, originState, maxBlocks + 1);
+        Set<BlockPos> targets = collectConnectedBlocks(world, origin, originState, maxBlocks);
 
         if (targets.isEmpty()) {
             return;
@@ -87,7 +91,11 @@ public final class VeinMinerHandler {
                 if (state.isAir()) {
                     continue;
                 }
-                world.breakBlock(pos, true, player);
+                if (SkillConfig.getVeinMinerDropsToInventory()) {
+                    breakWithInventoryDrops(player, world, pos, state, tool);
+                } else {
+                    world.breakBlock(pos, true, player);
+                }
             }
         } finally {
             ACTIVE_PLAYERS.remove(player.getUuid());
@@ -103,7 +111,28 @@ public final class VeinMinerHandler {
             return tool.isSuitableFor(state);
         }
 
-        return tool.isSuitableFor(state) || tool.isEmpty();
+        return true;
+    }
+
+    private static void breakWithInventoryDrops(ServerPlayerEntity player, World world, BlockPos pos,
+            BlockState state, ItemStack tool) {
+        if (!(world instanceof ServerWorld serverWorld)) {
+            world.breakBlock(pos, true, player);
+            return;
+        }
+
+        List<ItemStack> drops = Block.getDroppedStacks(state, serverWorld, pos, world.getBlockEntity(pos), player, tool);
+        for (ItemStack drop : drops) {
+            ItemStack remaining = drop.copy();
+            if (!player.getInventory().insertStack(remaining) && !remaining.isEmpty()) {
+                ItemEntity itemEntity = new ItemEntity(serverWorld,
+                        pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, remaining);
+                serverWorld.spawnEntity(itemEntity);
+            }
+        }
+
+        world.breakBlock(pos, false, player);
+        state.onStacksDropped(serverWorld, pos, tool, true);
     }
 
     private static Set<BlockPos> collectConnectedBlocks(World world, BlockPos origin, BlockState originState,
@@ -130,7 +159,7 @@ public final class VeinMinerHandler {
                         if (visited.contains(neighbor)) continue;
 
                         BlockState neighborState = world.getBlockState(neighbor);
-                        if (neighborState.equals(originState)) {
+                        if (neighborState.getBlock().equals(originState.getBlock())) {
                             queue.add(neighbor);
                         }
                     }

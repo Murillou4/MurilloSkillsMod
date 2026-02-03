@@ -64,7 +64,7 @@ public class VeinMinerPreview {
 
         // Collect connected blocks
         int maxBlocks = Math.max(1, SkillConfig.getVeinMinerMaxBlocks());
-        Set<BlockPos> connectedBlocks = collectConnectedBlocks(client.world, targetPos, targetState, maxBlocks + 1);
+        Set<BlockPos> connectedBlocks = collectConnectedBlocks(client.world, targetPos, targetState, maxBlocks);
 
         if (connectedBlocks.isEmpty()) {
             return;
@@ -126,7 +126,7 @@ public class VeinMinerPreview {
                         if (visited.contains(neighbor)) continue;
 
                         BlockState neighborState = world.getBlockState(neighbor);
-                        if (neighborState.equals(originState)) {
+                        if (neighborState.getBlock().equals(originState.getBlock())) {
                             queue.add(neighbor);
                         }
                     }

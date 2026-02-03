@@ -75,6 +75,10 @@ public class SkillConfig {
         return ModConfig.get().veinMiner.maxBlocks;
     }
 
+    public static boolean getVeinMinerDropsToInventory() {
+        return ModConfig.get().veinMiner.dropsToInventory;
+    }
+
     // Legacy constants for backward compatibility
     public static final float MINER_SPEED_PER_LEVEL = 0.03f;
     public static final float MINER_FORTUNE_PER_LEVEL = 0.03f;
