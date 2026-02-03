@@ -3,13 +3,11 @@ package com.murilloskills.network.handlers;
 import com.murilloskills.network.VeinMinerToggleC2SPayload;
 import com.murilloskills.skills.VeinMinerHandler;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Handles toggle for Vein Miner feature (global, not tied to skills).
+ * Handles vein miner key press/release (hold to activate).
  */
 public final class VeinMinerToggleNetworkHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger("MurilloSkills-VeinMinerHandler");
@@ -19,7 +17,7 @@ public final class VeinMinerToggleNetworkHandler {
     }
 
     /**
-     * Creates a handler for vein miner toggle requests.
+     * Creates a handler for vein miner key state changes.
      *
      * @return ServerPlayNetworking handler for VeinMinerToggleC2SPayload
      */
@@ -28,17 +26,9 @@ public final class VeinMinerToggleNetworkHandler {
             context.server().execute(() -> {
                 try {
                     var player = context.player();
-                    boolean nowEnabled = VeinMinerHandler.toggleVeinMiner(player);
-
-                    if (nowEnabled) {
-                        player.sendMessage(Text.translatable("murilloskills.vein_miner.enabled")
-                                .formatted(Formatting.GREEN), true);
-                    } else {
-                        player.sendMessage(Text.translatable("murilloskills.vein_miner.disabled")
-                                .formatted(Formatting.GRAY), true);
-                    }
+                    VeinMinerHandler.setVeinMinerActive(player, payload.activated());
                 } catch (Exception e) {
-                    LOGGER.error("Error processing vein miner toggle", e);
+                    LOGGER.error("Error processing vein miner state", e);
                 }
             });
         };

@@ -16,6 +16,7 @@ import com.murilloskills.render.AreaPlantingHud;
 import com.murilloskills.render.OreHighlighter;
 import com.murilloskills.render.RainDanceEffect;
 import com.murilloskills.render.TreasureHighlighter;
+import com.murilloskills.render.VeinMinerPreview;
 import com.murilloskills.render.XpToastRenderer;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.fabricmc.api.ClientModInitializer;
@@ -46,6 +47,16 @@ public class MurilloSkillsClient implements ClientModInitializer {
     private static KeyBinding stepAssistToggleKey;
     private static KeyBinding fillModeCycleKey;
     private static KeyBinding veinMinerToggleKey;
+
+    // Vein Miner hold state tracking
+    private static boolean veinMinerKeyHeld = false;
+
+    /**
+     * Check if the vein miner key is currently being held.
+     */
+    public static boolean isVeinMinerKeyHeld() {
+        return veinMinerKeyHeld;
+    }
 
     @Override
     public void onInitializeClient() {
@@ -219,14 +230,18 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 // Envia pacote para ciclar entre modos de preenchimento (Builder)
                 ClientPlayNetworking.send(new com.murilloskills.network.FillModeCycleC2SPayload());
             }
-            while (veinMinerToggleKey.wasPressed()) {
-                // Envia pacote para toggle do Vein Miner
-                ClientPlayNetworking.send(new VeinMinerToggleC2SPayload());
+
+            // Vein Miner - detect key press and release (hold to activate)
+            boolean keyPressed = veinMinerToggleKey.isPressed();
+            if (keyPressed != veinMinerKeyHeld) {
+                veinMinerKeyHeld = keyPressed;
+                ClientPlayNetworking.send(new VeinMinerToggleC2SPayload(keyPressed));
             }
         });
 
         WorldRenderEvents.END_MAIN.register(OreHighlighter::render);
         WorldRenderEvents.END_MAIN.register(TreasureHighlighter::render);
+        WorldRenderEvents.END_MAIN.register(VeinMinerPreview::render);
 
         // HUD rendering for Area Planting indicator
         HudRenderCallback.EVENT.register(AreaPlantingHud::render);
