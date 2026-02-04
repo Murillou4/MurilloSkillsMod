@@ -4,6 +4,14 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.5] - 2026-01-12
+
+### ⛏️ Vein Miner
+
+- **Drops para inventário**: nova opção `dropsToInventory` no `murilloskills.json` para enviar itens quebrados direto ao inventário do jogador (com fallback para dropar no chão se não couber).
+
+---
+
 ## [1.2.4] - 2026-01-10
 
 ### ⛏️ Vein Miner
