@@ -1,8 +1,10 @@
 package com.murilloskills.render;
 
 import com.murilloskills.MurilloSkillsClient;
+import com.murilloskills.skills.VeinMinerHandler;
 import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
@@ -104,29 +106,32 @@ public class VeinMinerPreview {
      */
     private static Set<BlockPos> collectConnectedBlocks(World world, BlockPos origin, BlockState originState,
             int maxBlocks) {
+        Block originBlock = originState.getBlock();
         Set<BlockPos> visited = new HashSet<>();
         ArrayDeque<BlockPos> queue = new ArrayDeque<>();
 
         queue.add(origin);
+        visited.add(origin);
 
         while (!queue.isEmpty() && visited.size() < maxBlocks) {
             BlockPos current = queue.poll();
-            if (!visited.add(current)) {
-                continue;
-            }
 
             // Check all 26 neighbors (including diagonals)
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dy = -1; dy <= 1; dy++) {
                     for (int dz = -1; dz <= 1; dz++) {
                         if (dx == 0 && dy == 0 && dz == 0) continue;
-                        if (visited.size() >= maxBlocks) break;
+                        if (visited.size() >= maxBlocks) {
+                            visited.remove(origin);
+                            return visited;
+                        }
 
                         BlockPos neighbor = current.add(dx, dy, dz);
                         if (visited.contains(neighbor)) continue;
 
                         BlockState neighborState = world.getBlockState(neighbor);
-                        if (neighborState.getBlock().equals(originState.getBlock())) {
+                        if (VeinMinerHandler.isSameVeinBlock(originBlock, neighborState.getBlock())) {
+                            visited.add(neighbor);
                             queue.add(neighbor);
                         }
                     }

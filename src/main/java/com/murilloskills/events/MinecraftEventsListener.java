@@ -77,6 +77,7 @@ public class MinecraftEventsListener {
         // Cleanup on disconnect to prevent memory leaks
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             com.murilloskills.impl.FarmerSkill.cleanupPlayerState(handler.getPlayer().getUuid());
+            VeinMinerHandler.cleanupPlayerState(handler.getPlayer().getUuid());
         });
     }
 

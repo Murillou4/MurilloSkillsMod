@@ -35,5 +35,6 @@ public class ModNetwork {
         PayloadTypeRegistry.playC2S().register(StepAssistToggleC2SPayload.ID, StepAssistToggleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(PrestigeC2SPayload.ID, PrestigeC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(FillModeCycleC2SPayload.ID, FillModeCycleC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(VeinMinerDropsToggleC2SPayload.ID, VeinMinerDropsToggleC2SPayload.CODEC);
     }
 }

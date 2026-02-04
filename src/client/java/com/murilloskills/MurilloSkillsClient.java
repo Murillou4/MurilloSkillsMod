@@ -10,6 +10,7 @@ import com.murilloskills.network.RainDanceS2CPayload;
 import com.murilloskills.network.SkillAbilityC2SPayload;
 import com.murilloskills.network.SkillsSyncPayload;
 import com.murilloskills.network.TreasureHunterS2CPayload;
+import com.murilloskills.network.VeinMinerDropsToggleC2SPayload;
 import com.murilloskills.network.VeinMinerToggleC2SPayload;
 import com.murilloskills.network.XpGainS2CPayload;
 import com.murilloskills.render.AreaPlantingHud;
@@ -47,6 +48,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
     private static KeyBinding stepAssistToggleKey;
     private static KeyBinding fillModeCycleKey;
     private static KeyBinding veinMinerToggleKey;
+    private static KeyBinding veinMinerDropsToggleKey;
 
     // Vein Miner hold state tracking
     private static boolean veinMinerKeyHeld = false;
@@ -197,6 +199,12 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_PERIOD,
                 KEYBIND_CATEGORY));
 
+        veinMinerDropsToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.murilloskills.vein_miner_drops_toggle",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_COMMA,
+                KEYBIND_CATEGORY));
+
         // --- EVENTS ---
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -229,6 +237,10 @@ public class MurilloSkillsClient implements ClientModInitializer {
             while (fillModeCycleKey.wasPressed()) {
                 // Envia pacote para ciclar entre modos de preenchimento (Builder)
                 ClientPlayNetworking.send(new com.murilloskills.network.FillModeCycleC2SPayload());
+            }
+            while (veinMinerDropsToggleKey.wasPressed()) {
+                // Toggle drops-to-inventory for Vein Miner
+                ClientPlayNetworking.send(new VeinMinerDropsToggleC2SPayload());
             }
 
             // Vein Miner - detect key press and release (hold to activate)

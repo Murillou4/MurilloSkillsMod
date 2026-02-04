@@ -4,6 +4,19 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.7] - 2026-02-03
+
+### ⛏️ Vein Miner - Correções e Melhorias
+
+- **Tecla para alternar drops no inventário**: nova keybind `,` (vírgula) para alternar entre drops no inventário e drops no chão, configurável em Controles > MurilloSkills. Preferência é por jogador.
+- **Default alterado**: `dropsToInventory` agora é `true` por padrão (itens vão direto para o inventário).
+- **Redstone Ore corrigido**: blocos lit/unlit agora são tratados corretamente como o mesmo tipo no BFS.
+- **Equivalência de deepslate**: minérios deepslate agora conectam com suas variantes normais (ex: `deepslate_iron_ore` + `iron_ore` são minerados juntos).
+- **Glowstone e outros blocos**: removida qualquer restrição implícita — o Vein Miner funciona com qualquer bloco quebrável.
+- **Algoritmo BFS corrigido**: blocos agora são marcados como visitados no momento da descoberta (eager), eliminando duplicatas na fila e garantindo limite consistente de `maxBlocks`.
+
+---
+
 ## [1.2.6] - 2026-01-12
 
 ### ⛏️ Vein Miner
