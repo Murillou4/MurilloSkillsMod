@@ -21,7 +21,6 @@ public class ModNetwork {
         PayloadTypeRegistry.playS2C().register(AreaPlantingSyncS2CPayload.ID, AreaPlantingSyncS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(XpGainS2CPayload.ID, XpGainS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(DailyChallengesSyncS2CPayload.ID, DailyChallengesSyncS2CPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(XpDataSyncS2CPayload.ID, XpDataSyncS2CPayload.CODEC);
     }
 
     private static void registerC2SPayloads() {

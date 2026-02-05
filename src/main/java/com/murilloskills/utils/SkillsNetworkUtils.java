@@ -1,7 +1,6 @@
 package com.murilloskills.utils;
 
 import com.murilloskills.network.SkillsSyncPayload;
-import com.murilloskills.network.XpDataSyncS2CPayload;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -24,8 +23,5 @@ public class SkillsNetworkUtils {
 
         // Envia o pacote com Skills + Paragon Name + Selected Skills
         ServerPlayNetworking.send(player, new SkillsSyncPayload(data.skills, paragonName, selectedSkills));
-        ServerPlayNetworking.send(player,
-                XpDataSyncS2CPayload.fromData(com.murilloskills.data.XpDataManager.getCurve(),
-                        com.murilloskills.data.XpDataManager.getValues()));
     }
 }

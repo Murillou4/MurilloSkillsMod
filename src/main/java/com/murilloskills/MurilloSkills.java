@@ -13,10 +13,8 @@ import com.murilloskills.impl.WarriorSkill;
 import com.murilloskills.item.ModItems;
 import com.murilloskills.network.ModNetwork;
 import com.murilloskills.skills.MurilloSkillsList;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.resource.ResourceType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,10 +30,6 @@ public class MurilloSkills implements ModInitializer {
         try {
             // 0. Load configuration from file
             com.murilloskills.config.ModConfig.load();
-
-            // 0.1 Register XP data reload listener (data pack JSONs)
-            ResourceManagerHelper.get(ResourceType.SERVER_DATA)
-                    .registerReloadListener(new com.murilloskills.data.XpDataReloadListener());
 
             // 1. Registrar Skills no Registry
             registerSkills();

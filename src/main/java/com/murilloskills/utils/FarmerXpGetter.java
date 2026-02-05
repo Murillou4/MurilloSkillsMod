@@ -94,8 +94,7 @@ public class FarmerXpGetter {
 
         if (baseXp > 0) {
             // +25% of base (minimum 1 XP)
-            double multiplier = com.murilloskills.data.XpDataManager.getValues().farmer.plantingMultiplier;
-            int plantXp = Math.max(1, (int) (baseXp * multiplier));
+            int plantXp = Math.max(1, (int) (baseXp * 0.25));
             return new SkillReceptorResult(true, plantXp);
         }
 
@@ -108,8 +107,7 @@ public class FarmerXpGetter {
      * @return SkillReceptorResult with XP info
      */
     public static SkillReceptorResult getCompostingXp() {
-        int xp = com.murilloskills.data.XpDataManager.getValues().farmer.compostingXp;
-        return new SkillReceptorResult(true, xp);
+        return new SkillReceptorResult(true, 2);
     }
 
     /**
@@ -119,8 +117,7 @@ public class FarmerXpGetter {
      * @return SkillReceptorResult with XP info
      */
     public static SkillReceptorResult getBoneMealCreationXp() {
-        int xp = com.murilloskills.data.XpDataManager.getValues().farmer.boneMealXp;
-        return new SkillReceptorResult(true, xp);
+        return new SkillReceptorResult(true, 1);
     }
 
     /**

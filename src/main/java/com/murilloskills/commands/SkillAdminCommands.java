@@ -247,9 +247,9 @@ public class SkillAdminCommands {
             var stats = playerData.getSkill(skill);
             stats.xp += amount;
 
-            // Level up if needed - uses XP curve formula
-            while (stats.level < SkillConfig.getMaxLevel()) {
-                int xpNeeded = com.murilloskills.data.XpDataManager.getCurve().getXpForLevel(stats.level);
+            // Level up if needed - using formula: 60 + (level * 15) + (2 * level²)
+            while (stats.level < 100) {
+                int xpNeeded = 60 + (stats.level * 15) + (2 * stats.level * stats.level);
                 if (stats.xp >= xpNeeded) {
                     stats.xp -= xpNeeded;
                     stats.level++;

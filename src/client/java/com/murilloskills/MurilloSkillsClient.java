@@ -12,7 +12,6 @@ import com.murilloskills.network.SkillsSyncPayload;
 import com.murilloskills.network.TreasureHunterS2CPayload;
 import com.murilloskills.network.VeinMinerDropsToggleC2SPayload;
 import com.murilloskills.network.VeinMinerToggleC2SPayload;
-import com.murilloskills.network.XpDataSyncS2CPayload;
 import com.murilloskills.network.XpGainS2CPayload;
 import com.murilloskills.render.AreaPlantingHud;
 import com.murilloskills.render.OreHighlighter;
@@ -27,10 +26,8 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 
@@ -65,8 +62,6 @@ public class MurilloSkillsClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES)
-                .registerReloadListener(new com.murilloskills.data.ClientXpDataReloadListener());
 
         // --- NETWORKING ---
 
@@ -125,22 +120,6 @@ public class MurilloSkillsClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(TreasureHunterS2CPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
                 TreasureHighlighter.setTreasures(payload.positions());
-            });
-        });
-
-        ClientPlayNetworking.registerGlobalReceiver(XpDataSyncS2CPayload.ID, (payload, context) -> {
-            context.client().execute(() -> {
-                com.murilloskills.data.XpCurveDefinition curve = com.murilloskills.data.XpDataManager.fromJson(
-                        payload.curveJson(),
-                        com.murilloskills.data.XpCurveDefinition.class);
-                com.murilloskills.data.XpValuesDefinition values = com.murilloskills.data.XpDataManager.fromJson(
-                        payload.valuesJson(),
-                        com.murilloskills.data.XpValuesDefinition.class);
-                com.murilloskills.data.XpDataManager.applySync(curve, values);
-
-                if (context.client().currentScreen instanceof com.murilloskills.gui.SkillsScreen screen) {
-                    screen.init(context.client(), screen.width, screen.height);
-                }
             });
         });
 

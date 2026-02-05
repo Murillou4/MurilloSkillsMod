@@ -590,7 +590,7 @@ public class ModInfoScreen extends Screen {
                 int barWidth = cardWidth - 75;
                 int barHeight = 6;
 
-                double xpNeeded = com.murilloskills.data.XpDataManager.getCurve().getXpForLevel(level);
+                double xpNeeded = 60 + (level * 15) + (2 * level * level);
                 float progress = level >= 100 ? 1.0f : (float) (stats.xp / xpNeeded);
                 int fillColor = level >= 100 ? PALETTE.accentGold() : PALETTE.progressBarFill();
 
