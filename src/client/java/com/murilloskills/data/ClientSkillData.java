@@ -16,6 +16,7 @@ public class ClientSkillData {
     private static List<ChallengeInfo> dailyChallenges = new ArrayList<>();
     private static String challengeDateKey = "";
     private static boolean allChallengesComplete = false;
+    private static final java.util.Set<String> pinnedChallenges = new java.util.HashSet<>();
 
     public static void update(Map<MurilloSkillsList, PlayerSkillData.SkillStats> newSkills) {
         skills.clear();
@@ -87,10 +88,38 @@ public class ClientSkillData {
         dailyChallenges.addAll(challenges);
         challengeDateKey = dateKey;
         allChallengesComplete = allComplete;
+        pinnedChallenges.retainAll(challenges.stream().map(ClientSkillData::getChallengeKey).toList());
     }
 
     public static List<ChallengeInfo> getDailyChallenges() {
         return new ArrayList<>(dailyChallenges);
+    }
+
+    public static void togglePinnedChallenge(ChallengeInfo challenge) {
+        String key = getChallengeKey(challenge);
+        if (pinnedChallenges.contains(key)) {
+            pinnedChallenges.remove(key);
+        } else {
+            pinnedChallenges.add(key);
+        }
+    }
+
+    public static boolean isChallengePinned(ChallengeInfo challenge) {
+        return pinnedChallenges.contains(getChallengeKey(challenge));
+    }
+
+    public static List<ChallengeInfo> getPinnedChallenges() {
+        List<ChallengeInfo> pinned = new ArrayList<>();
+        for (ChallengeInfo challenge : dailyChallenges) {
+            if (isChallengePinned(challenge)) {
+                pinned.add(challenge);
+            }
+        }
+        return pinned;
+    }
+
+    private static String getChallengeKey(ChallengeInfo challenge) {
+        return challenge.type() + ":" + (challenge.skillName() == null ? "" : challenge.skillName());
     }
 
     public static String getChallengeDateKey() {

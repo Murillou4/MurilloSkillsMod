@@ -1,0 +1,14 @@
+{
+  "entity_ids": {
+    "minecraft:ender_dragon": 1000,
+    "minecraft:wither": 500,
+    "minecraft:warden": 500,
+    "minecraft:enderman": 20,
+    "minecraft:blaze": 25
+  },
+  "entity_tags": {
+    "minecraft:raiders": 15,
+    "minecraft:undead": 15,
+    "minecraft:monster": 15
+  }
+}

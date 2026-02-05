@@ -460,6 +460,10 @@ public class ExplorerSkill extends AbstractSkill {
 
         // Send to client for rendering
         if (!treasurePositions.isEmpty()) {
+            int maxPositions = SkillConfig.getExplorerTreasureHunterMaxPositions();
+            if (treasurePositions.size() > maxPositions) {
+                treasurePositions = treasurePositions.subList(0, maxPositions);
+            }
             ServerPlayNetworking.send(player, new TreasureHunterS2CPayload(treasurePositions));
         }
     }

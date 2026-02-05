@@ -87,6 +87,7 @@ public class ModConfig {
         public int abilityRadius = 30;
         public int abilityDurationSeconds = 10;
         public int scanLimit = 5000;
+        public int scanResultLimit = 512;
     }
 
     public static class WarriorConfig {
@@ -199,6 +200,9 @@ public class ModConfig {
         public int abilityCooldownSeconds = 600;
         public int brushMaxDistance = 6;
         public int highBuildYThreshold = 100;
+        public int undoMaxActions = 5;
+        public int undoExpireSeconds = 120;
+        public int undoMaxBlocks = 1500;
     }
 
     public static class ExplorerConfig {
@@ -214,6 +218,7 @@ public class ModConfig {
         public float breathMultiplier = 1.5f;
         public float fallDamageReduction = 0.40f;
         public int treasureRadius = 128;
+        public int treasureHunterMaxPositions = 256;
         public float stepHeight = 1.0f;
         public int xpBiome = 500;
         public int xpStructure = 200;
