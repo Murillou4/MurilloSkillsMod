@@ -57,9 +57,6 @@ public class BuilderSkill extends AbstractSkill {
     // Map to track cylinder orientation (UUID → is horizontal)
     private static final Map<UUID, Boolean> cylinderHorizontal = new HashMap<>();
 
-    // Undo history for Creative Brush (UUID → stack of undo actions)
-    private static final Map<UUID, java.util.Deque<UndoAction>> undoHistory = new HashMap<>();
-
     /**
      * Toggle hollow mode for a player
      * 
@@ -390,7 +387,6 @@ public class BuilderSkill extends AbstractSkill {
             return 0;
         }
 
-        Map<BlockPos, BlockState> previousStates = new HashMap<>();
         boolean hollow = isHollowModeEnabled(player);
         BuilderFillMode fillMode = getFillMode(player);
         boolean isHorizontalCylinder = isCylinderHorizontal(player);
@@ -419,9 +415,6 @@ public class BuilderSkill extends AbstractSkill {
 
                     BlockState currentState = world.getBlockState(fillPos);
                     if (currentState.isAir() || currentState.isReplaceable()) {
-                        if (previousStates.size() < SkillConfig.getBuilderUndoMaxBlocks()) {
-                            previousStates.put(fillPos.toImmutable(), currentState);
-                        }
                         world.setBlockState(fillPos, block.getDefaultState());
                         player.getInventory().getStack(slot).decrement(1);
                         blocksPlaced++;
@@ -431,70 +424,12 @@ public class BuilderSkill extends AbstractSkill {
         }
 
         if (blocksPlaced > 0) {
-            registerUndo(player, previousStates);
             world.playSound(null, pos, SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.BLOCKS, 1.0f, 1.5f);
             player.sendMessage(Text.translatable("murilloskills.builder.area_filled", blocksPlaced)
                     .formatted(Formatting.GREEN, Formatting.BOLD), true);
         }
 
         return blocksPlaced;
-    }
-
-    public static void undoLastBrush(ServerPlayerEntity player) {
-        UUID uuid = player.getUuid();
-        java.util.Deque<UndoAction> stack = undoHistory.get(uuid);
-        if (stack == null || stack.isEmpty()) {
-            player.sendMessage(Text.translatable("murilloskills.builder.undo_empty")
-                    .formatted(Formatting.GRAY), true);
-            return;
-        }
-
-        pruneExpiredUndo(stack);
-        UndoAction action = stack.pollLast();
-        if (action == null) {
-            player.sendMessage(Text.translatable("murilloskills.builder.undo_empty")
-                    .formatted(Formatting.GRAY), true);
-            return;
-        }
-
-        ServerWorld world = player.getServerWorld();
-        for (Map.Entry<BlockPos, BlockState> entry : action.previousStates.entrySet()) {
-            world.setBlockState(entry.getKey(), entry.getValue());
-        }
-
-        world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_BEACON_DEACTIVATE, SoundCategory.BLOCKS, 0.6f,
-                1.4f);
-        player.sendMessage(Text.translatable("murilloskills.builder.undo_applied", action.previousStates.size())
-                .formatted(Formatting.AQUA), true);
-    }
-
-    private static void registerUndo(ServerPlayerEntity player, Map<BlockPos, BlockState> previousStates) {
-        if (previousStates.isEmpty()) {
-            return;
-        }
-        UUID uuid = player.getUuid();
-        java.util.Deque<UndoAction> stack = undoHistory.computeIfAbsent(uuid, key -> new java.util.ArrayDeque<>());
-        pruneExpiredUndo(stack);
-        stack.addLast(new UndoAction(previousStates, System.currentTimeMillis()));
-        while (stack.size() > SkillConfig.getBuilderUndoMaxActions()) {
-            stack.pollFirst();
-        }
-    }
-
-    private static void pruneExpiredUndo(java.util.Deque<UndoAction> stack) {
-        long now = System.currentTimeMillis();
-        long expireMillis = SkillConfig.getBuilderUndoExpireSeconds() * 1000L;
-        while (!stack.isEmpty()) {
-            UndoAction action = stack.peekFirst();
-            if (action == null || now - action.timestamp > expireMillis) {
-                stack.pollFirst();
-            } else {
-                break;
-            }
-        }
-    }
-
-    private record UndoAction(Map<BlockPos, BlockState> previousStates, long timestamp) {
     }
 
     /**

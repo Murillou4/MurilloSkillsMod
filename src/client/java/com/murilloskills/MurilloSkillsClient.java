@@ -49,7 +49,6 @@ public class MurilloSkillsClient implements ClientModInitializer {
     private static KeyBinding fillModeCycleKey;
     private static KeyBinding veinMinerToggleKey;
     private static KeyBinding veinMinerDropsToggleKey;
-    private static KeyBinding builderUndoKey;
 
     // Vein Miner hold state tracking
     private static boolean veinMinerKeyHeld = false;
@@ -63,7 +62,6 @@ public class MurilloSkillsClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        com.murilloskills.client.XpTooltipHandler.register();
 
         // --- NETWORKING ---
 
@@ -207,12 +205,6 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_COMMA,
                 KEYBIND_CATEGORY));
 
-        builderUndoKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.murilloskills.builder_undo",
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_Z,
-                KEYBIND_CATEGORY));
-
         // --- EVENTS ---
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -224,9 +216,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
             }
             while (abilityKey.wasPressed()) {
                 // Envia pacote genérico de habilidade (Server decide o que fazer)
-                if (!net.minecraft.client.gui.screen.Screen.hasControlDown()) {
-                    ClientPlayNetworking.send(new SkillAbilityC2SPayload());
-                }
+                ClientPlayNetworking.send(new SkillAbilityC2SPayload());
             }
             while (areaPlantingToggleKey.wasPressed()) {
                 // Envia pacote para toggle de plantio em área 3x3
@@ -248,11 +238,6 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 // Envia pacote para ciclar entre modos de preenchimento (Builder)
                 ClientPlayNetworking.send(new com.murilloskills.network.FillModeCycleC2SPayload());
             }
-            while (builderUndoKey.wasPressed()) {
-                if (net.minecraft.client.gui.screen.Screen.hasControlDown()) {
-                    ClientPlayNetworking.send(new com.murilloskills.network.BuilderUndoC2SPayload());
-                }
-            }
             while (veinMinerDropsToggleKey.wasPressed()) {
                 // Toggle drops-to-inventory for Vein Miner
                 ClientPlayNetworking.send(new VeinMinerDropsToggleC2SPayload());
@@ -273,9 +258,5 @@ public class MurilloSkillsClient implements ClientModInitializer {
         // HUD rendering for Area Planting indicator
         HudRenderCallback.EVENT.register(AreaPlantingHud::render);
         HudRenderCallback.EVENT.register((context, tickDelta) -> XpToastRenderer.render(context));
-        HudRenderCallback.EVENT.register((context, tickDelta) -> com.murilloskills.render.ContextualXpHud.render(context,
-                tickDelta));
-        HudRenderCallback.EVENT.register((context, tickDelta) -> com.murilloskills.render.PinnedChallengesHud.render(
-                context, tickDelta));
     }
 }

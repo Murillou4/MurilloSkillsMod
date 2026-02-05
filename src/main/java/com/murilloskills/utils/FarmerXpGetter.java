@@ -1,12 +1,8 @@
 package com.murilloskills.utils;
 
-import com.murilloskills.data.XpDataManager;
 import com.murilloskills.models.SkillReceptorResult;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.util.Identifier;
 
 /**
  * Utility class to determine XP rewards for Farmer skill actions.
@@ -21,19 +17,6 @@ public class FarmerXpGetter {
 
     // Base XP values for different crops
     // Note: Constants replaced by SkillConfig getters
-    private static final TagKey<Block> TAG_CROPS = TagKey.of(RegistryKeys.BLOCK, Identifier.of("c", "crops"));
-    private static final TagKey<Block> TAG_WHEAT = TagKey.of(RegistryKeys.BLOCK, Identifier.of("c", "crops/wheat"));
-    private static final TagKey<Block> TAG_CARROT = TagKey.of(RegistryKeys.BLOCK, Identifier.of("c", "crops/carrot"));
-    private static final TagKey<Block> TAG_POTATO = TagKey.of(RegistryKeys.BLOCK, Identifier.of("c", "crops/potato"));
-    private static final TagKey<Block> TAG_BEETROOT = TagKey.of(RegistryKeys.BLOCK, Identifier.of("c",
-            "crops/beetroot"));
-    private static final TagKey<Block> TAG_MELON = TagKey.of(RegistryKeys.BLOCK, Identifier.of("c", "crops/melon"));
-    private static final TagKey<Block> TAG_PUMPKIN = TagKey.of(RegistryKeys.BLOCK, Identifier.of("c", "crops/pumpkin"));
-    private static final TagKey<Block> TAG_NETHER_WART = TagKey.of(RegistryKeys.BLOCK, Identifier.of("c",
-            "crops/nether_wart"));
-    private static final TagKey<Block> TAG_SWEET_BERRY = TagKey.of(RegistryKeys.BLOCK, Identifier.of("c",
-            "crops/sweet_berry"));
-    private static final TagKey<Block> TAG_COCOA = TagKey.of(RegistryKeys.BLOCK, Identifier.of("c", "crops/cocoa"));
 
     /**
      * Checks if a block is a harvestable crop and returns the XP reward.
@@ -49,34 +32,41 @@ public class FarmerXpGetter {
             return new SkillReceptorResult(false, 0);
         }
 
-        int xp = 0;
-        if (block.getRegistryEntry().isIn(TAG_WHEAT)) {
-            xp = SkillConfig.getFarmerXpWheat();
-        } else if (block.getRegistryEntry().isIn(TAG_CARROT)) {
-            xp = SkillConfig.getFarmerXpCarrot();
-        } else if (block.getRegistryEntry().isIn(TAG_POTATO)) {
-            xp = SkillConfig.getFarmerXpPotato();
-        } else if (block.getRegistryEntry().isIn(TAG_BEETROOT)) {
-            xp = SkillConfig.getFarmerXpBeetroot();
-        } else if (block.getRegistryEntry().isIn(TAG_MELON)) {
-            xp = SkillConfig.getFarmerXpMelon();
-        } else if (block.getRegistryEntry().isIn(TAG_PUMPKIN)) {
-            xp = SkillConfig.getFarmerXpPumpkin();
-        } else if (block.getRegistryEntry().isIn(TAG_NETHER_WART)) {
-            xp = SkillConfig.getFarmerXpNetherWart();
-        } else if (block.getRegistryEntry().isIn(TAG_SWEET_BERRY)) {
-            xp = SkillConfig.getFarmerXpSweetBerry();
-        } else if (block.getRegistryEntry().isIn(TAG_COCOA)) {
-            xp = SkillConfig.getFarmerXpCocoa();
+        // Wheat
+        if (block == Blocks.WHEAT) {
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpWheat());
         }
-
-        int overrideXp = XpDataManager.getBlockXp("farmer", block);
-        if (overrideXp > 0) {
-            xp = overrideXp;
+        // Carrots
+        else if (block == Blocks.CARROTS) {
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpCarrot());
         }
-
-        if (xp > 0) {
-            return new SkillReceptorResult(true, xp);
+        // Potatoes
+        else if (block == Blocks.POTATOES) {
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpPotato());
+        }
+        // Beetroots
+        else if (block == Blocks.BEETROOTS) {
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpBeetroot());
+        }
+        // Melon
+        else if (block == Blocks.MELON) {
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpMelon());
+        }
+        // Pumpkin
+        else if (block == Blocks.PUMPKIN) {
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpPumpkin());
+        }
+        // Nether Wart
+        else if (block == Blocks.NETHER_WART) {
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpNetherWart());
+        }
+        // Sweet Berry Bush
+        else if (block == Blocks.SWEET_BERRY_BUSH) {
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpSweetBerry());
+        }
+        // Cocoa
+        else if (block == Blocks.COCOA) {
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpCocoa());
         }
 
         return new SkillReceptorResult(false, 0);
@@ -91,21 +81,16 @@ public class FarmerXpGetter {
     public static SkillReceptorResult getPlantingXp(Block block) {
         int baseXp = 0;
 
-        if (block.getRegistryEntry().isIn(TAG_WHEAT))
+        if (block == Blocks.WHEAT)
             baseXp = SkillConfig.getFarmerXpWheat();
-        else if (block.getRegistryEntry().isIn(TAG_CARROT))
+        else if (block == Blocks.CARROTS)
             baseXp = SkillConfig.getFarmerXpCarrot();
-        else if (block.getRegistryEntry().isIn(TAG_POTATO))
+        else if (block == Blocks.POTATOES)
             baseXp = SkillConfig.getFarmerXpPotato();
-        else if (block.getRegistryEntry().isIn(TAG_BEETROOT))
+        else if (block == Blocks.BEETROOTS)
             baseXp = SkillConfig.getFarmerXpBeetroot();
-        else if (block.getRegistryEntry().isIn(TAG_NETHER_WART))
+        else if (block == Blocks.NETHER_WART)
             baseXp = SkillConfig.getFarmerXpNetherWart();
-
-        int overrideXp = XpDataManager.getBlockXp("farmer", block);
-        if (overrideXp > 0) {
-            baseXp = overrideXp;
-        }
 
         if (baseXp > 0) {
             // +25% of base (minimum 1 XP)
@@ -142,7 +127,15 @@ public class FarmerXpGetter {
      * @return true if the block is a crop
      */
     public static boolean isCropBlock(Block block) {
-        return block.getRegistryEntry().isIn(TAG_CROPS);
+        return block == Blocks.WHEAT ||
+                block == Blocks.CARROTS ||
+                block == Blocks.POTATOES ||
+                block == Blocks.BEETROOTS ||
+                block == Blocks.MELON ||
+                block == Blocks.PUMPKIN ||
+                block == Blocks.NETHER_WART ||
+                block == Blocks.SWEET_BERRY_BUSH ||
+                block == Blocks.COCOA;
     }
 
     /**

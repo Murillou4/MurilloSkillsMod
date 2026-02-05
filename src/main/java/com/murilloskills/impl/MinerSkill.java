@@ -70,10 +70,6 @@ public class MinerSkill extends AbstractSkill {
             List<MinerScanResultPayload.OreEntry> ores = scanForOres(player);
 
             if (!ores.isEmpty()) {
-                int maxResults = SkillConfig.getMinerScanResultLimit();
-                if (ores.size() > maxResults) {
-                    ores = ores.subList(0, maxResults);
-                }
                 // Envia pacote para o cliente renderizar
                 ServerPlayNetworking.send(player, new MinerScanResultPayload(ores));
                 player.sendMessage(

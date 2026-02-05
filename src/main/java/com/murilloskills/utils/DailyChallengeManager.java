@@ -250,8 +250,6 @@ public class DailyChallengeManager {
         player.sendMessage(message, false);
         player.getEntityWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1.0f, 1.2f);
-        player.getEntityWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), SoundCategory.PLAYERS, 0.6f, 1.4f);
 
         // Verificar se completou todos os desafios
         if (allChallengesComplete(player)) {

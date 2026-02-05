@@ -26,11 +26,6 @@ public class MobKillHandler {
         // Apply streak bonus
         int baseXp = result.getXpAmount();
         int streakXp = XpStreakManager.applyStreakBonus(serverPlayer.getUuid(), MurilloSkillsList.WARRIOR, baseXp);
-        if (streakXp > baseXp && serverPlayer.getServerWorld() != null) {
-            serverPlayer.getServerWorld().spawnParticles(net.minecraft.particle.ParticleTypes.CRIT,
-                    victim.getX(), victim.getBodyY(0.5), victim.getZ(),
-                    12, 0.3, 0.4, 0.3, 0.1);
-        }
 
         // --- UPDATED CALL: Handles Paragon Logic Internally ---
         com.murilloskills.data.PlayerSkillData.XpAddResult xpResult = data.addXpToSkill(MurilloSkillsList.WARRIOR,

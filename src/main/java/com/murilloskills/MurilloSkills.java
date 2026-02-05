@@ -30,7 +30,6 @@ public class MurilloSkills implements ModInitializer {
         try {
             // 0. Load configuration from file
             com.murilloskills.config.ModConfig.load();
-            com.murilloskills.data.XpDataManager.registerReloadListener();
 
             // 1. Registrar Skills no Registry
             registerSkills();

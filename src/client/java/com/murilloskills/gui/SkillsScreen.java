@@ -58,8 +58,6 @@ public class SkillsScreen extends Screen {
     // XP Toast toggle button
     private ButtonWidget toastToggleButton;
 
-    private final List<PinArea> pinAreas = new ArrayList<>();
-
     public SkillsScreen() {
         super(Text.translatable("murilloskills.gui.title"));
     }
@@ -1184,8 +1182,6 @@ public class SkillsScreen extends Screen {
         if (challenges.isEmpty())
             return;
 
-        pinAreas.clear();
-
         int panelWidth = 220;
         int panelHeight = 35 + (challenges.size() * 38);
         int panelX = 8; // Left side
@@ -1249,13 +1245,6 @@ public class SkillsScreen extends Screen {
                     panelX + panelWidth - progressWidth - 8, y + 14,
                     challenge.completed() ? PALETTE.textGreen() : PALETTE.textMuted(), false);
 
-            int pinX = panelX + panelWidth - 22;
-            int pinY = y + 2;
-            boolean pinned = ClientSkillData.isChallengePinned(challenge);
-            int pinColor = pinned ? PALETTE.accentGold() : PALETTE.textMuted();
-            context.drawText(textRenderer, Text.literal("📌"), pinX, pinY, pinColor, false);
-            pinAreas.add(new PinArea(pinX, pinY, 12, 12, challenge));
-
             y += 38;
         }
 
@@ -1268,23 +1257,6 @@ public class SkillsScreen extends Screen {
             int bonusWidth = textRenderer.getWidth(bonus);
             context.drawTextWithShadow(textRenderer, bonus,
                     panelX + (panelWidth - bonusWidth) / 2, bonusY + 2, PALETTE.textGold());
-        }
-    }
-
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        for (PinArea area : pinAreas) {
-            if (area.contains(mouseX, mouseY)) {
-                ClientSkillData.togglePinnedChallenge(area.challenge);
-                return true;
-            }
-        }
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    private record PinArea(int x, int y, int width, int height, ClientSkillData.ChallengeInfo challenge) {
-        boolean contains(double mouseX, double mouseY) {
-            return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
         }
     }
 

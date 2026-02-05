@@ -44,33 +44,11 @@ public class OreHighlighter {
         if (MinecraftClient.getInstance().world != null) {
             highlightStartTime = MinecraftClient.getInstance().world.getTime();
             highlightEndTime = highlightStartTime + TOTAL_DURATION_TICKS;
-            spawnPulseParticles();
         }
     }
 
     public static void clearHighlights() {
         highlightedOres = null;
-    }
-
-    private static void spawnPulseParticles() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.world == null || client.player == null || highlightedOres == null) {
-            return;
-        }
-        int maxParticles = Math.min(highlightedOres.size(), 30);
-        Vec3d start = client.player.getPos().add(0, client.player.getStandingEyeHeight(), 0);
-
-        for (int i = 0; i < maxParticles; i++) {
-            MinerScanResultPayload.OreEntry entry = highlightedOres.get(i);
-            Vec3d target = Vec3d.ofCenter(entry.pos());
-            Vec3d delta = target.subtract(start);
-            int steps = 6;
-            for (int step = 1; step <= steps; step++) {
-                Vec3d point = start.add(delta.multiply(step / (double) steps));
-                client.world.addParticle(net.minecraft.particle.ParticleTypes.END_ROD,
-                        point.x, point.y, point.z, 0, 0.01, 0);
-            }
-        }
     }
 
     public static void render(WorldRenderContext context) {
