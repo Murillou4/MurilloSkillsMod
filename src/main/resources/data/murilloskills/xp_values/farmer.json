@@ -1,0 +1,13 @@
+{
+  "block_tags": {
+    "c:crops/wheat": 3,
+    "c:crops/carrot": 3,
+    "c:crops/potato": 3,
+    "c:crops/beetroot": 3,
+    "c:crops/melon": 8,
+    "c:crops/pumpkin": 8,
+    "c:crops/nether_wart": 5,
+    "c:crops/sweet_berry": 2,
+    "c:crops/cocoa": 4
+  }
+}

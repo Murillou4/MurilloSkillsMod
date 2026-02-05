@@ -17,6 +17,7 @@ import java.util.List;
 public record MinerScanResultPayload(List<OreEntry> ores) implements CustomPayload {
     public static final CustomPayload.Id<MinerScanResultPayload> ID = new CustomPayload.Id<>(
             Identifier.of(MurilloSkills.MOD_ID, "miner_scan_result"));
+    private static final int MAX_ORES = 1024;
 
     /**
      * Tipos de minério com suas cores RGB
@@ -64,7 +65,9 @@ public record MinerScanResultPayload(List<OreEntry> ores) implements CustomPaylo
                 for (int i = 0; i < size; i++) {
                     BlockPos pos = buf.readBlockPos();
                     OreType type = buf.readEnumConstant(OreType.class);
-                    list.add(new OreEntry(pos, type));
+                    if (i < MAX_ORES) {
+                        list.add(new OreEntry(pos, type));
+                    }
                 }
                 return new MinerScanResultPayload(list);
             });

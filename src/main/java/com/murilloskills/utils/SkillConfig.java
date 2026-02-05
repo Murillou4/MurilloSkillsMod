@@ -14,6 +14,10 @@ public class SkillConfig {
     // --- XP CALCULATION ---
     // Formula: Base + (Level * Multiplier) + (Exponent * Level^2)
     public static int getXpForLevel(int level) {
+        var override = com.murilloskills.data.XpDataManager.getLevelCurveOverride();
+        if (override != null) {
+            return override.base() + (level * override.multiplier()) + (override.exponent() * level * level);
+        }
         var config = ModConfig.get().xp;
         return config.base + (level * config.multiplier) + (config.exponent * level * level);
     }
@@ -68,6 +72,10 @@ public class SkillConfig {
 
     public static int getMinerScanLimit() {
         return ModConfig.get().miner.scanLimit;
+    }
+
+    public static int getMinerScanResultLimit() {
+        return ModConfig.get().miner.scanResultLimit;
     }
 
     // --- VEIN MINER ---
@@ -560,6 +568,18 @@ public class SkillConfig {
         return ModConfig.get().builder.highBuildYThreshold;
     }
 
+    public static int getBuilderUndoMaxActions() {
+        return ModConfig.get().builder.undoMaxActions;
+    }
+
+    public static int getBuilderUndoExpireSeconds() {
+        return ModConfig.get().builder.undoExpireSeconds;
+    }
+
+    public static int getBuilderUndoMaxBlocks() {
+        return ModConfig.get().builder.undoMaxBlocks;
+    }
+
     // Legacy constants
     public static final float BUILDER_REACH_PER_LEVEL = 0.05f;
     public static final int BUILDER_EXTENDED_REACH_LEVEL = 10;
@@ -626,6 +646,10 @@ public class SkillConfig {
 
     public static int getExplorerTreasureRadius() {
         return ModConfig.get().explorer.treasureRadius;
+    }
+
+    public static int getExplorerTreasureHunterMaxPositions() {
+        return ModConfig.get().explorer.treasureHunterMaxPositions;
     }
 
     public static float getExplorerStepHeight() {

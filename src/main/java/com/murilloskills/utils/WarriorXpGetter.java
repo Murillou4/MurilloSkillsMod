@@ -1,5 +1,6 @@
 package com.murilloskills.utils;
 
+import com.murilloskills.data.XpDataManager;
 import com.murilloskills.models.SkillReceptorResult;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -12,6 +13,10 @@ public class WarriorXpGetter {
     // Note: Constants replaced by SkillConfig getters
 
     public static SkillReceptorResult getMobXp(LivingEntity entity) {
+        int overrideXp = XpDataManager.getEntityXp("warrior", entity.getType());
+        if (overrideXp > 0) {
+            return new SkillReceptorResult(true, overrideXp);
+        }
 
         // BOSSES
         if (entity.getType() == EntityType.ENDER_DRAGON)
