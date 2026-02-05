@@ -1,0 +1,18 @@
+{
+  "hits": {
+    "base": 5,
+    "hostile": 10
+  },
+  "kills": {
+    "base": 15,
+    "hostile": 25
+  },
+  "long_range": {
+    "tier1": 20,
+    "tier2": 40,
+    "tier3": 60,
+    "multiplier1": 1.5,
+    "multiplier2": 2.0,
+    "multiplier3": 2.0
+  }
+}

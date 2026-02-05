@@ -1,0 +1,19 @@
+{
+  "anvil": {
+    "repair": 80,
+    "rename": 50,
+    "enchant_combine": 100
+  },
+  "enchanting": {
+    "level1": 40,
+    "level2": 70,
+    "level3": 100
+  },
+  "smelting": {
+    "iron": 4,
+    "gold": 6,
+    "copper": 3,
+    "ancient_debris": 80
+  },
+  "grindstone_xp": 30
+}

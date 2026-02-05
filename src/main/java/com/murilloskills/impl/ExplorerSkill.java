@@ -186,13 +186,14 @@ public class ExplorerSkill extends AbstractSkill {
                 total += distance;
 
                 // Check threshold
-                if (total >= SkillConfig.EXPLORER_DISTANCE_THRESHOLD) {
+                double threshold = SkillConfig.getExplorerDistanceThreshold();
+                if (total >= threshold) {
                     // Award XP
                     int xp = com.murilloskills.utils.ExplorerXpGetter.getDistanceXp();
                     awardXp(player, xp, Text.translatable("murilloskills.xp.traveler").getString()); // "Traveler"
 
                     // Reset or reduce accumulator
-                    total -= SkillConfig.EXPLORER_DISTANCE_THRESHOLD;
+                    total -= threshold;
                 }
                 accumulatedDistance.put(uuid, total);
             }

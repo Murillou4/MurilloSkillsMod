@@ -1,0 +1,15 @@
+{
+  "discoveries": {
+    "biome": 500,
+    "structure": 200
+  },
+  "loot": {
+    "chest": 300,
+    "map_complete": 2000,
+    "wandering_trade": 400
+  },
+  "travel": {
+    "distance_threshold": 50.0,
+    "xp_per_distance": 35
+  }
+}

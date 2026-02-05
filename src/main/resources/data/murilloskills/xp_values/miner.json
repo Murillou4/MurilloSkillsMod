@@ -1,0 +1,16 @@
+{
+  "blocks": {
+    "stone": 2,
+    "coal": 5,
+    "copper": 5,
+    "iron": 10,
+    "gold": 15,
+    "lapis": 10,
+    "redstone": 10,
+    "diamond": 60,
+    "emerald": 100,
+    "ancient_debris": 150,
+    "nether_quartz": 10,
+    "nether_gold": 10
+  }
+}
