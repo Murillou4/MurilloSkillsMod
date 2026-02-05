@@ -1,6 +1,7 @@
 package com.murilloskills.utils;
 
 import com.murilloskills.config.ModConfig;
+import com.murilloskills.data.XpDataManager;
 
 /**
  * Skill configuration values - now backed by external config file.
@@ -14,8 +15,7 @@ public class SkillConfig {
     // --- XP CALCULATION ---
     // Formula: Base + (Level * Multiplier) + (Exponent * Level^2)
     public static int getXpForLevel(int level) {
-        var config = ModConfig.get().xp;
-        return config.base + (level * config.multiplier) + (config.exponent * level * level);
+        return XpDataManager.getCurve().getXpForLevel(level);
     }
 
     // --- GENERAL ---
@@ -633,31 +633,31 @@ public class SkillConfig {
     }
 
     public static int getExplorerXpBiome() {
-        return ModConfig.get().explorer.xpBiome;
+        return XpDataManager.getValues().explorer.discoveries.biome;
     }
 
     public static int getExplorerXpStructure() {
-        return ModConfig.get().explorer.xpStructure;
+        return XpDataManager.getValues().explorer.discoveries.structure;
     }
 
     public static int getExplorerXpLootChest() {
-        return ModConfig.get().explorer.xpLootChest;
+        return XpDataManager.getValues().explorer.loot.chest;
     }
 
     public static int getExplorerXpMapComplete() {
-        return ModConfig.get().explorer.xpMapComplete;
+        return XpDataManager.getValues().explorer.loot.mapComplete;
     }
 
     public static int getExplorerXpWanderingTrade() {
-        return ModConfig.get().explorer.xpWanderingTrade;
+        return XpDataManager.getValues().explorer.loot.wanderingTrade;
     }
 
     public static double getExplorerDistanceThreshold() {
-        return ModConfig.get().explorer.distanceThreshold;
+        return XpDataManager.getValues().explorer.travel.distanceThreshold;
     }
 
     public static int getExplorerXpPerDistance() {
-        return ModConfig.get().explorer.xpPerDistance;
+        return XpDataManager.getValues().explorer.travel.xpPerDistance;
     }
 
     // Legacy constants
@@ -847,237 +847,237 @@ public class SkillConfig {
 
     // --- MINER SOURCE ---
     public static int getMinerXpStone() {
-        return ModConfig.get().minerSource.xpStone;
+        return XpDataManager.getValues().miner.blocks.stone;
     }
 
     public static int getMinerXpCoal() {
-        return ModConfig.get().minerSource.xpCoal;
+        return XpDataManager.getValues().miner.blocks.coal;
     }
 
     public static int getMinerXpCopper() {
-        return ModConfig.get().minerSource.xpCopper;
+        return XpDataManager.getValues().miner.blocks.copper;
     }
 
     public static int getMinerXpIron() {
-        return ModConfig.get().minerSource.xpIron;
+        return XpDataManager.getValues().miner.blocks.iron;
     }
 
     public static int getMinerXpGold() {
-        return ModConfig.get().minerSource.xpGold;
+        return XpDataManager.getValues().miner.blocks.gold;
     }
 
     public static int getMinerXpLapis() {
-        return ModConfig.get().minerSource.xpLapis;
+        return XpDataManager.getValues().miner.blocks.lapis;
     }
 
     public static int getMinerXpRedstone() {
-        return ModConfig.get().minerSource.xpRedstone;
+        return XpDataManager.getValues().miner.blocks.redstone;
     }
 
     public static int getMinerXpDiamond() {
-        return ModConfig.get().minerSource.xpDiamond;
+        return XpDataManager.getValues().miner.blocks.diamond;
     }
 
     public static int getMinerXpEmerald() {
-        return ModConfig.get().minerSource.xpEmerald;
+        return XpDataManager.getValues().miner.blocks.emerald;
     }
 
     public static int getMinerXpAncientDebris() {
-        return ModConfig.get().minerSource.xpAncientDebris;
+        return XpDataManager.getValues().miner.blocks.ancientDebris;
     }
 
     public static int getMinerXpNetherQuartz() {
-        return ModConfig.get().minerSource.xpNetherQuartz;
+        return XpDataManager.getValues().miner.blocks.netherQuartz;
     }
 
     public static int getMinerXpNetherGold() {
-        return ModConfig.get().minerSource.xpNetherGold;
+        return XpDataManager.getValues().miner.blocks.netherGold;
     }
 
     // --- WARRIOR SOURCE ---
     public static int getWarriorXpEnderDragon() {
-        return ModConfig.get().warriorSource.xpEnderDragon;
+        return XpDataManager.getValues().warrior.mobs.enderDragon;
     }
 
     public static int getWarriorXpWither() {
-        return ModConfig.get().warriorSource.xpWither;
+        return XpDataManager.getValues().warrior.mobs.wither;
     }
 
     public static int getWarriorXpWarden() {
-        return ModConfig.get().warriorSource.xpWarden;
+        return XpDataManager.getValues().warrior.mobs.warden;
     }
 
     public static int getWarriorXpEnderman() {
-        return ModConfig.get().warriorSource.xpEnderman;
+        return XpDataManager.getValues().warrior.mobs.enderman;
     }
 
     public static int getWarriorXpBlaze() {
-        return ModConfig.get().warriorSource.xpBlaze;
+        return XpDataManager.getValues().warrior.mobs.blaze;
     }
 
     public static int getWarriorXpMonsterDefault() {
-        return ModConfig.get().warriorSource.xpMonsterDefault;
+        return XpDataManager.getValues().warrior.mobs.defaultMob;
     }
 
     // --- ARCHER SOURCE ---
     public static int getArcherXpHitBase() {
-        return ModConfig.get().archerSource.xpHitBase;
+        return XpDataManager.getValues().archer.hits.base;
     }
 
     public static int getArcherXpHitHostile() {
-        return ModConfig.get().archerSource.xpHitHostile;
+        return XpDataManager.getValues().archer.hits.hostile;
     }
 
     public static int getArcherXpKillBase() {
-        return ModConfig.get().archerSource.xpKillBase;
+        return XpDataManager.getValues().archer.kills.base;
     }
 
     public static int getArcherXpKillHostile() {
-        return ModConfig.get().archerSource.xpKillHostile;
+        return XpDataManager.getValues().archer.kills.hostile;
     }
 
     public static int getArcherLongRangeTier1() {
-        return ModConfig.get().archerSource.longRangeTier1;
+        return XpDataManager.getValues().archer.longRange.tier1;
     }
 
     public static int getArcherLongRangeTier2() {
-        return ModConfig.get().archerSource.longRangeTier2;
+        return XpDataManager.getValues().archer.longRange.tier2;
     }
 
     public static int getArcherLongRangeTier3() {
-        return ModConfig.get().archerSource.longRangeTier3;
+        return XpDataManager.getValues().archer.longRange.tier3;
     }
 
     public static double getArcherLongRangeMultiplier1() {
-        return ModConfig.get().archerSource.longRangeMultiplier1;
+        return XpDataManager.getValues().archer.longRange.multiplier1;
     }
 
     public static double getArcherLongRangeMultiplier2() {
-        return ModConfig.get().archerSource.longRangeMultiplier2;
+        return XpDataManager.getValues().archer.longRange.multiplier2;
     }
 
     public static double getArcherLongRangeMultiplier3() {
-        return ModConfig.get().archerSource.longRangeMultiplier3;
+        return XpDataManager.getValues().archer.longRange.multiplier3;
     }
 
     // --- FARMER SOURCE ---
     public static int getFarmerXpWheat() {
-        return ModConfig.get().farmerSource.xpWheat;
+        return XpDataManager.getValues().farmer.crops.wheat;
     }
 
     public static int getFarmerXpCarrot() {
-        return ModConfig.get().farmerSource.xpCarrot;
+        return XpDataManager.getValues().farmer.crops.carrot;
     }
 
     public static int getFarmerXpPotato() {
-        return ModConfig.get().farmerSource.xpPotato;
+        return XpDataManager.getValues().farmer.crops.potato;
     }
 
     public static int getFarmerXpBeetroot() {
-        return ModConfig.get().farmerSource.xpBeetroot;
+        return XpDataManager.getValues().farmer.crops.beetroot;
     }
 
     public static int getFarmerXpMelon() {
-        return ModConfig.get().farmerSource.xpMelon;
+        return XpDataManager.getValues().farmer.crops.melon;
     }
 
     public static int getFarmerXpPumpkin() {
-        return ModConfig.get().farmerSource.xpPumpkin;
+        return XpDataManager.getValues().farmer.crops.pumpkin;
     }
 
     public static int getFarmerXpNetherWart() {
-        return ModConfig.get().farmerSource.xpNetherWart;
+        return XpDataManager.getValues().farmer.crops.netherWart;
     }
 
     public static int getFarmerXpSweetBerry() {
-        return ModConfig.get().farmerSource.xpSweetBerry;
+        return XpDataManager.getValues().farmer.crops.sweetBerry;
     }
 
     public static int getFarmerXpCocoa() {
-        return ModConfig.get().farmerSource.xpCocoa;
+        return XpDataManager.getValues().farmer.crops.cocoa;
     }
 
     // --- FISHER SOURCE ---
     public static int getFisherXpTreasure() {
-        return ModConfig.get().fisherSource.xpTreasure;
+        return XpDataManager.getValues().fisher.categories.treasure;
     }
 
     public static int getFisherXpFish() {
-        return ModConfig.get().fisherSource.xpFish;
+        return XpDataManager.getValues().fisher.categories.fish;
     }
 
     public static int getFisherXpJunk() {
-        return ModConfig.get().fisherSource.xpJunk;
+        return XpDataManager.getValues().fisher.categories.junk;
     }
 
     // --- BLACKSMITH SOURCE ---
     public static int getBlacksmithXpAnvilRepair() {
-        return ModConfig.get().blacksmithSource.xpAnvilRepair;
+        return XpDataManager.getValues().blacksmith.anvil.repair;
     }
 
     public static int getBlacksmithXpAnvilRename() {
-        return ModConfig.get().blacksmithSource.xpAnvilRename;
+        return XpDataManager.getValues().blacksmith.anvil.rename;
     }
 
     public static int getBlacksmithXpAnvilEnchantCombine() {
-        return ModConfig.get().blacksmithSource.xpAnvilEnchantCombine;
+        return XpDataManager.getValues().blacksmith.anvil.enchantCombine;
     }
 
     public static int getBlacksmithXpEnchantLevel1() {
-        return ModConfig.get().blacksmithSource.xpEnchantLevel1;
+        return XpDataManager.getValues().blacksmith.enchanting.level1;
     }
 
     public static int getBlacksmithXpEnchantLevel2() {
-        return ModConfig.get().blacksmithSource.xpEnchantLevel2;
+        return XpDataManager.getValues().blacksmith.enchanting.level2;
     }
 
     public static int getBlacksmithXpEnchantLevel3() {
-        return ModConfig.get().blacksmithSource.xpEnchantLevel3;
+        return XpDataManager.getValues().blacksmith.enchanting.level3;
     }
 
     public static int getBlacksmithXpSmeltIron() {
-        return ModConfig.get().blacksmithSource.xpSmeltIron;
+        return XpDataManager.getValues().blacksmith.smelting.iron;
     }
 
     public static int getBlacksmithXpSmeltGold() {
-        return ModConfig.get().blacksmithSource.xpSmeltGold;
+        return XpDataManager.getValues().blacksmith.smelting.gold;
     }
 
     public static int getBlacksmithXpSmeltCopper() {
-        return ModConfig.get().blacksmithSource.xpSmeltCopper;
+        return XpDataManager.getValues().blacksmith.smelting.copper;
     }
 
     public static int getBlacksmithXpSmeltAncientDebris() {
-        return ModConfig.get().blacksmithSource.xpSmeltAncientDebris;
+        return XpDataManager.getValues().blacksmith.smelting.ancientDebris;
     }
 
     public static int getBlacksmithXpGrindstoneUse() {
-        return ModConfig.get().blacksmithSource.xpGrindstoneUse;
+        return XpDataManager.getValues().blacksmith.grindstoneXp;
     }
 
     // --- BUILDER SOURCE ---
     public static int getBuilderXpStructural() {
-        return ModConfig.get().builderSource.xpStructural;
+        return XpDataManager.getValues().builder.placement.structural;
     }
 
     public static int getBuilderXpDecorative() {
-        return ModConfig.get().builderSource.xpDecorative;
+        return XpDataManager.getValues().builder.placement.decorative;
     }
 
     public static int getBuilderXpBasic() {
-        return ModConfig.get().builderSource.xpBasic;
+        return XpDataManager.getValues().builder.placement.basic;
     }
 
     public static int getBuilderXpPremium() {
-        return ModConfig.get().builderSource.xpPremium;
+        return XpDataManager.getValues().builder.placement.premium;
     }
 
     public static int getBuilderXpCraftStructural() {
-        return ModConfig.get().builderSource.xpCraftStructural;
+        return XpDataManager.getValues().builder.crafting.structural;
     }
 
     public static int getBuilderXpCraftDecorative() {
-        return ModConfig.get().builderSource.xpCraftDecorative;
+        return XpDataManager.getValues().builder.crafting.decorative;
     }
 
     // --- EPIC BUNDLE ---

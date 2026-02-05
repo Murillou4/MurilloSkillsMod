@@ -711,7 +711,7 @@ public class SkillsScreen extends Screen {
 
             // XP Progress Logic (always shown)
             double currentXp = ClientSkillData.get(skill).xp;
-            double maxXp = 60 + (level * 15) + (2 * level * level);
+            double maxXp = com.murilloskills.data.XpDataManager.getCurve().getXpForLevel(level);
             int percent = (int) ((currentXp / maxXp) * 100);
 
             tooltip.add(Text.empty());
@@ -1042,7 +1042,7 @@ public class SkillsScreen extends Screen {
         int textColor = PALETTE.textMuted();
 
         // XP Calculation
-        double xpNeeded = 60 + (stats.level * 15) + (2 * stats.level * stats.level);
+        double xpNeeded = com.murilloskills.data.XpDataManager.getCurve().getXpForLevel(stats.level);
         float progress = (float) MathHelper.clamp(stats.xp / xpNeeded, 0, 1);
 
         // Override progress for MAX level
