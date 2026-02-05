@@ -9,6 +9,7 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
 import net.minecraft.server.world.ServerWorld;
 
@@ -143,6 +144,9 @@ public final class VeinMinerHandler {
 
         ACTIVE_PLAYERS.add(player.getUuid());
         try {
+            if (isDropsToInventory(player) && world instanceof ServerWorld serverWorld) {
+                collectOriginDrops(player, serverWorld, origin);
+            }
             for (BlockPos pos : targets) {
                 BlockState state = world.getBlockState(pos);
                 if (state.isAir()) {
@@ -190,6 +194,23 @@ public final class VeinMinerHandler {
 
         world.breakBlock(pos, false, player);
         state.onStacksDropped(serverWorld, pos, tool, true);
+    }
+
+    private static void collectOriginDrops(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
+        Box searchBox = new Box(pos).expand(0.5);
+        List<ItemEntity> items = world.getEntitiesByClass(ItemEntity.class, searchBox, entity -> !entity.isRemoved());
+        for (ItemEntity itemEntity : items) {
+            ItemStack stack = itemEntity.getStack();
+            if (stack.isEmpty()) {
+                continue;
+            }
+            ItemStack remaining = stack.copy();
+            if (player.getInventory().insertStack(remaining) && remaining.isEmpty()) {
+                itemEntity.discard();
+            } else {
+                itemEntity.setStack(remaining);
+            }
+        }
     }
 
     private static Set<BlockPos> collectConnectedBlocks(World world, BlockPos origin, BlockState originState,
