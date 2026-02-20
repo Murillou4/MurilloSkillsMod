@@ -90,7 +90,7 @@ public class ModConfig {
     }
 
     public static class WarriorConfig {
-        public float damagePerLevel = 0.05f;
+        public float damagePerLevel = 0.20f;
         public float lootingPerLevel = 0.02f;
         public int resistanceUnlockLevel = 25;
         public float resistanceReduction = 0.85f;
@@ -118,6 +118,7 @@ public class ModConfig {
         public int abilityCooldownSeconds = 1200;
         public int masterRangerDurationSeconds = 30;
         public float headshotDamageBonus = 0.30f;
+        public float armorPenetrationPercent = 0.30f;
     }
 
     public static class FarmerConfig {

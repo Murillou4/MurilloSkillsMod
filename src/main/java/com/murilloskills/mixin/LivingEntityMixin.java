@@ -133,6 +133,30 @@ public abstract class LivingEntityMixin {
             }
         }
 
+        // --- ARCHER ARMOR PENETRATION (incoming projectile from Archer player) ---
+        // When hit by an arrow from an Archer with level >= 50, reduce effective armor
+        if (source.getSource() instanceof PersistentProjectileEntity projectile
+                && projectile.getOwner() instanceof ServerPlayerEntity archer) {
+            PlayerSkillData archerData = archer
+                    .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+            if (archerData.isSkillSelected(MurilloSkillsList.ARCHER)) {
+                int archerLevel = archerData.getSkill(MurilloSkillsList.ARCHER).level;
+                if (archerLevel >= SkillConfig.getArcherPenetrationLevel()) {
+                    // Scale penetration: 50% at level 50, 100% at level 100
+                    float scaleFactor = (float) (archerLevel - SkillConfig.getArcherPenetrationLevel())
+                            / (float) (SkillConfig.getMaxLevel() - SkillConfig.getArcherPenetrationLevel());
+                    float penetration = SkillConfig.getArcherArmorPenetrationPercent() * (0.5f + 0.5f * scaleFactor);
+                    // Armor penetration means the target takes MORE damage (undo some armor reduction)
+                    // amount is original, modifiedAmount has armor applied by vanilla before this mixin
+                    // We restore a fraction of the difference
+                    float armorReduction = amount - modifiedAmount;
+                    if (armorReduction > 0) {
+                        modifiedAmount += armorReduction * penetration;
+                    }
+                }
+            }
+        }
+
         return modifiedAmount;
     }
 

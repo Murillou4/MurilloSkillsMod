@@ -15,13 +15,19 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Mixin para interceptar hits de flecha e aplicar modificadores do Archer
  */
 @Mixin(PersistentProjectileEntity.class)
 public abstract class ArrowEntityMixin {
+
+    // Stores the original base damage of arrows before any Archer multipliers are applied.
+    // This prevents damage from compounding on piercing arrows that hit multiple entities.
+    private static final Map<Integer, Double> ORIGINAL_ARROW_DAMAGE = new ConcurrentHashMap<>();
 
     /**
      * Intercepta quando a flecha atinge uma entidade para dar XP e aplicar bônus
@@ -83,7 +89,10 @@ public abstract class ArrowEntityMixin {
                     ? (1.0 + com.murilloskills.utils.SkillConfig.ARCHER_HEADSHOT_DAMAGE_BONUS)
                     : 1.0;
 
-            double baseDamage = ((PersistentProjectileEntityAccessor) arrow).getDamage();
+            // Use stored original damage to prevent compounding on piercing arrows
+            int arrowId = arrow.getId();
+            double baseDamage = ORIGINAL_ARROW_DAMAGE.computeIfAbsent(arrowId,
+                    k -> ((PersistentProjectileEntityAccessor) arrow).getDamage());
             arrow.setDamage(baseDamage * damageMultiplier * headshotMultiplier);
 
             // Notify player of headshot
@@ -111,6 +120,11 @@ public abstract class ArrowEntityMixin {
         // Só processa no server
         if (arrow.getEntityWorld().isClient()) {
             return;
+        }
+
+        // Clean up stored base damage when arrow lands or is discarded
+        if (arrow.isOnGround() || arrow.isRemoved()) {
+            ORIGINAL_ARROW_DAMAGE.remove(arrow.getId());
         }
 
         // Verifica se a flecha ainda está voando (não atingiu nada)

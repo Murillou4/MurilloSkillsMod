@@ -145,7 +145,7 @@ public class SkillConfig {
     }
 
     // Legacy constants
-    public static final float WARRIOR_DAMAGE_PER_LEVEL = 0.05f;
+    public static final float WARRIOR_DAMAGE_PER_LEVEL = 0.20f;
     public static final float WARRIOR_LOOTING_PER_LEVEL = 0.02f;
     public static final int RESISTANCE_UNLOCK_LEVEL = 25;
     public static final float RESISTANCE_REDUCTION = 0.85f;
@@ -208,6 +208,10 @@ public class SkillConfig {
         return ModConfig.get().archer.headshotDamageBonus;
     }
 
+    public static float getArcherArmorPenetrationPercent() {
+        return ModConfig.get().archer.armorPenetrationPercent;
+    }
+
     // Legacy constants
     public static final float ARCHER_DAMAGE_PER_LEVEL = 0.03f;
     public static final int ARCHER_FAST_ARROWS_LEVEL = 10;
@@ -221,6 +225,7 @@ public class SkillConfig {
     public static final int ARCHER_ABILITY_COOLDOWN_SECONDS = 1200;
     public static final int ARCHER_MASTER_RANGER_DURATION_SECONDS = 30;
     public static final float ARCHER_HEADSHOT_DAMAGE_BONUS = 0.30f;
+    public static final float ARCHER_ARMOR_PENETRATION_PERCENT = 0.30f;
 
     // --- FARMER ---
     public static float getFarmerDoubleHarvestPerLevel() {

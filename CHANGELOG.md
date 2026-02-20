@@ -4,6 +4,40 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.8] - 2026-02-20
+
+### 🐛 Correções
+
+- **Builder: Shulker Boxes agora podem ser colocadas**: Corrigido crash (NPE) ao colocar blocos com solidez dinâmica (como Shulker Boxes). Adicionado reconhecimento de Shulker Boxes como blocos decorativos para dar XP ao Builder. Adicionado try-catch no handler de placement para que erros nunca impeçam a colocação de blocos.
+
+- **Archer: Flechas com piercing não compoundam mais o dano**: Flechas que atravessavam múltiplas entidades tinham o multiplicador de dano aplicado repetidamente (base → base×1.3 → base×1.3×1.3). Agora o dano original é armazenado e sempre usado como base para o cálculo.
+
+- **Archer: Penetração de armadura implementada**: Antes, o nível 50 do Archer só dava piercing (atravessar entidades). Agora também ignora uma porcentagem da armadura do alvo (15% no nível 50, escalando até 30% no nível 100). Configurável via `armorPenetrationPercent` no `murilloskills.json`.
+
+- **Builder: Removida mensagem falsa de "inventário cheio"**: A sinergia Master Crafter (Builder + Blacksmith) exibia uma mensagem de inventário cheio mesmo quando o item era dropado com sucesso. Agora sempre mostra a mensagem de sucesso, independente de o item ir para o inventário ou ser dropado.
+
+### ⚔️ Balanceamento
+
+- **Warrior: Dano por nível aumentado de 0.05 para 0.20**: O dano adicional do Warrior era muito baixo (+5 no nível 100). Agora é +20 no nível 100, resultando em 28 de dano total com espada de Netherite. Escalável com multiplicador de prestígio.
+
+### ⚙️ Configuração
+
+Novo campo no `murilloskills.json`:
+```json
+"archer": {
+  "armorPenetrationPercent": 0.30  // % de armadura ignorada no nível 100 (escala a partir do nível 50)
+}
+```
+
+Valor alterado:
+```json
+"warrior": {
+  "damagePerLevel": 0.20  // Era 0.05, agora 0.20
+}
+```
+
+---
+
 ## [1.2.7] - 2026-02-03
 
 ### ⛏️ Vein Miner - Correções e Melhorias

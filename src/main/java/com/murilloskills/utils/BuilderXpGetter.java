@@ -112,7 +112,12 @@ public class BuilderXpGetter {
             return new SkillReceptorResult(true, SkillConfig.getBuilderXpBasic());
         }
         // Default: some XP for any solid block
-        if (block.getDefaultState().isSolidBlock(null, null)) {
+        try {
+            if (block.getDefaultState().isSolidBlock(null, null)) {
+                return new SkillReceptorResult(true, SkillConfig.getBuilderXpBasic());
+            }
+        } catch (Exception ignored) {
+            // Some blocks (e.g., ShulkerBox) throw NPE with null world/pos
             return new SkillReceptorResult(true, SkillConfig.getBuilderXpBasic());
         }
 
@@ -162,7 +167,8 @@ public class BuilderXpGetter {
                 name.contains("candle") ||
                 name.contains("pot") || // Flower pots
                 name.contains("bed") ||
-                name.contains("chest"); // Chests are construction too
+                name.contains("chest") || // Chests are construction too
+                name.contains("shulker"); // Shulker boxes
     }
 
     /**

@@ -60,88 +60,92 @@ public class BlockPlacementHandler {
 
             LOGGER.debug("Builder placing block: {} at {}", block.getName().getString(), placementPos);
 
-            // Award XP for block placement
-            var xpResult = BuilderXpGetter.getBlockPlacementXp(block);
-            if (xpResult.didGainXp()) {
-                var builderStats = playerData.getSkill(MurilloSkillsList.BUILDER);
+            try {
+                // Award XP for block placement
+                var xpResult = BuilderXpGetter.getBlockPlacementXp(block);
+                if (xpResult.didGainXp()) {
+                    var builderStats = playerData.getSkill(MurilloSkillsList.BUILDER);
 
-                // Use proper addXpToSkill method for level-up handling
-                com.murilloskills.data.PlayerSkillData.XpAddResult xpAddResult = playerData.addXpToSkill(
-                        MurilloSkillsList.BUILDER,
-                        xpResult.getXpAmount());
-
-                // Check for milestone rewards
-                com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Construtor",
-                        xpAddResult);
-
-                if (xpAddResult.leveledUp()) {
-                    // Player leveled up!
-                    SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.BUILDER, builderStats.level);
-                    // Update attributes with new level bonuses
-                    com.murilloskills.utils.SkillAttributes.updateAllStats(serverPlayer);
-                }
-
-                // Note: Persistence is handled automatically by attachments
-                SkillsNetworkUtils.syncSkills(serverPlayer);
-
-                LOGGER.debug("Awarded {} XP to {} for placing {}",
-                        xpResult.getXpAmount(), serverPlayer.getName().getString(), block.getName().getString());
-
-                // Track daily challenge progress - Builder challenges
-                com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
-                        com.murilloskills.utils.DailyChallengeManager.ChallengeType.PLACE_BLOCKS, 1);
-
-                // Check for high building
-                if (placementPos.getY() > SkillConfig.BUILDER_HIGH_BUILD_Y_THRESHOLD) {
-                    com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
-                            com.murilloskills.utils.DailyChallengeManager.ChallengeType.BUILD_HEIGHT, 1);
-                }
-
-                // Check for stairs
-                String blockId = net.minecraft.registry.Registries.BLOCK.getId(block).toString();
-                if (blockId.contains("stairs")) {
-                    com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
-                            com.murilloskills.utils.DailyChallengeManager.ChallengeType.PLACE_STAIRS, 1);
-                }
-
-                com.murilloskills.utils.DailyChallengeManager.syncChallenges(serverPlayer);
-
-                // Track blocks placed for Builder achievements
-                com.murilloskills.utils.AchievementTracker.incrementAndCheck(
-                        serverPlayer, MurilloSkillsList.BUILDER,
-                        com.murilloskills.utils.AchievementTracker.KEY_BLOCKS_PLACED, 1);
-
-                // Check for Height Master achievement (block placed above Y=200)
-                if (placementPos.getY() > 200) {
-                    com.murilloskills.utils.AdvancementGranter.grantHeightMaster(serverPlayer);
-                }
-            }
-
-            // Handle Creative Brush line placement
-            if (BuilderSkill.isCreativeBrushActive(serverPlayer)) {
-                int extraBlocks = BuilderSkill.handleCreativeBrushPlacement(
-                        serverPlayer, (ServerWorld) world, placementPos, block);
-
-                if (extraBlocks > 0) {
-                    // Award bonus XP for extra blocks placed
-                    com.murilloskills.data.PlayerSkillData.XpAddResult brushResult = playerData.addXpToSkill(
+                    // Use proper addXpToSkill method for level-up handling
+                    com.murilloskills.data.PlayerSkillData.XpAddResult xpAddResult = playerData.addXpToSkill(
                             MurilloSkillsList.BUILDER,
-                            xpResult.getXpAmount() * extraBlocks);
+                            xpResult.getXpAmount());
 
                     // Check for milestone rewards
                     com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Construtor",
-                            brushResult);
+                            xpAddResult);
 
-                    if (brushResult.leveledUp()) {
-                        var builderStats = playerData.getSkill(MurilloSkillsList.BUILDER);
+                    if (xpAddResult.leveledUp()) {
+                        // Player leveled up!
                         SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.BUILDER, builderStats.level);
+                        // Update attributes with new level bonuses
+                        com.murilloskills.utils.SkillAttributes.updateAllStats(serverPlayer);
                     }
 
+                    // Note: Persistence is handled automatically by attachments
                     SkillsNetworkUtils.syncSkills(serverPlayer);
 
-                    LOGGER.debug("Creative Brush placed {} extra blocks for {}",
-                            extraBlocks, serverPlayer.getName().getString());
+                    LOGGER.debug("Awarded {} XP to {} for placing {}",
+                            xpResult.getXpAmount(), serverPlayer.getName().getString(), block.getName().getString());
+
+                    // Track daily challenge progress - Builder challenges
+                    com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
+                            com.murilloskills.utils.DailyChallengeManager.ChallengeType.PLACE_BLOCKS, 1);
+
+                    // Check for high building
+                    if (placementPos.getY() > SkillConfig.BUILDER_HIGH_BUILD_Y_THRESHOLD) {
+                        com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
+                                com.murilloskills.utils.DailyChallengeManager.ChallengeType.BUILD_HEIGHT, 1);
+                    }
+
+                    // Check for stairs
+                    String blockId = net.minecraft.registry.Registries.BLOCK.getId(block).toString();
+                    if (blockId.contains("stairs")) {
+                        com.murilloskills.utils.DailyChallengeManager.recordProgress(serverPlayer,
+                                com.murilloskills.utils.DailyChallengeManager.ChallengeType.PLACE_STAIRS, 1);
+                    }
+
+                    com.murilloskills.utils.DailyChallengeManager.syncChallenges(serverPlayer);
+
+                    // Track blocks placed for Builder achievements
+                    com.murilloskills.utils.AchievementTracker.incrementAndCheck(
+                            serverPlayer, MurilloSkillsList.BUILDER,
+                            com.murilloskills.utils.AchievementTracker.KEY_BLOCKS_PLACED, 1);
+
+                    // Check for Height Master achievement (block placed above Y=200)
+                    if (placementPos.getY() > 200) {
+                        com.murilloskills.utils.AdvancementGranter.grantHeightMaster(serverPlayer);
+                    }
                 }
+
+                // Handle Creative Brush line placement
+                if (BuilderSkill.isCreativeBrushActive(serverPlayer)) {
+                    int extraBlocks = BuilderSkill.handleCreativeBrushPlacement(
+                            serverPlayer, (ServerWorld) world, placementPos, block);
+
+                    if (extraBlocks > 0) {
+                        // Award bonus XP for extra blocks placed
+                        com.murilloskills.data.PlayerSkillData.XpAddResult brushResult = playerData.addXpToSkill(
+                                MurilloSkillsList.BUILDER,
+                                xpResult.getXpAmount() * extraBlocks);
+
+                        // Check for milestone rewards
+                        com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(serverPlayer, "Construtor",
+                                brushResult);
+
+                        if (brushResult.leveledUp()) {
+                            var builderStats = playerData.getSkill(MurilloSkillsList.BUILDER);
+                            SkillNotifier.notifyLevelUp(serverPlayer, MurilloSkillsList.BUILDER, builderStats.level);
+                        }
+
+                        SkillsNetworkUtils.syncSkills(serverPlayer);
+
+                        LOGGER.debug("Creative Brush placed {} extra blocks for {}",
+                                extraBlocks, serverPlayer.getName().getString());
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.error("Error processing Builder XP for block placement", e);
             }
 
             return ActionResult.PASS;

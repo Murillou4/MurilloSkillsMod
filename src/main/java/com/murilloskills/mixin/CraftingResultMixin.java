@@ -38,14 +38,11 @@ public abstract class CraftingResultMixin {
 
         if (duplicateChance > 0 && serverPlayer.getRandom().nextFloat() < duplicateChance) {
             ItemStack bonusStack = stack.copy();
-            if (serverPlayer.getInventory().insertStack(bonusStack)) {
-                serverPlayer.sendMessage(Text.translatable("murilloskills.synergy.master_crafter.proc")
-                        .formatted(Formatting.GOLD), true);
-            } else {
+            if (!serverPlayer.getInventory().insertStack(bonusStack)) {
                 serverPlayer.dropItem(bonusStack, false);
-                serverPlayer.sendMessage(Text.translatable("murilloskills.synergy.master_crafter.proc_full")
-                        .formatted(Formatting.GOLD), true);
             }
+            serverPlayer.sendMessage(Text.translatable("murilloskills.synergy.master_crafter.proc")
+                    .formatted(Formatting.GOLD), true);
         }
     }
 }
