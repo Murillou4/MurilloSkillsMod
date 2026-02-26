@@ -68,6 +68,7 @@ public class UltmineRadialMenuScreen extends Screen {
     private int hoveredIndex = -1;
     private int selectedIndex = 0;
     private int initialSelectedIndex = 0;
+    private boolean selectionChanged = false;
     private long openedAtMs;
 
     public UltmineRadialMenuScreen() {
@@ -90,6 +91,7 @@ public class UltmineRadialMenuScreen extends Screen {
                 break;
             }
         }
+        selectionChanged = false;
 
         ensureRadialTextures();
     }
@@ -107,9 +109,6 @@ public class UltmineRadialMenuScreen extends Screen {
         renderBackdrop(context, eased);
 
         hoveredIndex = getHoveredIndex(mouseX, mouseY, ringScale, 0.0f);
-        if (hoveredIndex >= 0) {
-            selectedIndex = hoveredIndex;
-        }
 
         int centerX = this.width / 2;
         int centerY = this.height / 2;
@@ -149,7 +148,11 @@ public class UltmineRadialMenuScreen extends Screen {
     public boolean mouseClicked(Click click, boolean doubled) {
         if (click.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             if (hoveredIndex >= 0) {
+                selectedIndex = hoveredIndex;
+                selectionChanged = true;
                 selectShape(hoveredIndex);
+            } else if (selectionChanged && selectedIndex >= 0) {
+                selectShape(selectedIndex);
             } else {
                 close();
             }
@@ -184,7 +187,7 @@ public class UltmineRadialMenuScreen extends Screen {
         }
         int dir = verticalAmount > 0.0 ? -1 : 1;
         selectedIndex = (selectedIndex + dir + shapes.length) % shapes.length;
-        hoveredIndex = selectedIndex;
+        selectionChanged = true;
         return true;
     }
 
@@ -194,6 +197,10 @@ public class UltmineRadialMenuScreen extends Screen {
     }
 
     public void releaseAndClose() {
+        if (selectionChanged && selectedIndex >= 0) {
+            selectShape(selectedIndex);
+            return;
+        }
         if (hoveredIndex >= 0) {
             selectShape(hoveredIndex);
             return;
@@ -726,6 +733,7 @@ public class UltmineRadialMenuScreen extends Screen {
         return switch (shape) {
             case S_3x3 -> "3x3";
             case R_2x1 -> "2x1";
+            case LEGACY -> "OLD";
             case LINE -> "LINE";
             case STAIRS -> "STAIRS";
             case SQUARE_20x20_D1 -> "20x20";

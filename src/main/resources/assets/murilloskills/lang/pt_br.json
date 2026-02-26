@@ -43,6 +43,7 @@
     "murilloskills.ultmine.selected": "Shape Ultmine selecionado: %s",
     "murilloskills.ultmine.shape.3x3": "Plano 3x3",
     "murilloskills.ultmine.shape.2x1": "Fatia 2x1",
+    "murilloskills.ultmine.shape.legacy": "Modo Antigo",
     "murilloskills.ultmine.shape.line": "Linha Reta",
     "murilloskills.ultmine.shape.stairs": "Escadaria",
     "murilloskills.ultmine.shape.square_20x20_d1": "Quadrado 20x20 (d1)",

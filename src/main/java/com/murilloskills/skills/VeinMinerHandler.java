@@ -127,7 +127,7 @@ public final class VeinMinerHandler {
         return switch (shape) {
             case STAIRS -> Math.max(1,
                     ULTMINE_DEPTH.getOrDefault(player.getUuid(), SkillConfig.getUltmineStairsDepthDefault()));
-            case SQUARE_20x20_D1, LINE, S_3x3, R_2x1 -> Math.max(1,
+            case SQUARE_20x20_D1, LINE, S_3x3, R_2x1, LEGACY -> Math.max(1,
                     ULTMINE_DEPTH.getOrDefault(player.getUuid(), shape.getDefaultDepth()));
         };
     }
@@ -237,7 +237,7 @@ public final class VeinMinerHandler {
         int length = getUltmineLength(player);
         int maxBlocks = SkillConfig.getUltmineMaxBlocksPerUse();
 
-        List<BlockPos> raw = getShapeBlocks(player, origin, shape, depth, length, dir);
+        List<BlockPos> raw = getRawTargetsForShape(player, world, origin, world.getBlockState(origin), shape, depth, length, dir);
         if (raw.size() > maxBlocks) {
             return List.of();
         }
@@ -302,7 +302,7 @@ public final class VeinMinerHandler {
             }
         }
 
-        List<BlockPos> rawTargets = getShapeBlocks(player, origin, shape, depth, length, dir);
+        List<BlockPos> rawTargets = getRawTargetsForShape(player, world, origin, originState, shape, depth, length, dir);
         int requested = rawTargets.size();
         int maxBlocks = SkillConfig.getUltmineMaxBlocksPerUse();
         if (requested > maxBlocks) {
@@ -365,6 +365,24 @@ public final class VeinMinerHandler {
 
         ULTMINE_LAST_USE_TICK.put(player.getUuid(), worldTime);
         sendUltmineResult(player, true, minedBlocks, requested, "murilloskills.ultmine.result.success", sendResultPacket);
+    }
+
+    private static List<BlockPos> getRawTargetsForShape(ServerPlayerEntity player, World world, BlockPos origin,
+            BlockState originState, UltmineShape shape, int depth, int length, Direction dir) {
+        if (shape == UltmineShape.LEGACY) {
+            int maxLegacyBlocks = getLegacyUltmineLimit();
+            Set<BlockPos> connected = collectConnectedBlocks(world, origin, originState, maxLegacyBlocks);
+            connected.add(origin.toImmutable());
+            return new ArrayList<>(connected);
+        }
+        return getShapeBlocks(player, origin, shape, depth, length, dir);
+    }
+
+    private static int getLegacyUltmineLimit() {
+        int baseLegacy = Math.max(1, SkillConfig.getVeinMinerMaxBlocks());
+        int boostedLegacy = Math.max(1, Math.round(baseLegacy * 1.25f));
+        int ultmineCap = Math.max(1, SkillConfig.getUltmineMaxBlocksPerUse());
+        return Math.min(boostedLegacy, ultmineCap);
     }
 
     private static void sendUltmineResult(ServerPlayerEntity player, boolean success, int mined, int requestedOrValue,

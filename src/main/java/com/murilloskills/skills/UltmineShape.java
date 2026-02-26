@@ -6,6 +6,7 @@ package com.murilloskills.skills;
 public enum UltmineShape {
     S_3x3("murilloskills.ultmine.shape.3x3", 3, 3, 1),
     R_2x1("murilloskills.ultmine.shape.2x1", 2, 1, 1),
+    LEGACY("murilloskills.ultmine.shape.legacy", 1, 1, 1),
     LINE("murilloskills.ultmine.shape.line", 1, 1, 1),
     STAIRS("murilloskills.ultmine.shape.stairs", 1, 1, 5),
     SQUARE_20x20_D1("murilloskills.ultmine.shape.square_20x20_d1", 20, 20, 1);

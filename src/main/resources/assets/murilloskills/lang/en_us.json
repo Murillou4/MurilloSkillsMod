@@ -43,6 +43,7 @@
   "murilloskills.ultmine.selected": "Ultmine shape selected: %s",
   "murilloskills.ultmine.shape.3x3": "3x3 Plane",
   "murilloskills.ultmine.shape.2x1": "2x1 Slice",
+  "murilloskills.ultmine.shape.legacy": "Classic Mode",
   "murilloskills.ultmine.shape.line": "Straight Line",
   "murilloskills.ultmine.shape.stairs": "Stairs",
   "murilloskills.ultmine.shape.square_20x20_d1": "Square 20x20 (d1)",

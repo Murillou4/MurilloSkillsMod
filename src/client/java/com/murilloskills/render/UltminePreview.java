@@ -31,19 +31,24 @@ public final class UltminePreview {
             return;
         }
 
-        var preview = UltmineClientState.getPreview();
-        if (preview.isEmpty()) {
-            return;
-        }
-
         HitResult hit = client.crosshairTarget;
         BlockPos primary = null;
         if (hit instanceof BlockHitResult blockHit) {
             primary = blockHit.getBlockPos();
-        } else if (!preview.isEmpty()) {
-            primary = preview.getFirst();
         }
 
-        VeinMinerPreview.renderOutlines(context, new LinkedHashSet<>(preview), primary, 1.0f, 1.0f, 1.0f, 0.90f);
+        var preview = UltmineClientState.getPreview();
+        LinkedHashSet<BlockPos> blocks = new LinkedHashSet<>(preview);
+        if (blocks.isEmpty() && primary != null) {
+            // Keep one-block outline visible while waiting for server preview update.
+            blocks.add(primary.toImmutable());
+        } else if (primary == null && !preview.isEmpty()) {
+            primary = preview.getFirst();
+        }
+        if (blocks.isEmpty()) {
+            return;
+        }
+
+        VeinMinerPreview.renderOutlines(context, blocks, primary, 1.0f, 1.0f, 1.0f, 0.90f);
     }
 }

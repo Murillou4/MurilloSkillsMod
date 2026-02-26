@@ -31,6 +31,7 @@ public final class UltmineShapeCalculator {
         switch (shape) {
             case S_3x3 -> addPlanar(origin, face, 3, 3, safeDepth, positions);
             case R_2x1 -> addPlanar(origin, face, 2, 1, safeDepth, positions);
+            case LEGACY -> positions.add(origin);
             case LINE -> addLine(origin, safeLength, face, lookVector, positions);
             case STAIRS -> addStairs(origin, safeDepth, face, lookVector, positions);
             case SQUARE_20x20_D1 -> addHorizontalSquare(origin, 20, safeDepth, positions);

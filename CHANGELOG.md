@@ -4,6 +4,19 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.10] - 2026-02-26
+
+### 🛠️ Ultmine / Vein Miner
+
+- **Modo legado restaurado no radial**: adicionado shape `Legacy` (modo antigo) junto dos demais formatos do Ultmine.
+- **Execução e preview do Legacy corrigidos**: `Legacy` agora usa novamente a lógica clássica de blocos conectados.
+- **Limite do Legacy ajustado**: aumento leve de limite (+25%), respeitando o teto global de `ultmine.maxBlocksPerUse`.
+- **Seleção de shape corrigida**: removido comportamento que forçava voltar para `3x3` ao interagir com o radial.
+- **Outline do preview corrigido**: removidas linhas duplicadas e adicionado fallback visual para manter contorno visível enquanto o preview sincroniza.
+- **Localização atualizada**: nova tradução de shape legado em `pt_br`, `en_us` e `es_es`.
+
+---
+
 ## [1.2.9] - 2026-02-26
 
 ### ✨ Ultmine (novo modo de mineração em área)

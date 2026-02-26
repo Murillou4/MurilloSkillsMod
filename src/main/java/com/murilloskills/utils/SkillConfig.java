@@ -130,6 +130,7 @@ public class SkillConfig {
         return switch (shape) {
             case S_3x3 -> Math.max(0, costs.shape3x3);
             case R_2x1 -> Math.max(0, costs.shape2x1);
+            case LEGACY -> 0;
             case LINE -> Math.max(0, costs.lineCostPerBlock) * Math.max(1, lineLength);
             case STAIRS -> Math.max(0, costs.stairs);
             case SQUARE_20x20_D1 -> Math.max(0, costs.square20x20d1);

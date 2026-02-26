@@ -41,7 +41,7 @@ public final class UltmineClientState {
     public static void applyShapeDefaults(UltmineShape shape) {
         int newDepth = switch (shape) {
             case STAIRS -> SkillConfig.getUltmineStairsDepthDefault();
-            case SQUARE_20x20_D1, S_3x3, R_2x1, LINE -> shape.getDefaultDepth();
+            case SQUARE_20x20_D1, S_3x3, R_2x1, LEGACY, LINE -> shape.getDefaultDepth();
         };
         int newLength = shape == UltmineShape.LINE ? SkillConfig.getUltmineLineLengthDefault() : shape.getWidth();
         setSelection(shape, newDepth, newLength);
