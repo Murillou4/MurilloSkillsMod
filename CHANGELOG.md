@@ -11,7 +11,7 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 - **Outline fantasma corrigido**: o preview agora descarta posições stale/no ar e limpa preview inválido ao trocar de alvo, evitando shape invisível no ar.
 - **Sincronização do radial reforçada**: mudança de shape por scroll já sincroniza com o servidor, reduzindo divergência entre seleção e quebra real.
 - **Linha reta estabilizada**: `LINE` em mineração horizontal passa a manter direção horizontal (sem drift vertical), cavando sequência consistente de blocos.
-- **Escadaria para mineração profunda**: `STAIRS` agora progride para baixo (escada de mina), em vez de subir para o ar.
+- **Escadaria restaurada para cima**: `STAIRS` volta a subir por degraus progressivos (com profundidade maior), mantendo o estilo clássico do shape.
 - **Defaults ampliados para escavação longa**: `lineLengthDefault` aumentado para `12` e `stairsDepthDefault` para `16`.
 
 ---

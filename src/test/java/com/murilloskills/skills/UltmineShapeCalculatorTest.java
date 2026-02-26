@@ -43,15 +43,15 @@ class UltmineShapeCalculatorTest {
     }
 
     @Test
-    void stairsDecreaseHeightByOnePerStep() {
+    void stairsIncreaseHeightByOnePerStep() {
         BlockPos origin = new BlockPos(10, 40, 10);
         List<BlockPos> blocks = UltmineShapeCalculator.getShapeBlocks(
                 origin, UltmineShape.STAIRS, 5, 1, Direction.NORTH, new Vec3d(0.0, 0.0, -1.0));
 
         assertEquals(5, blocks.size());
         assertEquals(new BlockPos(10, 40, 10), blocks.getFirst());
-        assertEquals(new BlockPos(10, 39, 9), blocks.get(1));
-        assertEquals(new BlockPos(10, 36, 6), blocks.get(4));
+        assertEquals(new BlockPos(10, 41, 9), blocks.get(1));
+        assertEquals(new BlockPos(10, 44, 6), blocks.get(4));
     }
 
     @Test

@@ -88,7 +88,7 @@ public final class UltmineShapeCalculator {
         List<BlockPos> path = traceRayBlocks(origin, new Vec3d(horizontal.x, 0.0, horizontal.z), depth);
         for (int i = 0; i < path.size(); i++) {
             BlockPos step = path.get(i);
-            out.add(new BlockPos(step.getX(), origin.getY() - i, step.getZ()));
+            out.add(new BlockPos(step.getX(), origin.getY() + i, step.getZ()));
         }
     }
 
