@@ -33,7 +33,7 @@ public final class UltmineRequestNetworkHandler {
                     return;
                 }
 
-                var preview = VeinMinerHandler.getValidatedUltminePreview(player, world, payload.targetPos(), payload.face());
+                var preview = VeinMinerHandler.getValidatedUltminePreview(player, world, payload.targetPos());
                 ServerPlayNetworking.send(player, new UltminePreviewS2CPayload(preview));
             } catch (Exception e) {
                 LOGGER.error("Failed to process ultmine preview request", e);

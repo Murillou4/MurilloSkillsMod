@@ -4,6 +4,17 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.11] - 2026-02-26
+
+### 🛠️ Ultmine / Vein Miner
+
+- **Preview de shape corrigido**: o outline do Ultmine agora marca todos os blocos do shape atual (não apenas o bloco mirado).
+- **Direção de preview alinhada**: o preview usa a mesma direção da quebra real, evitando divergência entre contorno e resultado final.
+- **Coleta do bloco inicial reforçada**: com drops para inventário ativo, o primeiro bloco quebrado também é coletado de forma confiável.
+- **Coleta atrasada de drops adicionada**: sweep por alguns ticks após a quebra para capturar itens que spawnam ligeiramente depois do evento inicial.
+
+---
+
 ## [1.2.10] - 2026-02-26
 
 ### 🛠️ Ultmine / Vein Miner

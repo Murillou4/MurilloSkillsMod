@@ -175,6 +175,9 @@ public class MinecraftEventsListener {
                     }
                 }
             }
+
+            // Sweep delayed Vein Miner/Ultmine origin drops into inventory.
+            VeinMinerHandler.tickPendingDropCollection(player);
         } catch (Exception e) {
             // Logs de erro dentro do tick devem ser cuidadosos com spam
             if (player.age % 100 == 0) {

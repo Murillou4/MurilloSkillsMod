@@ -40,6 +40,7 @@ public final class VeinMinerHandler {
     private static final Map<UUID, Integer> ULTMINE_DEPTH = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> ULTMINE_LENGTH = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> ULTMINE_LAST_USE_TICK = new ConcurrentHashMap<>();
+    private static final Map<UUID, List<PendingOriginCollection>> PENDING_ORIGIN_COLLECTIONS = new ConcurrentHashMap<>();
 
     /**
      * Map of blocks that should be considered equivalent for vein mining.
@@ -158,6 +159,33 @@ public final class VeinMinerHandler {
         ULTMINE_DEPTH.remove(playerUuid);
         ULTMINE_LENGTH.remove(playerUuid);
         ULTMINE_LAST_USE_TICK.remove(playerUuid);
+        PENDING_ORIGIN_COLLECTIONS.remove(playerUuid);
+    }
+
+    /**
+     * Runs delayed pickup sweeps for the original broken block drops.
+     * Called from the global server tick loop.
+     */
+    public static void tickPendingDropCollection(ServerPlayerEntity player) {
+        if (!(player.getEntityWorld() instanceof ServerWorld serverWorld)) {
+            return;
+        }
+
+        UUID uuid = player.getUuid();
+        List<PendingOriginCollection> pending = PENDING_ORIGIN_COLLECTIONS.get(uuid);
+        if (pending == null || pending.isEmpty()) {
+            return;
+        }
+
+        long now = serverWorld.getTime();
+        pending.removeIf(entry -> {
+            collectOriginDrops(player, serverWorld, entry.pos());
+            return now >= entry.expireTick();
+        });
+
+        if (pending.isEmpty()) {
+            PENDING_ORIGIN_COLLECTIONS.remove(uuid);
+        }
     }
 
     public static void handle(ServerPlayerEntity player, World world, BlockPos origin, BlockState originState) {
@@ -206,6 +234,7 @@ public final class VeinMinerHandler {
         // Collect its dropped item first, even if there are no extra connected targets.
         if (inventoryDrops) {
             collectOriginDrops(player, (ServerWorld) world, origin);
+            scheduleOriginCollection(player, world, origin);
         }
 
         if (targets.isEmpty()) {
@@ -227,6 +256,7 @@ public final class VeinMinerHandler {
         // Sweep again to catch drops that may spawn slightly later in the same tick.
         if (inventoryDrops) {
             collectOriginDrops(player, (ServerWorld) world, origin);
+            scheduleOriginCollection(player, world, origin);
         }
     }
 
@@ -234,8 +264,7 @@ public final class VeinMinerHandler {
      * Preview helper used by preview request packet.
      * Always validated on server to prevent client-side spoofing.
      */
-    public static List<BlockPos> getValidatedUltminePreview(ServerPlayerEntity player, World world, BlockPos origin,
-            Direction dir) {
+    public static List<BlockPos> getValidatedUltminePreview(ServerPlayerEntity player, World world, BlockPos origin) {
         if (!shouldUseUltmine(player)) {
             return List.of();
         }
@@ -244,8 +273,10 @@ public final class VeinMinerHandler {
         int depth = getUltmineDepth(player);
         int length = getUltmineLength(player);
         int maxBlocks = SkillConfig.getUltmineMaxBlocksPerUse();
+        Direction previewDirection = resolveMiningDirection(player);
 
-        List<BlockPos> raw = getRawTargetsForShape(player, world, origin, world.getBlockState(origin), shape, depth, length, dir);
+        List<BlockPos> raw = getRawTargetsForShape(player, world, origin, world.getBlockState(origin), shape, depth, length,
+                previewDirection);
         if (raw.size() > maxBlocks) {
             return List.of();
         }
@@ -330,6 +361,7 @@ public final class VeinMinerHandler {
         boolean inventoryDrops = isDropsToInventory(player) && world instanceof ServerWorld;
         if (inventoryDrops) {
             collectOriginDrops(player, (ServerWorld) world, origin);
+            scheduleOriginCollection(player, world, origin);
         }
 
         for (BlockPos pos : new LinkedHashSet<>(rawTargets)) {
@@ -364,6 +396,7 @@ public final class VeinMinerHandler {
 
         if (inventoryDrops) {
             collectOriginDrops(player, (ServerWorld) world, origin);
+            scheduleOriginCollection(player, world, origin);
         }
 
         if (minedBlocks <= 0) {
@@ -504,6 +537,14 @@ public final class VeinMinerHandler {
         }
     }
 
+    private static void scheduleOriginCollection(ServerPlayerEntity player, World world, BlockPos pos) {
+        long now = world.getTime();
+        long expireTick = now + 8; // Keep sweeping for a short period after the break event.
+        UUID uuid = player.getUuid();
+        List<PendingOriginCollection> pending = PENDING_ORIGIN_COLLECTIONS.computeIfAbsent(uuid, ignored -> new ArrayList<>());
+        pending.add(new PendingOriginCollection(pos.toImmutable(), expireTick));
+    }
+
     private static Set<BlockPos> collectConnectedBlocks(World world, BlockPos origin, BlockState originState,
             int maxBlocks) {
         Block originBlock = originState.getBlock();
@@ -563,5 +604,8 @@ public final class VeinMinerHandler {
 
     public static boolean isProcessing(ServerPlayerEntity player) {
         return ACTIVE_PLAYERS.contains(player.getUuid());
+    }
+
+    private record PendingOriginCollection(BlockPos pos, long expireTick) {
     }
 }
