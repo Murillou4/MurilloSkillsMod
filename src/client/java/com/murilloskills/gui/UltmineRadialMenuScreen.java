@@ -26,6 +26,14 @@ import org.lwjgl.glfw.GLFW;
 public class UltmineRadialMenuScreen extends Screen {
     private static final ColorPalette PALETTE = ColorPalette.premium();
     private static final RenderPipeline GUI_PIPELINE = RenderPipelines.GUI_TEXTURED;
+    private static final UltmineShape[] SHAPE_ORDER = {
+            UltmineShape.S_3x3,
+            UltmineShape.R_2x1,
+            UltmineShape.LEGACY,
+            UltmineShape.LINE,
+            UltmineShape.STAIRS,
+            UltmineShape.SQUARE_20x20_D1
+    };
 
     private static final float INNER_RADIUS = 58.0f;
     private static final float OUTER_RADIUS = 142.0f;
@@ -42,14 +50,14 @@ public class UltmineRadialMenuScreen extends Screen {
     private static final float CENTER_CURRENT_SCALE = 0.82f;
     private static final float HINT_SCALE = 0.78f;
 
-    private final UltmineShape[] shapes = UltmineShape.values();
+    private final UltmineShape[] shapes = SHAPE_ORDER;
     private final Text[] shortNameTexts = new Text[shapes.length];
     private final Text[] shapeNameTexts = new Text[shapes.length];
 
     private static Identifier sharedBaseTextureId;
     private static NativeImageBackedTexture sharedBaseTexture;
-    private static final Identifier[] sharedOverlayTextureIds = new Identifier[UltmineShape.values().length];
-    private static final NativeImageBackedTexture[] sharedOverlayTextures = new NativeImageBackedTexture[UltmineShape.values().length];
+    private static final Identifier[] sharedOverlayTextureIds = new Identifier[SHAPE_ORDER.length];
+    private static final NativeImageBackedTexture[] sharedOverlayTextures = new NativeImageBackedTexture[SHAPE_ORDER.length];
     private static int sharedDisplayHalfSize;
     private static int sharedDisplaySize;
     private static int sharedTextureHalfSize;

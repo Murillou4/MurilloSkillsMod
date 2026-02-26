@@ -12,6 +12,8 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 - **Execução e preview do Legacy corrigidos**: `Legacy` agora usa novamente a lógica clássica de blocos conectados.
 - **Limite do Legacy ajustado**: aumento leve de limite (+25%), respeitando o teto global de `ultmine.maxBlocksPerUse`.
 - **Seleção de shape corrigida**: removido comportamento que forçava voltar para `3x3` ao interagir com o radial.
+- **Drop do bloco inicial corrigido**: no modo com drops para inventário, o primeiro bloco quebrado também é coletado corretamente.
+- **Ordem de shapes estabilizada**: shape `Legacy` mantido no radial sem quebrar compatibilidade de seleção entre cliente/servidor.
 - **Outline do preview corrigido**: removidas linhas duplicadas e adicionado fallback visual para manter contorno visível enquanto o preview sincroniza.
 - **Localização atualizada**: nova tradução de shape legado em `pt_br`, `en_us` e `es_es`.
 

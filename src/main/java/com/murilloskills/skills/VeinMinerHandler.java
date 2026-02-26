@@ -200,13 +200,16 @@ public final class VeinMinerHandler {
             ItemStack tool) {
         int maxBlocks = Math.max(1, SkillConfig.getVeinMinerMaxBlocks());
         Set<BlockPos> targets = collectConnectedBlocks(world, origin, originState, maxBlocks);
+        boolean inventoryDrops = isDropsToInventory(player) && world instanceof ServerWorld;
+
+        // The origin block is already broken by the player before this handler runs.
+        // Collect its dropped item first, even if there are no extra connected targets.
+        if (inventoryDrops) {
+            collectOriginDrops(player, (ServerWorld) world, origin);
+        }
 
         if (targets.isEmpty()) {
             return;
-        }
-
-        if (isDropsToInventory(player) && world instanceof ServerWorld serverWorld) {
-            collectOriginDrops(player, serverWorld, origin);
         }
 
         for (BlockPos pos : targets) {
@@ -214,11 +217,16 @@ public final class VeinMinerHandler {
             if (state.isAir()) {
                 continue;
             }
-            if (isDropsToInventory(player)) {
+            if (inventoryDrops) {
                 breakWithInventoryDrops(player, world, pos, state, tool);
             } else {
                 world.breakBlock(pos, true, player);
             }
+        }
+
+        // Sweep again to catch drops that may spawn slightly later in the same tick.
+        if (inventoryDrops) {
+            collectOriginDrops(player, (ServerWorld) world, origin);
         }
     }
 
@@ -319,8 +327,9 @@ public final class VeinMinerHandler {
 
         ItemStack tool = player.getMainHandStack();
         int minedBlocks = 0;
-        if (isDropsToInventory(player) && world instanceof ServerWorld serverWorld) {
-            collectOriginDrops(player, serverWorld, origin);
+        boolean inventoryDrops = isDropsToInventory(player) && world instanceof ServerWorld;
+        if (inventoryDrops) {
+            collectOriginDrops(player, (ServerWorld) world, origin);
         }
 
         for (BlockPos pos : new LinkedHashSet<>(rawTargets)) {
@@ -345,12 +354,16 @@ public final class VeinMinerHandler {
                 continue;
             }
 
-            if (isDropsToInventory(player)) {
+            if (inventoryDrops) {
                 breakWithInventoryDrops(player, world, pos, state, tool);
             } else {
                 world.breakBlock(pos, true, player);
             }
             minedBlocks++;
+        }
+
+        if (inventoryDrops) {
+            collectOriginDrops(player, (ServerWorld) world, origin);
         }
 
         if (minedBlocks <= 0) {
