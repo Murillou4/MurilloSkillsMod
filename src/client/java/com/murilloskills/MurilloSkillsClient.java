@@ -303,6 +303,10 @@ public class MurilloSkillsClient implements ClientModInitializer {
             if (veinMinerKeyHeld && SkillConfig.isUltmineEnabled()) {
                 HitResult hitResult = client.crosshairTarget;
                 if (hitResult instanceof BlockHitResult blockHit) {
+                    if (client.world == null || client.world.getBlockState(blockHit.getBlockPos()).isAir()) {
+                        UltmineClientState.clearPreview();
+                        return;
+                    }
                     int interval = SkillConfig.getUltminePreviewRequestIntervalTicks();
                     if (client.world != null && client.world.getTime() % interval == 0) {
                         ClientPlayNetworking.send(

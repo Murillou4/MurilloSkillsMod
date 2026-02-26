@@ -4,6 +4,18 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.12] - 2026-02-26
+
+### 🛠️ Ultmine / Vein Miner
+
+- **Outline fantasma corrigido**: o preview agora descarta posições stale/no ar e limpa preview inválido ao trocar de alvo, evitando shape invisível no ar.
+- **Sincronização do radial reforçada**: mudança de shape por scroll já sincroniza com o servidor, reduzindo divergência entre seleção e quebra real.
+- **Linha reta estabilizada**: `LINE` em mineração horizontal passa a manter direção horizontal (sem drift vertical), cavando sequência consistente de blocos.
+- **Escadaria para mineração profunda**: `STAIRS` agora progride para baixo (escada de mina), em vez de subir para o ar.
+- **Defaults ampliados para escavação longa**: `lineLengthDefault` aumentado para `12` e `stairsDepthDefault` para `16`.
+
+---
+
 ## [1.2.11] - 2026-02-26
 
 ### 🛠️ Ultmine / Vein Miner

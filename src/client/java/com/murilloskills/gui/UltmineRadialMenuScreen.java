@@ -196,6 +196,7 @@ public class UltmineRadialMenuScreen extends Screen {
         int dir = verticalAmount > 0.0 ? -1 : 1;
         selectedIndex = (selectedIndex + dir + shapes.length) % shapes.length;
         selectionChanged = true;
+        syncShapeSelection(selectedIndex);
         return true;
     }
 
@@ -415,11 +416,18 @@ public class UltmineRadialMenuScreen extends Screen {
         if (index < 0 || index >= shapes.length) {
             return;
         }
+        syncShapeSelection(index);
+        close();
+    }
+
+    private void syncShapeSelection(int index) {
+        if (index < 0 || index >= shapes.length) {
+            return;
+        }
         UltmineShape shape = shapes[index];
         UltmineClientState.applyShapeDefaults(shape);
         ClientPlayNetworking.send(new UltmineShapeSelectC2SPayload(
                 shape, UltmineClientState.getDepth(), UltmineClientState.getLength()));
-        close();
     }
 
     private static void clearImage(NativeImage image) {

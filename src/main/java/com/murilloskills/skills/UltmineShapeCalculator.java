@@ -72,7 +72,13 @@ public final class UltmineShapeCalculator {
     }
 
     private static void addLine(BlockPos origin, int length, Direction face, Vec3d lookVector, Set<BlockPos> out) {
-        Vec3d direction = safeDirection(lookVector, Vec3d.of(face.getVector()));
+        Vec3d direction;
+        if (face.getAxis().isHorizontal()) {
+            // Keep horizontal tunneling stable; vertical drift makes the line exit into air too fast.
+            direction = safeDirection(new Vec3d(lookVector.x, 0.0, lookVector.z), Vec3d.of(face.getVector()));
+        } else {
+            direction = Vec3d.of(face.getVector());
+        }
         out.addAll(traceRayBlocks(origin, direction, length));
     }
 
@@ -82,7 +88,7 @@ public final class UltmineShapeCalculator {
         List<BlockPos> path = traceRayBlocks(origin, new Vec3d(horizontal.x, 0.0, horizontal.z), depth);
         for (int i = 0; i < path.size(); i++) {
             BlockPos step = path.get(i);
-            out.add(new BlockPos(step.getX(), origin.getY() + i, step.getZ()));
+            out.add(new BlockPos(step.getX(), origin.getY() - i, step.getZ()));
         }
     }
 

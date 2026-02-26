@@ -237,8 +237,8 @@ public class ModConfig {
         public int permissionLevel = 0;
         public boolean requireMinerMaster = true;
         public int cooldownTicks = 0;
-        public int lineLengthDefault = 5;
-        public int stairsDepthDefault = 5;
+        public int lineLengthDefault = 12;
+        public int stairsDepthDefault = 16;
         public int previewRequestIntervalTicks = 4;
         public int xpCostPerUse = 0;
         public java.util.List<String> blockWhitelist = new java.util.ArrayList<>();
