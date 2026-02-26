@@ -1,20 +1,27 @@
 package com.murilloskills.skills;
 
+import com.murilloskills.data.ModAttachments;
+import com.murilloskills.network.UltmineResultS2CPayload;
 import com.murilloskills.utils.SkillConfig;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
-import net.minecraft.server.world.ServerWorld;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +34,12 @@ public final class VeinMinerHandler {
     private static final Set<UUID> ACTIVE_PLAYERS = ConcurrentHashMap.newKeySet();
     // Per-player drops-to-inventory preference (overrides global config)
     private static final Map<UUID, Boolean> DROPS_TO_INVENTORY = new ConcurrentHashMap<>();
+
+    // Ultmine per-player shape preferences
+    private static final Map<UUID, UltmineShape> ULTMINE_SHAPE = new ConcurrentHashMap<>();
+    private static final Map<UUID, Integer> ULTMINE_DEPTH = new ConcurrentHashMap<>();
+    private static final Map<UUID, Integer> ULTMINE_LENGTH = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> ULTMINE_LAST_USE_TICK = new ConcurrentHashMap<>();
 
     /**
      * Map of blocks that should be considered equivalent for vein mining.
@@ -105,12 +118,46 @@ public final class VeinMinerHandler {
         return DROPS_TO_INVENTORY.getOrDefault(player.getUuid(), SkillConfig.getVeinMinerDropsToInventory());
     }
 
+    public static UltmineShape getUltmineShape(ServerPlayerEntity player) {
+        return ULTMINE_SHAPE.getOrDefault(player.getUuid(), UltmineShape.S_3x3);
+    }
+
+    public static int getUltmineDepth(ServerPlayerEntity player) {
+        UltmineShape shape = getUltmineShape(player);
+        return switch (shape) {
+            case STAIRS -> Math.max(1,
+                    ULTMINE_DEPTH.getOrDefault(player.getUuid(), SkillConfig.getUltmineStairsDepthDefault()));
+            case SQUARE_20x20_D1, LINE, S_3x3, R_2x1 -> Math.max(1,
+                    ULTMINE_DEPTH.getOrDefault(player.getUuid(), shape.getDefaultDepth()));
+        };
+    }
+
+    public static int getUltmineLength(ServerPlayerEntity player) {
+        UltmineShape shape = getUltmineShape(player);
+        return switch (shape) {
+            case LINE -> Math.max(1,
+                    ULTMINE_LENGTH.getOrDefault(player.getUuid(), SkillConfig.getUltmineLineLengthDefault()));
+            default -> Math.max(1, ULTMINE_LENGTH.getOrDefault(player.getUuid(), shape.getWidth()));
+        };
+    }
+
+    public static void setUltmineSelection(ServerPlayerEntity player, UltmineShape shape, int depth, int length) {
+        UltmineShape safeShape = shape == null ? UltmineShape.S_3x3 : shape;
+        ULTMINE_SHAPE.put(player.getUuid(), safeShape);
+        ULTMINE_DEPTH.put(player.getUuid(), Math.max(1, depth));
+        ULTMINE_LENGTH.put(player.getUuid(), Math.max(1, length));
+    }
+
     /**
      * Cleanup player state on disconnect.
      */
     public static void cleanupPlayerState(UUID playerUuid) {
         HOLDING_KEY.remove(playerUuid);
         DROPS_TO_INVENTORY.remove(playerUuid);
+        ULTMINE_SHAPE.remove(playerUuid);
+        ULTMINE_DEPTH.remove(playerUuid);
+        ULTMINE_LENGTH.remove(playerUuid);
+        ULTMINE_LAST_USE_TICK.remove(playerUuid);
     }
 
     public static void handle(ServerPlayerEntity player, World world, BlockPos origin, BlockState originState) {
@@ -135,6 +182,22 @@ public final class VeinMinerHandler {
             return;
         }
 
+        ACTIVE_PLAYERS.add(player.getUuid());
+        try {
+            if (shouldUseUltmine(player)) {
+                Direction direction = resolveMiningDirection(player);
+                executeUltmine(player, world, origin, originState, getUltmineShape(player), getUltmineDepth(player),
+                        getUltmineLength(player), direction, true);
+            } else {
+                executeLegacyVeinMining(player, world, origin, originState, tool);
+            }
+        } finally {
+            ACTIVE_PLAYERS.remove(player.getUuid());
+        }
+    }
+
+    private static void executeLegacyVeinMining(ServerPlayerEntity player, World world, BlockPos origin, BlockState originState,
+            ItemStack tool) {
         int maxBlocks = Math.max(1, SkillConfig.getVeinMinerMaxBlocks());
         Set<BlockPos> targets = collectConnectedBlocks(world, origin, originState, maxBlocks);
 
@@ -142,25 +205,222 @@ public final class VeinMinerHandler {
             return;
         }
 
-        ACTIVE_PLAYERS.add(player.getUuid());
-        try {
-            if (isDropsToInventory(player) && world instanceof ServerWorld serverWorld) {
-                collectOriginDrops(player, serverWorld, origin);
-            }
-            for (BlockPos pos : targets) {
-                BlockState state = world.getBlockState(pos);
-                if (state.isAir()) {
-                    continue;
-                }
-                if (isDropsToInventory(player)) {
-                    breakWithInventoryDrops(player, world, pos, state, tool);
-                } else {
-                    world.breakBlock(pos, true, player);
-                }
-            }
-        } finally {
-            ACTIVE_PLAYERS.remove(player.getUuid());
+        if (isDropsToInventory(player) && world instanceof ServerWorld serverWorld) {
+            collectOriginDrops(player, serverWorld, origin);
         }
+
+        for (BlockPos pos : targets) {
+            BlockState state = world.getBlockState(pos);
+            if (state.isAir()) {
+                continue;
+            }
+            if (isDropsToInventory(player)) {
+                breakWithInventoryDrops(player, world, pos, state, tool);
+            } else {
+                world.breakBlock(pos, true, player);
+            }
+        }
+    }
+
+    /**
+     * Preview helper used by preview request packet.
+     * Always validated on server to prevent client-side spoofing.
+     */
+    public static List<BlockPos> getValidatedUltminePreview(ServerPlayerEntity player, World world, BlockPos origin,
+            Direction dir) {
+        if (!shouldUseUltmine(player)) {
+            return List.of();
+        }
+
+        UltmineShape shape = getUltmineShape(player);
+        int depth = getUltmineDepth(player);
+        int length = getUltmineLength(player);
+        int maxBlocks = SkillConfig.getUltmineMaxBlocksPerUse();
+
+        List<BlockPos> raw = getShapeBlocks(player, origin, shape, depth, length, dir);
+        if (raw.size() > maxBlocks) {
+            return List.of();
+        }
+
+        ItemStack tool = player.getMainHandStack();
+        List<BlockPos> valid = new ArrayList<>(raw.size());
+        for (BlockPos pos : raw) {
+            BlockState state = world.getBlockState(pos);
+            if (state.isAir()) {
+                continue;
+            }
+            if (state.getHardness(world, pos) < 0.0f) {
+                continue;
+            }
+            if (!isUltmineBlockAllowed(state.getBlock())) {
+                continue;
+            }
+            if (!canBreakWith(tool, state, player)) {
+                continue;
+            }
+            if (!canPlayerModify(world, player, pos)) {
+                continue;
+            }
+            valid.add(pos.toImmutable());
+        }
+
+        return valid;
+    }
+
+    public static List<BlockPos> getShapeBlocks(ServerPlayerEntity player, UltmineShape shape, int depth, int length,
+            Direction dir) {
+        return getShapeBlocks(player, player.getBlockPos(), shape, depth, length, dir);
+    }
+
+    public static List<BlockPos> getShapeBlocks(ServerPlayerEntity player, BlockPos origin, UltmineShape shape, int depth,
+            int length, Direction dir) {
+        return UltmineShapeCalculator.getShapeBlocks(origin, shape, depth, length, dir, player.getRotationVec(1.0f));
+    }
+
+    /**
+     * Server-only execution for ultmine shape mining.
+     */
+    public static void executeUltmine(ServerPlayerEntity player, World world, BlockPos origin, BlockState originState,
+            UltmineShape shape, int depth, int length, Direction dir, boolean sendResultPacket) {
+        if (world.isClient()) {
+            return;
+        }
+        if (!shouldUseUltmine(player)) {
+            sendUltmineResult(player, false, 0, 0, "murilloskills.ultmine.result.not_allowed", sendResultPacket);
+            return;
+        }
+
+        int cooldownTicks = SkillConfig.getUltmineCooldownTicks();
+        long worldTime = world.getTime();
+        if (cooldownTicks > 0) {
+            long lastUse = ULTMINE_LAST_USE_TICK.getOrDefault(player.getUuid(), Long.MIN_VALUE);
+            long elapsed = worldTime - lastUse;
+            if (elapsed < cooldownTicks) {
+                sendUltmineResult(player, false, 0, cooldownTicks - (int) elapsed,
+                        "murilloskills.ultmine.result.cooldown", sendResultPacket);
+                return;
+            }
+        }
+
+        List<BlockPos> rawTargets = getShapeBlocks(player, origin, shape, depth, length, dir);
+        int requested = rawTargets.size();
+        int maxBlocks = SkillConfig.getUltmineMaxBlocksPerUse();
+        if (requested > maxBlocks) {
+            sendUltmineResult(player, false, requested, maxBlocks, "murilloskills.ultmine.result.max_blocks",
+                    sendResultPacket);
+            return;
+        }
+
+        int xpCost = SkillConfig.getUltmineXpCostPerUse() + SkillConfig.getUltmineShapeCost(shape, length);
+        if (!player.isCreative() && xpCost > 0 && player.experienceLevel < xpCost) {
+            sendUltmineResult(player, false, 0, xpCost, "murilloskills.ultmine.result.not_enough_xp", sendResultPacket);
+            return;
+        }
+
+        ItemStack tool = player.getMainHandStack();
+        int minedBlocks = 0;
+        if (isDropsToInventory(player) && world instanceof ServerWorld serverWorld) {
+            collectOriginDrops(player, serverWorld, origin);
+        }
+
+        for (BlockPos pos : new LinkedHashSet<>(rawTargets)) {
+            if (minedBlocks >= maxBlocks) {
+                break;
+            }
+
+            BlockState state = world.getBlockState(pos);
+            if (state.isAir()) {
+                continue;
+            }
+            if (state.getHardness(world, pos) < 0.0f) {
+                continue;
+            }
+            if (!isUltmineBlockAllowed(state.getBlock())) {
+                continue;
+            }
+            if (!canBreakWith(tool, state, player)) {
+                continue;
+            }
+            if (!canPlayerModify(world, player, pos)) {
+                continue;
+            }
+
+            if (isDropsToInventory(player)) {
+                breakWithInventoryDrops(player, world, pos, state, tool);
+            } else {
+                world.breakBlock(pos, true, player);
+            }
+            minedBlocks++;
+        }
+
+        if (minedBlocks <= 0) {
+            sendUltmineResult(player, false, 0, requested, "murilloskills.ultmine.result.no_valid_blocks",
+                    sendResultPacket);
+            return;
+        }
+
+        if (!player.isCreative() && xpCost > 0) {
+            player.addExperienceLevels(-xpCost);
+        }
+
+        ULTMINE_LAST_USE_TICK.put(player.getUuid(), worldTime);
+        sendUltmineResult(player, true, minedBlocks, requested, "murilloskills.ultmine.result.success", sendResultPacket);
+    }
+
+    private static void sendUltmineResult(ServerPlayerEntity player, boolean success, int mined, int requestedOrValue,
+            String messageKey, boolean sendResultPacket) {
+        if (!sendResultPacket) {
+            return;
+        }
+        ServerPlayNetworking.send(player, new UltmineResultS2CPayload(success, mined, requestedOrValue, messageKey));
+    }
+
+    private static Direction resolveMiningDirection(ServerPlayerEntity player) {
+        float pitch = player.getPitch();
+        if (pitch > 60.0f) {
+            return Direction.DOWN;
+        }
+        if (pitch < -60.0f) {
+            return Direction.UP;
+        }
+        return player.getHorizontalFacing();
+    }
+
+    private static boolean shouldUseUltmine(ServerPlayerEntity player) {
+        if (!SkillConfig.isUltmineEnabled()) {
+            return false;
+        }
+        if (!player.hasPermissionLevel(SkillConfig.getUltminePermissionLevel())) {
+            return false;
+        }
+        if (!SkillConfig.isUltmineRequireMinerMaster()) {
+            return true;
+        }
+        try {
+            var data = player.getAttachedOrCreate(ModAttachments.PLAYER_SKILLS);
+            var minerStats = data.getSkill(MurilloSkillsList.MINER);
+            return minerStats.level >= SkillConfig.getMinerMasterLevel() || minerStats.prestige > 0;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private static boolean isUltmineBlockAllowed(Block block) {
+        String blockId = Registries.BLOCK.getId(block).toString();
+        List<String> whitelist = SkillConfig.getUltmineBlockWhitelist();
+        List<String> blacklist = SkillConfig.getUltmineBlockBlacklist();
+
+        if (!whitelist.isEmpty() && !whitelist.contains(blockId)) {
+            return false;
+        }
+        return !blacklist.contains(blockId);
+    }
+
+    private static boolean canPlayerModify(World world, ServerPlayerEntity player, BlockPos pos) {
+        if (world instanceof ServerWorld serverWorld) {
+            return player.canModifyAt(serverWorld, pos);
+        }
+        return true;
     }
 
     private static boolean canBreakWith(ItemStack tool, BlockState state, PlayerEntity player) {
@@ -229,11 +489,14 @@ public final class VeinMinerHandler {
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dy = -1; dy <= 1; dy++) {
                     for (int dz = -1; dz <= 1; dz++) {
-                        if (dx == 0 && dy == 0 && dz == 0) continue;
-                        if (visited.size() >= maxBlocks) return stripOrigin(visited, origin);
+                        if (dx == 0 && dy == 0 && dz == 0)
+                            continue;
+                        if (visited.size() >= maxBlocks)
+                            return stripOrigin(visited, origin);
 
                         BlockPos neighbor = current.add(dx, dy, dz);
-                        if (visited.contains(neighbor)) continue;
+                        if (visited.contains(neighbor))
+                            continue;
 
                         BlockState neighborState = world.getBlockState(neighbor);
                         if (isSameVeinBlock(originBlock, neighborState.getBlock())) {

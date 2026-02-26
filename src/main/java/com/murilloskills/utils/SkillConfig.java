@@ -1,6 +1,7 @@
 package com.murilloskills.utils;
 
 import com.murilloskills.config.ModConfig;
+import com.murilloskills.skills.UltmineShape;
 
 /**
  * Skill configuration values - now backed by external config file.
@@ -77,6 +78,62 @@ public class SkillConfig {
 
     public static boolean getVeinMinerDropsToInventory() {
         return ModConfig.get().veinMiner.dropsToInventory;
+    }
+
+    // --- ULTMINE ---
+    public static boolean isUltmineEnabled() {
+        return ModConfig.get().ultmine.enabled;
+    }
+
+    public static int getUltmineMaxBlocksPerUse() {
+        return Math.max(1, ModConfig.get().ultmine.maxBlocksPerUse);
+    }
+
+    public static int getUltminePermissionLevel() {
+        return Math.max(0, ModConfig.get().ultmine.permissionLevel);
+    }
+
+    public static boolean isUltmineRequireMinerMaster() {
+        return ModConfig.get().ultmine.requireMinerMaster;
+    }
+
+    public static int getUltmineCooldownTicks() {
+        return Math.max(0, ModConfig.get().ultmine.cooldownTicks);
+    }
+
+    public static int getUltmineLineLengthDefault() {
+        return Math.max(1, ModConfig.get().ultmine.lineLengthDefault);
+    }
+
+    public static int getUltmineStairsDepthDefault() {
+        return Math.max(1, ModConfig.get().ultmine.stairsDepthDefault);
+    }
+
+    public static int getUltminePreviewRequestIntervalTicks() {
+        return Math.max(1, ModConfig.get().ultmine.previewRequestIntervalTicks);
+    }
+
+    public static int getUltmineXpCostPerUse() {
+        return Math.max(0, ModConfig.get().ultmine.xpCostPerUse);
+    }
+
+    public static java.util.List<String> getUltmineBlockWhitelist() {
+        return ModConfig.get().ultmine.blockWhitelist;
+    }
+
+    public static java.util.List<String> getUltmineBlockBlacklist() {
+        return ModConfig.get().ultmine.blockBlacklist;
+    }
+
+    public static int getUltmineShapeCost(UltmineShape shape, int lineLength) {
+        var costs = ModConfig.get().ultmine.costs;
+        return switch (shape) {
+            case S_3x3 -> Math.max(0, costs.shape3x3);
+            case R_2x1 -> Math.max(0, costs.shape2x1);
+            case LINE -> Math.max(0, costs.lineCostPerBlock) * Math.max(1, lineLength);
+            case STAIRS -> Math.max(0, costs.stairs);
+            case SQUARE_20x20_D1 -> Math.max(0, costs.square20x20d1);
+        };
     }
 
     // Legacy constants for backward compatibility

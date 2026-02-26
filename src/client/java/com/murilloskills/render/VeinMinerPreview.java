@@ -32,8 +32,13 @@ public class VeinMinerPreview {
     private static final float G = 1.0f;
     private static final float B = 1.0f;
     private static final float ALPHA = 0.8f;
+    private static final float OUTLINE_WIDTH = 3.25f;
 
     public static void render(WorldRenderContext context) {
+        if (SkillConfig.isUltmineEnabled()) {
+            return;
+        }
+
         // Only render if vein miner key is held
         if (!MurilloSkillsClient.isVeinMinerKeyHeld()) {
             return;
@@ -72,31 +77,46 @@ public class VeinMinerPreview {
             return;
         }
 
-        // Setup rendering
+        connectedBlocks.add(targetPos);
+        renderOutlines(context, connectedBlocks, targetPos, R, G, B, ALPHA);
+    }
+
+    public static void renderOutlines(WorldRenderContext context, Set<BlockPos> blocks, BlockPos primaryBlock, float r,
+            float g, float b, float baseAlpha) {
+        if (blocks == null || blocks.isEmpty()) {
+            return;
+        }
+
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.world == null) {
+            return;
+        }
+
         Vec3d cameraPos = client.gameRenderer.getCamera().getPos();
         MatrixStack matrices = context.matrices();
 
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glDepthFunc(GL11.GL_LEQUAL);
-        GL11.glLineWidth(2.0f);
+        GL11.glLineWidth(OUTLINE_WIDTH);
 
         VertexConsumer consumer = client.getBufferBuilders().getEntityVertexConsumers()
                 .getBuffer(RenderLayer.getLines());
 
-        // Pulse animation
         long time = client.world.getTime();
         float pulse = 0.7f + 0.3f * (float) Math.sin(time * 0.2);
-        float alpha = ALPHA * pulse;
+        float alpha = baseAlpha * pulse;
 
-        // Draw outline for the target block (brighter)
-        drawBlockOutline(matrices, consumer, targetPos, cameraPos, R, G, B, alpha);
-
-        // Draw outline for connected blocks
-        for (BlockPos pos : connectedBlocks) {
-            drawBlockOutline(matrices, consumer, pos, cameraPos, R, G, B, alpha * 0.7f);
+        if (primaryBlock != null && blocks.contains(primaryBlock)) {
+            drawBlockOutline(matrices, consumer, primaryBlock, cameraPos, r, g, b, alpha);
         }
 
-        // Flush rendering
+        for (BlockPos pos : blocks) {
+            if (pos.equals(primaryBlock)) {
+                continue;
+            }
+            drawBlockOutline(matrices, consumer, pos, cameraPos, r, g, b, alpha * 0.7f);
+        }
+
         client.getBufferBuilders().getEntityVertexConsumers().draw(RenderLayer.getLines());
         GL11.glLineWidth(1.0f);
     }
@@ -161,6 +181,12 @@ public class VeinMinerPreview {
         float y1 = (float) (y + 1);
         float z1 = (float) (z + 1);
 
+        drawBoxEdges(entry, consumer, x0, y0, z0, x1, y1, z1, r, g, b, a);
+    }
+
+    private static void drawBoxEdges(MatrixStack.Entry entry, VertexConsumer consumer,
+            float x0, float y0, float z0, float x1, float y1, float z1,
+            float r, float g, float b, float a) {
         // Bottom face edges
         line(entry, consumer, x0, y0, z0, x1, y0, z0, r, g, b, a);
         line(entry, consumer, x1, y0, z0, x1, y0, z1, r, g, b, a);

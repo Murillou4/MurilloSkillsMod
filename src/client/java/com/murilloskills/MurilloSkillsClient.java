@@ -5,6 +5,9 @@ import com.murilloskills.network.AreaPlantingSyncS2CPayload;
 import com.murilloskills.network.HollowFillToggleC2SPayload;
 import com.murilloskills.network.MinerScanResultPayload;
 import com.murilloskills.network.NightVisionToggleC2SPayload;
+import com.murilloskills.network.UltminePreviewS2CPayload;
+import com.murilloskills.network.UltmineRequestC2SPayload;
+import com.murilloskills.network.UltmineResultS2CPayload;
 import com.murilloskills.network.StepAssistToggleC2SPayload;
 import com.murilloskills.network.RainDanceS2CPayload;
 import com.murilloskills.network.SkillAbilityC2SPayload;
@@ -13,21 +16,29 @@ import com.murilloskills.network.TreasureHunterS2CPayload;
 import com.murilloskills.network.VeinMinerDropsToggleC2SPayload;
 import com.murilloskills.network.VeinMinerToggleC2SPayload;
 import com.murilloskills.network.XpGainS2CPayload;
+import com.murilloskills.data.UltmineClientState;
 import com.murilloskills.render.AreaPlantingHud;
 import com.murilloskills.render.OreHighlighter;
 import com.murilloskills.render.RainDanceEffect;
 import com.murilloskills.render.TreasureHighlighter;
+import com.murilloskills.render.UltminePreview;
 import com.murilloskills.render.VeinMinerPreview;
 import com.murilloskills.render.XpToastRenderer;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 
@@ -49,9 +60,11 @@ public class MurilloSkillsClient implements ClientModInitializer {
     private static KeyBinding fillModeCycleKey;
     private static KeyBinding veinMinerToggleKey;
     private static KeyBinding veinMinerDropsToggleKey;
+    private static KeyBinding ultmineRadialMenuKey;
 
     // Vein Miner hold state tracking
     private static boolean veinMinerKeyHeld = false;
+    private static boolean ultmineMenuKeyHeld = false;
 
     /**
      * Check if the vein miner key is currently being held.
@@ -149,6 +162,25 @@ public class MurilloSkillsClient implements ClientModInitializer {
                     });
                 });
 
+        // 8. Ultmine preview sync
+        ClientPlayNetworking.registerGlobalReceiver(UltminePreviewS2CPayload.ID, (payload, context) -> {
+            context.client().execute(() -> UltmineClientState.updatePreview(payload.positions()));
+        });
+
+        // 9. Ultmine result feedback
+        ClientPlayNetworking.registerGlobalReceiver(UltmineResultS2CPayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                if (context.client().player == null || payload.messageKey() == null || payload.messageKey().isEmpty()) {
+                    return;
+                }
+                var color = payload.success() ? Formatting.GREEN : Formatting.RED;
+                context.client().player.sendMessage(
+                        Text.translatable(payload.messageKey(), payload.minedBlocks(), payload.requestedBlocks())
+                                .formatted(color),
+                        true);
+            });
+        });
+
         // --- KEYBINDINGS ---
 
         skillsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
@@ -205,6 +237,12 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_COMMA,
                 KEYBIND_CATEGORY));
 
+        ultmineRadialMenuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.murilloskills.ultmine_menu",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_APOSTROPHE,
+                KEYBIND_CATEGORY));
+
         // --- EVENTS ---
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -242,6 +280,18 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 // Toggle drops-to-inventory for Vein Miner
                 ClientPlayNetworking.send(new VeinMinerDropsToggleC2SPayload());
             }
+            boolean ultmineKeyPressed = isKeyBindingPhysicallyPressed(client, ultmineRadialMenuKey);
+            if (ultmineKeyPressed && !ultmineMenuKeyHeld) {
+                ultmineMenuKeyHeld = true;
+                if (client.currentScreen == null) {
+                    client.setScreen(new com.murilloskills.gui.UltmineRadialMenuScreen());
+                }
+            } else if (!ultmineKeyPressed && ultmineMenuKeyHeld) {
+                ultmineMenuKeyHeld = false;
+                if (client.currentScreen instanceof com.murilloskills.gui.UltmineRadialMenuScreen radialScreen) {
+                    radialScreen.releaseAndClose();
+                }
+            }
 
             // Vein Miner - detect key press and release (hold to activate)
             boolean keyPressed = veinMinerToggleKey.isPressed();
@@ -249,14 +299,39 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 veinMinerKeyHeld = keyPressed;
                 ClientPlayNetworking.send(new VeinMinerToggleC2SPayload(keyPressed));
             }
+
+            if (veinMinerKeyHeld && SkillConfig.isUltmineEnabled()) {
+                HitResult hitResult = client.crosshairTarget;
+                if (hitResult instanceof BlockHitResult blockHit) {
+                    int interval = SkillConfig.getUltminePreviewRequestIntervalTicks();
+                    if (client.world != null && client.world.getTime() % interval == 0) {
+                        ClientPlayNetworking.send(
+                                new UltmineRequestC2SPayload(blockHit.getBlockPos(), blockHit.getSide()));
+                    }
+                } else {
+                    UltmineClientState.clearPreview();
+                }
+            } else {
+                UltmineClientState.clearPreview();
+            }
         });
 
         WorldRenderEvents.END_MAIN.register(OreHighlighter::render);
         WorldRenderEvents.END_MAIN.register(TreasureHighlighter::render);
         WorldRenderEvents.END_MAIN.register(VeinMinerPreview::render);
+        WorldRenderEvents.END_MAIN.register(UltminePreview::render);
 
         // HUD rendering for Area Planting indicator
         HudRenderCallback.EVENT.register(AreaPlantingHud::render);
         HudRenderCallback.EVENT.register((context, tickDelta) -> XpToastRenderer.render(context));
+    }
+
+    private static boolean isKeyBindingPhysicallyPressed(MinecraftClient client, KeyBinding keyBinding) {
+        InputUtil.Key boundKey = InputUtil.fromTranslationKey(keyBinding.getBoundKeyTranslationKey());
+        long windowHandle = client.getWindow().getHandle();
+        if (boundKey.getCategory() == InputUtil.Type.MOUSE) {
+            return GLFW.glfwGetMouseButton(windowHandle, boundKey.getCode()) == GLFW.GLFW_PRESS;
+        }
+        return InputUtil.isKeyPressed(client.getWindow(), boundKey.getCode());
     }
 }

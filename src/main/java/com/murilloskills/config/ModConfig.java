@@ -59,6 +59,7 @@ public class ModConfig {
 
         public ExplorerConfig explorer = new ExplorerConfig();
         public VeinMinerConfig veinMiner = new VeinMinerConfig();
+        public UltmineConfig ultmine = new UltmineConfig();
 
         // --- MILESTONES ---
         public MilestoneConfig milestones = new MilestoneConfig();
@@ -228,6 +229,37 @@ public class ModConfig {
     public static class VeinMinerConfig {
         public int maxBlocks = 64;
         public boolean dropsToInventory = true;
+    }
+
+    public static class UltmineConfig {
+        public boolean enabled = true;
+        public int maxBlocksPerUse = 500;
+        public int permissionLevel = 0;
+        public boolean requireMinerMaster = true;
+        public int cooldownTicks = 0;
+        public int lineLengthDefault = 5;
+        public int stairsDepthDefault = 5;
+        public int previewRequestIntervalTicks = 4;
+        public int xpCostPerUse = 0;
+        public java.util.List<String> blockWhitelist = new java.util.ArrayList<>();
+        public java.util.List<String> blockBlacklist = new java.util.ArrayList<>(java.util.List.of(
+                "minecraft:bedrock",
+                "minecraft:end_portal_frame",
+                "minecraft:barrier",
+                "minecraft:command_block",
+                "minecraft:chain_command_block",
+                "minecraft:repeating_command_block",
+                "minecraft:structure_block",
+                "minecraft:jigsaw"));
+        public UltmineShapeCosts costs = new UltmineShapeCosts();
+    }
+
+    public static class UltmineShapeCosts {
+        public int shape3x3 = 5;
+        public int shape2x1 = 2;
+        public int lineCostPerBlock = 1;
+        public int stairs = 10;
+        public int square20x20d1 = 50;
     }
 
     public static class MilestoneConfig {

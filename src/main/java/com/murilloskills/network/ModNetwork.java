@@ -21,6 +21,8 @@ public class ModNetwork {
         PayloadTypeRegistry.playS2C().register(AreaPlantingSyncS2CPayload.ID, AreaPlantingSyncS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(XpGainS2CPayload.ID, XpGainS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(DailyChallengesSyncS2CPayload.ID, DailyChallengesSyncS2CPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(UltminePreviewS2CPayload.ID, UltminePreviewS2CPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(UltmineResultS2CPayload.ID, UltmineResultS2CPayload.CODEC);
     }
 
     private static void registerC2SPayloads() {
@@ -36,5 +38,7 @@ public class ModNetwork {
         PayloadTypeRegistry.playC2S().register(PrestigeC2SPayload.ID, PrestigeC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(FillModeCycleC2SPayload.ID, FillModeCycleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(VeinMinerDropsToggleC2SPayload.ID, VeinMinerDropsToggleC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(UltmineShapeSelectC2SPayload.ID, UltmineShapeSelectC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(UltmineRequestC2SPayload.ID, UltmineRequestC2SPayload.CODEC);
     }
 }

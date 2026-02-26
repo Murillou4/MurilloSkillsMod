@@ -4,6 +4,53 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.9] - 2026-02-26
+
+### ✨ Ultmine (novo modo de mineração em área)
+
+- **Menu radial de shapes**: nova UI no cliente para escolher formato de mineração (`'` por padrão), com seleção por mouse/scroll e confirmação ao soltar a tecla.
+- **Novos formatos suportados**: `3x3`, `2x1`, `Line`, `Stairs` e `Square 20x20 (d1)`.
+- **Preview validado no servidor**: o cliente envia requisições periódicas e renderiza apenas blocos aprovados pelo servidor.
+- **Execução segura no servidor**: mineração em área respeita permissões, whitelist/blacklist, ferramenta válida, proteção de bloco e limite máximo por uso.
+- **Feedback de resultado**: mensagens de sucesso/erro no action bar (cooldown, limite excedido, XP insuficiente, sem blocos válidos, etc).
+
+### ⚙️ Configuração
+
+Novo bloco no `murilloskills.json`:
+```json
+"ultmine": {
+  "enabled": true,
+  "maxBlocksPerUse": 500,
+  "permissionLevel": 0,
+  "requireMinerMaster": true,
+  "cooldownTicks": 0,
+  "lineLengthDefault": 5,
+  "stairsDepthDefault": 5,
+  "previewRequestIntervalTicks": 4,
+  "xpCostPerUse": 0,
+  "blockWhitelist": [],
+  "blockBlacklist": ["minecraft:bedrock", "..."],
+  "costs": {
+    "shape3x3": 5,
+    "shape2x1": 2,
+    "lineCostPerBlock": 1,
+    "stairs": 10,
+    "square20x20d1": 50
+  }
+}
+```
+
+### 🌐 Localização
+
+- Novas traduções de Ultmine adicionadas em `pt_br`, `en_us` e `es_es` (keybind, nomes de shape e mensagens de resultado).
+
+### 🧪 Testes
+
+- **JUnit 5 habilitado no Gradle** (`useJUnitPlatform`).
+- **Testes do `UltmineShapeCalculator` adicionados** cobrindo plano 3x3, linha diagonal, escadaria e quadrado 20x20.
+
+---
+
 ## [1.2.8] - 2026-02-20
 
 ### 🐛 Correções
