@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.13] - 2026-02-27
+
+### 🐛 Ultmine / Vein Miner
+
+- **Ultmine desbloqueado em servidores dedicados**: corrigido default de `requireMinerMaster` que vinha como `true`, bloqueando silenciosamente todos os jogadores que não tinham Miner nível 100. Agora o default é `false`, permitindo todos os jogadores usarem shapes e preview sem restrição de classe ou nível.
+
+> **Nota:** ao atualizar, delete o `config/murilloskills.json` do servidor para regenerar com o novo default.
+
+---
+
 ## [1.2.12] - 2026-02-26
 
 ### 🛠️ Ultmine / Vein Miner

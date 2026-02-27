@@ -235,7 +235,7 @@ public class ModConfig {
         public boolean enabled = true;
         public int maxBlocksPerUse = 500;
         public int permissionLevel = 0;
-        public boolean requireMinerMaster = true;
+        public boolean requireMinerMaster = false;
         public int cooldownTicks = 0;
         public int lineLengthDefault = 12;
         public int stairsDepthDefault = 16;
