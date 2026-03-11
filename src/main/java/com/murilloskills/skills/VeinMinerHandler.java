@@ -40,6 +40,9 @@ public final class VeinMinerHandler {
     private static final Map<UUID, Integer> ULTMINE_DEPTH = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> ULTMINE_LENGTH = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> ULTMINE_LAST_USE_TICK = new ConcurrentHashMap<>();
+    private static final Map<UUID, BlockPos> ULTMINE_LAST_TARGET_POS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Direction> ULTMINE_LAST_TARGET_FACE = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> ULTMINE_LAST_TARGET_TICK = new ConcurrentHashMap<>();
     private static final Map<UUID, List<PendingOriginCollection>> PENDING_ORIGIN_COLLECTIONS = new ConcurrentHashMap<>();
 
     /**
@@ -125,28 +128,34 @@ public final class VeinMinerHandler {
 
     public static int getUltmineDepth(ServerPlayerEntity player) {
         UltmineShape shape = getUltmineShape(player);
-        return switch (shape) {
-            case STAIRS -> Math.max(1,
-                    ULTMINE_DEPTH.getOrDefault(player.getUuid(), SkillConfig.getUltmineStairsDepthDefault()));
-            case SQUARE_20x20_D1, LINE, S_3x3, R_2x1, LEGACY -> Math.max(1,
-                    ULTMINE_DEPTH.getOrDefault(player.getUuid(), shape.getDefaultDepth()));
-        };
+        int defaultDepth = SkillConfig.getUltmineShapeDefaultDepth(shape);
+        int maxDepth = SkillConfig.getUltmineShapeMaxDepth(shape);
+        return Math.max(1, Math.min(ULTMINE_DEPTH.getOrDefault(player.getUuid(), defaultDepth), maxDepth));
     }
 
     public static int getUltmineLength(ServerPlayerEntity player) {
         UltmineShape shape = getUltmineShape(player);
-        return switch (shape) {
-            case LINE -> Math.max(1,
-                    ULTMINE_LENGTH.getOrDefault(player.getUuid(), SkillConfig.getUltmineLineLengthDefault()));
-            default -> Math.max(1, ULTMINE_LENGTH.getOrDefault(player.getUuid(), shape.getWidth()));
-        };
+        int defaultLength = SkillConfig.getUltmineShapeDefaultLength(shape);
+        int maxLength = SkillConfig.getUltmineShapeMaxLength(shape);
+        return Math.max(1, Math.min(ULTMINE_LENGTH.getOrDefault(player.getUuid(), defaultLength), maxLength));
     }
 
     public static void setUltmineSelection(ServerPlayerEntity player, UltmineShape shape, int depth, int length) {
-        UltmineShape safeShape = shape == null ? UltmineShape.S_3x3 : shape;
-        ULTMINE_SHAPE.put(player.getUuid(), safeShape);
-        ULTMINE_DEPTH.put(player.getUuid(), Math.max(1, depth));
-        ULTMINE_LENGTH.put(player.getUuid(), Math.max(1, length));
+        UltmineSelection normalized = normalizeSelection(shape, depth, length);
+        ULTMINE_SHAPE.put(player.getUuid(), normalized.shape());
+        ULTMINE_DEPTH.put(player.getUuid(), normalized.depth());
+        ULTMINE_LENGTH.put(player.getUuid(), normalized.length());
+    }
+
+    public static void registerUltmineTarget(ServerPlayerEntity player, BlockPos targetPos, Direction face, long worldTime) {
+        if (targetPos == null || face == null) {
+            return;
+        }
+
+        UUID uuid = player.getUuid();
+        ULTMINE_LAST_TARGET_POS.put(uuid, targetPos.toImmutable());
+        ULTMINE_LAST_TARGET_FACE.put(uuid, face);
+        ULTMINE_LAST_TARGET_TICK.put(uuid, worldTime);
     }
 
     /**
@@ -159,6 +168,9 @@ public final class VeinMinerHandler {
         ULTMINE_DEPTH.remove(playerUuid);
         ULTMINE_LENGTH.remove(playerUuid);
         ULTMINE_LAST_USE_TICK.remove(playerUuid);
+        ULTMINE_LAST_TARGET_POS.remove(playerUuid);
+        ULTMINE_LAST_TARGET_FACE.remove(playerUuid);
+        ULTMINE_LAST_TARGET_TICK.remove(playerUuid);
         PENDING_ORIGIN_COLLECTIONS.remove(playerUuid);
     }
 
@@ -213,7 +225,7 @@ public final class VeinMinerHandler {
         ACTIVE_PLAYERS.add(player.getUuid());
         try {
             if (shouldUseUltmine(player)) {
-                Direction direction = resolveMiningDirection(player);
+                Direction direction = resolveMiningDirection(player, origin, world.getTime());
                 executeUltmine(player, world, origin, originState, getUltmineShape(player), getUltmineDepth(player),
                         getUltmineLength(player), direction, true);
             } else {
@@ -265,18 +277,20 @@ public final class VeinMinerHandler {
      * Always validated on server to prevent client-side spoofing.
      */
     public static List<BlockPos> getValidatedUltminePreview(ServerPlayerEntity player, World world, BlockPos origin) {
+        return getValidatedUltminePreview(player, world, origin, resolveMiningDirection(player));
+    }
+
+    public static List<BlockPos> getValidatedUltminePreview(ServerPlayerEntity player, World world, BlockPos origin,
+            Direction direction) {
         if (!shouldUseUltmine(player)) {
             return List.of();
         }
 
-        UltmineShape shape = getUltmineShape(player);
-        int depth = getUltmineDepth(player);
-        int length = getUltmineLength(player);
+        UltmineSelection selection = getCurrentSelection(player);
         int maxBlocks = SkillConfig.getUltmineMaxBlocksPerUse();
-        Direction previewDirection = resolveMiningDirection(player);
 
-        List<BlockPos> raw = getRawTargetsForShape(player, world, origin, world.getBlockState(origin), shape, depth, length,
-                previewDirection);
+        List<BlockPos> raw = getRawTargetsForShape(player, world, origin, world.getBlockState(origin), selection.shape(),
+                selection.depth(), selection.length(), direction);
         if (raw.size() > maxBlocks) {
             return List.of();
         }
@@ -341,7 +355,9 @@ public final class VeinMinerHandler {
             }
         }
 
-        List<BlockPos> rawTargets = getRawTargetsForShape(player, world, origin, originState, shape, depth, length, dir);
+        UltmineSelection selection = normalizeSelection(shape, depth, length);
+        List<BlockPos> rawTargets = getRawTargetsForShape(player, world, origin, originState, selection.shape(),
+                selection.depth(), selection.length(), dir);
         int requested = rawTargets.size();
         int maxBlocks = SkillConfig.getUltmineMaxBlocksPerUse();
         if (requested > maxBlocks) {
@@ -350,7 +366,8 @@ public final class VeinMinerHandler {
             return;
         }
 
-        int xpCost = SkillConfig.getUltmineXpCostPerUse() + SkillConfig.getUltmineShapeCost(shape, length);
+        int xpCost = SkillConfig.getUltmineXpCostPerUse()
+                + SkillConfig.getUltmineShapeCost(selection.shape(), selection.length());
         if (!player.isCreative() && xpCost > 0 && player.experienceLevel < xpCost) {
             sendUltmineResult(player, false, 0, xpCost, "murilloskills.ultmine.result.not_enough_xp", sendResultPacket);
             return;
@@ -366,6 +383,9 @@ public final class VeinMinerHandler {
 
         for (BlockPos pos : new LinkedHashSet<>(rawTargets)) {
             if (minedBlocks >= maxBlocks) {
+                break;
+            }
+            if (tool.isEmpty()) {
                 break;
             }
 
@@ -415,13 +435,14 @@ public final class VeinMinerHandler {
 
     private static List<BlockPos> getRawTargetsForShape(ServerPlayerEntity player, World world, BlockPos origin,
             BlockState originState, UltmineShape shape, int depth, int length, Direction dir) {
-        if (shape == UltmineShape.LEGACY) {
+        UltmineSelection selection = normalizeSelection(shape, depth, length);
+        if (selection.shape() == UltmineShape.LEGACY) {
             int maxLegacyBlocks = getLegacyUltmineLimit();
             Set<BlockPos> connected = collectConnectedBlocks(world, origin, originState, maxLegacyBlocks);
             connected.add(origin.toImmutable());
             return new ArrayList<>(connected);
         }
-        return getShapeBlocks(player, origin, shape, depth, length, dir);
+        return getShapeBlocks(player, origin, selection.shape(), selection.depth(), selection.length(), dir);
     }
 
     private static int getLegacyUltmineLimit() {
@@ -448,6 +469,19 @@ public final class VeinMinerHandler {
             return Direction.UP;
         }
         return player.getHorizontalFacing();
+    }
+
+    private static Direction resolveMiningDirection(ServerPlayerEntity player, BlockPos origin, long worldTime) {
+        UUID uuid = player.getUuid();
+        BlockPos lastTarget = ULTMINE_LAST_TARGET_POS.get(uuid);
+        Direction lastFace = ULTMINE_LAST_TARGET_FACE.get(uuid);
+        long lastTargetTick = ULTMINE_LAST_TARGET_TICK.getOrDefault(uuid, Long.MIN_VALUE);
+
+        if (lastTarget != null && lastFace != null && lastTarget.equals(origin) && (worldTime - lastTargetTick) <= 10) {
+            return lastFace;
+        }
+
+        return resolveMiningDirection(player);
     }
 
     private static boolean shouldUseUltmine(ServerPlayerEntity player) {
@@ -490,6 +524,9 @@ public final class VeinMinerHandler {
     private static boolean canBreakWith(ItemStack tool, BlockState state, PlayerEntity player) {
         if (player.isCreative()) {
             return true;
+        }
+        if (tool.isEmpty()) {
+            return false;
         }
 
         if (state.isToolRequired()) {
@@ -606,6 +643,28 @@ public final class VeinMinerHandler {
         return ACTIVE_PLAYERS.contains(player.getUuid());
     }
 
+    private static UltmineSelection getCurrentSelection(ServerPlayerEntity player) {
+        return normalizeSelection(getUltmineShape(player), getUltmineDepth(player), getUltmineLength(player));
+    }
+
+    private static UltmineSelection normalizeSelection(UltmineShape shape, int depth, int length) {
+        UltmineShape safeShape = shape == null ? UltmineShape.S_3x3 : shape;
+        int safeDepth = Math.max(1, Math.min(depth, SkillConfig.getUltmineShapeMaxDepth(safeShape)));
+        int safeLength = Math.max(1, Math.min(length, SkillConfig.getUltmineShapeMaxLength(safeShape)));
+
+        if (depth <= 0) {
+            safeDepth = SkillConfig.getUltmineShapeDefaultDepth(safeShape);
+        }
+        if (length <= 0) {
+            safeLength = SkillConfig.getUltmineShapeDefaultLength(safeShape);
+        }
+
+        return new UltmineSelection(safeShape, safeDepth, safeLength);
+    }
+
     private record PendingOriginCollection(BlockPos pos, long expireTick) {
+    }
+
+    private record UltmineSelection(UltmineShape shape, int depth, int length) {
     }
 }

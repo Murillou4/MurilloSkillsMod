@@ -1,12 +1,22 @@
 package com.murilloskills.gui.data;
 
+import com.murilloskills.impl.ArcherSkill;
+import com.murilloskills.impl.BuilderSkill;
+import com.murilloskills.impl.ExplorerSkill;
+import com.murilloskills.impl.FarmerSkill;
+import com.murilloskills.impl.FisherSkill;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.SkillConfig;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
-import java.util.List;
-import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Central repository for UI-related skill data.
@@ -15,13 +25,14 @@ import java.util.HashMap;
  */
 public final class SkillUiData {
 
-        // === RECORDS ===
-
         public record PerkInfo(int level, String nameKey, String descKey) {
         }
 
         public record SynergyInfo(String id, MurilloSkillsList skill1, MurilloSkillsList skill2, int bonus,
                         String typeKey) {
+        }
+
+        public record GuideEntry(int level, String text, boolean milestone) {
         }
 
         // === DATA CONSTANTS ===
@@ -214,4 +225,478 @@ public final class SkillUiData {
                         case EXPLORER -> new ItemStack(Items.COMPASS);
                 };
         }
+
+        public static Text getSkillDescription(MurilloSkillsList skill) {
+                return Text.translatable("murilloskills.skill.desc." + skill.name().toLowerCase());
+        }
+
+        public static Text getXpGainDescription(MurilloSkillsList skill) {
+                return Text.translatable("murilloskills.tooltip.xp_gain." + skill.name().toLowerCase());
+        }
+
+        public static Text getSpecialAbilityDescription(MurilloSkillsList skill) {
+                return Text.translatable("murilloskills.ability.desc." + skill.name().toLowerCase());
+        }
+
+        public static String getWhyChooseDescription(MurilloSkillsList skill) {
+                return Text.translatable("murilloskills.info.guide.choose." + skill.name().toLowerCase(Locale.ROOT))
+                                .getString();
+        }
+
+        public static String getMasterAbilityDetails(MurilloSkillsList skill) {
+                String base = getSpecialAbilityDescription(skill).getString();
+                return switch (skill) {
+                        case MINER -> base + " Cooldown " + formatSeconds(SkillConfig.getMinerAbilityCooldownSeconds())
+                                        + ", raio " + SkillConfig.getMinerAbilityRadius() + " blocos, leitura por "
+                                        + SkillConfig.getMinerAbilityDurationSeconds() + "s.";
+                        case WARRIOR -> base + " Cooldown " + formatSeconds(SkillConfig.getWarriorAbilityCooldownSeconds())
+                                        + ", dura " + SkillConfig.getWarriorBerserkDurationSeconds() + "s, Strength "
+                                        + (SkillConfig.getWarriorBerserkStrengthAmplifier() + 1)
+                                        + ", Resistance "
+                                        + (SkillConfig.getWarriorBerserkResistanceAmplifier() + 1)
+                                        + " e lifesteal "
+                                        + formatPercent(SkillConfig.getWarriorBerserkLifesteal()) + ".";
+                        case FARMER -> base + " Cooldown " + formatSeconds(SkillConfig.getFarmerAbilityCooldownSeconds())
+                                        + ", dura " + SkillConfig.getFarmerAbilityDurationSeconds() + "s, raio "
+                                        + SkillConfig.getFarmerAbilityRadius() + " blocos e colheita tripla.";
+                        case ARCHER -> base + " Cooldown " + formatSeconds(SkillConfig.getArcherAbilityCooldownSeconds())
+                                        + ", dura " + SkillConfig.getArcherMasterRangerDurationSeconds()
+                                        + "s, headshot +"
+                                        + formatPercent(SkillConfig.getArcherHeadshotDamageBonus())
+                                        + " e homing ativo.";
+                        case FISHER -> base + " Cooldown " + formatSeconds(SkillConfig.getFisherAbilityCooldownSeconds())
+                                        + ", dura " + SkillConfig.getFisherAbilityDurationSeconds() + "s, pesca +"
+                                        + formatPercent(SkillConfig.getFisherRainDanceSpeedBonus())
+                                        + ", tesouro +"
+                                        + formatPercent(SkillConfig.getFisherRainDanceTreasureBonus())
+                                        + " e bundle x" + SkillConfig.getFisherRainDanceBundleMultiplier() + ".";
+                        case BLACKSMITH -> base + " Cooldown "
+                                        + formatSeconds(SkillConfig.getBlacksmithAbilityCooldownSeconds())
+                                        + ", dura " + SkillConfig.getBlacksmithAbilityDurationSeconds()
+                                        + "s, resistência extra +"
+                                        + formatPercent(SkillConfig.getBlacksmithTitaniumResistance())
+                                        + " e regeneração "
+                                        + formatDecimal(SkillConfig.getBlacksmithTitaniumRegen()) + " HP/s.";
+                        case BUILDER -> base + " Cooldown " + formatSeconds(SkillConfig.getBuilderAbilityCooldownSeconds())
+                                        + ", dura " + SkillConfig.getBuilderAbilityDurationSeconds()
+                                        + "s, até " + SkillConfig.getBuilderBrushMaxDistance()
+                                        + " blocos entre pontos e modos cubo/esfera/cilindro/pirâmide/parede.";
+                        case EXPLORER -> base + " Cooldown 5m, dura 60s e revela tesouros em raio de "
+                                        + SkillConfig.getExplorerTreasureRadius() + " blocos.";
+                };
+        }
+
+        public static List<GuideEntry> getGuideTimeline(MurilloSkillsList skill) {
+                List<GuideEntry> entries = new ArrayList<>();
+                int maxLevel = SkillConfig.getMaxLevel();
+                for (int level = 1; level <= maxLevel; level++) {
+                        entries.add(buildGuideEntry(skill, level));
+                }
+                return entries;
+        }
+
+        
+        private static GuideEntry buildGuideEntry(MurilloSkillsList skill, int level) {
+                return switch (skill) {
+                        case MINER -> buildMinerEntry(level);
+                        case WARRIOR -> buildWarriorEntry(level);
+                        case FARMER -> buildFarmerEntry(level);
+                        case ARCHER -> buildArcherEntry(level);
+                        case FISHER -> buildFisherEntry(level);
+                        case BLACKSMITH -> buildBlacksmithEntry(level);
+                        case BUILDER -> buildBuilderEntry(level);
+                        case EXPLORER -> buildExplorerEntry(level);
+                };
+        }
+
+        private static GuideEntry buildMinerEntry(int level) {
+                List<String> segments = new ArrayList<>();
+                segments.add("+" + formatPercent(level * SkillConfig.getMinerSpeedPerLevel()) + "% vel. mineração");
+                segments.add("+" + formatDecimal(level * SkillConfig.getMinerFortunePerLevel()) + " fortuna");
+                if (level >= SkillConfig.getMinerNightVisionLevel()) {
+                        segments.add("Visão Noturna em cavernas");
+                }
+                if (level >= SkillConfig.getMinerDurabilityLevel()) {
+                        segments.add(formatPercent(SkillConfig.getMinerDurabilityChance())
+                                        + "% de chance de não gastar durabilidade");
+                }
+                if (level >= SkillConfig.getMinerRadarLevel()) {
+                        segments.add("Radar de minérios");
+                }
+                if (level >= SkillConfig.getMinerMasterLevel()) {
+                        segments.add("Master Miner liberado");
+                }
+                return new GuideEntry(level, formatLevelLine(level, segments), isMilestone(MurilloSkillsList.MINER, level));
+        }
+
+        private static GuideEntry buildWarriorEntry(int level) {
+                List<String> segments = new ArrayList<>();
+                segments.add("+" + formatDecimal(level * SkillConfig.getWarriorDamagePerLevel()) + " dano melee");
+                int hearts = (level >= 10 ? 1 : 0) + (level >= 50 ? 1 : 0) + (level >= 100 ? 3 : 0);
+                if (hearts > 0) {
+                        segments.add("+" + hearts + " corações");
+                }
+                if (level >= SkillConfig.getResistanceUnlockLevel()) {
+                        segments.add("-" + formatPercent(1.0f - SkillConfig.getResistanceReduction())
+                                        + "% dano recebido");
+                }
+                if (level >= SkillConfig.getLifestealUnlockLevel()) {
+                        segments.add("vampirismo " + formatPercent(SkillConfig.getLifestealPercentage()) + "%");
+                }
+                if (level >= SkillConfig.getWarriorMasterLevel()) {
+                        segments.add("Berserk liberado");
+                }
+                return new GuideEntry(level, formatLevelLine(level, segments), isMilestone(MurilloSkillsList.WARRIOR, level));
+        }
+
+        private static GuideEntry buildFarmerEntry(int level) {
+                List<String> segments = new ArrayList<>();
+                segments.add("colheita dupla " + formatPercent(FarmerSkill.getDoubleHarvestChance(level, 0)) + "%");
+                segments.add("cultivo dourado " + formatPercent(FarmerSkill.getGoldenCropChance(level, 0)) + "%");
+                if (level >= SkillConfig.getFarmerGreenThumbLevel()) {
+                        segments.add("+5% colheita e 10% semente salva");
+                }
+                if (level >= SkillConfig.getFarmerFertileGroundLevel()) {
+                        segments.add("+25% crescimento e plantio 3x3");
+                }
+                if (level >= SkillConfig.getFarmerNutrientCycleLevel()) {
+                        segments.add("2x Bone Meal e +5% sementes");
+                }
+                if (level >= SkillConfig.getFarmerAbundantHarvestLevel()) {
+                        segments.add("+15% colheita e 10% adjacente");
+                }
+                if (level >= SkillConfig.getFarmerMasterLevel()) {
+                        segments.add("Harvest Moon liberado");
+                }
+                return new GuideEntry(level, formatLevelLine(level, segments), isMilestone(MurilloSkillsList.FARMER, level));
+        }
+
+        private static GuideEntry buildArcherEntry(int level) {
+                List<String> segments = new ArrayList<>();
+                segments.add("+" + formatPercent(ArcherSkill.getRangedDamageMultiplier(level, 0) - 1.0)
+                                + "% dano à distância");
+                if (level >= SkillConfig.getArcherFastArrowsLevel()) {
+                        segments.add("flechas +"
+                                        + formatPercent(SkillConfig.getArcherArrowSpeedMultiplier() - 1.0f)
+                                        + "% velocidade");
+                }
+                if (level >= SkillConfig.getArcherBonusDamageLevel()) {
+                        segments.add("bônus extra +" + formatPercent(SkillConfig.getArcherBonusDamageAmount()) + "%");
+                }
+                if (level >= SkillConfig.getArcherPenetrationLevel()) {
+                        double scale = (double) (level - SkillConfig.getArcherPenetrationLevel())
+                                        / Math.max(1, SkillConfig.getMaxLevel() - SkillConfig.getArcherPenetrationLevel());
+                        double penetration = SkillConfig.getArcherArmorPenetrationPercent() * (0.5 + (0.5 * scale));
+                        segments.add("penetração e armor pen +" + formatPercent(penetration) + "%");
+                }
+                if (level >= SkillConfig.getArcherStableShotLevel()) {
+                        segments.add("-" + formatPercent(SkillConfig.getArcherSpreadReduction()) + "% dispersão");
+                }
+                if (level >= SkillConfig.getArcherMasterLevel()) {
+                        segments.add("Master Ranger liberado");
+                }
+                return new GuideEntry(level, formatLevelLine(level, segments), isMilestone(MurilloSkillsList.ARCHER, level));
+        }
+        public static List<Text> getMaxPassiveGuide(MurilloSkillsList skill) {
+                List<Text> lines = new ArrayList<>();
+                float prestigeMultiplier = 1.0f;
+                int level = com.murilloskills.utils.SkillConfig.getMaxLevel();
+
+                switch (skill) {
+                        case MINER -> {
+                                int speed = (int) (level * com.murilloskills.utils.SkillConfig.getMinerSpeedPerLevel()
+                                                * 100 * prestigeMultiplier);
+                                int fortune = (int) (level * com.murilloskills.utils.SkillConfig.getMinerFortunePerLevel()
+                                                * prestigeMultiplier);
+                                lines.add(Text.translatable("murilloskills.passive.miner.mining_speed", speed)
+                                                .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.miner.extra_fortune", fortune)
+                                                .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.miner.night_vision")
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.miner.durability")
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.miner.ore_radar")
+                                                .formatted(Formatting.AQUA));
+                        }
+                        case WARRIOR -> {
+                                double damage = level * com.murilloskills.utils.SkillConfig.getWarriorDamagePerLevel()
+                                                * prestigeMultiplier;
+                                lines.add(Text.translatable("murilloskills.passive.warrior.base_damage",
+                                                formatDecimal(damage)).formatted(Formatting.RED));
+                                lines.add(Text.translatable("murilloskills.passive.warrior.max_health", 5)
+                                                .formatted(Formatting.RED));
+                                lines.add(Text.translatable("murilloskills.passive.warrior.iron_skin")
+                                                .formatted(Formatting.GOLD));
+                                lines.add(Text.translatable("murilloskills.passive.warrior.vampirism")
+                                                .formatted(Formatting.DARK_PURPLE));
+                        }
+                        case FARMER -> {
+                                int doubleChance = (int) (level
+                                                * com.murilloskills.utils.SkillConfig.getFarmerDoubleHarvestPerLevel()
+                                                * 100 * prestigeMultiplier);
+                                int goldenChance = (int) (level
+                                                * com.murilloskills.utils.SkillConfig.getFarmerGoldenCropPerLevel()
+                                                * 100 * prestigeMultiplier);
+                                lines.add(Text.translatable("murilloskills.passive.farmer.double_harvest", doubleChance)
+                                                .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.farmer.golden_crop", goldenChance)
+                                                .formatted(Formatting.GOLD));
+                                lines.add(Text.translatable("murilloskills.passive.farmer.green_thumb")
+                                                .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.farmer.fertile_ground")
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.farmer.nutrient_cycle")
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.farmer.abundant_harvest")
+                                                .formatted(Formatting.GOLD));
+                        }
+                        case ARCHER -> {
+                                int arrowDamage = (int) (level * com.murilloskills.utils.SkillConfig.getArcherDamagePerLevel()
+                                                * 100 * prestigeMultiplier);
+                                int arrowSpeed = (int) ((com.murilloskills.utils.SkillConfig.getArcherArrowSpeedMultiplier()
+                                                - 1.0f) * 100);
+                                int bonusDamage = (int) (com.murilloskills.utils.SkillConfig.getArcherBonusDamageAmount()
+                                                * 100);
+                                int precision = (int) (com.murilloskills.utils.SkillConfig.getArcherSpreadReduction()
+                                                * 100);
+                                lines.add(Text.translatable("murilloskills.passive.archer.arrow_damage", arrowDamage)
+                                                .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.archer.arrow_speed", arrowSpeed)
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.archer.bonus_damage", bonusDamage)
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.archer.penetration")
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.archer.precision", precision)
+                                                .formatted(Formatting.GOLD));
+                                lines.add(Text.translatable("murilloskills.passive.archer.master")
+                                                .formatted(Formatting.GOLD));
+                        }
+                        case FISHER -> {
+                                int fishingSpeed = (int) (level * com.murilloskills.utils.SkillConfig.getFisherSpeedPerLevel()
+                                                * 100 * prestigeMultiplier);
+                                lines.add(Text.translatable("murilloskills.passive.fisher.fishing_speed", fishingSpeed)
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.fisher.wait_reduction")
+                                                .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.fisher.treasure_chance")
+                                                .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.fisher.dolphins_grace")
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.fisher.luck_of_sea")
+                                                .formatted(Formatting.AQUA));
+                        }
+                        case BLACKSMITH -> {
+                                int resistance = (int) (level
+                                                * com.murilloskills.utils.SkillConfig.getBlacksmithResistancePerLevel()
+                                                * 100 * prestigeMultiplier);
+                                lines.add(Text.translatable("murilloskills.passive.blacksmith.physical_resistance",
+                                                resistance).formatted(Formatting.GOLD));
+                                lines.add(Text.translatable("murilloskills.passive.blacksmith.iron_skin")
+                                                .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.blacksmith.efficient_anvil")
+                                                .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.blacksmith.forged_resilience")
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.blacksmith.thorns_master")
+                                                .formatted(Formatting.AQUA));
+                        }
+                        case BUILDER -> {
+                                double reach = com.murilloskills.impl.BuilderSkill.getReachBonus(level, 0);
+                                lines.add(Text.translatable("murilloskills.passive.builder.extra_reach",
+                                                formatDecimal(reach)).formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.builder.extended_reach")
+                                                .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.builder.efficient_crafting")
+                                                .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.builder.safe_landing")
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.builder.scaffold_master")
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.builder.master_reach")
+                                                .formatted(Formatting.GOLD));
+                        }
+                        case EXPLORER -> {
+                                int speed = (int) (level * com.murilloskills.utils.SkillConfig.getExplorerSpeedPerLevel()
+                                                * 100 * prestigeMultiplier);
+                                int luck = level / com.murilloskills.utils.SkillConfig.getExplorerLuckInterval();
+                                lines.add(Text.translatable("murilloskills.passive.explorer.speed", speed)
+                                                .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.explorer.luck", luck)
+                                                .formatted(Formatting.GOLD));
+                                lines.add(Text.translatable("murilloskills.passive.explorer.step_assist")
+                                                .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.explorer.aquatic")
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.explorer.night_vision")
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.explorer.feather_feet")
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.explorer.nether_walker")
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.explorer.sixth_sense")
+                                                .formatted(Formatting.GOLD));
+                        }
+                }
+
+                return lines;
+        }
+
+        
+        private static GuideEntry buildFisherEntry(int level) {
+                List<String> segments = new ArrayList<>();
+                segments.add("+" + formatPercent(FisherSkill.getFishingSpeedBonus(level, 0)) + "% vel. pesca");
+                segments.add("bundle épico " + formatPercent(FisherSkill.getEpicBundleChance(level, 0)) + "%");
+                if (level >= SkillConfig.getFisherWaitReductionLevel()) {
+                        segments.add("-" + formatPercent(SkillConfig.getFisherWaitReduction()) + "% espera");
+                }
+                if (level >= SkillConfig.getFisherTreasureBonusLevel()) {
+                        segments.add("+" + formatPercent(SkillConfig.getFisherTreasureBonus())
+                                        + "% tesouro e +" + formatPercent(SkillConfig.getFisherXpBonus()) + "% XP");
+                }
+                if (level >= SkillConfig.getFisherDolphinGraceLevel()) {
+                        segments.add("Dolphin's Grace");
+                }
+                if (level >= SkillConfig.getFisherLuckSeaLevel()) {
+                        segments.add("Luck of the Sea I");
+                }
+                if (level >= SkillConfig.getFisherMasterLevel()) {
+                        segments.add("Rain Dance liberado");
+                }
+                return new GuideEntry(level, formatLevelLine(level, segments), isMilestone(MurilloSkillsList.FISHER, level));
+        }
+
+        private static GuideEntry buildBlacksmithEntry(int level) {
+                List<String> segments = new ArrayList<>();
+                segments.add("-" + formatPercent(Math.min(level * 0.005f, 0.55f)) + "% dano físico");
+                if (level >= SkillConfig.getBlacksmithIronSkinLevel()) {
+                        segments.add("+" + formatPercent(SkillConfig.getBlacksmithIronSkinBonus()) + "% físico");
+                }
+                if (level >= SkillConfig.getBlacksmithEfficientAnvilLevel()) {
+                        segments.add("-" + formatPercent(SkillConfig.getBlacksmithAnvilXpDiscount())
+                                        + "% XP bigorna e "
+                                        + formatPercent(SkillConfig.getBlacksmithAnvilMaterialSave())
+                                        + "% material salvo");
+                }
+                if (level >= SkillConfig.getBlacksmithForgedResilienceLevel()) {
+                        segments.add("+" + formatPercent(SkillConfig.getBlacksmithFireExplosionResist())
+                                        + "% fogo/explosão");
+                }
+                if (level >= SkillConfig.getBlacksmithThornsMasterLevel()) {
+                        segments.add(formatPercent(SkillConfig.getBlacksmithThornsChance())
+                                        + "% refletir "
+                                        + formatPercent(SkillConfig.getBlacksmithThornsReflect())
+                                        + "% dano e -"
+                                        + formatPercent(SkillConfig.getBlacksmithKnockbackReduction())
+                                        + "% knockback");
+                }
+                if (level >= SkillConfig.getBlacksmithMasterLevel()) {
+                        segments.add("Titanium Aura liberado");
+                }
+                return new GuideEntry(level, formatLevelLine(level, segments), isMilestone(MurilloSkillsList.BLACKSMITH, level));
+        }
+
+        private static GuideEntry buildBuilderEntry(int level) {
+                List<String> segments = new ArrayList<>();
+                segments.add("+" + formatDecimal(BuilderSkill.getReachBonus(level, 0)) + " blocos alcance");
+                if (level >= SkillConfig.getBuilderExtendedReachLevel()) {
+                        segments.add("Extended Reach ativo");
+                }
+                if (level >= SkillConfig.getBuilderEfficientCraftingLevel()) {
+                        segments.add(formatPercent(SkillConfig.getBuilderDecorativeEconomy()) + "% economia decorativa");
+                }
+                if (level >= SkillConfig.getBuilderSafeLandingLevel()) {
+                        segments.add("-" + formatPercent(SkillConfig.getBuilderFallDamageReduction()) + "% queda");
+                }
+                if (level >= SkillConfig.getBuilderScaffoldMasterLevel()) {
+                        segments.add("scaffold x" + formatDecimal(SkillConfig.getBuilderScaffoldSpeedMultiplier())
+                                        + " e " + formatPercent(SkillConfig.getBuilderStructuralEconomy())
+                                        + "% economia estrutural");
+                }
+                if (level >= SkillConfig.getBuilderMasterReachLevel()) {
+                        segments.add("Master Reach ativo");
+                }
+                if (level >= SkillConfig.getBuilderMasterLevel()) {
+                        segments.add("Creative Brush liberado");
+                }
+                return new GuideEntry(level, formatLevelLine(level, segments), isMilestone(MurilloSkillsList.BUILDER, level));
+        }
+
+        private static GuideEntry buildExplorerEntry(int level) {
+                List<String> segments = new ArrayList<>();
+                segments.add("+" + formatPercent(level * SkillConfig.getExplorerSpeedPerLevel()) + "% movimento");
+                int luck = level / SkillConfig.getExplorerLuckInterval();
+                if (luck > 0) {
+                        segments.add("+" + luck + " Luck");
+                }
+                double hungerReduction = 1.0 - ExplorerSkill.getHungerReductionMultiplier(level);
+                if (hungerReduction > 0.0) {
+                        segments.add("-" + formatPercent(hungerReduction) + "% fome andando");
+                }
+                if (level >= SkillConfig.getExplorerStepAssistLevel()) {
+                        segments.add("Step Assist");
+                }
+                if (level >= SkillConfig.getExplorerAquaticLevel()) {
+                        segments.add("+" + formatPercent(SkillConfig.getExplorerBreathMultiplier() - 1.0f)
+                                        + "% fôlego e Aquatic");
+                }
+                if (level >= SkillConfig.getExplorerNightVisionLevel()) {
+                        segments.add("Visão Noturna toggleável");
+                }
+                if (level >= SkillConfig.getExplorerFeatherFeetLevel()) {
+                        segments.add("-" + formatPercent(SkillConfig.getExplorerFallDamageReduction()) + "% queda");
+                }
+                if (level >= SkillConfig.getExplorerNetherWalkerLevel()) {
+                        segments.add("Nether Walker");
+                }
+                if (level >= SkillConfig.getExplorerMasterLevel()) {
+                        segments.add("Sexto Sentido liberado");
+                }
+                return new GuideEntry(level, formatLevelLine(level, segments), isMilestone(MurilloSkillsList.EXPLORER, level));
+        }
+
+        private static boolean isMilestone(MurilloSkillsList skill, int level) {
+                if (level == 1 || level == SkillConfig.getMaxLevel()) {
+                        return true;
+                }
+                List<PerkInfo> perks = SKILL_PERKS.get(skill);
+                if (perks == null) {
+                        return false;
+                }
+                for (PerkInfo perk : perks) {
+                        if (perk.level() == level) {
+                                return true;
+                        }
+                }
+                return false;
+        }
+
+        private static String formatLevelLine(int level, List<String> segments) {
+                return Text.translatable("murilloskills.gui.level_prefix").getString() + " " + level + ": "
+                                + String.join(", ", segments);
+        }
+
+        private static String formatPercent(double value) {
+                return formatDecimal(value * 100.0);
+        }
+
+        private static String formatSeconds(int seconds) {
+                if (seconds >= 60 && seconds % 60 == 0) {
+                        return (seconds / 60) + "m";
+                }
+                if (seconds > 60) {
+                        return (seconds / 60) + "m " + (seconds % 60) + "s";
+                }
+                return seconds + "s";
+        }
+        private static String formatDecimal(double value) {
+                return String.format(Locale.ROOT, "%.1f", value);
+        }
 }
+
+
+
+
+
+

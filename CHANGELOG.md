@@ -4,6 +4,17 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.14] - 2026-03-11
+
+### ✨ Guide / Tooltips / Builder / Ultmine
+
+- **GUIDE expandida**: a antiga aba de perks virou uma GUIDE completa com visão geral da skill, motivo para escolher, como upar, habilidade mestre, snapshot do level 100 e progressão detalhada do nível 1 ao 100 para cada skill.
+- **Tooltips com valores finais reais**: ferramentas e armas agora mostram os atributos já somados com bônus de skill e encantamentos. O Arqueiro também passou a exibir dano estimado à distância e bônus aplicados.
+- **Exploit de XP do Builder corrigido**: XP de construção agora só é concedido após uma colocação de bloco realmente bem-sucedida, eliminando ganho indevido ao clicar com botão direito sem posicionar o bloco.
+- **Ultmine reforçado**: seleção, preview e execução ficaram mais robustos, com validações melhores e configuração por shape para profundidade/comprimento e comportamento padrão.
+- **Localização atualizada**: textos novos da GUIDE e dos tooltips adicionados em `pt_br`, `en_us` e `es_es`.
+
+---
 ## [1.2.13] - 2026-02-27
 
 ### 🐛 Ultmine / Vein Miner
@@ -246,3 +257,4 @@ O arquivo `config/murilloskills.json` é gerado automaticamente na primeira exec
 
 ### Resetar para Padrões
 Para restaurar os valores padrão, basta deletar o arquivo `murilloskills.json` e reiniciar o jogo.
+

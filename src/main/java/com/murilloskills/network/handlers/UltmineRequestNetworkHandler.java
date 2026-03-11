@@ -27,13 +27,19 @@ public final class UltmineRequestNetworkHandler {
                     return;
                 }
 
+                if (player.getEyePos().squaredDistanceTo(payload.targetPos().toCenterPos()) > 81.0) {
+                    ServerPlayNetworking.send(player, new UltminePreviewS2CPayload(java.util.List.of()));
+                    return;
+                }
+
                 var state = world.getBlockState(payload.targetPos());
                 if (state.isAir()) {
                     ServerPlayNetworking.send(player, new UltminePreviewS2CPayload(java.util.List.of()));
                     return;
                 }
 
-                var preview = VeinMinerHandler.getValidatedUltminePreview(player, world, payload.targetPos());
+                VeinMinerHandler.registerUltmineTarget(player, payload.targetPos(), payload.face(), world.getTime());
+                var preview = VeinMinerHandler.getValidatedUltminePreview(player, world, payload.targetPos(), payload.face());
                 ServerPlayNetworking.send(player, new UltminePreviewS2CPayload(preview));
             } catch (Exception e) {
                 LOGGER.error("Failed to process ultmine preview request", e);

@@ -13,8 +13,8 @@ import java.util.List;
  */
 public final class UltmineClientState {
     private static UltmineShape selectedShape = UltmineShape.S_3x3;
-    private static int depth = 1;
-    private static int length = SkillConfig.getUltmineLineLengthDefault();
+    private static int depth = SkillConfig.getUltmineShapeDefaultDepth(UltmineShape.S_3x3);
+    private static int length = SkillConfig.getUltmineShapeDefaultLength(UltmineShape.S_3x3);
     private static List<BlockPos> preview = List.of();
 
     private UltmineClientState() {
@@ -34,16 +34,13 @@ public final class UltmineClientState {
 
     public static void setSelection(UltmineShape shape, int newDepth, int newLength) {
         selectedShape = shape == null ? UltmineShape.S_3x3 : shape;
-        depth = Math.max(1, newDepth);
-        length = Math.max(1, newLength);
+        depth = Math.max(1, Math.min(newDepth, SkillConfig.getUltmineShapeMaxDepth(selectedShape)));
+        length = Math.max(1, Math.min(newLength, SkillConfig.getUltmineShapeMaxLength(selectedShape)));
     }
 
     public static void applyShapeDefaults(UltmineShape shape) {
-        int newDepth = switch (shape) {
-            case STAIRS -> SkillConfig.getUltmineStairsDepthDefault();
-            case SQUARE_20x20_D1, S_3x3, R_2x1, LEGACY, LINE -> shape.getDefaultDepth();
-        };
-        int newLength = shape == UltmineShape.LINE ? SkillConfig.getUltmineLineLengthDefault() : shape.getWidth();
+        int newDepth = SkillConfig.getUltmineShapeDefaultDepth(shape);
+        int newLength = SkillConfig.getUltmineShapeDefaultLength(shape);
         setSelection(shape, newDepth, newLength);
     }
 

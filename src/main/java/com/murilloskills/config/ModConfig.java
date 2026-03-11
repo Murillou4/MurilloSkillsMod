@@ -252,6 +252,12 @@ public class ModConfig {
                 "minecraft:structure_block",
                 "minecraft:jigsaw"));
         public UltmineShapeCosts costs = new UltmineShapeCosts();
+        public UltmineShapeSettings shape3x3 = new UltmineShapeSettings(1, 16, 3, 3);
+        public UltmineShapeSettings shape2x1 = new UltmineShapeSettings(1, 16, 2, 2);
+        public UltmineShapeSettings line = new UltmineShapeSettings(1, 1, 12, 128);
+        public UltmineShapeSettings stairs = new UltmineShapeSettings(16, 64, 1, 1);
+        public UltmineShapeSettings square20x20d1 = new UltmineShapeSettings(1, 4, 20, 20);
+        public UltmineShapeSettings legacy = new UltmineShapeSettings(1, 1, 1, 1);
     }
 
     public static class UltmineShapeCosts {
@@ -260,6 +266,23 @@ public class ModConfig {
         public int lineCostPerBlock = 1;
         public int stairs = 10;
         public int square20x20d1 = 50;
+    }
+
+    public static class UltmineShapeSettings {
+        public int defaultDepth = 1;
+        public int maxDepth = 1;
+        public int defaultLength = 1;
+        public int maxLength = 1;
+
+        public UltmineShapeSettings() {
+        }
+
+        public UltmineShapeSettings(int defaultDepth, int maxDepth, int defaultLength, int maxLength) {
+            this.defaultDepth = defaultDepth;
+            this.maxDepth = maxDepth;
+            this.defaultLength = defaultLength;
+            this.maxLength = maxLength;
+        }
     }
 
     public static class MilestoneConfig {

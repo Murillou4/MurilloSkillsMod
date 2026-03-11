@@ -150,14 +150,10 @@ public class ModInfoScreen extends Screen {
                 return 350;
         }
 
-        private int calculatePerksHeight() {
+                private int calculatePerksHeight() {
                 int height = 40;
                 for (MurilloSkillsList skill : MurilloSkillsList.values()) {
-                        height += 30;
-                        List<SkillUiData.PerkInfo> perks = SkillUiData.SKILL_PERKS.get(skill);
-                        if (perks != null)
-                                height += perks.size() * 22;
-                        height += 15;
+                        height += calculateGuideSkillHeight(skill) + 16;
                 }
                 return height;
         }
@@ -472,32 +468,16 @@ public class ModInfoScreen extends Screen {
                 }
         }
 
-        private void renderPerksTab(DrawContext context) {
+                private void renderPerksTab(DrawContext context) {
                 int y = contentY + SECTION_PADDING - scrollController.getScrollOffset();
                 int x = contentX + SECTION_PADDING;
 
                 renderSectionTitle(context, x, y, Text.translatable("murilloskills.info.perks.title").getString());
                 y += 28;
 
-                // All skills with perks
                 for (MurilloSkillsList skill : MurilloSkillsList.values()) {
-                        // Skill header card
-                        renderSkillPerkHeader(context, x, y, skill);
-                        y += 26;
-
-                        // Perks list
-                        List<SkillUiData.PerkInfo> perks = SkillUiData.SKILL_PERKS.get(skill);
-                        if (perks != null) {
-                                var stats = ClientSkillData.get(skill);
-                                int playerLevel = stats != null ? stats.level : 0;
-
-                                for (SkillUiData.PerkInfo perk : perks) {
-                                        boolean unlocked = playerLevel >= perk.level();
-                                        renderPerkItem(context, x + 12, y, perk, unlocked);
-                                        y += 20;
-                                }
-                        }
-                        y += 12;
+                        y = renderGuideSkillSection(context, x, y, skill);
+                        y += 16;
                 }
         }
 
@@ -766,6 +746,97 @@ public class ModInfoScreen extends Screen {
                                 unlocked ? PALETTE.textWhite() : PALETTE.textMuted(), false);
         }
 
+        
+        private int calculateGuideSkillHeight(MurilloSkillsList skill) {
+                int width = contentWidth - SECTION_PADDING * 2 - 36;
+                int height = 26;
+                height += calculateGuideParagraphHeight(Text.translatable("murilloskills.info.guide.overview").getString(),
+                                SkillUiData.getSkillDescription(skill).getString(), width);
+                height += calculateGuideParagraphHeight(Text.translatable("murilloskills.info.guide.why_choose").getString(),
+                                SkillUiData.getWhyChooseDescription(skill), width);
+                height += calculateGuideParagraphHeight(Text.translatable("murilloskills.info.guide.xp_sources").getString(),
+                                SkillUiData.getXpGainDescription(skill).getString(), width);
+                height += calculateGuideParagraphHeight(Text.translatable("murilloskills.info.guide.master_ability").getString(),
+                                SkillUiData.getMasterAbilityDetails(skill), width);
+                height += 18;
+                for (Text line : SkillUiData.getMaxPassiveGuide(skill)) {
+                        height += calculateWrappedTextHeight(line.getString(), width - 8);
+                }
+                height += 8;
+                height += 18;
+                for (SkillUiData.GuideEntry entry : SkillUiData.getGuideTimeline(skill)) {
+                        height += calculateWrappedTextHeight(entry.text(), width - 8);
+                }
+                return height + 8;
+        }
+
+        private int calculateGuideParagraphHeight(String label, String value, int width) {
+                return 16 + calculateWrappedTextHeight(value, width) + 4;
+        }
+
+        private int calculateWrappedTextHeight(String text, int width) {
+                return Math.max(1, wrapText(text, width).size()) * 12;
+        }
+
+        private int renderGuideSkillSection(DrawContext context, int x, int y, MurilloSkillsList skill) {
+                int width = contentWidth - SECTION_PADDING * 2 - 16;
+                renderSkillPerkHeader(context, x, y, skill);
+                y += 26;
+
+                int textX = x + 10;
+                int textWidth = width - 20;
+                y = renderGuideParagraph(context, textX, y,
+                                Text.translatable("murilloskills.info.guide.overview").getString(),
+                                SkillUiData.getSkillDescription(skill).getString(), textWidth, PALETTE.textLight());
+                y = renderGuideParagraph(context, textX, y,
+                                Text.translatable("murilloskills.info.guide.why_choose").getString(),
+                                SkillUiData.getWhyChooseDescription(skill), textWidth, PALETTE.textAqua());
+                y = renderGuideParagraph(context, textX, y,
+                                Text.translatable("murilloskills.info.guide.xp_sources").getString(),
+                                SkillUiData.getXpGainDescription(skill).getString(), textWidth, PALETTE.textGreen());
+                y = renderGuideParagraph(context, textX, y,
+                                Text.translatable("murilloskills.info.guide.master_ability").getString(),
+                                SkillUiData.getMasterAbilityDetails(skill), textWidth, PALETTE.textGold());
+
+                renderSubsectionHeader(context, textX, y,
+                                Text.translatable("murilloskills.info.guide.level100").getString());
+                y += 16;
+                for (Text line : SkillUiData.getMaxPassiveGuide(skill)) {
+                        y = renderWrappedGuideText(context, line.getString(), textX + 8, y, textWidth - 8,
+                                        PALETTE.textLight());
+                }
+                y += 4;
+
+                renderSubsectionHeader(context, textX, y,
+                                Text.translatable("murilloskills.info.guide.timeline").getString());
+                y += 16;
+
+                int playerLevel = ClientSkillData.get(skill).level;
+                for (SkillUiData.GuideEntry entry : SkillUiData.getGuideTimeline(skill)) {
+                        int color = entry.level() <= playerLevel
+                                        ? (entry.milestone() ? PALETTE.textGold() : PALETTE.textLight())
+                                        : (entry.milestone() ? PALETTE.textYellow() : PALETTE.textMuted());
+                        y = renderWrappedGuideText(context, entry.text(), textX + 8, y, textWidth - 8, color);
+                }
+
+                return y;
+        }
+
+        private int renderGuideParagraph(DrawContext context, int x, int y, String label, String value, int width,
+                        int color) {
+                renderSubsectionHeader(context, x, y, label);
+                y += 16;
+                y = renderWrappedGuideText(context, value, x + 8, y, width - 8, color);
+                return y + 4;
+        }
+
+        private int renderWrappedGuideText(DrawContext context, String text, int x, int y, int width, int color) {
+                for (String line : wrapText(text, width)) {
+                        context.drawText(textRenderer, Text.literal(line), x, y, color, false);
+                        y += 12;
+                }
+                return y;
+        }
         private int getSkillColor(MurilloSkillsList skill) {
                 return switch (skill) {
                         case MINER -> 0xFF88CCFF;
@@ -818,3 +889,6 @@ public class ModInfoScreen extends Screen {
 
         // SynergyInfo and PerkInfo records removed (migrated to SkillUiData)
 }
+
+
+

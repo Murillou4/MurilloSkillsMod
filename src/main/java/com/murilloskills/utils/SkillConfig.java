@@ -137,6 +137,34 @@ public class SkillConfig {
         };
     }
 
+    public static int getUltmineShapeDefaultDepth(UltmineShape shape) {
+        return Math.max(1, getUltmineShapeSettings(shape).defaultDepth);
+    }
+
+    public static int getUltmineShapeMaxDepth(UltmineShape shape) {
+        return Math.max(1, getUltmineShapeSettings(shape).maxDepth);
+    }
+
+    public static int getUltmineShapeDefaultLength(UltmineShape shape) {
+        return Math.max(1, getUltmineShapeSettings(shape).defaultLength);
+    }
+
+    public static int getUltmineShapeMaxLength(UltmineShape shape) {
+        return Math.max(1, getUltmineShapeSettings(shape).maxLength);
+    }
+
+    private static ModConfig.UltmineShapeSettings getUltmineShapeSettings(UltmineShape shape) {
+        var ultmine = ModConfig.get().ultmine;
+        return switch (shape) {
+            case S_3x3 -> ultmine.shape3x3;
+            case R_2x1 -> ultmine.shape2x1;
+            case LINE -> ultmine.line;
+            case STAIRS -> ultmine.stairs;
+            case SQUARE_20x20_D1 -> ultmine.square20x20d1;
+            case LEGACY -> ultmine.legacy;
+        };
+    }
+
     // Legacy constants for backward compatibility
     public static final float MINER_SPEED_PER_LEVEL = 0.03f;
     public static final float MINER_FORTUNE_PER_LEVEL = 0.03f;

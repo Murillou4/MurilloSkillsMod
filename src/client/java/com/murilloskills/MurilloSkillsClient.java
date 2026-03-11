@@ -25,6 +25,7 @@ import com.murilloskills.render.UltminePreview;
 import com.murilloskills.render.VeinMinerPreview;
 import com.murilloskills.render.XpToastRenderer;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.tooltip.SkillTooltipAppender;
 import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -75,6 +76,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        SkillTooltipAppender.register();
 
         // --- NETWORKING ---
 
