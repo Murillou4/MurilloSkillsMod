@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.15] - 2026-03-11
+
+### 🐛 Fisher / Miner (Skyblock)
+
+- **Tooltip da vara de pesca corrigido**: o Fisher agora mostra na Fishing Rod os bônus reais da skill, incluindo velocidade de pesca, redução de espera, Luck of the Sea total e bônus de tesouro/XP, junto dos encantamentos aplicados.
+- **Miner funcionando em skyblock**: `cobblestone` e `cobbled_deepslate` agora também concedem XP de Miner, corrigindo mundos com geradores de pedra onde a skill parecia não evoluir.
+- **Diagnóstico do save confirmado**: o problema não era corrupção de dados do player; as skills selecionadas e o level do Fisher estavam corretos no mundo analisado.
+
+---
+
 ## [1.2.14] - 2026-03-11
 
 ### ✨ Guide / Tooltips / Builder / Ultmine

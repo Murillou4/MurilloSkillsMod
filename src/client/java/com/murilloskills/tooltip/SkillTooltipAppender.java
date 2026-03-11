@@ -2,6 +2,7 @@ package com.murilloskills.tooltip;
 
 import com.murilloskills.data.ClientSkillData;
 import com.murilloskills.impl.ArcherSkill;
+import com.murilloskills.impl.FisherSkill;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.PrestigeManager;
 import com.murilloskills.utils.SkillConfig;
@@ -18,6 +19,7 @@ import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.BowItem;
 import net.minecraft.item.CrossbowItem;
+import net.minecraft.item.FishingRodItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.RangedWeaponItem;
@@ -56,6 +58,7 @@ public final class SkillTooltipAppender {
 
         boolean appendedSection = appendMiningTooltip(stack, lines);
         appendedSection = appendMeleeTooltip(stack, lines) || appendedSection;
+        appendedSection = appendFishingTooltip(stack, lines, appendedSection) || appendedSection;
         appendRangedTooltip(stack, lines, appendedSection);
     }
 
@@ -129,6 +132,68 @@ public final class SkillTooltipAppender {
                     "murilloskills.tooltip.attack_damage_arthropods",
                     format(baseDamage + warriorBonus + getBaneBonus(baneLevel)))
                     .formatted(Formatting.DARK_GREEN));
+        }
+
+        return true;
+    }
+
+    private static boolean appendFishingTooltip(ItemStack stack, List<Text> lines, boolean appendedSection) {
+        var stats = ClientSkillData.get(MurilloSkillsList.FISHER);
+        if (stats.level <= 0 || !(stack.getItem() instanceof FishingRodItem)) {
+            return false;
+        }
+
+        int lureLevel = getEnchantmentLevel(stack.getEnchantments(), Enchantments.LURE);
+        int enchantLuckLevel = getEnchantmentLevel(stack.getEnchantments(), Enchantments.LUCK_OF_THE_SEA);
+        int skillLuckLevel = FisherSkill.getLuckOfTheSeaBonus(stats.level);
+        int totalLuckLevel = enchantLuckLevel + skillLuckLevel;
+        float fishingSpeedBonus = FisherSkill.getFishingSpeedBonus(stats.level, stats.prestige);
+        float waitReduction = 1.0f - FisherSkill.getWaitTimeMultiplier(stats.level);
+        float treasureBonus = stats.level >= SkillConfig.getFisherTreasureBonusLevel()
+                ? SkillConfig.getFisherTreasureBonus()
+                : 0.0f;
+        float xpBonus = stats.level >= SkillConfig.getFisherTreasureBonusLevel()
+                ? SkillConfig.getFisherXpBonus()
+                : 0.0f;
+
+        if (!appendedSection) {
+            lines.add(Text.empty());
+        }
+
+        lines.add(Text.translatable(
+                "murilloskills.tooltip.fisher_speed_bonus",
+                formatPercent(fishingSpeedBonus))
+                .formatted(Formatting.AQUA));
+
+        if (waitReduction > 0.0f) {
+            lines.add(Text.translatable(
+                    "murilloskills.tooltip.fisher_wait_reduction",
+                    formatPercent(waitReduction))
+                    .formatted(Formatting.BLUE));
+        }
+
+        if (lureLevel > 0) {
+            lines.add(Text.translatable(
+                    "murilloskills.tooltip.fisher_lure_level",
+                    lureLevel)
+                    .formatted(Formatting.BLUE));
+        }
+
+        if (totalLuckLevel > 0) {
+            lines.add(Text.translatable(
+                    "murilloskills.tooltip.fisher_total_luck",
+                    totalLuckLevel,
+                    enchantLuckLevel,
+                    skillLuckLevel)
+                    .formatted(Formatting.AQUA));
+        }
+
+        if (treasureBonus > 0.0f || xpBonus > 0.0f) {
+            lines.add(Text.translatable(
+                    "murilloskills.tooltip.fisher_treasure_bonus",
+                    formatPercent(treasureBonus),
+                    formatPercent(xpBonus))
+                    .formatted(Formatting.GOLD));
         }
 
         return true;
