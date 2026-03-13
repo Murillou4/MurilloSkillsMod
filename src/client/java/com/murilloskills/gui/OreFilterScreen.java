@@ -63,14 +63,10 @@ public class OreFilterScreen extends Screen {
             int x = startX + col * (cardWidth + gap);
             int y = oreGridStartY + row * (cardHeight + gap);
 
-            // Empty button - we'll render content manually for consistent alignment
-            ButtonWidget btn = ButtonWidget.builder(
-                    Text.empty(),
-                    (b) -> {
-                        OreFilterConfig.toggleOre(ore);
-                    })
-                    .dimensions(x, y, cardWidth, cardHeight)
-                    .build();
+            // Custom accessible button with encapsulated rendering
+            ButtonWidget btn = new OreButton(x, y, cardWidth, cardHeight, ore, (b) -> {
+                OreFilterConfig.toggleOre(ore);
+            });
             this.addDrawableChild(btn);
         }
 
@@ -240,8 +236,6 @@ public class OreFilterScreen extends Screen {
         // === WIDGETS ===
         super.render(context, mouseX, mouseY, delta);
 
-        // === ORE BUTTON CONTENT (render after buttons for proper layering) ===
-        renderOreButtonContent(context);
     }
 
     private void renderBackground(DrawContext context) {
@@ -372,55 +366,6 @@ public class OreFilterScreen extends Screen {
                 centerX, boxY + boxHeight + 5, TEXT_GRAY);
     }
 
-    /**
-     * Render ore button content with consistent alignment.
-     * Item icon on left, status indicator, then ore name - all at fixed positions.
-     */
-    private void renderOreButtonContent(DrawContext context) {
-        OreType[] ores = getFilterableOres();
-        int gridWidth = cols * cardWidth + (cols - 1) * gap;
-        int startX = this.width / 2 - gridWidth / 2;
-
-        for (int i = 0; i < ores.length; i++) {
-            OreType ore = ores[i];
-            boolean enabled = OreFilterConfig.isOreEnabled(ore);
-
-            int col = i % cols;
-            int row = i / cols;
-            int btnX = startX + col * (cardWidth + gap);
-            int btnY = oreGridStartY + row * (cardHeight + gap);
-
-            // Draw item icon at fixed position (left side of button)
-            int iconX = btnX + 4;
-            int iconY = btnY + (cardHeight - 16) / 2; // 16 = item icon size
-            ItemStack icon = getIcon(ore);
-            context.drawItem(icon, iconX, iconY);
-
-            // Status indicator at fixed position after icon
-            int statusX = iconX + 18; // 16px icon + 2px gap
-            int textY = btnY + (cardHeight - 8) / 2; // 8 = approx font height
-            String statusIcon = enabled ? "◆" : "◇";
-            int statusColor = enabled ? 0xFF55FF55 : 0xFF555555; // Green or dark gray
-            context.drawTextWithShadow(textRenderer, statusIcon, statusX, textY, statusColor);
-
-            // Ore name at fixed position after status
-            int nameX = statusX + 12; // Status icon width + gap
-            String name = Text.translatable("murilloskills.ore." + ore.name().toLowerCase()).getString();
-
-            // Truncate name if too long for button
-            int maxNameWidth = cardWidth - nameX + btnX - 4;
-            if (textRenderer.getWidth(name) > maxNameWidth) {
-                while (textRenderer.getWidth(name + "...") > maxNameWidth && name.length() > 1) {
-                    name = name.substring(0, name.length() - 1);
-                }
-                name = name + "...";
-            }
-
-            int nameColor = enabled ? 0xFFFFFFFF : 0xFFAAAAAA; // White or gray
-            context.drawTextWithShadow(textRenderer, name, nameX, textY, nameColor);
-        }
-    }
-
     private OreType[] getFilterableOres() {
         return new OreType[] {
                 OreType.COAL, OreType.COPPER, OreType.IRON, OreType.GOLD,
@@ -455,5 +400,58 @@ public class OreFilterScreen extends Screen {
     @Override
     public boolean shouldPause() {
         return false;
+    }
+
+    /**
+     * Custom button class that encapsulates ore rendering logic and provides proper accessibility.
+     */
+    private class OreButton extends ButtonWidget {
+        private final OreType ore;
+
+        public OreButton(int x, int y, int width, int height, OreType ore, ButtonWidget.PressAction onPress) {
+            super(x, y, width, height, Text.translatable("murilloskills.ore." + ore.name().toLowerCase()), onPress, ButtonWidget.DEFAULT_NARRATION_SUPPLIER);
+            this.ore = ore;
+        }
+
+        @Override
+        public void drawMessage(DrawContext context, net.minecraft.client.font.TextRenderer textRenderer, int color) {
+            // No-op: prevent default text rendering to avoid overlap
+        }
+
+        @Override
+        public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+            super.renderWidget(context, mouseX, mouseY, delta);
+
+            boolean enabled = OreFilterConfig.isOreEnabled(ore);
+
+            // Draw item icon at fixed position (left side of button)
+            int iconX = this.getX() + 4;
+            int iconY = this.getY() + (this.height - 16) / 2;
+            ItemStack icon = getIcon(ore);
+            context.drawItem(icon, iconX, iconY);
+
+            // Status indicator
+            int statusX = iconX + 18;
+            int textY = this.getY() + (this.height - 8) / 2;
+            String statusIcon = enabled ? "◆" : "◇";
+            int statusColor = enabled ? 0xFF55FF55 : 0xFF555555;
+            context.drawTextWithShadow(textRenderer, statusIcon, statusX, textY, statusColor);
+
+            // Ore name
+            int nameX = statusX + 12;
+            String name = Text.translatable("murilloskills.ore." + ore.name().toLowerCase()).getString();
+
+            // Truncate name if too long
+            int maxNameWidth = this.width - (nameX - this.getX()) - 4;
+            if (textRenderer.getWidth(name) > maxNameWidth) {
+                while (textRenderer.getWidth(name + "...") > maxNameWidth && name.length() > 1) {
+                    name = name.substring(0, name.length() - 1);
+                }
+                name = name + "...";
+            }
+
+            int nameColor = enabled ? 0xFFFFFFFF : 0xFFAAAAAA;
+            context.drawTextWithShadow(textRenderer, name, nameX, textY, nameColor);
+        }
     }
 }
