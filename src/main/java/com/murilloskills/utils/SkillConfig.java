@@ -702,6 +702,10 @@ public class SkillConfig {
         return ModConfig.get().builder.featherBuildLevel;
     }
 
+    public static int getBuilderMaxFillBlocks() {
+        return ModConfig.get().builder.builderMaxFillBlocks;
+    }
+
     // Legacy constants
     public static final float BUILDER_REACH_PER_LEVEL = 0.08f;
     public static final int BUILDER_EXTENDED_REACH_LEVEL = 10;

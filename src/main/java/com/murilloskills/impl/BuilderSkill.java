@@ -387,7 +387,7 @@ public class BuilderSkill extends AbstractSkill {
 
         int totalBlocks = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
 
-        int maxBlocks = 1000;
+        int maxBlocks = SkillConfig.getBuilderMaxFillBlocks();
         if (totalBlocks > maxBlocks) {
             player.sendMessage(
                     Text.translatable("murilloskills.builder.area_too_large", maxBlocks, totalBlocks)
@@ -637,5 +637,17 @@ public class BuilderSkill extends AbstractSkill {
             return SkillConfig.BUILDER_DECORATIVE_ECONOMY;
         }
         return 0f;
+    }
+
+    /**
+     * Cleanup player state when they disconnect to prevent memory leaks.
+     */
+    public static void cleanupPlayerState(java.util.UUID playerUuid) {
+        creativeBrushPlayers.remove(playerUuid);
+        firstCornerPos.remove(playerUuid);
+        pausedRemainingTime.remove(playerUuid);
+        hollowModeEnabled.remove(playerUuid);
+        fillModePreference.remove(playerUuid);
+        cylinderHorizontal.remove(playerUuid);
     }
 }
