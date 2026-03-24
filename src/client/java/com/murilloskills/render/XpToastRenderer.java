@@ -1,5 +1,6 @@
 package com.murilloskills.render;
 
+import com.murilloskills.gui.ColorPalette;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -24,9 +25,11 @@ public class XpToastRenderer {
     private static final int TOAST_MARGIN_RIGHT = 5;
     private static final int TOAST_MARGIN_TOP = 5;
 
-    // Toast colors
-    private static final int BG_COLOR = 0xCC101018;
-    private static final int BORDER_COLOR = 0xFF2A2A3A;
+    private static final ColorPalette PALETTE = ColorPalette.premium();
+
+    // Toast colors — sourced from ColorPalette for consistency
+    private static final int BG_COLOR = 0xCC000000 | (PALETTE.bgGradientTop() & 0x00FFFFFF);
+    private static final int BORDER_COLOR = PALETTE.sectionBorder();
 
     private static final Deque<XpToast> toasts = new ArrayDeque<>();
 
@@ -209,16 +212,7 @@ public class XpToastRenderer {
     }
 
     private static int getSkillColor(MurilloSkillsList skill) {
-        return switch (skill) {
-            case MINER -> 0xFF888888; // Gray
-            case WARRIOR -> 0xFFFF4444; // Red
-            case FARMER -> 0xFF44AA44; // Green
-            case ARCHER -> 0xFF44FF44; // Lime
-            case FISHER -> 0xFF4488FF; // Blue
-            case BUILDER -> 0xFFFFAA00; // Orange
-            case BLACKSMITH -> 0xFFAA8866; // Bronze
-            case EXPLORER -> 0xFF44DDDD; // Cyan
-        };
+        return PALETTE.getSkillColor(skill);
     }
 
     /**
