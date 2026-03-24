@@ -7,6 +7,8 @@ import com.murilloskills.skills.MurilloSkillsList;
 import java.util.*;
 
 public class PlayerSkillData {
+    /** @deprecated Use {@link com.murilloskills.utils.SkillConfig#getMaxSelectedSkills()} */
+    @Deprecated
     public static final int MAX_SELECTED_SKILLS = 3;
 
     public EnumMap<MurilloSkillsList, SkillStats> skills = new EnumMap<>(MurilloSkillsList.class);
@@ -38,7 +40,7 @@ public class PlayerSkillData {
      * Check if player has selected their main skills
      */
     public boolean hasSelectedSkills() {
-        return selectedSkills != null && selectedSkills.size() == MAX_SELECTED_SKILLS;
+        return selectedSkills != null && selectedSkills.size() >= com.murilloskills.utils.SkillConfig.getMaxSelectedSkills();
     }
 
     /**
@@ -61,7 +63,7 @@ public class PlayerSkillData {
         Set<MurilloSkillsList> potentialSelection = new HashSet<>(selectedSkills);
         potentialSelection.addAll(skills);
 
-        if (potentialSelection.size() > MAX_SELECTED_SKILLS) {
+        if (potentialSelection.size() > com.murilloskills.utils.SkillConfig.getMaxSelectedSkills()) {
             return false;
         }
 

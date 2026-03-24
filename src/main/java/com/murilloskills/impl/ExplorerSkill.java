@@ -56,9 +56,8 @@ public class ExplorerSkill extends AbstractSkill {
     // Map to track Treasure Hunter ability state (UUID → end time in world ticks)
     private static final Map<UUID, Long> treasureHunterActive = new HashMap<>();
 
-    // Duration and cooldown for Treasure Hunter ability
+    // Duration for Treasure Hunter ability
     private static final int TREASURE_HUNTER_DURATION_SECONDS = 60;
-    private static final int TREASURE_HUNTER_COOLDOWN_SECONDS = 300; // 5 minutes
 
     @Override
     public void onActiveAbility(ServerPlayerEntity player, com.murilloskills.data.PlayerSkillData.SkillStats stats) {
@@ -84,7 +83,7 @@ public class ExplorerSkill extends AbstractSkill {
             com.murilloskills.data.PlayerSkillData.SkillStats stats) {
         UUID uuid = player.getUuid();
         long worldTime = player.getEntityWorld().getTime();
-        long cooldownTicks = SkillConfig.toTicksLong(TREASURE_HUNTER_COOLDOWN_SECONDS);
+        long cooldownTicks = SkillConfig.toTicksLong(SkillConfig.getExplorerAbilityCooldownSeconds());
 
         // Check cooldown using persistent stats (survives server restart)
         if (stats.lastAbilityUse >= 0) {
@@ -150,6 +149,22 @@ public class ExplorerSkill extends AbstractSkill {
             if (meetsLevelRequirement(level, SkillConfig.EXPLORER_NIGHT_VISION_LEVEL)) {
                 if (isNightVisionEnabled(player)) {
                     applyNightVision(player);
+                }
+            }
+
+            // --- LEVEL 45: PATHFINDER - Speed II while sprinting ---
+            if (meetsLevelRequirement(level, SkillConfig.EXPLORER_PATHFINDER_LEVEL)) {
+                if (player.isSprinting()) {
+                    player.addStatusEffect(new StatusEffectInstance(
+                            StatusEffects.SPEED, 40, 1, true, false, true));
+                }
+            }
+
+            // --- LEVEL 55: SWIFT RECOVERY - Regen I when health < 50% ---
+            if (meetsLevelRequirement(level, SkillConfig.EXPLORER_SWIFT_RECOVERY_LEVEL)) {
+                if (player.getHealth() < player.getMaxHealth() * 0.5f) {
+                    player.addStatusEffect(new StatusEffectInstance(
+                            StatusEffects.REGENERATION, 40, 0, true, false, true));
                 }
             }
 

@@ -48,6 +48,7 @@ public record ColorPalette(
         // UI Elements
         int scrollbarBg,
         int scrollbarFg,
+        int scrollbarActive,
         int dividerColor,
 
         // Progress Bar Colors
@@ -117,6 +118,7 @@ public record ColorPalette(
                 // UI Elements
                 0x30FFFFFF,
                 0x80FFFFFF,
+                0xC0FFFFFF,
                 0x40FFFFFF,
 
                 // Progress Bar Colors

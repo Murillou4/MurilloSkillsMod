@@ -24,6 +24,10 @@ public class SkillConfig {
         return ModConfig.get().general.maxLevel;
     }
 
+    public static int getMaxSelectedSkills() {
+        return Math.max(1, Math.min(ModConfig.get().general.maxSelectedSkills, 8));
+    }
+
     public static final int MAX_LEVEL = 100; // Keep for backward compat, prefer getMaxLevel()
 
     // --- MINER ---
@@ -390,12 +394,23 @@ public class SkillConfig {
         return ModConfig.get().farmer.areaPlantingRadius;
     }
 
+    // --- FARMER NEW GETTERS ---
+    public static int getFarmerNaturesVitalityLevel() {
+        return ModConfig.get().farmer.naturesVitalityLevel;
+    }
+
+    public static int getFarmerSeedMasterLevel() {
+        return ModConfig.get().farmer.seedMasterLevel;
+    }
+
     // Legacy constants
-    public static final float FARMER_DOUBLE_HARVEST_PER_LEVEL = 0.005f;
-    public static final float FARMER_GOLDEN_CROP_PER_LEVEL = 0.0015f;
+    public static final float FARMER_DOUBLE_HARVEST_PER_LEVEL = 0.01f;
+    public static final float FARMER_GOLDEN_CROP_PER_LEVEL = 0.004f;
     public static final int FARMER_GREEN_THUMB_LEVEL = 10;
     public static final int FARMER_FERTILE_GROUND_LEVEL = 25;
+    public static final int FARMER_NATURES_VITALITY_LEVEL = 35;
     public static final int FARMER_NUTRIENT_CYCLE_LEVEL = 50;
+    public static final int FARMER_SEED_MASTER_LEVEL = 60;
     public static final int FARMER_ABUNDANT_HARVEST_LEVEL = 75;
     public static final int FARMER_MASTER_LEVEL = 100;
     public static final float FARMER_GREEN_THUMB_EXTRA = 0.05f;
@@ -406,8 +421,8 @@ public class SkillConfig {
     public static final float FARMER_ABUNDANT_ADJACENT = 0.10f;
     public static final int FARMER_FERTILE_GROUND_RADIUS = 32;
     public static final int FARMER_ABILITY_RADIUS = 8;
-    public static final int FARMER_ABILITY_DURATION_SECONDS = 10;
-    public static final int FARMER_ABILITY_COOLDOWN_SECONDS = 120;
+    public static final int FARMER_ABILITY_DURATION_SECONDS = 20;
+    public static final int FARMER_ABILITY_COOLDOWN_SECONDS = 90;
     public static final int FARMER_AREA_PLANTING_LEVEL = 25;
     public static final int FARMER_AREA_PLANTING_RADIUS = 1;
 
@@ -472,20 +487,31 @@ public class SkillConfig {
         return ModConfig.get().fisher.rainDanceBundleMultiplier;
     }
 
+    // --- FISHER NEW GETTERS ---
+    public static int getFisherOceanBlessingLevel() {
+        return ModConfig.get().fisher.oceanBlessingLevel;
+    }
+
+    public static int getFisherSeasFortuneLevel() {
+        return ModConfig.get().fisher.seasFortuneLevel;
+    }
+
     // Legacy constants
-    public static final float FISHER_SPEED_PER_LEVEL = 0.005f;
-    public static final float FISHER_EPIC_BUNDLE_PER_LEVEL = 0.001f;
+    public static final float FISHER_SPEED_PER_LEVEL = 0.01f;
+    public static final float FISHER_EPIC_BUNDLE_PER_LEVEL = 0.003f;
     public static final int FISHER_WAIT_REDUCTION_LEVEL = 10;
     public static final int FISHER_TREASURE_BONUS_LEVEL = 25;
+    public static final int FISHER_OCEAN_BLESSING_LEVEL = 35;
     public static final int FISHER_DOLPHIN_GRACE_LEVEL = 50;
+    public static final int FISHER_SEAS_FORTUNE_LEVEL = 60;
     public static final int FISHER_LUCK_SEA_LEVEL = 75;
     public static final int FISHER_MASTER_LEVEL = 100;
     public static final float FISHER_WAIT_REDUCTION = 0.25f;
     public static final float FISHER_TREASURE_BONUS = 0.10f;
     public static final float FISHER_XP_BONUS = 0.10f;
     public static final int FISHER_ABILITY_DURATION_SECONDS = 60;
-    public static final int FISHER_ABILITY_COOLDOWN_SECONDS = 900;
-    public static final float FISHER_RAIN_DANCE_SPEED_BONUS = 0.50f;
+    public static final int FISHER_ABILITY_COOLDOWN_SECONDS = 600;
+    public static final float FISHER_RAIN_DANCE_SPEED_BONUS = 0.75f;
     public static final float FISHER_RAIN_DANCE_TREASURE_BONUS = 0.30f;
     public static final int FISHER_RAIN_DANCE_BUNDLE_MULTIPLIER = 2;
 
@@ -562,23 +588,39 @@ public class SkillConfig {
         return ModConfig.get().blacksmith.titaniumRegen;
     }
 
+    // --- BLACKSMITH NEW GETTERS ---
+    public static int getBlacksmithFireMasteryLevel() {
+        return ModConfig.get().blacksmith.fireMasteryLevel;
+    }
+
+    public static int getBlacksmithRepairAuraLevel() {
+        return ModConfig.get().blacksmith.repairAuraLevel;
+    }
+
+    public static int getBlacksmithRepairAuraIntervalSeconds() {
+        return ModConfig.get().blacksmith.repairAuraIntervalSeconds;
+    }
+
     // Legacy constants
     public static final float BLACKSMITH_RESISTANCE_PER_LEVEL = 0.02f;
     public static final int BLACKSMITH_IRON_SKIN_LEVEL = 10;
     public static final int BLACKSMITH_EFFICIENT_ANVIL_LEVEL = 25;
+    public static final int BLACKSMITH_FIRE_MASTERY_LEVEL = 35;
     public static final int BLACKSMITH_FORGED_RESILIENCE_LEVEL = 50;
+    public static final int BLACKSMITH_REPAIR_AURA_LEVEL = 60;
+    public static final int BLACKSMITH_REPAIR_AURA_INTERVAL_SECONDS = 10;
     public static final int BLACKSMITH_THORNS_MASTER_LEVEL = 75;
     public static final int BLACKSMITH_MASTER_LEVEL = 100;
     public static final float BLACKSMITH_IRON_SKIN_BONUS = 0.05f;
     public static final float BLACKSMITH_ANVIL_XP_DISCOUNT = 0.25f;
     public static final float BLACKSMITH_ANVIL_MATERIAL_SAVE = 0.10f;
     public static final float BLACKSMITH_FIRE_EXPLOSION_RESIST = 0.10f;
-    public static final float BLACKSMITH_THORNS_CHANCE = 0.20f;
-    public static final float BLACKSMITH_THORNS_REFLECT = 0.25f;
+    public static final float BLACKSMITH_THORNS_CHANCE = 0.30f;
+    public static final float BLACKSMITH_THORNS_REFLECT = 0.35f;
     public static final float BLACKSMITH_KNOCKBACK_REDUCTION = 0.50f;
     public static final float BLACKSMITH_SUPER_ENCHANT_CHANCE = 0.25f;
-    public static final int BLACKSMITH_ABILITY_DURATION_SECONDS = 15;
-    public static final int BLACKSMITH_ABILITY_COOLDOWN_SECONDS = 1200;
+    public static final int BLACKSMITH_ABILITY_DURATION_SECONDS = 25;
+    public static final int BLACKSMITH_ABILITY_COOLDOWN_SECONDS = 900;
     public static final float BLACKSMITH_TITANIUM_RESISTANCE = 0.30f;
     public static final float BLACKSMITH_TITANIUM_REGEN = 1.0f;
 
@@ -651,22 +693,33 @@ public class SkillConfig {
         return ModConfig.get().builder.highBuildYThreshold;
     }
 
+    // --- BUILDER NEW GETTERS ---
+    public static int getBuilderBuildersVigorLevel() {
+        return ModConfig.get().builder.buildersVigorLevel;
+    }
+
+    public static int getBuilderFeatherBuildLevel() {
+        return ModConfig.get().builder.featherBuildLevel;
+    }
+
     // Legacy constants
-    public static final float BUILDER_REACH_PER_LEVEL = 0.05f;
+    public static final float BUILDER_REACH_PER_LEVEL = 0.08f;
     public static final int BUILDER_EXTENDED_REACH_LEVEL = 10;
     public static final int BUILDER_EFFICIENT_CRAFTING_LEVEL = 15;
     public static final int BUILDER_SAFE_LANDING_LEVEL = 25;
+    public static final int BUILDER_BUILDERS_VIGOR_LEVEL = 35;
     public static final int BUILDER_SCAFFOLD_MASTER_LEVEL = 50;
+    public static final int BUILDER_FEATHER_BUILD_LEVEL = 60;
     public static final int BUILDER_MASTER_REACH_LEVEL = 75;
     public static final int BUILDER_MASTER_LEVEL = 100;
     public static final float BUILDER_LEVEL_10_REACH = 1.0f;
     public static final float BUILDER_LEVEL_75_REACH = 5.0f;
-    public static final float BUILDER_DECORATIVE_ECONOMY = 0.20f;
+    public static final float BUILDER_DECORATIVE_ECONOMY = 0.30f;
     public static final float BUILDER_STRUCTURAL_ECONOMY = 0.50f;
-    public static final float BUILDER_FALL_DAMAGE_REDUCTION = 0.25f;
+    public static final float BUILDER_FALL_DAMAGE_REDUCTION = 0.50f;
     public static final float BUILDER_SCAFFOLD_SPEED_MULTIPLIER = 1.5f;
     public static final int BUILDER_ABILITY_DURATION_SECONDS = 120;
-    public static final int BUILDER_ABILITY_COOLDOWN_SECONDS = 600;
+    public static final int BUILDER_ABILITY_COOLDOWN_SECONDS = 450;
     public static final int BUILDER_BRUSH_MAX_DISTANCE = 6;
     public static final int BUILDER_HIGH_BUILD_Y_THRESHOLD = 100;
 
@@ -751,18 +804,29 @@ public class SkillConfig {
         return ModConfig.get().explorer.xpPerDistance;
     }
 
+    // --- EXPLORER NEW GETTERS ---
+    public static int getExplorerPathfinderLevel() {
+        return ModConfig.get().explorer.pathfinderLevel;
+    }
+
+    public static int getExplorerSwiftRecoveryLevel() {
+        return ModConfig.get().explorer.swiftRecoveryLevel;
+    }
+
     // Legacy constants
-    public static final float EXPLORER_SPEED_PER_LEVEL = 0.002f;
+    public static final float EXPLORER_SPEED_PER_LEVEL = 0.004f;
     public static final int EXPLORER_LUCK_INTERVAL = 20;
-    public static final float EXPLORER_HUNGER_REDUCTION_PER_LEVEL = 0.005f;
+    public static final float EXPLORER_HUNGER_REDUCTION_PER_LEVEL = 0.008f;
     public static final int EXPLORER_STEP_ASSIST_LEVEL = 10;
     public static final int EXPLORER_AQUATIC_LEVEL = 20;
     public static final int EXPLORER_NIGHT_VISION_LEVEL = 35;
+    public static final int EXPLORER_PATHFINDER_LEVEL = 45;
+    public static final int EXPLORER_SWIFT_RECOVERY_LEVEL = 55;
     public static final int EXPLORER_FEATHER_FEET_LEVEL = 65;
     public static final int EXPLORER_NETHER_WALKER_LEVEL = 80;
     public static final int EXPLORER_MASTER_LEVEL = 100;
     public static final float EXPLORER_BREATH_MULTIPLIER = 1.5f;
-    public static final float EXPLORER_FALL_DAMAGE_REDUCTION = 0.40f;
+    public static final float EXPLORER_FALL_DAMAGE_REDUCTION = 0.60f;
     public static final int EXPLORER_TREASURE_RADIUS = 128;
     public static final float EXPLORER_STEP_HEIGHT = 1.0f;
     public static final int EXPLORER_XP_BIOME = 500;
@@ -771,7 +835,12 @@ public class SkillConfig {
     public static final int EXPLORER_XP_MAP_COMPLETE = 2000;
     public static final int EXPLORER_XP_WANDERING_TRADE = 400;
     public static final double EXPLORER_DISTANCE_THRESHOLD = 50.0;
-    public static final int EXPLORER_XP_PER_DISTANCE = 35;
+    public static final int EXPLORER_XP_PER_DISTANCE = 50;
+    public static final int EXPLORER_ABILITY_COOLDOWN_SECONDS = 300;
+
+    public static int getExplorerAbilityCooldownSeconds() {
+        return ModConfig.get().explorer.abilityCooldownSeconds;
+    }
 
     // --- MILESTONES ---
     public static int[] getSkillMilestones() {

@@ -85,15 +85,16 @@ public class SkillsScreen extends Screen {
 
         if (confirmButton != null) {
             int count = pendingSelection.size();
-            boolean isComplete = count == 3;
+            int maxSkills = ClientSkillData.getMaxSelectedSkills();
+            boolean isComplete = count == maxSkills;
             // Active if we have at least 1 skill, and if we have partial selection (or
             // full)
-            confirmButton.active = count > 0 && count <= 3;
+            confirmButton.active = count > 0 && count <= maxSkills;
 
             if (isComplete) {
-                confirmButton.setMessage(Text.translatable("murilloskills.gui.btn_confirm", count));
+                confirmButton.setMessage(Text.translatable("murilloskills.gui.btn_confirm", count, maxSkills));
             } else {
-                confirmButton.setMessage(Text.translatable("murilloskills.gui.btn_save_partial", count));
+                confirmButton.setMessage(Text.translatable("murilloskills.gui.btn_save_partial", count, maxSkills));
             }
         }
     }
@@ -206,7 +207,7 @@ public class SkillsScreen extends Screen {
                             // Toggle selection
                             if (pendingSelection.contains(skill)) {
                                 pendingSelection.remove(skill);
-                            } else if (pendingSelection.size() < 3) {
+                            } else if (pendingSelection.size() < ClientSkillData.getMaxSelectedSkills()) {
                                 pendingSelection.add(skill);
                             }
                             updateSelectionButtonStates();
@@ -256,8 +257,8 @@ public class SkillsScreen extends Screen {
             int confirmBtnY = this.height - 35;
 
             confirmButton = ButtonWidget
-                    .builder(Text.translatable("murilloskills.gui.btn_save_partial", 0), (button) -> {
-                        if (pendingSelection.size() > 0 && pendingSelection.size() <= 3) {
+                    .builder(Text.translatable("murilloskills.gui.btn_save_partial", 0, ClientSkillData.getMaxSelectedSkills()), (button) -> {
+                        if (pendingSelection.size() > 0 && pendingSelection.size() <= ClientSkillData.getMaxSelectedSkills()) {
                             List<MurilloSkillsList> selected = new ArrayList<>(pendingSelection);
                             ClientPlayNetworking.send(new SkillSelectionC2SPayload(selected));
                             this.close();
@@ -391,7 +392,7 @@ public class SkillsScreen extends Screen {
 
                     this.addDrawableChild(resetBtn);
 
-                    // Miner: Add ore filter config button (gear icon)
+                    // Miner: Add ore filter + ultmine config buttons
                     if (skill == MurilloSkillsList.MINER) {
                         int configBtnSize = resetBtnSize;
                         int configBtnX = x + 4;
@@ -405,8 +406,19 @@ public class SkillsScreen extends Screen {
                                 .tooltip(net.minecraft.client.gui.tooltip.Tooltip.of(
                                         Text.translatable("murilloskills.ore_filter.title")))
                                 .build();
-
                         this.addDrawableChild(configBtn);
+
+                        // Ultmine config button
+                        int ultmineBtnX = configBtnX + configBtnSize + 2;
+                        ButtonWidget ultmineConfigBtn = ButtonWidget
+                                .builder(Text.literal("⛏"), (button) -> {
+                                    MinecraftClient.getInstance().setScreen(new UltmineConfigScreen(this));
+                                })
+                                .dimensions(ultmineBtnX, configBtnY, configBtnSize, configBtnSize)
+                                .tooltip(net.minecraft.client.gui.tooltip.Tooltip.of(
+                                        Text.translatable("murilloskills.ultmine_config.title")))
+                                .build();
+                        this.addDrawableChild(ultmineConfigBtn);
                     }
                 }
             }
@@ -646,6 +658,7 @@ public class SkillsScreen extends Screen {
             case FISHER -> SkillConfig.toTicksLong(SkillConfig.FISHER_ABILITY_COOLDOWN_SECONDS);
             case BLACKSMITH -> SkillConfig.toTicksLong(SkillConfig.BLACKSMITH_ABILITY_COOLDOWN_SECONDS);
             case BUILDER -> SkillConfig.toTicksLong(SkillConfig.BUILDER_ABILITY_COOLDOWN_SECONDS);
+            case EXPLORER -> SkillConfig.toTicksLong(SkillConfig.EXPLORER_ABILITY_COOLDOWN_SECONDS);
             default -> 6000L;
         };
     }
@@ -711,7 +724,7 @@ public class SkillsScreen extends Screen {
 
             // XP Progress Logic (always shown)
             double currentXp = ClientSkillData.get(skill).xp;
-            double maxXp = 60 + (level * 15) + (2 * level * level);
+            double maxXp = com.murilloskills.utils.SkillConfig.getXpForLevel(level);
             int percent = (int) ((currentXp / maxXp) * 100);
 
             tooltip.add(Text.empty());
@@ -811,6 +824,13 @@ public class SkillsScreen extends Screen {
                                 .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                 .formatted(Formatting.RED));
 
+                        int baseLooting = (int) (level * SkillConfig.WARRIOR_LOOTING_PER_LEVEL);
+                        int looting = (int) (baseLooting * prestigeMultiplier);
+                        if (looting > 0)
+                            tooltip.add(Text.translatable("murilloskills.passive.warrior.extra_looting", looting)
+                                    .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
+                                    .formatted(Formatting.RED));
+
                         int extraHearts = 0;
                         if (level >= 10)
                             extraHearts++;
@@ -849,9 +869,15 @@ public class SkillsScreen extends Screen {
                         if (level >= SkillConfig.FARMER_FERTILE_GROUND_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.farmer.fertile_ground")
                                     .formatted(Formatting.AQUA));
+                        if (level >= SkillConfig.FARMER_NATURES_VITALITY_LEVEL)
+                            tooltip.add(Text.translatable("murilloskills.passive.farmer.natures_vitality")
+                                    .formatted(Formatting.GREEN));
                         if (level >= SkillConfig.FARMER_NUTRIENT_CYCLE_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.farmer.nutrient_cycle")
                                     .formatted(Formatting.AQUA));
+                        if (level >= SkillConfig.FARMER_SEED_MASTER_LEVEL)
+                            tooltip.add(Text.translatable("murilloskills.passive.farmer.seed_master")
+                                    .formatted(Formatting.GOLD));
                         if (level >= SkillConfig.FARMER_ABUNDANT_HARVEST_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.farmer.abundant_harvest")
                                     .formatted(Formatting.GOLD));
@@ -911,15 +937,29 @@ public class SkillsScreen extends Screen {
                         tooltip.add(Text.translatable("murilloskills.passive.fisher.fishing_speed", fishingSpeed)
                                 .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                 .formatted(Formatting.AQUA));
+
+                        int baseBundle = (int) (level * SkillConfig.FISHER_EPIC_BUNDLE_PER_LEVEL * 100);
+                        int bundle = (int) (baseBundle * prestigeMultiplier);
+                        if (bundle > 0)
+                            tooltip.add(Text.translatable("murilloskills.passive.fisher.epic_bundle_chance", bundle)
+                                    .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
+                                    .formatted(Formatting.GOLD));
+
                         if (level >= SkillConfig.FISHER_WAIT_REDUCTION_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.fisher.wait_reduction")
                                     .formatted(Formatting.GREEN));
                         if (level >= SkillConfig.FISHER_TREASURE_BONUS_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.fisher.treasure_chance")
                                     .formatted(Formatting.GREEN));
+                        if (level >= SkillConfig.FISHER_OCEAN_BLESSING_LEVEL)
+                            tooltip.add(Text.translatable("murilloskills.passive.fisher.ocean_blessing")
+                                    .formatted(Formatting.AQUA));
                         if (level >= SkillConfig.FISHER_DOLPHIN_GRACE_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.fisher.dolphins_grace")
                                     .formatted(Formatting.AQUA));
+                        if (level >= SkillConfig.FISHER_SEAS_FORTUNE_LEVEL)
+                            tooltip.add(Text.translatable("murilloskills.passive.fisher.seas_fortune")
+                                    .formatted(Formatting.GOLD));
                         if (level >= SkillConfig.FISHER_LUCK_SEA_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.fisher.luck_of_sea")
                                     .formatted(Formatting.AQUA));
@@ -937,9 +977,15 @@ public class SkillsScreen extends Screen {
                         if (level >= SkillConfig.BLACKSMITH_EFFICIENT_ANVIL_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.blacksmith.efficient_anvil")
                                     .formatted(Formatting.GREEN));
+                        if (level >= SkillConfig.BLACKSMITH_FIRE_MASTERY_LEVEL)
+                            tooltip.add(Text.translatable("murilloskills.passive.blacksmith.fire_mastery")
+                                    .formatted(Formatting.RED));
                         if (level >= SkillConfig.BLACKSMITH_FORGED_RESILIENCE_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.blacksmith.forged_resilience")
                                     .formatted(Formatting.AQUA));
+                        if (level >= SkillConfig.BLACKSMITH_REPAIR_AURA_LEVEL)
+                            tooltip.add(Text.translatable("murilloskills.passive.blacksmith.repair_aura")
+                                    .formatted(Formatting.GREEN));
                         if (level >= SkillConfig.BLACKSMITH_THORNS_MASTER_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.blacksmith.thorns_master")
                                     .formatted(Formatting.AQUA));
@@ -961,8 +1007,14 @@ public class SkillsScreen extends Screen {
                         if (level >= SkillConfig.BUILDER_SAFE_LANDING_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.builder.safe_landing")
                                     .formatted(Formatting.AQUA));
+                        if (level >= SkillConfig.BUILDER_BUILDERS_VIGOR_LEVEL)
+                            tooltip.add(Text.translatable("murilloskills.passive.builder.builders_vigor")
+                                    .formatted(Formatting.GREEN));
                         if (level >= SkillConfig.BUILDER_SCAFFOLD_MASTER_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.builder.scaffold_master")
+                                    .formatted(Formatting.AQUA));
+                        if (level >= SkillConfig.BUILDER_FEATHER_BUILD_LEVEL)
+                            tooltip.add(Text.translatable("murilloskills.passive.builder.feather_build")
                                     .formatted(Formatting.AQUA));
                         if (level >= SkillConfig.BUILDER_MASTER_REACH_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.builder.master_reach")
@@ -998,6 +1050,12 @@ public class SkillsScreen extends Screen {
                         if (level >= SkillConfig.EXPLORER_NIGHT_VISION_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.explorer.night_vision")
                                     .formatted(Formatting.AQUA));
+                        if (level >= SkillConfig.EXPLORER_PATHFINDER_LEVEL)
+                            tooltip.add(Text.translatable("murilloskills.passive.explorer.pathfinder")
+                                    .formatted(Formatting.GREEN));
+                        if (level >= SkillConfig.EXPLORER_SWIFT_RECOVERY_LEVEL)
+                            tooltip.add(Text.translatable("murilloskills.passive.explorer.swift_recovery")
+                                    .formatted(Formatting.RED));
                         if (level >= SkillConfig.EXPLORER_FEATHER_FEET_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.explorer.feather_feet")
                                     .formatted(Formatting.AQUA));
@@ -1042,7 +1100,7 @@ public class SkillsScreen extends Screen {
         int textColor = PALETTE.textMuted();
 
         // XP Calculation
-        double xpNeeded = 60 + (stats.level * 15) + (2 * stats.level * stats.level);
+        double xpNeeded = com.murilloskills.utils.SkillConfig.getXpForLevel(stats.level);
         float progress = (float) MathHelper.clamp(stats.xp / xpNeeded, 0, 1);
 
         // Override progress for MAX level
@@ -1326,7 +1384,7 @@ public class SkillsScreen extends Screen {
                     this.width / 2, titleY, PALETTE.textGold());
             int count = pendingSelection.size();
             context.drawCenteredTextWithShadow(this.textRenderer,
-                    Text.translatable("murilloskills.gui.select_skills_count", count).formatted(Formatting.YELLOW),
+                    Text.translatable("murilloskills.gui.select_skills_count", count, ClientSkillData.getMaxSelectedSkills()).formatted(Formatting.YELLOW),
                     this.width / 2, titleY + 12, PALETTE.textGray());
         } else {
             context.drawCenteredTextWithShadow(this.textRenderer,

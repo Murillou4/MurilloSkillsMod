@@ -94,9 +94,21 @@ public class FisherSkill extends AbstractSkill {
             if (player.age % 20 != 0)
                 return; // Execute only once per second
 
+            // Level 35: Ocean's Blessing - Night Vision when underwater
+            if (level >= SkillConfig.FISHER_OCEAN_BLESSING_LEVEL && player.isSubmergedInWater()) {
+                player.addStatusEffect(new StatusEffectInstance(
+                        StatusEffects.NIGHT_VISION, 300, 0, true, false, true));
+            }
+
             // Level 50: Apply Dolphin's Grace when in water
             if (level >= SkillConfig.FISHER_DOLPHIN_GRACE_LEVEL && player.isTouchingWater()) {
                 applyDolphinGrace(player);
+            }
+
+            // Level 60: Sea's Fortune - Luck I permanent
+            if (level >= SkillConfig.FISHER_SEAS_FORTUNE_LEVEL) {
+                player.addStatusEffect(new StatusEffectInstance(
+                        StatusEffects.LUCK, 40, 0, true, false, true));
             }
 
             // Check if Rain Dance is active and handle it

@@ -21,7 +21,8 @@ public class SkillsNetworkUtils {
                 ? new ArrayList<>(data.selectedSkills)
                 : new ArrayList<>();
 
-        // Envia o pacote com Skills + Paragon Name + Selected Skills
-        ServerPlayNetworking.send(player, new SkillsSyncPayload(data.skills, paragonName, selectedSkills));
+        // Envia o pacote com Skills + Paragon Name + Selected Skills + Max Selected
+        ServerPlayNetworking.send(player, new SkillsSyncPayload(
+                data.skills, paragonName, selectedSkills, SkillConfig.getMaxSelectedSkills()));
     }
 }

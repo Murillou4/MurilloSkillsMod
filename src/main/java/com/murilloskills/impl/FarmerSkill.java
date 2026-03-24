@@ -12,6 +12,8 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -106,6 +108,21 @@ public class FarmerSkill extends AbstractSkill {
         try {
             if (player.age % 20 != 0)
                 return; // Execute only once per second
+
+            // Level 35: Nature's Vitality - Regeneration I when standing on farmland or grass
+            if (level >= SkillConfig.FARMER_NATURES_VITALITY_LEVEL) {
+                Block below = player.getEntityWorld().getBlockState(player.getBlockPos().down()).getBlock();
+                if (below == Blocks.FARMLAND || below == Blocks.GRASS_BLOCK || below == Blocks.MOSS_BLOCK) {
+                    player.addStatusEffect(new StatusEffectInstance(
+                            StatusEffects.REGENERATION, 40, 0, true, false, true));
+                }
+            }
+
+            // Level 60: Seed Master - Haste I permanent (faster interactions)
+            if (level >= SkillConfig.FARMER_SEED_MASTER_LEVEL) {
+                player.addStatusEffect(new StatusEffectInstance(
+                        StatusEffects.HASTE, 40, 0, true, false, true));
+            }
 
             // Check if Harvest Moon is active and handle it
             if (harvestMoonPlayers.containsKey(player.getUuid())) {

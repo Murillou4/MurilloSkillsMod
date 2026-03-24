@@ -23,7 +23,7 @@ public abstract class BuilderBlockPlacementMixin {
     @Inject(method = "postPlacement", at = @At("RETURN"))
     private void murilloskills$onSuccessfulPlacement(BlockPos pos, World world, PlayerEntity placer,
             ItemStack itemStack, BlockState state, CallbackInfoReturnable<Boolean> cir) {
-        if (!cir.getReturnValueZ() || world.isClient() || !(world instanceof ServerWorld serverWorld)) {
+        if (world.isClient() || !(world instanceof ServerWorld serverWorld)) {
             return;
         }
 

@@ -2,6 +2,7 @@ package com.murilloskills.mixin;
 
 import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.SkillConfig;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
@@ -29,10 +30,7 @@ public class EnchantmentHelperMixin {
                         .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
                 int warriorLevel = playerData.getSkill(MurilloSkillsList.WARRIOR).level;
 
-                // 0.03 Looting por level
-                // Level 10 = Looting 0.3
-                // Level 100 = Looting 3
-                int bonusLooting = (int) (warriorLevel * 0.03);
+                int bonusLooting = (int) (warriorLevel * SkillConfig.getWarriorLootingPerLevel());
 
                 if (bonusLooting > 0) {
                     cir.setReturnValue(cir.getReturnValue() + bonusLooting);

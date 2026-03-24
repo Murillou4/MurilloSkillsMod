@@ -10,6 +10,8 @@ import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -204,6 +206,20 @@ public class BuilderSkill extends AbstractSkill {
         try {
             if (player.age % 20 != 0)
                 return;
+
+            // Level 35: Builder's Vigor - Haste I permanent (faster mining/placing)
+            if (level >= SkillConfig.BUILDER_BUILDERS_VIGOR_LEVEL) {
+                player.addStatusEffect(new StatusEffectInstance(
+                        StatusEffects.HASTE, 40, 0, true, false, true));
+            }
+
+            // Level 60: Feather Build - Slow Falling when sneaking at height
+            if (level >= SkillConfig.BUILDER_FEATHER_BUILD_LEVEL) {
+                if (player.isSneaking() && player.getBlockPos().getY() >= SkillConfig.BUILDER_HIGH_BUILD_Y_THRESHOLD) {
+                    player.addStatusEffect(new StatusEffectInstance(
+                            StatusEffects.SLOW_FALLING, 40, 0, true, false, true));
+                }
+            }
 
             if (creativeBrushPlayers.containsKey(player.getUuid())) {
                 long startTime = creativeBrushPlayers.get(player.getUuid());

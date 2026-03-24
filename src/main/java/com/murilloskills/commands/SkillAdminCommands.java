@@ -428,9 +428,10 @@ public class SkillAdminCommands {
                 return 0;
             }
 
-            if (playerData.selectedSkills.size() >= 3) {
+            int maxSkills = com.murilloskills.utils.SkillConfig.getMaxSelectedSkills();
+            if (playerData.selectedSkills.size() >= maxSkills) {
                 source.sendError(Text
-                        .literal("Player " + target + " already has 3 skills selected. Use /skill deselect first."));
+                        .literal("Player " + target + " already has " + maxSkills + " skills selected. Use /skill deselect first."));
                 return 0;
             }
 
@@ -516,9 +517,10 @@ public class SkillAdminCommands {
 
             // Auto-select skill if not selected
             if (!playerData.isSkillSelected(skill)) {
-                if (playerData.selectedSkills.size() >= 3) {
+                int maxSkills = com.murilloskills.utils.SkillConfig.getMaxSelectedSkills();
+                if (playerData.selectedSkills.size() >= maxSkills) {
                     source.sendError(
-                            Text.literal("Player has 3 skills selected and " + skill.name() + " is not one of them."));
+                            Text.literal("Player has " + maxSkills + " skills selected and " + skill.name() + " is not one of them."));
                     return 0;
                 }
                 playerData.selectedSkills.add(skill);

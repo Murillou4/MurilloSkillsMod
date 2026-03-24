@@ -5,6 +5,7 @@ import com.murilloskills.gui.renderer.RenderingHelper;
 import com.murilloskills.gui.data.SkillUiData;
 import com.murilloskills.data.ClientSkillData;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -41,11 +42,17 @@ public class ModInfoScreen extends Screen {
         private int headerHeight = 48;
         private final Screen parent;
 
-        // Animation
-        private float tabTransition = 0f;
+        // Mouse tracking for hover effects
+        private int lastMouseX, lastMouseY;
 
-        // === SYNERGY & PERK DEFINITIONS ===
-        // Removed duplicated definitions - migrated to SkillUiData
+        // Guide tab: selected skill for detail view
+        private MurilloSkillsList selectedGuideSkill = null;
+
+        // Guide skill selector layout constants
+        private static final int SKILL_CARD_WIDTH = 70;
+        private static final int SKILL_CARD_HEIGHT = 28;
+        private static final int SKILL_CARD_GAP = 4;
+        private static final int SKILL_SELECTOR_HEIGHT = 36;
 
         public ModInfoScreen(Screen parent) {
                 super(Text.translatable("murilloskills.info.title"));
@@ -97,7 +104,6 @@ public class ModInfoScreen extends Screen {
                                         if (currentTab != tab) {
                                                 currentTab = tab;
                                                 scrollController.reset();
-                                                tabTransition = 0f;
                                                 calculateMaxScroll();
                                         }
                                 })
@@ -150,20 +156,19 @@ public class ModInfoScreen extends Screen {
                 return 350;
         }
 
-                private int calculatePerksHeight() {
-                int height = 40;
-                for (MurilloSkillsList skill : MurilloSkillsList.values()) {
-                        height += calculateGuideSkillHeight(skill) + 16;
+        private int calculatePerksHeight() {
+                int height = 28 + SKILL_SELECTOR_HEIGHT + 12;
+                if (selectedGuideSkill != null) {
+                        height += calculateGuideSkillHeight(selectedGuideSkill) + 16;
                 }
                 return height;
         }
 
         @Override
         public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-                // Update animation
-                if (tabTransition < 1f) {
-                        tabTransition = Math.min(1f, tabTransition + delta * 0.15f);
-                }
+                // Track mouse position for hover effects
+                this.lastMouseX = mouseX;
+                this.lastMouseY = mouseY;
 
                 // Gradient background
                 renderGradientBackground(context);
@@ -468,17 +473,83 @@ public class ModInfoScreen extends Screen {
                 }
         }
 
-                private void renderPerksTab(DrawContext context) {
+        private void renderPerksTab(DrawContext context) {
                 int y = contentY + SECTION_PADDING - scrollController.getScrollOffset();
                 int x = contentX + SECTION_PADDING;
 
                 renderSectionTitle(context, x, y, Text.translatable("murilloskills.info.perks.title").getString());
                 y += 28;
 
-                for (MurilloSkillsList skill : MurilloSkillsList.values()) {
-                        y = renderGuideSkillSection(context, x, y, skill);
-                        y += 16;
+                // Skill selector bar
+                y = renderGuideSkillSelector(context, x, y);
+                y += 12;
+
+                // Render selected skill detail
+                if (selectedGuideSkill != null) {
+                        y = renderGuideSkillSection(context, x, y, selectedGuideSkill);
                 }
+        }
+
+        private int renderGuideSkillSelector(DrawContext context, int x, int y) {
+                MurilloSkillsList[] skills = MurilloSkillsList.values();
+                int totalWidth = contentWidth - SECTION_PADDING * 2 - 16;
+                int cardWidth = (totalWidth - SKILL_CARD_GAP * (skills.length - 1)) / skills.length;
+                int cardHeight = SKILL_CARD_HEIGHT;
+
+                for (int i = 0; i < skills.length; i++) {
+                        MurilloSkillsList skill = skills[i];
+                        int cardX = x + i * (cardWidth + SKILL_CARD_GAP);
+                        boolean isSelected = skill == selectedGuideSkill;
+                        boolean isHovered = !isSelected
+                                        && lastMouseX >= cardX && lastMouseX <= cardX + cardWidth
+                                        && lastMouseY >= y && lastMouseY <= y + cardHeight;
+                        int skillColor = PALETTE.getSkillColor(skill);
+
+                        // Card background with hover highlight
+                        int bgColor = isSelected ? 0xE0202035 : (isHovered ? 0xD01E1E30 : 0xC0161622);
+                        context.fill(cardX, y, cardX + cardWidth, y + cardHeight, bgColor);
+
+                        // Border - highlighted for selected, subtle glow for hovered
+                        if (isSelected) {
+                                RenderingHelper.drawPanelBorder(context, cardX, y, cardWidth, cardHeight, skillColor);
+                                // Top accent glow
+                                context.fill(cardX + 1, y + 1, cardX + cardWidth - 1, y + 2, skillColor);
+                                // Bottom accent
+                                context.fill(cardX + 1, y + cardHeight - 2, cardX + cardWidth - 1, y + cardHeight - 1,
+                                                (0x60 << 24) | (skillColor & 0x00FFFFFF));
+                        } else if (isHovered) {
+                                int hoverBorder = (0x80 << 24) | (skillColor & 0x00FFFFFF);
+                                RenderingHelper.drawPanelBorder(context, cardX, y, cardWidth, cardHeight, hoverBorder);
+                                // Subtle top glow
+                                context.fill(cardX + 1, y + 1, cardX + cardWidth - 1, y + 2,
+                                                (0x30 << 24) | (skillColor & 0x00FFFFFF));
+                        } else {
+                                RenderingHelper.drawPanelBorder(context, cardX, y, cardWidth, cardHeight,
+                                                PALETTE.sectionBorder());
+                        }
+
+                        // Skill icon
+                        int iconX = cardX + 2;
+                        int iconY = y + (cardHeight - 16) / 2;
+                        context.drawItem(SkillUiData.getSkillIcon(skill), iconX, iconY);
+
+                        // Skill name (abbreviated if needed)
+                        String skillName = Text.translatable("murilloskills.skill.name." + skill.name().toLowerCase())
+                                        .getString();
+                        int nameColor = isSelected ? skillColor : (isHovered ? 0xFFDDDDEE : PALETTE.textGray());
+                        int maxNameWidth = cardWidth - 24;
+                        if (textRenderer.getWidth(skillName) > maxNameWidth) {
+                                while (textRenderer.getWidth(skillName + "..") > maxNameWidth && skillName.length() > 2) {
+                                        skillName = skillName.substring(0, skillName.length() - 1);
+                                }
+                                skillName += "..";
+                        }
+                        context.drawText(textRenderer, Text.literal(skillName),
+                                        iconX + 20, y + (cardHeight - 8) / 2, nameColor,
+                                        isSelected || isHovered);
+                }
+
+                return y + cardHeight;
         }
 
         // === STYLED COMPONENT HELPERS ===
@@ -570,7 +641,7 @@ public class ModInfoScreen extends Screen {
                 int barWidth = cardWidth - 75;
                 int barHeight = 6;
 
-                double xpNeeded = 60 + (level * 15) + (2 * level * level);
+                double xpNeeded = com.murilloskills.utils.SkillConfig.getXpForLevel(level);
                 float progress = level >= 100 ? 1.0f : (float) (stats.xp / xpNeeded);
                 int fillColor = level >= 100 ? PALETTE.accentGold() : PALETTE.progressBarFill();
 
@@ -715,7 +786,7 @@ public class ModInfoScreen extends Screen {
                 // Skill name with color
                 String skillName = Text.translatable("murilloskills.skill.name." + skill.name().toLowerCase())
                                 .getString();
-                int skillColor = getSkillColor(skill);
+                int skillColor = PALETTE.getSkillColor(skill);
                 context.drawTextWithShadow(textRenderer, Text.literal("  " + skillName).formatted(Formatting.BOLD),
                                 x + 4, y + 6, skillColor);
         }
@@ -748,30 +819,36 @@ public class ModInfoScreen extends Screen {
 
         
         private int calculateGuideSkillHeight(MurilloSkillsList skill) {
-                int width = contentWidth - SECTION_PADDING * 2 - 36;
-                int height = 26;
-                height += calculateGuideParagraphHeight(Text.translatable("murilloskills.info.guide.overview").getString(),
-                                SkillUiData.getSkillDescription(skill).getString(), width);
-                height += calculateGuideParagraphHeight(Text.translatable("murilloskills.info.guide.why_choose").getString(),
-                                SkillUiData.getWhyChooseDescription(skill), width);
-                height += calculateGuideParagraphHeight(Text.translatable("murilloskills.info.guide.xp_sources").getString(),
-                                SkillUiData.getXpGainDescription(skill).getString(), width);
-                height += calculateGuideParagraphHeight(Text.translatable("murilloskills.info.guide.master_ability").getString(),
-                                SkillUiData.getMasterAbilityDetails(skill), width);
-                height += 18;
+                int width = contentWidth - SECTION_PADDING * 2 - 16;
+                int textWidth = width - 16;
+                int innerWidth = textWidth - 16;
+                int height = 38; // header + gap
+
+                // 4 guide cards (overview, why choose, xp sources, master ability)
+                height += calculateGuideCardHeight(SkillUiData.getSkillDescription(skill).getString(), innerWidth);
+                height += calculateGuideCardHeight(SkillUiData.getWhyChooseDescription(skill), innerWidth);
+                height += calculateXpSourcesSectionHeight(skill);
+                height += calculateGuideCardHeight(SkillUiData.getMasterAbilityDetails(skill), innerWidth);
+
+                // Level 100 passives card
+                int passivesHeight = 22;
                 for (Text line : SkillUiData.getMaxPassiveGuide(skill)) {
-                        height += calculateWrappedTextHeight(line.getString(), width - 8);
+                        passivesHeight += calculateWrappedTextHeight(line.getString(), textWidth - 16);
                 }
-                height += 8;
-                height += 18;
+                height += passivesHeight + 6;
+
+                // Timeline header
+                height += 22;
+
+                // Timeline entries
                 for (SkillUiData.GuideEntry entry : SkillUiData.getGuideTimeline(skill)) {
-                        height += calculateWrappedTextHeight(entry.text(), width - 8);
+                        height += calculateWrappedTextHeight(entry.text(), textWidth - 20);
                 }
                 return height + 8;
         }
 
-        private int calculateGuideParagraphHeight(String label, String value, int width) {
-                return 16 + calculateWrappedTextHeight(value, width) + 4;
+        private int calculateGuideCardHeight(String value, int innerWidth) {
+                return 20 + calculateWrappedTextHeight(value, innerWidth) + 6 + 6;
         }
 
         private int calculateWrappedTextHeight(String text, int width) {
@@ -780,55 +857,195 @@ public class ModInfoScreen extends Screen {
 
         private int renderGuideSkillSection(DrawContext context, int x, int y, MurilloSkillsList skill) {
                 int width = contentWidth - SECTION_PADDING * 2 - 16;
-                renderSkillPerkHeader(context, x, y, skill);
-                y += 26;
+                int skillColor = PALETTE.getSkillColor(skill);
 
-                int textX = x + 10;
-                int textWidth = width - 20;
-                y = renderGuideParagraph(context, textX, y,
-                                Text.translatable("murilloskills.info.guide.overview").getString(),
-                                SkillUiData.getSkillDescription(skill).getString(), textWidth, PALETTE.textLight());
-                y = renderGuideParagraph(context, textX, y,
-                                Text.translatable("murilloskills.info.guide.why_choose").getString(),
-                                SkillUiData.getWhyChooseDescription(skill), textWidth, PALETTE.textAqua());
-                y = renderGuideParagraph(context, textX, y,
-                                Text.translatable("murilloskills.info.guide.xp_sources").getString(),
-                                SkillUiData.getXpGainDescription(skill).getString(), textWidth, PALETTE.textGreen());
-                y = renderGuideParagraph(context, textX, y,
-                                Text.translatable("murilloskills.info.guide.master_ability").getString(),
-                                SkillUiData.getMasterAbilityDetails(skill), textWidth, PALETTE.textGold());
+                // Skill header with icon and player progress
+                int headerH = 30;
+                context.fill(x, y, x + width, y + headerH, 0xE0181828);
+                RenderingHelper.drawPanelBorder(context, x, y, width, headerH, skillColor);
+                context.fill(x, y, x + 3, y + headerH, skillColor);
 
-                renderSubsectionHeader(context, textX, y,
-                                Text.translatable("murilloskills.info.guide.level100").getString());
-                y += 16;
-                for (Text line : SkillUiData.getMaxPassiveGuide(skill)) {
-                        y = renderWrappedGuideText(context, line.getString(), textX + 8, y, textWidth - 8,
-                                        PALETTE.textLight());
-                }
-                y += 4;
+                context.drawItem(SkillUiData.getSkillIcon(skill), x + 8, y + 7);
+                String skillName = Text.translatable("murilloskills.skill.name." + skill.name().toLowerCase())
+                                .getString();
+                context.drawTextWithShadow(textRenderer, Text.literal(skillName).formatted(Formatting.BOLD),
+                                x + 28, y + 6, skillColor);
 
-                renderSubsectionHeader(context, textX, y,
-                                Text.translatable("murilloskills.info.guide.timeline").getString());
-                y += 16;
-
+                // Player level badge
                 int playerLevel = ClientSkillData.get(skill).level;
+                String levelStr = "Lv " + playerLevel;
+                int levelColor = playerLevel >= 100 ? PALETTE.textGold() : PALETTE.textLight();
+                context.drawText(textRenderer, Text.literal(levelStr), x + 28, y + 18, levelColor, false);
+
+                // Progress bar in header
+                int barX = x + 28 + textRenderer.getWidth(levelStr) + 8;
+                int barWidth = Math.min(80, width - barX + x - 12);
+                if (barWidth > 20) {
+                        double xpNeeded = com.murilloskills.utils.SkillConfig.getXpForLevel(playerLevel);
+                        float progress = playerLevel >= 100 ? 1.0f
+                                        : (float) (ClientSkillData.get(skill).xp / xpNeeded);
+                        RenderingHelper.renderProgressBar(context, barX, y + 20, barWidth, 5, progress,
+                                        PALETTE.progressBarEmpty(), skillColor, PALETTE.progressBarShine());
+                }
+
+                y += headerH + 8;
+
+                int textX = x + 8;
+                int textWidth = width - 16;
+
+                // Card: Overview + Why Choose (side info)
+                y = renderGuideCard(context, x, y, width, textWidth,
+                                Text.translatable("murilloskills.info.guide.overview").getString(),
+                                SkillUiData.getSkillDescription(skill).getString(),
+                                PALETTE.textLight(), PALETTE.accentBlue());
+
+                y = renderGuideCard(context, x, y, width, textWidth,
+                                Text.translatable("murilloskills.info.guide.why_choose").getString(),
+                                SkillUiData.getWhyChooseDescription(skill),
+                                PALETTE.textAqua(), PALETTE.textAqua());
+
+                y = renderXpSourcesSection(context, x, y, width, skill);
+
+                y = renderGuideCard(context, x, y, width, textWidth,
+                                Text.translatable("murilloskills.info.guide.master_ability").getString(),
+                                SkillUiData.getMasterAbilityDetails(skill),
+                                PALETTE.textGold(), PALETTE.accentGold());
+
+                // Level 100 passives card
+                List<Text> passives = SkillUiData.getMaxPassiveGuide(skill);
+                int passivesHeight = 22;
+                for (Text line : passives) {
+                        passivesHeight += calculateWrappedTextHeight(line.getString(), textWidth - 16);
+                }
+                context.fill(x, y, x + width, y + passivesHeight, 0xC0141420);
+                RenderingHelper.drawPanelBorder(context, x, y, width, passivesHeight, PALETTE.sectionBorder());
+                context.fill(x, y, x + 3, y + passivesHeight, PALETTE.textPurple());
+
+                context.drawTextWithShadow(textRenderer,
+                                Text.literal(Text.translatable("murilloskills.info.guide.level100").getString())
+                                                .formatted(Formatting.BOLD),
+                                x + 8, y + 5, PALETTE.textPurple());
+                int passiveY = y + 20;
+                for (Text line : passives) {
+                        passiveY = renderWrappedGuideText(context, line.getString(), x + 12, passiveY,
+                                        textWidth - 16, PALETTE.textLight());
+                }
+                y += passivesHeight + 6;
+
+                // Timeline section with visual milestone markers
+                context.fill(x, y, x + width, y + 18, 0xC0141420);
+                RenderingHelper.drawPanelBorder(context, x, y, width, 18, PALETTE.sectionBorder());
+                context.fill(x, y, x + 3, y + 18, PALETTE.textYellow());
+                context.drawTextWithShadow(textRenderer,
+                                Text.literal(Text.translatable("murilloskills.info.guide.timeline").getString())
+                                                .formatted(Formatting.BOLD),
+                                x + 8, y + 5, PALETTE.textYellow());
+                y += 22;
+
+                // Timeline entries with a vertical line
+                int timelineX = x + 6;
                 for (SkillUiData.GuideEntry entry : SkillUiData.getGuideTimeline(skill)) {
-                        int color = entry.level() <= playerLevel
+                        boolean reached = entry.level() <= playerLevel;
+                        int lineHeight = calculateWrappedTextHeight(entry.text(), textWidth - 20);
+
+                        // Vertical timeline line
+                        int lineColor = reached ? (0x60 << 24) | (skillColor & 0x00FFFFFF) : 0x30FFFFFF;
+                        context.fill(timelineX, y, timelineX + 2, y + lineHeight, lineColor);
+
+                        // Milestone dot
+                        if (entry.milestone()) {
+                                int dotColor = reached ? skillColor : PALETTE.textMuted();
+                                context.fill(timelineX - 2, y + 2, timelineX + 4, y + 8, dotColor);
+                        } else {
+                                int dotColor = reached ? (0x80 << 24) | (skillColor & 0x00FFFFFF) : 0x30FFFFFF;
+                                context.fill(timelineX - 1, y + 3, timelineX + 3, y + 7, dotColor);
+                        }
+
+                        // Text
+                        int textColor = reached
                                         ? (entry.milestone() ? PALETTE.textGold() : PALETTE.textLight())
                                         : (entry.milestone() ? PALETTE.textYellow() : PALETTE.textMuted());
-                        y = renderWrappedGuideText(context, entry.text(), textX + 8, y, textWidth - 8, color);
+                        y = renderWrappedGuideText(context, entry.text(), timelineX + 10, y, textWidth - 20,
+                                        textColor);
                 }
 
                 return y;
         }
 
-        private int renderGuideParagraph(DrawContext context, int x, int y, String label, String value, int width,
-                        int color) {
-                renderSubsectionHeader(context, x, y, label);
-                y += 16;
-                y = renderWrappedGuideText(context, value, x + 8, y, width - 8, color);
-                return y + 4;
+        private int renderXpSourcesSection(DrawContext context, int x, int y, int cardWidth,
+                        MurilloSkillsList skill) {
+                List<SkillUiData.XpSourceInfo> sources = SkillUiData.getDetailedXpSources(skill);
+                int rowHeight = 12;
+                int headerH = 20;
+                int totalHeight = headerH + sources.size() * rowHeight + 8;
+
+                // Card background
+                context.fill(x, y, x + cardWidth, y + totalHeight, 0xC0141420);
+                RenderingHelper.drawPanelBorder(context, x, y, cardWidth, totalHeight, PALETTE.sectionBorder());
+
+                // Left accent bar
+                context.fill(x, y, x + 3, y + totalHeight, PALETTE.accentGreen());
+
+                // Header
+                context.drawTextWithShadow(textRenderer,
+                                Text.literal(Text.translatable("murilloskills.info.guide.xp_sources").getString())
+                                                .formatted(Formatting.BOLD),
+                                x + 8, y + 5, PALETTE.accentGreen());
+
+                // Source rows
+                int rowY = y + headerH;
+                for (int i = 0; i < sources.size(); i++) {
+                        SkillUiData.XpSourceInfo source = sources.get(i);
+
+                        // Alternating row background
+                        if (i % 2 == 0) {
+                                context.fill(x + 4, rowY, x + cardWidth - 4, rowY + rowHeight, 0x15FFFFFF);
+                        }
+
+                        // Name
+                        context.drawText(textRenderer, Text.literal("  " + source.name()),
+                                        x + 8, rowY + 2, source.color(), false);
+
+                        // XP value right-aligned
+                        String xpText = source.xp();
+                        int xpWidth = textRenderer.getWidth(xpText);
+                        context.drawText(textRenderer, Text.literal(xpText),
+                                        x + cardWidth - xpWidth - 12, rowY + 2, PALETTE.textAqua(), false);
+
+                        rowY += rowHeight;
+                }
+
+                return y + totalHeight + 6;
         }
+
+        private int calculateXpSourcesSectionHeight(MurilloSkillsList skill) {
+                return 20 + SkillUiData.getDetailedXpSources(skill).size() * 12 + 8 + 6;
+        }
+
+        private int renderGuideCard(DrawContext context, int x, int y, int cardWidth, int textWidth,
+                        String label, String value, int textColor, int accentColor) {
+                int innerWidth = textWidth - 16;
+                int textHeight = calculateWrappedTextHeight(value, innerWidth);
+                int totalHeight = 20 + textHeight + 6;
+
+                // Card bg
+                context.fill(x, y, x + cardWidth, y + totalHeight, 0xC0141420);
+                RenderingHelper.drawPanelBorder(context, x, y, cardWidth, totalHeight, PALETTE.sectionBorder());
+
+                // Left accent bar
+                context.fill(x, y, x + 3, y + totalHeight, accentColor);
+
+                // Label
+                context.drawTextWithShadow(textRenderer, Text.literal(label).formatted(Formatting.BOLD),
+                                x + 8, y + 5, accentColor);
+
+                // Value text
+                renderWrappedGuideText(context, value, x + 12, y + 18, innerWidth, textColor);
+
+                return y + totalHeight + 6;
+        }
+
+        // renderGuideParagraph replaced by renderGuideCard
 
         private int renderWrappedGuideText(DrawContext context, String text, int x, int y, int width, int color) {
                 for (String line : wrapText(text, width)) {
@@ -837,19 +1054,6 @@ public class ModInfoScreen extends Screen {
                 }
                 return y;
         }
-        private int getSkillColor(MurilloSkillsList skill) {
-                return switch (skill) {
-                        case MINER -> 0xFF88CCFF;
-                        case WARRIOR -> 0xFFFF6666;
-                        case FARMER -> 0xFF88FF88;
-                        case ARCHER -> 0xFFFFCC66;
-                        case FISHER -> 0xFF66CCFF;
-                        case BUILDER -> 0xFFCC9966;
-                        case BLACKSMITH -> 0xFFCCCCCC;
-                        case EXPLORER -> 0xFF66FF99;
-                };
-        }
-
         private List<String> wrapText(String text, int maxWidth) {
                 List<String> lines = new ArrayList<>();
                 if (textRenderer.getWidth(text) <= maxWidth) {
@@ -885,6 +1089,65 @@ public class ModInfoScreen extends Screen {
                 return scrollController.handleMouseScroll(mouseX, mouseY, verticalAmount,
                                 contentX, contentY, contentWidth, contentHeight) ||
                                 super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+        }
+
+        @Override
+        public boolean mouseClicked(Click click, boolean doubled) {
+                var mouse = MinecraftClient.getInstance().mouse;
+                var window = MinecraftClient.getInstance().getWindow();
+                double mouseX = mouse.getX() * window.getScaledWidth() / window.getWidth();
+                double mouseY = mouse.getY() * window.getScaledHeight() / window.getHeight();
+
+                // Check scrollbar click first
+                if (scrollController.handleMouseClicked(mouseX, mouseY, click.button())) {
+                        return true;
+                }
+
+                if (click.button() == 0 && currentTab == Tab.PERKS) {
+                        // Check skill selector clicks
+                        int selectorY = contentY + SECTION_PADDING - scrollController.getScrollOffset() + 28;
+                        int x = contentX + SECTION_PADDING;
+                        MurilloSkillsList[] skills = MurilloSkillsList.values();
+                        int totalWidth = contentWidth - SECTION_PADDING * 2 - 16;
+                        int cardWidth = (totalWidth - SKILL_CARD_GAP * (skills.length - 1)) / skills.length;
+
+                        if (mouseY >= selectorY && mouseY <= selectorY + SKILL_CARD_HEIGHT) {
+                                for (int i = 0; i < skills.length; i++) {
+                                        int cardX = x + i * (cardWidth + SKILL_CARD_GAP);
+                                        if (mouseX >= cardX && mouseX <= cardX + cardWidth) {
+                                                if (selectedGuideSkill == skills[i]) {
+                                                        selectedGuideSkill = null;
+                                                } else {
+                                                        selectedGuideSkill = skills[i];
+                                                }
+                                                scrollController.reset();
+                                                calculateMaxScroll();
+                                                return true;
+                                        }
+                                }
+                        }
+                }
+                return super.mouseClicked(click, doubled);
+        }
+
+        @Override
+        public boolean mouseDragged(Click click, double offsetX, double offsetY) {
+                if (scrollController.isDragging()) {
+                        var mouse = MinecraftClient.getInstance().mouse;
+                        var window = MinecraftClient.getInstance().getWindow();
+                        double mouseY = mouse.getY() * window.getScaledHeight() / window.getHeight();
+                        scrollController.handleMouseDragged(mouseY);
+                        return true;
+                }
+                return super.mouseDragged(click, offsetX, offsetY);
+        }
+
+        @Override
+        public boolean mouseReleased(Click click) {
+                if (scrollController.handleMouseReleased()) {
+                        return true;
+                }
+                return super.mouseReleased(click);
         }
 
         // SynergyInfo and PerkInfo records removed (migrated to SkillUiData)

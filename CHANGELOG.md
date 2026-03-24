@@ -4,6 +4,101 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.17] - 2026-03-23
+
+### ⚔️ Warrior - Looting Passivo
+
+- **Looting por nível**: o Warrior agora ganha bônus de Looting passivo baseado no nível (+2% por nível, máximo +2 níveis de Looting no nível 100). Funciona como a Fortune do Miner — aplica-se automaticamente ao atacar mobs.
+- Tooltip na tela de skills exibe o bônus atual de Looting.
+
+### ⚖️ Rebalanceamento - 5 Classes Buffadas
+
+Classes menos populares (Farmer, Fisher, Blacksmith, Builder, Explorer) receberam **melhorias substanciais** com novas habilidades passivas nos níveis 35 e 60, além de buffs nos valores existentes.
+
+#### 🌾 Farmer
+- **Nível 35 - Vitalidade Natural**: Regeneração I ao pisar em terra arada, grama ou musgo
+- **Nível 60 - Mestre das Sementes**: Haste I permanente (interações mais rápidas)
+- Buffs: colheita dupla +100%, cultivo dourado +166%, duração ativa +100%, cooldown -25%
+
+#### 🎣 Fisher
+- **Nível 35 - Benção do Oceano**: Visão Noturna quando submerso
+- **Nível 60 - Fortuna do Mar**: Luck I permanente
+- Buffs: velocidade de pesca +100%, Epic Bundle +200%, cooldown -33%, Rain Dance +50%
+
+#### 🔨 Blacksmith
+- **Nível 35 - Domínio do Fogo**: Fire Resistance permanente
+- **Nível 60 - Aura de Reparo**: auto-reparo do item na mão (1 durabilidade a cada 10s)
+- Buffs: thorns +50% chance, reflexo +40%, duração Titanium +66%, cooldown -25%
+
+#### 🏗️ Builder
+- **Nível 35 - Vigor do Construtor**: Haste I permanente (mineração e construção mais rápida)
+- **Nível 60 - Construção Leve**: Slow Falling ao agachar em altura (≥100Y)
+- Buffs: alcance por nível +60%, redução de queda +100%, economia decorativa +50%, cooldown -25%
+
+#### 🧭 Explorer
+- **Nível 45 - Desbravador**: Speed II ao correr (sprint)
+- **Nível 55 - Recuperação Rápida**: Regeneração I quando vida abaixo de 50%
+- Buffs: velocidade +100%, redução de fome +60%, redução de queda +50%, XP por distância +43%
+
+### 🌐 Localização
+
+- 31 novas chaves de tradução adicionadas em `en_us`, `pt_br` e `es_es` (nomes, descrições e passivas das novas habilidades)
+
+### 📖 UI/Guias
+
+- Tooltips atualizados na tela de skills para todas as 5 classes
+- Guia de progressão (nível 1-100) atualizada com as novas habilidades
+- SKILL_PERKS e getMaxPassiveGuide atualizados para refletir os novos marcos
+
+---
+
+## [1.2.16] - 2026-03-21
+
+### ⛏️ Ultmine - Configuração e Variantes
+
+- **Tela de configuração do Ultmine**: nova tela acessível pelo botão ⛏ no card do Miner, permitindo configurar:
+  - **Drops to Inventory**: toggle para enviar itens direto ao inventário
+  - **Same Block Only**: toggle para minerar apenas blocos do mesmo tipo
+  - **Depth/Length por shape**: ajuste individual de profundidade e comprimento para cada formato
+  - **Variantes por shape**: seleção de variante (ex: escada subindo/descendo, 20x20 horizontal/vertical)
+- **Variantes de shapes**: Stairs (subir/descer), Square 20x20 (horizontal/vertical N-S/vertical E-W), 2x1 (largo/alto)
+- **Config persistente**: preferências salvas em `config/murilloskills_ultmine.json` no lado do cliente
+- **Durabilidade da ferramenta corrigida**: ferramentas agora perdem durabilidade corretamente ao usar Ultmine e Vein Miner. Se a ferramenta quebrar no meio do shape, a mineração para automaticamente
+- **Outline em líquidos corrigido**: o preview do Ultmine não destaca mais blocos de água/lava
+- **Mensagem de "blocos inválidos" removida**: eliminado o spam de mensagem quando o Ultmine não encontrava blocos válidos
+
+### ✨ XP Direto ao Jogador
+
+- **Novo toggle "XP Direct"**: na tela de config do Ultmine, permite que os orbes de XP (de carvão, diamante, etc.) ao minerar com Ultmine/Vein Miner sejam concedidos diretamente ao jogador em vez de cair no chão
+- Funciona tanto no Ultmine quanto no Vein Miner legado
+- Sincronizado via rede — toggle na interface envia preferência ao servidor
+
+### ⚙️ Limite de Skills Selecionadas Configurável
+
+- **`maxSelectedSkills`**: novo campo em `murilloskills.json` > `general` que define o número máximo de skills que o jogador pode selecionar (padrão: 3, mínimo: 1, máximo: 8)
+- O limite é sincronizado do servidor para o cliente via payload, garantindo que tela de seleção e validações estejam sempre consistentes
+- Comandos de admin (`/murilloskills select`, `/murilloskills paragon`) também respeitam o novo limite
+
+```json
+"general": {
+  "maxSelectedSkills": 3
+}
+```
+
+### 🎨 OreFilterScreen - Redesign
+
+- **Redesign completo**: tela de filtro de minérios reescrita com o tema premium dark do mod (ColorPalette + RenderingHelper)
+- **Cards de minério com cor**: cada minério tem uma barra lateral com sua cor característica
+- **Botões de modo estilizados**: seleção de modo (X-Ray, Visível, Próximo) com indicador visual e descrição
+
+### 🌐 Localização
+
+- Traduções da tela de config do Ultmine em `pt_br`, `en_us` e `es_es`
+- Traduções do filtro de minérios adicionadas em `es_es` (estavam faltando)
+- 8 chaves de variantes de shapes em 3 idiomas
+
+---
+
 ## [1.2.15] - 2026-03-11
 
 ### 🐛 Fisher / Miner (Skyblock)

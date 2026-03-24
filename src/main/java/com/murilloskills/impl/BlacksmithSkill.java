@@ -100,6 +100,23 @@ public class BlacksmithSkill extends AbstractSkill {
             if (player.age % 20 != 0)
                 return; // Execute only once per second
 
+            // Level 35: Fire Mastery - Fire Resistance permanent
+            if (level >= SkillConfig.BLACKSMITH_FIRE_MASTERY_LEVEL) {
+                player.addStatusEffect(new StatusEffectInstance(
+                        StatusEffects.FIRE_RESISTANCE, 40, 0, true, false, true));
+            }
+
+            // Level 60: Repair Aura - slowly repairs held item
+            if (level >= SkillConfig.BLACKSMITH_REPAIR_AURA_LEVEL) {
+                int intervalTicks = SkillConfig.BLACKSMITH_REPAIR_AURA_INTERVAL_SECONDS * 20;
+                if (player.age % intervalTicks == 0) {
+                    net.minecraft.item.ItemStack mainHand = player.getMainHandStack();
+                    if (mainHand.isDamageable() && mainHand.isDamaged()) {
+                        mainHand.setDamage(mainHand.getDamage() - 1);
+                    }
+                }
+            }
+
             // Check if player has Titanium Aura active
             if (titaniumAuraPlayers.containsKey(player.getUuid())) {
                 long startTime = titaniumAuraPlayers.get(player.getUuid());

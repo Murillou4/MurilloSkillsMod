@@ -68,6 +68,7 @@ public class ModConfig {
     public static class GeneralConfig {
         public int maxLevel = 100;
         public float cooldownReductionPerLevel = 0.005f;
+        public int maxSelectedSkills = 3;
     }
 
     public static class XpConfig {
@@ -123,11 +124,13 @@ public class ModConfig {
     }
 
     public static class FarmerConfig {
-        public float doubleHarvestPerLevel = 0.005f;
-        public float goldenCropPerLevel = 0.0015f;
+        public float doubleHarvestPerLevel = 0.01f;
+        public float goldenCropPerLevel = 0.004f;
         public int greenThumbLevel = 10;
         public int fertileGroundLevel = 25;
+        public int naturesVitalityLevel = 35;
         public int nutrientCycleLevel = 50;
+        public int seedMasterLevel = 60;
         public int abundantHarvestLevel = 75;
         public int masterLevel = 100;
         public float greenThumbExtra = 0.05f;
@@ -138,26 +141,28 @@ public class ModConfig {
         public float abundantAdjacent = 0.10f;
         public int fertileGroundRadius = 32;
         public int abilityRadius = 8;
-        public int abilityDurationSeconds = 10;
-        public int abilityCooldownSeconds = 120;
+        public int abilityDurationSeconds = 20;
+        public int abilityCooldownSeconds = 90;
         public int areaPlantingLevel = 25;
         public int areaPlantingRadius = 1;
     }
 
     public static class FisherConfig {
-        public float speedPerLevel = 0.005f;
-        public float epicBundlePerLevel = 0.001f;
+        public float speedPerLevel = 0.01f;
+        public float epicBundlePerLevel = 0.003f;
         public int waitReductionLevel = 10;
         public int treasureBonusLevel = 25;
+        public int oceanBlessingLevel = 35;
         public int dolphinGraceLevel = 50;
+        public int seasFortuneLevel = 60;
         public int luckSeaLevel = 75;
         public int masterLevel = 100;
         public float waitReduction = 0.25f;
         public float treasureBonus = 0.10f;
         public float xpBonus = 0.10f;
         public int abilityDurationSeconds = 60;
-        public int abilityCooldownSeconds = 900;
-        public float rainDanceSpeedBonus = 0.50f;
+        public int abilityCooldownSeconds = 600;
+        public float rainDanceSpeedBonus = 0.75f;
         public float rainDanceTreasureBonus = 0.30f;
         public int rainDanceBundleMultiplier = 2;
     }
@@ -166,55 +171,62 @@ public class ModConfig {
         public float resistancePerLevel = 0.02f;
         public int ironSkinLevel = 10;
         public int efficientAnvilLevel = 25;
+        public int fireMasteryLevel = 35;
         public int forgedResilienceLevel = 50;
+        public int repairAuraLevel = 60;
+        public int repairAuraIntervalSeconds = 10;
         public int thornsMasterLevel = 75;
         public int masterLevel = 100;
         public float ironSkinBonus = 0.05f;
         public float anvilXpDiscount = 0.25f;
         public float anvilMaterialSave = 0.10f;
         public float fireExplosionResist = 0.10f;
-        public float thornsChance = 0.20f;
-        public float thornsReflect = 0.25f;
+        public float thornsChance = 0.30f;
+        public float thornsReflect = 0.35f;
         public float knockbackReduction = 0.50f;
         public float superEnchantChance = 0.25f;
-        public int abilityDurationSeconds = 15;
-        public int abilityCooldownSeconds = 1200;
+        public int abilityDurationSeconds = 25;
+        public int abilityCooldownSeconds = 900;
         public float titaniumResistance = 0.30f;
         public float titaniumRegen = 1.0f;
     }
 
     public static class BuilderConfig {
-        public float reachPerLevel = 0.05f;
+        public float reachPerLevel = 0.08f;
         public int extendedReachLevel = 10;
         public int efficientCraftingLevel = 15;
         public int safeLandingLevel = 25;
+        public int buildersVigorLevel = 35;
         public int scaffoldMasterLevel = 50;
+        public int featherBuildLevel = 60;
         public int masterReachLevel = 75;
         public int masterLevel = 100;
         public float level10Reach = 1.0f;
         public float level75Reach = 5.0f;
-        public float decorativeEconomy = 0.20f;
+        public float decorativeEconomy = 0.30f;
         public float structuralEconomy = 0.50f;
-        public float fallDamageReduction = 0.25f;
+        public float fallDamageReduction = 0.50f;
         public float scaffoldSpeedMultiplier = 1.5f;
         public int abilityDurationSeconds = 120;
-        public int abilityCooldownSeconds = 600;
+        public int abilityCooldownSeconds = 450;
         public int brushMaxDistance = 6;
         public int highBuildYThreshold = 100;
     }
 
     public static class ExplorerConfig {
-        public float speedPerLevel = 0.002f;
+        public float speedPerLevel = 0.004f;
         public int luckInterval = 20;
-        public float hungerReductionPerLevel = 0.005f;
+        public float hungerReductionPerLevel = 0.008f;
         public int stepAssistLevel = 10;
         public int aquaticLevel = 20;
         public int nightVisionLevel = 35;
+        public int pathfinderLevel = 45;
+        public int swiftRecoveryLevel = 55;
         public int featherFeetLevel = 65;
         public int netherWalkerLevel = 80;
         public int masterLevel = 100;
         public float breathMultiplier = 1.5f;
-        public float fallDamageReduction = 0.40f;
+        public float fallDamageReduction = 0.60f;
         public int treasureRadius = 128;
         public float stepHeight = 1.0f;
         public int xpBiome = 500;
@@ -223,7 +235,8 @@ public class ModConfig {
         public int xpMapComplete = 2000;
         public int xpWanderingTrade = 400;
         public double distanceThreshold = 50.0;
-        public int xpPerDistance = 35;
+        public int xpPerDistance = 50;
+        public int abilityCooldownSeconds = 300;
     }
 
     public static class VeinMinerConfig {

@@ -11,6 +11,7 @@ public class ClientSkillData {
     private static final Map<MurilloSkillsList, PlayerSkillData.SkillStats> skills = new HashMap<>();
     private static MurilloSkillsList paragonSkill = null;
     private static List<MurilloSkillsList> selectedSkills = new ArrayList<>();
+    private static int maxSelectedSkills = 3;
 
     // Daily Challenges data
     private static List<ChallengeInfo> dailyChallenges = new ArrayList<>();
@@ -41,8 +42,16 @@ public class ClientSkillData {
         return new ArrayList<>(selectedSkills);
     }
 
+    public static void setMaxSelectedSkills(int max) {
+        maxSelectedSkills = Math.max(1, max);
+    }
+
+    public static int getMaxSelectedSkills() {
+        return maxSelectedSkills;
+    }
+
     public static boolean hasSelectedSkills() {
-        return selectedSkills != null && selectedSkills.size() == 3;
+        return selectedSkills != null && selectedSkills.size() >= maxSelectedSkills;
     }
 
     public static boolean isSkillSelected(MurilloSkillsList skill) {

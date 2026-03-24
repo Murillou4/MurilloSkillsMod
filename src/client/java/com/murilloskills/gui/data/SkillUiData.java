@@ -35,6 +35,9 @@ public final class SkillUiData {
         public record GuideEntry(int level, String text, boolean milestone) {
         }
 
+        public record XpSourceInfo(String name, String xp, int color) {
+        }
+
         // === DATA CONSTANTS ===
 
         public static final Map<MurilloSkillsList, List<PerkInfo>> SKILL_PERKS = new HashMap<>();
@@ -114,8 +117,12 @@ public final class SkillUiData {
                                                 "murilloskills.perk.desc.farmer.green_thumb"),
                                 new PerkInfo(25, "murilloskills.perk.name.farmer.fertile_ground",
                                                 "murilloskills.perk.desc.farmer.fertile_ground"),
+                                new PerkInfo(35, "murilloskills.perk.name.farmer.natures_vitality",
+                                                "murilloskills.perk.desc.farmer.natures_vitality"),
                                 new PerkInfo(50, "murilloskills.perk.name.farmer.nutrient_cycle",
                                                 "murilloskills.perk.desc.farmer.nutrient_cycle"),
+                                new PerkInfo(60, "murilloskills.perk.name.farmer.seed_master",
+                                                "murilloskills.perk.desc.farmer.seed_master"),
                                 new PerkInfo(75, "murilloskills.perk.name.farmer.abundant_harvest",
                                                 "murilloskills.perk.desc.farmer.abundant_harvest"),
                                 new PerkInfo(100, "murilloskills.perk.name.farmer.master",
@@ -140,8 +147,12 @@ public final class SkillUiData {
                                                 "murilloskills.perk.desc.fisher.fast_fishing"),
                                 new PerkInfo(25, "murilloskills.perk.name.fisher.treasure_hunter",
                                                 "murilloskills.perk.desc.fisher.treasure_hunter"),
+                                new PerkInfo(35, "murilloskills.perk.name.fisher.ocean_blessing",
+                                                "murilloskills.perk.desc.fisher.ocean_blessing"),
                                 new PerkInfo(50, "murilloskills.perk.name.fisher.dolphins_grace",
                                                 "murilloskills.perk.desc.fisher.dolphins_grace"),
+                                new PerkInfo(60, "murilloskills.perk.name.fisher.seas_fortune",
+                                                "murilloskills.perk.desc.fisher.seas_fortune"),
                                 new PerkInfo(75, "murilloskills.perk.name.fisher.luck_of_sea",
                                                 "murilloskills.perk.desc.fisher.luck_of_sea"),
                                 new PerkInfo(100, "murilloskills.perk.name.fisher.master",
@@ -153,8 +164,12 @@ public final class SkillUiData {
                                                 "murilloskills.perk.desc.blacksmith.iron_skin"),
                                 new PerkInfo(25, "murilloskills.perk.name.blacksmith.efficient_anvil",
                                                 "murilloskills.perk.desc.blacksmith.efficient_anvil"),
+                                new PerkInfo(35, "murilloskills.perk.name.blacksmith.fire_mastery",
+                                                "murilloskills.perk.desc.blacksmith.fire_mastery"),
                                 new PerkInfo(50, "murilloskills.perk.name.blacksmith.forged_resilience",
                                                 "murilloskills.perk.desc.blacksmith.forged_resilience"),
+                                new PerkInfo(60, "murilloskills.perk.name.blacksmith.repair_aura",
+                                                "murilloskills.perk.desc.blacksmith.repair_aura"),
                                 new PerkInfo(75, "murilloskills.perk.name.blacksmith.thorns_master",
                                                 "murilloskills.perk.desc.blacksmith.thorns_master"),
                                 new PerkInfo(100, "murilloskills.perk.name.blacksmith.master",
@@ -168,8 +183,12 @@ public final class SkillUiData {
                                                 "murilloskills.perk.desc.builder.efficient_crafting"),
                                 new PerkInfo(25, "murilloskills.perk.name.builder.safe_landing",
                                                 "murilloskills.perk.desc.builder.safe_landing"),
+                                new PerkInfo(35, "murilloskills.perk.name.builder.builders_vigor",
+                                                "murilloskills.perk.desc.builder.builders_vigor"),
                                 new PerkInfo(50, "murilloskills.perk.name.builder.scaffold_master",
                                                 "murilloskills.perk.desc.builder.scaffold_master"),
+                                new PerkInfo(60, "murilloskills.perk.name.builder.feather_build",
+                                                "murilloskills.perk.desc.builder.feather_build"),
                                 new PerkInfo(75, "murilloskills.perk.name.builder.master_reach",
                                                 "murilloskills.perk.desc.builder.master_reach"),
                                 new PerkInfo(100, "murilloskills.perk.name.builder.master",
@@ -183,6 +202,10 @@ public final class SkillUiData {
                                                 "murilloskills.perk.desc.explorer.aquatic"),
                                 new PerkInfo(35, "murilloskills.perk.name.explorer.night_vision",
                                                 "murilloskills.perk.desc.explorer.night_vision"),
+                                new PerkInfo(45, "murilloskills.perk.name.explorer.pathfinder",
+                                                "murilloskills.perk.desc.explorer.pathfinder"),
+                                new PerkInfo(55, "murilloskills.perk.name.explorer.swift_recovery",
+                                                "murilloskills.perk.desc.explorer.swift_recovery"),
                                 new PerkInfo(65, "murilloskills.perk.name.explorer.feather_feet",
                                                 "murilloskills.perk.desc.explorer.feather_feet"),
                                 new PerkInfo(80, "murilloskills.perk.name.explorer.nether_walker",
@@ -281,8 +304,140 @@ public final class SkillUiData {
                                         + ", dura " + SkillConfig.getBuilderAbilityDurationSeconds()
                                         + "s, até " + SkillConfig.getBuilderBrushMaxDistance()
                                         + " blocos entre pontos e modos cubo/esfera/cilindro/pirâmide/parede.";
-                        case EXPLORER -> base + " Cooldown 5m, dura 60s e revela tesouros em raio de "
+                        case EXPLORER -> base + " Cooldown "
+                                        + formatSeconds(SkillConfig.getExplorerAbilityCooldownSeconds())
+                                        + ", dura 60s e revela tesouros em raio de "
                                         + SkillConfig.getExplorerTreasureRadius() + " blocos.";
+                };
+        }
+
+        public static List<XpSourceInfo> getDetailedXpSources(MurilloSkillsList skill) {
+                return switch (skill) {
+                        case MINER -> List.of(
+                                        new XpSourceInfo("Stone / Deepslate / Cobblestone",
+                                                        SkillConfig.getMinerXpStone() + " XP", 0xFFAAAAAA),
+                                        new XpSourceInfo("Coal Ore",
+                                                        SkillConfig.getMinerXpCoal() + " XP", 0xFFCCCCCC),
+                                        new XpSourceInfo("Copper Ore",
+                                                        SkillConfig.getMinerXpCopper() + " XP", 0xFFCCCCCC),
+                                        new XpSourceInfo("Iron Ore",
+                                                        SkillConfig.getMinerXpIron() + " XP", 0xFF88FF88),
+                                        new XpSourceInfo("Lapis / Redstone Ore",
+                                                        SkillConfig.getMinerXpLapis() + " XP", 0xFF88FF88),
+                                        new XpSourceInfo("Gold Ore",
+                                                        SkillConfig.getMinerXpGold() + " XP", 0xFFFFCC66),
+                                        new XpSourceInfo("Nether Quartz / Gold Ore",
+                                                        SkillConfig.getMinerXpNetherQuartz() + " XP", 0xFF88FF88),
+                                        new XpSourceInfo("Diamond Ore",
+                                                        SkillConfig.getMinerXpDiamond() + " XP", 0xFF66FFFF),
+                                        new XpSourceInfo("Emerald Ore",
+                                                        SkillConfig.getMinerXpEmerald() + " XP", 0xFF55FF55),
+                                        new XpSourceInfo("Ancient Debris",
+                                                        SkillConfig.getMinerXpAncientDebris() + " XP", 0xFFFF88CC),
+                                        new XpSourceInfo("Silk Touch = sem XP de ore", "--", 0xFF888888));
+                        case WARRIOR -> List.of(
+                                        new XpSourceInfo("Mobs comuns (Zombie, Skeleton...)",
+                                                        SkillConfig.getWarriorXpMonsterDefault() + " XP", 0xFFCCCCCC),
+                                        new XpSourceInfo("Enderman",
+                                                        SkillConfig.getWarriorXpEnderman() + " XP", 0xFF88FF88),
+                                        new XpSourceInfo("Blaze",
+                                                        SkillConfig.getWarriorXpBlaze() + " XP", 0xFFFFCC66),
+                                        new XpSourceInfo("Warden / Wither",
+                                                        SkillConfig.getWarriorXpWarden() + " XP", 0xFF66FFFF),
+                                        new XpSourceInfo("Ender Dragon",
+                                                        SkillConfig.getWarriorXpEnderDragon() + " XP", 0xFFFF88CC),
+                                        new XpSourceInfo("Animais passivos", "0 XP", 0xFF888888));
+                        case FARMER -> List.of(
+                                        new XpSourceInfo("Sweet Berry",
+                                                        SkillConfig.getFarmerXpSweetBerry() + " XP", 0xFFAAAAAA),
+                                        new XpSourceInfo("Wheat / Carrot / Potato",
+                                                        SkillConfig.getFarmerXpWheat() + " XP", 0xFFCCCCCC),
+                                        new XpSourceInfo("Beetroot",
+                                                        SkillConfig.getFarmerXpBeetroot() + " XP", 0xFFCCCCCC),
+                                        new XpSourceInfo("Cocoa",
+                                                        SkillConfig.getFarmerXpCocoa() + " XP", 0xFFCCCCCC),
+                                        new XpSourceInfo("Nether Wart",
+                                                        SkillConfig.getFarmerXpNetherWart() + " XP", 0xFF88FF88),
+                                        new XpSourceInfo("Melon / Pumpkin",
+                                                        SkillConfig.getFarmerXpMelon() + " XP", 0xFFFFCC66),
+                                        new XpSourceInfo("Plantar sementes", "25%", 0xFF88CCFF),
+                                        new XpSourceInfo("Compostagem", "2 XP", 0xFFAAAAAA),
+                                        new XpSourceInfo("So colhe maduro = XP", "--", 0xFF888888));
+                        case ARCHER -> List.of(
+                                        new XpSourceInfo("Acertar mob passivo",
+                                                        SkillConfig.getArcherXpHitBase() + " XP", 0xFFAAAAAA),
+                                        new XpSourceInfo("Acertar mob hostil",
+                                                        SkillConfig.getArcherXpHitHostile() + " XP", 0xFFCCCCCC),
+                                        new XpSourceInfo("Matar mob passivo",
+                                                        SkillConfig.getArcherXpKillBase() + " XP", 0xFF88FF88),
+                                        new XpSourceInfo("Matar mob hostil",
+                                                        SkillConfig.getArcherXpKillHostile() + " XP", 0xFFFFCC66),
+                                        new XpSourceInfo("Distancia " + SkillConfig.getArcherLongRangeTier1() + "+ blocos",
+                                                        "x" + formatDecimal(SkillConfig.getArcherLongRangeMultiplier1()),
+                                                        0xFF66FFFF),
+                                        new XpSourceInfo("Distancia " + SkillConfig.getArcherLongRangeTier2() + "+ blocos",
+                                                        "x" + formatDecimal(SkillConfig.getArcherLongRangeMultiplier2()),
+                                                        0xFFFF88CC),
+                                        new XpSourceInfo("PvP = sem XP", "--", 0xFF888888));
+                        case FISHER -> List.of(
+                                        new XpSourceInfo("Junk (Bowl, Leather, Stick...)",
+                                                        SkillConfig.getFisherXpJunk() + " XP", 0xFFAAAAAA),
+                                        new XpSourceInfo("Peixe (Cod, Salmon, Tropical...)",
+                                                        SkillConfig.getFisherXpFish() + " XP", 0xFFCCCCCC),
+                                        new XpSourceInfo("Tesouro (Name Tag, Saddle...)",
+                                                        SkillConfig.getFisherXpTreasure() + " XP", 0xFFFFCC66),
+                                        new XpSourceInfo("Epic Bundle", "especial", 0xFF66FFFF));
+                        case BLACKSMITH -> List.of(
+                                        new XpSourceInfo("Smelting Copper",
+                                                        SkillConfig.getBlacksmithXpSmeltCopper() + " XP", 0xFFAAAAAA),
+                                        new XpSourceInfo("Smelting Iron",
+                                                        SkillConfig.getBlacksmithXpSmeltIron() + " XP", 0xFFCCCCCC),
+                                        new XpSourceInfo("Smelting Gold",
+                                                        SkillConfig.getBlacksmithXpSmeltGold() + " XP", 0xFF88FF88),
+                                        new XpSourceInfo("Smelting Ancient Debris",
+                                                        SkillConfig.getBlacksmithXpSmeltAncientDebris() + " XP",
+                                                        0xFFFF88CC),
+                                        new XpSourceInfo("Enchant Lv1 / Lv2 / Lv3",
+                                                        SkillConfig.getBlacksmithXpEnchantLevel1() + "/"
+                                                                        + SkillConfig.getBlacksmithXpEnchantLevel2() + "/"
+                                                                        + SkillConfig.getBlacksmithXpEnchantLevel3(),
+                                                        0xFFFFCC66),
+                                        new XpSourceInfo("Grindstone",
+                                                        SkillConfig.getBlacksmithXpGrindstoneUse() + " XP", 0xFFCCCCCC),
+                                        new XpSourceInfo("Anvil Rename",
+                                                        SkillConfig.getBlacksmithXpAnvilRename() + " XP", 0xFF88FF88),
+                                        new XpSourceInfo("Anvil Repair",
+                                                        SkillConfig.getBlacksmithXpAnvilRepair() + " XP", 0xFFFFCC66),
+                                        new XpSourceInfo("Anvil Combine Enchant",
+                                                        SkillConfig.getBlacksmithXpAnvilEnchantCombine() + " XP",
+                                                        0xFF66FFFF));
+                        case BUILDER -> List.of(
+                                        new XpSourceInfo("Basicos (Dirt, Sand, Gravel...)",
+                                                        SkillConfig.getBuilderXpBasic() + " XP", 0xFFAAAAAA),
+                                        new XpSourceInfo("Decorativos (Glass, Stairs...)",
+                                                        SkillConfig.getBuilderXpDecorative() + " XP", 0xFFCCCCCC),
+                                        new XpSourceInfo("Estruturais (Stone, Bricks...)",
+                                                        SkillConfig.getBuilderXpStructural() + " XP", 0xFF88FF88),
+                                        new XpSourceInfo("Premium (Quartz, Prismarine...)",
+                                                        SkillConfig.getBuilderXpPremium() + " XP", 0xFFFFCC66),
+                                        new XpSourceInfo("Craft decorativo",
+                                                        SkillConfig.getBuilderXpCraftDecorative() + " XP", 0xFFCCCCCC),
+                                        new XpSourceInfo("Craft estrutural",
+                                                        SkillConfig.getBuilderXpCraftStructural() + " XP", 0xFF88FF88));
+                        case EXPLORER -> List.of(
+                                        new XpSourceInfo("Distancia (cada "
+                                                        + (int) SkillConfig.getExplorerDistanceThreshold() + " blocos)",
+                                                        SkillConfig.getExplorerXpPerDistance() + " XP", 0xFFAAAAAA),
+                                        new XpSourceInfo("Estrutura encontrada",
+                                                        SkillConfig.getExplorerXpStructure() + " XP", 0xFFCCCCCC),
+                                        new XpSourceInfo("Bau de loot (primeira vez)",
+                                                        SkillConfig.getExplorerXpLootChest() + " XP", 0xFF88FF88),
+                                        new XpSourceInfo("Trade com Wandering Trader",
+                                                        SkillConfig.getExplorerXpWanderingTrade() + " XP", 0xFFFFCC66),
+                                        new XpSourceInfo("Bioma novo descoberto",
+                                                        SkillConfig.getExplorerXpBiome() + " XP", 0xFF66FFFF),
+                                        new XpSourceInfo("Mapa completo",
+                                                        SkillConfig.getExplorerXpMapComplete() + " XP", 0xFFFF88CC));
                 };
         }
 
@@ -359,8 +514,14 @@ public final class SkillUiData {
                 if (level >= SkillConfig.getFarmerFertileGroundLevel()) {
                         segments.add("+25% crescimento e plantio 3x3");
                 }
+                if (level >= SkillConfig.getFarmerNaturesVitalityLevel()) {
+                        segments.add("Vitalidade Natural (Regen em terra)");
+                }
                 if (level >= SkillConfig.getFarmerNutrientCycleLevel()) {
                         segments.add("2x Bone Meal e +5% sementes");
+                }
+                if (level >= SkillConfig.getFarmerSeedMasterLevel()) {
+                        segments.add("Mestre das Sementes (Haste I)");
                 }
                 if (level >= SkillConfig.getFarmerAbundantHarvestLevel()) {
                         segments.add("+15% colheita e 10% adjacente");
@@ -446,8 +607,12 @@ public final class SkillUiData {
                                                 .formatted(Formatting.GREEN));
                                 lines.add(Text.translatable("murilloskills.passive.farmer.fertile_ground")
                                                 .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.farmer.natures_vitality")
+                                                .formatted(Formatting.GREEN));
                                 lines.add(Text.translatable("murilloskills.passive.farmer.nutrient_cycle")
                                                 .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.farmer.seed_master")
+                                                .formatted(Formatting.GOLD));
                                 lines.add(Text.translatable("murilloskills.passive.farmer.abundant_harvest")
                                                 .formatted(Formatting.GOLD));
                         }
@@ -476,14 +641,23 @@ public final class SkillUiData {
                         case FISHER -> {
                                 int fishingSpeed = (int) (level * com.murilloskills.utils.SkillConfig.getFisherSpeedPerLevel()
                                                 * 100 * prestigeMultiplier);
+                                int bundleChance = (int) (level
+                                                * com.murilloskills.utils.SkillConfig.getFisherEpicBundlePerLevel()
+                                                * 100 * prestigeMultiplier);
                                 lines.add(Text.translatable("murilloskills.passive.fisher.fishing_speed", fishingSpeed)
                                                 .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.fisher.epic_bundle_chance", bundleChance)
+                                                .formatted(Formatting.GOLD));
                                 lines.add(Text.translatable("murilloskills.passive.fisher.wait_reduction")
                                                 .formatted(Formatting.GREEN));
                                 lines.add(Text.translatable("murilloskills.passive.fisher.treasure_chance")
                                                 .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.fisher.ocean_blessing")
+                                                .formatted(Formatting.AQUA));
                                 lines.add(Text.translatable("murilloskills.passive.fisher.dolphins_grace")
                                                 .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.fisher.seas_fortune")
+                                                .formatted(Formatting.GOLD));
                                 lines.add(Text.translatable("murilloskills.passive.fisher.luck_of_sea")
                                                 .formatted(Formatting.AQUA));
                         }
@@ -497,8 +671,12 @@ public final class SkillUiData {
                                                 .formatted(Formatting.GREEN));
                                 lines.add(Text.translatable("murilloskills.passive.blacksmith.efficient_anvil")
                                                 .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.blacksmith.fire_mastery")
+                                                .formatted(Formatting.RED));
                                 lines.add(Text.translatable("murilloskills.passive.blacksmith.forged_resilience")
                                                 .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.blacksmith.repair_aura")
+                                                .formatted(Formatting.GREEN));
                                 lines.add(Text.translatable("murilloskills.passive.blacksmith.thorns_master")
                                                 .formatted(Formatting.AQUA));
                         }
@@ -512,7 +690,11 @@ public final class SkillUiData {
                                                 .formatted(Formatting.GREEN));
                                 lines.add(Text.translatable("murilloskills.passive.builder.safe_landing")
                                                 .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.builder.builders_vigor")
+                                                .formatted(Formatting.GREEN));
                                 lines.add(Text.translatable("murilloskills.passive.builder.scaffold_master")
+                                                .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.builder.feather_build")
                                                 .formatted(Formatting.AQUA));
                                 lines.add(Text.translatable("murilloskills.passive.builder.master_reach")
                                                 .formatted(Formatting.GOLD));
@@ -531,6 +713,10 @@ public final class SkillUiData {
                                                 .formatted(Formatting.AQUA));
                                 lines.add(Text.translatable("murilloskills.passive.explorer.night_vision")
                                                 .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.explorer.pathfinder")
+                                                .formatted(Formatting.GREEN));
+                                lines.add(Text.translatable("murilloskills.passive.explorer.swift_recovery")
+                                                .formatted(Formatting.RED));
                                 lines.add(Text.translatable("murilloskills.passive.explorer.feather_feet")
                                                 .formatted(Formatting.AQUA));
                                 lines.add(Text.translatable("murilloskills.passive.explorer.nether_walker")
@@ -555,8 +741,14 @@ public final class SkillUiData {
                         segments.add("+" + formatPercent(SkillConfig.getFisherTreasureBonus())
                                         + "% tesouro e +" + formatPercent(SkillConfig.getFisherXpBonus()) + "% XP");
                 }
+                if (level >= SkillConfig.getFisherOceanBlessingLevel()) {
+                        segments.add("Benção do Oceano (Visão Noturna)");
+                }
                 if (level >= SkillConfig.getFisherDolphinGraceLevel()) {
                         segments.add("Dolphin's Grace");
+                }
+                if (level >= SkillConfig.getFisherSeasFortuneLevel()) {
+                        segments.add("Fortuna do Mar (Luck I)");
                 }
                 if (level >= SkillConfig.getFisherLuckSeaLevel()) {
                         segments.add("Luck of the Sea I");
@@ -579,9 +771,15 @@ public final class SkillUiData {
                                         + formatPercent(SkillConfig.getBlacksmithAnvilMaterialSave())
                                         + "% material salvo");
                 }
+                if (level >= SkillConfig.getBlacksmithFireMasteryLevel()) {
+                        segments.add("Domínio do Fogo (Fire Resistance)");
+                }
                 if (level >= SkillConfig.getBlacksmithForgedResilienceLevel()) {
                         segments.add("+" + formatPercent(SkillConfig.getBlacksmithFireExplosionResist())
                                         + "% fogo/explosão");
+                }
+                if (level >= SkillConfig.getBlacksmithRepairAuraLevel()) {
+                        segments.add("Aura de Reparo (auto-reparo)");
                 }
                 if (level >= SkillConfig.getBlacksmithThornsMasterLevel()) {
                         segments.add(formatPercent(SkillConfig.getBlacksmithThornsChance())
@@ -609,10 +807,16 @@ public final class SkillUiData {
                 if (level >= SkillConfig.getBuilderSafeLandingLevel()) {
                         segments.add("-" + formatPercent(SkillConfig.getBuilderFallDamageReduction()) + "% queda");
                 }
+                if (level >= SkillConfig.getBuilderBuildersVigorLevel()) {
+                        segments.add("Vigor do Construtor (Haste I)");
+                }
                 if (level >= SkillConfig.getBuilderScaffoldMasterLevel()) {
                         segments.add("scaffold x" + formatDecimal(SkillConfig.getBuilderScaffoldSpeedMultiplier())
                                         + " e " + formatPercent(SkillConfig.getBuilderStructuralEconomy())
                                         + "% economia estrutural");
+                }
+                if (level >= SkillConfig.getBuilderFeatherBuildLevel()) {
+                        segments.add("Construção Leve (Slow Fall)");
                 }
                 if (level >= SkillConfig.getBuilderMasterReachLevel()) {
                         segments.add("Master Reach ativo");
@@ -643,6 +847,12 @@ public final class SkillUiData {
                 }
                 if (level >= SkillConfig.getExplorerNightVisionLevel()) {
                         segments.add("Visão Noturna toggleável");
+                }
+                if (level >= SkillConfig.getExplorerPathfinderLevel()) {
+                        segments.add("Desbravador (Speed II ao correr)");
+                }
+                if (level >= SkillConfig.getExplorerSwiftRecoveryLevel()) {
+                        segments.add("Recuperação Rápida (Regen <50% HP)");
                 }
                 if (level >= SkillConfig.getExplorerFeatherFeetLevel()) {
                         segments.add("-" + formatPercent(SkillConfig.getExplorerFallDamageReduction()) + "% queda");
