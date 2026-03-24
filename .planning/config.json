@@ -1,0 +1,13 @@
+{
+  "workflow": {
+    "research_phase": false,
+    "parallel_execution": true,
+    "atomic_commits": true,
+    "verification_agent": true,
+    "nyquist_auditor": false
+  },
+  "model_profile": "balanced",
+  "language": "pt-br",
+  "project_type": "minecraft-mod",
+  "milestone": "v1.2.x"
+}
