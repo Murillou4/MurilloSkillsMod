@@ -15,7 +15,9 @@ import com.murilloskills.network.SkillsSyncPayload;
 import com.murilloskills.network.TreasureHunterS2CPayload;
 import com.murilloskills.network.VeinMinerDropsToggleC2SPayload;
 import com.murilloskills.network.VeinMinerToggleC2SPayload;
+import com.murilloskills.network.XpDirectToggleC2SPayload;
 import com.murilloskills.network.XpGainS2CPayload;
+import com.murilloskills.client.config.UltmineClientConfig;
 import com.murilloskills.data.UltmineClientState;
 import com.murilloskills.render.AreaPlantingHud;
 import com.murilloskills.render.OreHighlighter;
@@ -30,6 +32,7 @@ import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
@@ -96,8 +99,9 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 }
                 com.murilloskills.data.ClientSkillData.setParagonSkill(paragon);
 
-                // Update Selected Skills in Client Data
+                // Update Selected Skills and max in Client Data
                 com.murilloskills.data.ClientSkillData.setSelectedSkills(payload.selectedSkills());
+                com.murilloskills.data.ClientSkillData.setMaxSelectedSkills(payload.maxSelectedSkills());
 
                 // Refresh SkillsScreen if open (to update buttons/layout)
                 if (context.client().currentScreen instanceof com.murilloskills.gui.SkillsScreen screen) {
@@ -181,6 +185,15 @@ public class MurilloSkillsClient implements ClientModInitializer {
                                 .formatted(color),
                         true);
             });
+        });
+
+        // --- SYNC CLIENT CONFIG ON JOIN ---
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            UltmineClientConfig.load();
+            // Sync XP direct-to-player preference to server
+            if (UltmineClientConfig.isXpDirectToPlayer()) {
+                ClientPlayNetworking.send(new XpDirectToggleC2SPayload(true));
+            }
         });
 
         // --- KEYBINDINGS ---

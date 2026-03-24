@@ -10,7 +10,8 @@ import net.minecraft.util.Identifier;
 /**
  * Client -> Server: updates selected ultmine shape and parameters.
  */
-public record UltmineShapeSelectC2SPayload(UltmineShape shape, int depth, int length) implements CustomPayload {
+public record UltmineShapeSelectC2SPayload(UltmineShape shape, int depth, int length,
+        int variant) implements CustomPayload {
     public static final CustomPayload.Id<UltmineShapeSelectC2SPayload> ID = new CustomPayload.Id<>(
             Identifier.of(MurilloSkills.MOD_ID, "ultmine_shape_select"));
 
@@ -19,9 +20,11 @@ public record UltmineShapeSelectC2SPayload(UltmineShape shape, int depth, int le
                 buf.writeEnumConstant(payload.shape);
                 buf.writeVarInt(payload.depth);
                 buf.writeVarInt(payload.length);
+                buf.writeVarInt(payload.variant);
             },
             (buf) -> new UltmineShapeSelectC2SPayload(
                     buf.readEnumConstant(UltmineShape.class),
+                    buf.readVarInt(),
                     buf.readVarInt(),
                     buf.readVarInt()));
 

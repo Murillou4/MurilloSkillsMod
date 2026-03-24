@@ -21,7 +21,8 @@ public final class UltmineShapeSelectNetworkHandler {
         return (payload, context) -> context.server().execute(() -> {
             try {
                 var player = context.player();
-                VeinMinerHandler.setUltmineSelection(player, payload.shape(), payload.depth(), payload.length());
+                VeinMinerHandler.setUltmineSelection(player, payload.shape(), payload.depth(), payload.length(),
+                        payload.variant());
                 player.sendMessage(
                         Text.translatable("murilloskills.ultmine.selected", Text.translatable(payload.shape().getTranslationKey()))
                                 .formatted(Formatting.AQUA),

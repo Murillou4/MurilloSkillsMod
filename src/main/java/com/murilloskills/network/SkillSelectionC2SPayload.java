@@ -16,8 +16,6 @@ import java.util.List;
  */
 public record SkillSelectionC2SPayload(List<MurilloSkillsList> selectedSkills) implements CustomPayload {
 
-    public static final int MAX_SELECTED_SKILLS = 3;
-
     public static final CustomPayload.Id<SkillSelectionC2SPayload> ID = new CustomPayload.Id<>(
             Identifier.of(MurilloSkills.MOD_ID, "skill_selection"));
 

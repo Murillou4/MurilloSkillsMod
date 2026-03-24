@@ -2,6 +2,7 @@ package com.murilloskills.gui;
 
 import com.murilloskills.client.config.OreFilterConfig;
 import com.murilloskills.client.config.OreFilterConfig.DisplayMode;
+import com.murilloskills.gui.renderer.RenderingHelper;
 import com.murilloskills.network.MinerScanResultPayload.OreType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -13,29 +14,43 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 /**
- * Responsive ore filter configuration screen with adaptive layout.
- * Adjusts columns, spacing and element sizes based on screen dimensions.
+ * Premium ore filter configuration screen with adaptive layout.
+ * Uses the mod's ColorPalette for consistent dark-theme styling.
  */
 public class OreFilterScreen extends Screen {
 
     private final Screen parent;
+    private final ColorPalette palette = ColorPalette.premium();
 
-    // Colors - Seguindo paleta do ModInfoScreen
-    private static final int GOLD = 0xFFD4AF37;
-    private static final int TEXT_WHITE = 0xFFFFFFFF;
-    private static final int TEXT_GRAY = 0xFFAAAAAA;
-    private static final int TEXT_AQUA = 0xFF55FFFF;
-    private static final int PANEL_BG = 0xD0151520;
-    private static final int SECTION_BORDER = 0x60FFFFFF;
+    // Layout constants
+    private static final int HEADER_HEIGHT = 50;
+    private static final int SECTION_GAP = 16;
+    private static final int PANEL_PADDING = 10;
 
-    // Calculated layout values (set in init)
+    // Calculated layout
+    private int panelX, panelY, panelW, panelH;
     private int cols;
-    private int cardWidth;
-    private int cardHeight;
-    private int gap;
-    private int oreGridStartY;
+    private int cardW, cardH;
+    private int cardGap;
+    private int oreGridY;
     private int modeSectionY;
     private int maxOresSectionY;
+    private int bottomY;
+
+    // Ore colors for accent borders
+    private static final int[] ORE_COLORS = {
+            0xFF555555, // COAL
+            0xFFE87B35, // COPPER
+            0xFFD8AF93, // IRON
+            0xFFFFD700, // GOLD
+            0xFF2626CC, // LAPIS
+            0xFFFF3333, // REDSTONE
+            0xFF4AEDD9, // DIAMOND
+            0xFF00FF66, // EMERALD
+            0xFF7B4F3A, // ANCIENT_DEBRIS
+            0xFFE8E4D8, // NETHER_QUARTZ
+            0xFFFFAA00  // NETHER_GOLD
+    };
 
     public OreFilterScreen(Screen parent) {
         super(Text.translatable("murilloskills.ore_filter.title"));
@@ -45,158 +60,121 @@ public class OreFilterScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-
-        // Calculate responsive layout based on screen size
         calculateLayout();
 
         int centerX = this.width / 2;
-        OreType[] ores = getFilterableOres();
 
-        // === ORE TOGGLE BUTTONS ===
-        int gridWidth = cols * cardWidth + (cols - 1) * gap;
-        int startX = centerX - gridWidth / 2;
-
-        for (int i = 0; i < ores.length; i++) {
-            final OreType ore = ores[i];
-            int col = i % cols;
-            int row = i / cols;
-            int x = startX + col * (cardWidth + gap);
-            int y = oreGridStartY + row * (cardHeight + gap);
-
-            // Empty button - we'll render content manually for consistent alignment
-            ButtonWidget btn = ButtonWidget.builder(
-                    Text.empty(),
-                    (b) -> {
-                        OreFilterConfig.toggleOre(ore);
-                    })
-                    .dimensions(x, y, cardWidth, cardHeight)
-                    .build();
-            this.addDrawableChild(btn);
-        }
-
-        // === MODE BUTTONS ===
-        DisplayMode current = OreFilterConfig.getDisplayMode();
-        int modeWidth = Math.min(130, (this.width - 80) / 3);
-        int modeGap = Math.min(15, gap);
-        int totalModeWidth = 3 * modeWidth + 2 * modeGap;
-        int modeStartX = centerX - totalModeWidth / 2;
-        int modeButtonY = modeSectionY + 15;
-        int modeButtonHeight = 22;
-
-        ButtonWidget xrayBtn = ButtonWidget.builder(
-                getModeButtonText(DisplayMode.XRAY, current == DisplayMode.XRAY),
-                (b) -> {
-                    OreFilterConfig.setDisplayMode(DisplayMode.XRAY);
-                    refreshScreen();
-                })
-                .dimensions(modeStartX, modeButtonY, modeWidth, modeButtonHeight)
-                .build();
-        this.addDrawableChild(xrayBtn);
-
-        ButtonWidget visBtn = ButtonWidget.builder(
-                getModeButtonText(DisplayMode.VISIBLE_ONLY, current == DisplayMode.VISIBLE_ONLY),
-                (b) -> {
-                    OreFilterConfig.setDisplayMode(DisplayMode.VISIBLE_ONLY);
-                    refreshScreen();
-                })
-                .dimensions(modeStartX + modeWidth + modeGap, modeButtonY, modeWidth, modeButtonHeight)
-                .build();
-        this.addDrawableChild(visBtn);
-
-        ButtonWidget nearBtn = ButtonWidget.builder(
-                getModeButtonText(DisplayMode.NEAREST_ONLY, current == DisplayMode.NEAREST_ONLY),
-                (b) -> {
-                    OreFilterConfig.setDisplayMode(DisplayMode.NEAREST_ONLY);
-                    refreshScreen();
-                })
-                .dimensions(modeStartX + 2 * (modeWidth + modeGap), modeButtonY, modeWidth, modeButtonHeight)
-                .build();
-        this.addDrawableChild(nearBtn);
-
-        // === MAX ORES CONTROLS ===
-        int maxControlsY = maxOresSectionY + 20;
-        int controlButtonSize = 30;
-        int valueBoxWidth = 60;
-        int controlsSpacing = 10;
-        int totalControlsWidth = controlButtonSize + controlsSpacing + valueBoxWidth + controlsSpacing
-                + controlButtonSize;
-        int controlsStartX = centerX - totalControlsWidth / 2;
-
-        ButtonWidget minusBtn = ButtonWidget.builder(Text.literal("−").formatted(Formatting.RED), (b) -> {
-            OreFilterConfig.setMaxOres(OreFilterConfig.getMaxOres() - 5);
-        }).dimensions(controlsStartX, maxControlsY, controlButtonSize, 24).build();
-        this.addDrawableChild(minusBtn);
-
-        ButtonWidget plusBtn = ButtonWidget.builder(Text.literal("+").formatted(Formatting.GREEN), (b) -> {
-            OreFilterConfig.setMaxOres(OreFilterConfig.getMaxOres() + 5);
-        }).dimensions(controlsStartX + controlButtonSize + controlsSpacing + valueBoxWidth + controlsSpacing,
-                maxControlsY, controlButtonSize, 24).build();
-        this.addDrawableChild(plusBtn);
-
-        // === BOTTOM BUTTONS ===
-        int bottomY = this.height - 35;
-        int bottomBtnWidth = 100;
-        int bottomBtnGap = 20;
+        // === BOTTOM BUTTONS (always visible) ===
+        int btnW = 90;
+        int btnGap = 12;
 
         ButtonWidget saveBtn = ButtonWidget.builder(
                 Text.translatable("murilloskills.ore_filter.save").formatted(Formatting.GREEN),
-                (b) -> {
-                    OreFilterConfig.save();
-                    close();
-                })
-                .dimensions(centerX - bottomBtnWidth - bottomBtnGap / 2, bottomY, bottomBtnWidth, 22)
+                (b) -> { OreFilterConfig.save(); close(); })
+                .dimensions(centerX - btnW - btnGap / 2, bottomY, btnW, 20)
                 .build();
         this.addDrawableChild(saveBtn);
 
         ButtonWidget resetBtn = ButtonWidget.builder(
                 Text.translatable("murilloskills.ore_filter.reset").formatted(Formatting.YELLOW),
-                (b) -> {
-                    resetDefaults();
-                    refreshScreen();
-                })
-                .dimensions(centerX + bottomBtnGap / 2, bottomY, bottomBtnWidth, 22)
+                (b) -> { resetDefaults(); refreshScreen(); })
+                .dimensions(centerX + btnGap / 2, bottomY, btnW, 20)
                 .build();
         this.addDrawableChild(resetBtn);
-    }
 
-    /**
-     * Calculate responsive layout values based on screen dimensions.
-     */
-    private void calculateLayout() {
-        // Determine number of columns based on width
-        if (this.width < 400) {
-            cols = 2;
-            cardWidth = Math.min(110, (this.width - 40) / 2);
-        } else if (this.width < 550) {
-            cols = 3;
-            cardWidth = Math.min(115, (this.width - 60) / 3);
-        } else {
-            cols = 4;
-            cardWidth = Math.min(120, (this.width - 80) / 4);
+        // === ORE TOGGLE BUTTONS ===
+        OreType[] ores = getFilterableOres();
+        int gridW = cols * cardW + (cols - 1) * cardGap;
+        int startX = centerX - gridW / 2;
+
+        for (int i = 0; i < ores.length; i++) {
+            final OreType ore = ores[i];
+            int col = i % cols;
+            int row = i / cols;
+            int x = startX + col * (cardW + cardGap);
+            int y = oreGridY + row * (cardH + cardGap);
+
+            ButtonWidget btn = ButtonWidget.builder(Text.empty(), (b) -> {
+                OreFilterConfig.toggleOre(ore);
+            }).dimensions(x, y, cardW, cardH).build();
+            this.addDrawableChild(btn);
         }
 
-        cardHeight = 26;
-        gap = Math.max(6, Math.min(10, this.width / 60));
+        // === MODE BUTTONS ===
+        int modeW = Math.min(120, (panelW - PANEL_PADDING * 4) / 3);
+        int modeGap = 8;
+        int totalModeW = 3 * modeW + 2 * modeGap;
+        int modeStartX = centerX - totalModeW / 2;
+        int modeBtnY = modeSectionY + 18;
 
-        // Calculate vertical positions
-        int headerHeight = 55;
+        DisplayMode current = OreFilterConfig.getDisplayMode();
 
-        // Ore grid starts after header (no separate section title needed)
-        oreGridStartY = headerHeight + 12;
+        for (DisplayMode mode : DisplayMode.values()) {
+            int idx = mode.ordinal();
+            ButtonWidget modeBtn = ButtonWidget.builder(Text.empty(), (b) -> {
+                OreFilterConfig.setDisplayMode(mode);
+                refreshScreen();
+            }).dimensions(modeStartX + idx * (modeW + modeGap), modeBtnY, modeW, 20).build();
+            this.addDrawableChild(modeBtn);
+        }
 
-        // Calculate ore grid height
+        // === MAX ORES CONTROLS ===
+        int ctrlBtnW = 24;
+        int ctrlGap = 8;
+        int valueBoxW = 50;
+        int totalCtrlW = ctrlBtnW + ctrlGap + valueBoxW + ctrlGap + ctrlBtnW;
+        int ctrlStartX = centerX - totalCtrlW / 2;
+        int ctrlY = maxOresSectionY + 18;
+
+        ButtonWidget minusBtn = ButtonWidget.builder(Text.literal("−").formatted(Formatting.RED), (b) -> {
+            OreFilterConfig.setMaxOres(OreFilterConfig.getMaxOres() - 5);
+        }).dimensions(ctrlStartX, ctrlY, ctrlBtnW, 20).build();
+        this.addDrawableChild(minusBtn);
+
+        ButtonWidget plusBtn = ButtonWidget.builder(Text.literal("+").formatted(Formatting.GREEN), (b) -> {
+            OreFilterConfig.setMaxOres(OreFilterConfig.getMaxOres() + 5);
+        }).dimensions(ctrlStartX + ctrlBtnW + ctrlGap + valueBoxW + ctrlGap, ctrlY, ctrlBtnW, 20).build();
+        this.addDrawableChild(plusBtn);
+    }
+
+    private void calculateLayout() {
+        // Panel sizing (responsive)
+        panelW = Math.min(380, this.width - 20);
+        panelX = (this.width - panelW) / 2;
+        panelY = 10;
+
+        // Columns based on panel width
+        if (panelW < 280) {
+            cols = 2;
+            cardW = (panelW - PANEL_PADDING * 2 - 6) / 2;
+        } else if (panelW < 360) {
+            cols = 3;
+            cardW = (panelW - PANEL_PADDING * 2 - 12) / 3;
+        } else {
+            cols = 4;
+            cardW = (panelW - PANEL_PADDING * 2 - 18) / 4;
+        }
+        cardH = 24;
+        cardGap = 6;
+
+        // Vertical layout
+        oreGridY = panelY + HEADER_HEIGHT + 8;
+
         OreType[] ores = getFilterableOres();
         int oreRows = (int) Math.ceil((double) ores.length / cols);
-        int oreGridHeight = oreRows * (cardHeight + gap) - gap;
+        int oreGridH = oreRows * (cardH + cardGap) - cardGap;
 
-        // Mode section starts after ore grid
-        modeSectionY = oreGridStartY + oreGridHeight + 25;
+        modeSectionY = oreGridY + oreGridH + SECTION_GAP;
+        maxOresSectionY = modeSectionY + 62;
+        bottomY = maxOresSectionY + 52;
 
-        // Description box is 45 pixels below mode section title
-        int modeDescBoxOffset = 50;
+        panelH = bottomY + 28 - panelY;
 
-        // Max ores section
-        maxOresSectionY = modeSectionY + modeDescBoxOffset + 35;
+        // Clamp if too tall
+        if (panelY + panelH > this.height - 4) {
+            panelH = this.height - 4 - panelY;
+            bottomY = panelY + panelH - 28;
+        }
     }
 
     private void refreshScreen() {
@@ -212,24 +190,21 @@ public class OreFilterScreen extends Screen {
         OreFilterConfig.setMaxOres(20);
     }
 
-    private Text getModeButtonText(DisplayMode mode, boolean active) {
-        String name = Text.translatable("murilloskills.ore_filter.mode." + mode.name().toLowerCase()).getString();
-        String prefix = active ? "● " : "○ ";
-        Formatting color = active ? Formatting.AQUA : Formatting.GRAY;
-        return Text.literal(prefix).formatted(color)
-                .append(Text.literal(name).formatted(active ? Formatting.WHITE : Formatting.GRAY));
-    }
-
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         // === BACKGROUND ===
-        renderBackground(context);
+        renderGradientBackground(context);
+
+        // === MAIN PANEL ===
+        context.fill(panelX, panelY, panelX + panelW, panelY + panelH, palette.panelBg());
+        RenderingHelper.drawPanelBorder(context, panelX, panelY, panelW, panelH, palette.sectionBorder());
+        RenderingHelper.renderCornerAccents(context, panelX, panelY, panelW, panelH, 6, palette.accentGold());
 
         // === HEADER ===
         renderHeader(context);
 
-        // === ORE SECTION ===
-        renderOreSection(context);
+        // === ORE SECTION (labels over buttons) ===
+        renderOreSectionLabels(context);
 
         // === MODE SECTION ===
         renderModeSection(context);
@@ -237,149 +212,125 @@ public class OreFilterScreen extends Screen {
         // === MAX ORES SECTION ===
         renderMaxOresSection(context);
 
-        // === WIDGETS ===
+        // === WIDGETS (buttons) ===
         super.render(context, mouseX, mouseY, delta);
 
-        // === ORE BUTTON CONTENT (render after buttons for proper layering) ===
-        renderOreButtonContent(context);
+        // === ORE CONTENT (over buttons for layering) ===
+        renderOreCardContent(context);
+
+        // === MODE BUTTON CONTENT (over buttons) ===
+        renderModeButtonContent(context);
     }
 
-    private void renderBackground(DrawContext context) {
-        // Dark gradient background
+    private void renderGradientBackground(DrawContext context) {
         for (int y = 0; y < this.height; y++) {
             float ratio = (float) y / this.height;
-            int r = (int) (10 + ratio * 8);
-            int g = (int) (10 + ratio * 6);
-            int b = (int) (20 + ratio * 12);
+            int r = (int) (8 + ratio * 6);
+            int g = (int) (8 + ratio * 4);
+            int b = (int) (16 + ratio * 10);
             context.fill(0, y, this.width, y + 1, 0xF0000000 | (r << 16) | (g << 8) | b);
         }
     }
 
     private void renderHeader(DrawContext context) {
         int centerX = this.width / 2;
+        int headerBottom = panelY + HEADER_HEIGHT;
 
-        // Header panel
-        context.fill(0, 0, this.width, 55, 0xE0101018);
-        context.fill(0, 54, this.width, 55, 0x40FFFFFF);
+        // Header bg
+        context.fill(panelX + 1, panelY + 1, panelX + panelW - 1, headerBottom, palette.panelBgHeader());
 
-        // Gold accent line (responsive width)
-        int lineWidth = Math.min(200, this.width - 40);
-        context.fill(centerX - lineWidth / 2, 53, centerX + lineWidth / 2, 54, GOLD);
+        // Divider line
+        int lineW = panelW - PANEL_PADDING * 4;
+        context.fill(centerX - lineW / 2, headerBottom - 1, centerX + lineW / 2, headerBottom, palette.accentGold());
 
         // Title
         context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("⚙ ").formatted(Formatting.GOLD)
+                Text.literal("⛏ ").formatted(Formatting.GOLD)
                         .append(this.title.copy().formatted(Formatting.GOLD, Formatting.BOLD)),
-                centerX, 12, GOLD);
+                centerX, panelY + 10, palette.textGold());
 
         // Subtitle
-        Text sub = Text.translatable("murilloskills.ore_filter.subtitle");
-        context.drawCenteredTextWithShadow(textRenderer, sub, centerX, 30, 0x888899);
-
-        // Decorative corners
-        context.fill(0, 0, 8, 2, GOLD);
-        context.fill(0, 0, 2, 8, GOLD);
-        context.fill(this.width - 8, 0, this.width, 2, GOLD);
-        context.fill(this.width - 2, 0, this.width, 8, GOLD);
+        context.drawCenteredTextWithShadow(textRenderer,
+                Text.translatable("murilloskills.ore_filter.subtitle").copy().formatted(Formatting.GRAY),
+                centerX, panelY + 26, palette.textMuted());
     }
 
-    private void renderOreSection(DrawContext context) {
-        // No separate ore section title - the header already says what this screen is
-        // for
-        // This prevents the "duplicated text" feel
+    private void renderOreSectionLabels(DrawContext context) {
+        // Section title above the ore grid
+        int labelY = oreGridY - 2;
+        // No extra label needed - header makes it clear
     }
 
     private void renderModeSection(DrawContext context) {
         int centerX = this.width / 2;
 
-        // Section title
+        // Section divider with title
         String title = Text.translatable("murilloskills.ore_filter.section.mode").getString();
-        int titleWidth = textRenderer.getWidth(title);
-        int lineExtent = Math.min(200, (this.width - titleWidth) / 2 - 30);
+        int titleW = textRenderer.getWidth(title);
+        int lineW = (panelW - PANEL_PADDING * 2 - titleW - 20) / 2;
 
-        context.fill(centerX - lineExtent - titleWidth / 2 - 10, modeSectionY, centerX - titleWidth / 2 - 10,
-                modeSectionY + 1, 0x40D4AF37);
-        context.drawCenteredTextWithShadow(textRenderer, Text.literal(title).formatted(Formatting.GOLD), centerX,
-                modeSectionY - 4, GOLD);
-        context.fill(centerX + titleWidth / 2 + 10, modeSectionY, centerX + lineExtent + titleWidth / 2 + 10,
-                modeSectionY + 1, 0x40D4AF37);
-
-        // Current mode description box
-        DisplayMode current = OreFilterConfig.getDisplayMode();
-        Text modeDesc = Text.translatable("murilloskills.ore_filter.mode." + current.name().toLowerCase() + ".desc");
-
-        int descBoxWidth = Math.min(300, this.width - 40);
-        int descBoxHeight = 22;
-        int descBoxX = centerX - descBoxWidth / 2;
-        int descBoxY = modeSectionY + 45;
-
-        // Background
-        context.fill(descBoxX, descBoxY, descBoxX + descBoxWidth, descBoxY + descBoxHeight, 0xC0101820);
-        // Top border
-        context.fill(descBoxX, descBoxY, descBoxX + descBoxWidth, descBoxY + 1, TEXT_AQUA);
-        // Bottom shadow
-        context.fill(descBoxX, descBoxY + descBoxHeight - 1, descBoxX + descBoxWidth, descBoxY + descBoxHeight,
-                0x40000000);
-
-        // Description text
+        context.fill(panelX + PANEL_PADDING, modeSectionY + 3,
+                panelX + PANEL_PADDING + lineW, modeSectionY + 4, palette.dividerColor());
         context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("ℹ ").formatted(Formatting.AQUA).append(modeDesc.copy().formatted(Formatting.WHITE)),
-                centerX, descBoxY + 7, TEXT_WHITE);
+                Text.literal(title).formatted(Formatting.GOLD),
+                centerX, modeSectionY - 1, palette.textGold());
+        context.fill(centerX + titleW / 2 + 10, modeSectionY + 3,
+                panelX + panelW - PANEL_PADDING, modeSectionY + 4, palette.dividerColor());
+
+        // Mode description box
+        DisplayMode current = OreFilterConfig.getDisplayMode();
+        Text desc = Text.translatable("murilloskills.ore_filter.mode." + current.name().toLowerCase() + ".desc");
+        int descBoxW = panelW - PANEL_PADDING * 4;
+        int descBoxX = centerX - descBoxW / 2;
+        int descBoxY = modeSectionY + 42;
+
+        context.fill(descBoxX, descBoxY, descBoxX + descBoxW, descBoxY + 16, palette.infoBg());
+        context.fill(descBoxX, descBoxY, descBoxX + 2, descBoxY + 16, palette.textAqua());
+        context.drawCenteredTextWithShadow(textRenderer,
+                Text.literal("ℹ ").formatted(Formatting.AQUA).append(desc.copy().formatted(Formatting.WHITE)),
+                centerX, descBoxY + 4, palette.textWhite());
     }
 
     private void renderMaxOresSection(DrawContext context) {
         int centerX = this.width / 2;
 
-        // Section title
+        // Section divider with title
         String title = Text.translatable("murilloskills.ore_filter.section.max_ores").getString();
-        int titleWidth = textRenderer.getWidth(title);
-        int lineExtent = Math.min(150, (this.width - titleWidth) / 2 - 30);
+        int titleW = textRenderer.getWidth(title);
+        int lineW = (panelW - PANEL_PADDING * 2 - titleW - 20) / 2;
 
-        context.fill(centerX - lineExtent - titleWidth / 2 - 10, maxOresSectionY, centerX - titleWidth / 2 - 10,
-                maxOresSectionY + 1, 0x40D4AF37);
-        context.drawCenteredTextWithShadow(textRenderer, Text.literal(title).formatted(Formatting.GOLD), centerX,
-                maxOresSectionY - 4, GOLD);
-        context.fill(centerX + titleWidth / 2 + 10, maxOresSectionY, centerX + lineExtent + titleWidth / 2 + 10,
-                maxOresSectionY + 1, 0x40D4AF37);
+        context.fill(panelX + PANEL_PADDING, maxOresSectionY + 3,
+                panelX + PANEL_PADDING + lineW, maxOresSectionY + 4, palette.dividerColor());
+        context.drawCenteredTextWithShadow(textRenderer,
+                Text.literal(title).formatted(Formatting.GOLD),
+                centerX, maxOresSectionY - 1, palette.textGold());
+        context.fill(centerX + titleW / 2 + 10, maxOresSectionY + 3,
+                panelX + panelW - PANEL_PADDING, maxOresSectionY + 4, palette.dividerColor());
 
-        // Value display box (centered between the +/- buttons)
-        int boxWidth = 60;
-        int boxHeight = 28;
-        int boxX = centerX - boxWidth / 2;
+        // Value display (centered between +/- buttons)
+        int boxW = 50;
+        int boxH = 20;
+        int boxX = centerX - boxW / 2;
         int boxY = maxOresSectionY + 18;
 
-        // Background
-        context.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, PANEL_BG);
-        // Borders
-        context.fill(boxX, boxY, boxX + boxWidth, boxY + 1, SECTION_BORDER);
-        context.fill(boxX, boxY + boxHeight - 1, boxX + boxWidth, boxY + boxHeight, 0x40000000);
-        context.fill(boxX, boxY, boxX + 1, boxY + boxHeight, SECTION_BORDER);
-        context.fill(boxX + boxWidth - 1, boxY, boxX + boxWidth, boxY + boxHeight, SECTION_BORDER);
+        context.fill(boxX, boxY, boxX + boxW, boxY + boxH, palette.sectionBg());
+        RenderingHelper.drawPanelBorder(context, boxX, boxY, boxW, boxH, palette.sectionBorder());
 
-        // Value
         int maxOres = OreFilterConfig.getMaxOres();
         context.drawCenteredTextWithShadow(textRenderer,
                 Text.literal(String.valueOf(maxOres)).formatted(Formatting.WHITE, Formatting.BOLD),
-                centerX, boxY + 10, TEXT_WHITE);
+                centerX, boxY + 6, palette.textWhite());
 
         // Range hint
         context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("(").formatted(Formatting.GRAY)
-                        .append(Text.literal("5").formatted(Formatting.AQUA))
-                        .append(Text.literal(" - ").formatted(Formatting.GRAY))
-                        .append(Text.literal("50").formatted(Formatting.AQUA))
-                        .append(Text.literal(")").formatted(Formatting.GRAY)),
-                centerX, boxY + boxHeight + 5, TEXT_GRAY);
+                Text.literal("5 - 50").formatted(Formatting.DARK_GRAY),
+                centerX, boxY + boxH + 4, palette.textMuted());
     }
 
-    /**
-     * Render ore button content with consistent alignment.
-     * Item icon on left, status indicator, then ore name - all at fixed positions.
-     */
-    private void renderOreButtonContent(DrawContext context) {
+    private void renderOreCardContent(DrawContext context) {
         OreType[] ores = getFilterableOres();
-        int gridWidth = cols * cardWidth + (cols - 1) * gap;
-        int startX = this.width / 2 - gridWidth / 2;
+        int gridW = cols * cardW + (cols - 1) * cardGap;
+        int startX = this.width / 2 - gridW / 2;
 
         for (int i = 0; i < ores.length; i++) {
             OreType ore = ores[i];
@@ -387,42 +338,84 @@ public class OreFilterScreen extends Screen {
 
             int col = i % cols;
             int row = i / cols;
-            int btnX = startX + col * (cardWidth + gap);
-            int btnY = oreGridStartY + row * (cardHeight + gap);
+            int x = startX + col * (cardW + cardGap);
+            int y = oreGridY + row * (cardH + cardGap);
+            int oreColor = i < ORE_COLORS.length ? ORE_COLORS[i] : 0xFF888888;
 
-            // Draw item icon at fixed position (left side of button)
-            int iconX = btnX + 4;
-            int iconY = btnY + (cardHeight - 16) / 2; // 16 = item icon size
+            // Card background overlay (on top of button)
+            int bgColor = enabled ? palette.sectionBgActive() : palette.sectionBg();
+            context.fill(x + 1, y + 1, x + cardW - 1, y + cardH - 1, bgColor);
+
+            // Left accent bar (ore color)
+            int accentAlpha = enabled ? 0xFF : 0x60;
+            int accentColor = (accentAlpha << 24) | (oreColor & 0x00FFFFFF);
+            context.fill(x + 1, y + 1, x + 3, y + cardH - 1, accentColor);
+
+            // Top highlight when enabled
+            if (enabled) {
+                context.fill(x + 1, y + 1, x + cardW - 1, y + 2, 0x20FFFFFF);
+            }
+
+            // Item icon
+            int iconX = x + 5;
+            int iconY = y + (cardH - 16) / 2;
             ItemStack icon = getIcon(ore);
             context.drawItem(icon, iconX, iconY);
 
-            // Status indicator at fixed position after icon
-            int statusX = iconX + 18; // 16px icon + 2px gap
-            int textY = btnY + (cardHeight - 8) / 2; // 8 = approx font height
-            String statusIcon = enabled ? "◆" : "◇";
-            int statusColor = enabled ? 0xFF55FF55 : 0xFF555555; // Green or dark gray
-            context.drawTextWithShadow(textRenderer, statusIcon, statusX, textY, statusColor);
+            // Status dot
+            int dotX = iconX + 18;
+            int textY = y + (cardH - 8) / 2;
+            String dot = enabled ? "●" : "○";
+            int dotColor = enabled ? 0xFF55FF55 : 0xFF555555;
+            context.drawTextWithShadow(textRenderer, dot, dotX, textY, dotColor);
 
-            // Ore name at fixed position after status
-            int nameX = statusX + 12; // Status icon width + gap
+            // Ore name
+            int nameX = dotX + 10;
             String name = Text.translatable("murilloskills.ore." + ore.name().toLowerCase()).getString();
-
-            // Truncate name if too long for button
-            int maxNameWidth = cardWidth - nameX + btnX - 4;
-            if (textRenderer.getWidth(name) > maxNameWidth) {
-                while (textRenderer.getWidth(name + "...") > maxNameWidth && name.length() > 1) {
+            int maxNameW = cardW - (nameX - x) - 4;
+            if (textRenderer.getWidth(name) > maxNameW) {
+                while (textRenderer.getWidth(name + "..") > maxNameW && name.length() > 1) {
                     name = name.substring(0, name.length() - 1);
                 }
-                name = name + "...";
+                name = name + "..";
             }
-
-            int nameColor = enabled ? 0xFFFFFFFF : 0xFFAAAAAA; // White or gray
+            int nameColor = enabled ? palette.textWhite() : palette.textMuted();
             context.drawTextWithShadow(textRenderer, name, nameX, textY, nameColor);
         }
     }
 
+    private void renderModeButtonContent(DrawContext context) {
+        DisplayMode current = OreFilterConfig.getDisplayMode();
+        int modeW = Math.min(120, (panelW - PANEL_PADDING * 4) / 3);
+        int modeGap = 8;
+        int totalModeW = 3 * modeW + 2 * modeGap;
+        int modeStartX = this.width / 2 - totalModeW / 2;
+        int modeBtnY = modeSectionY + 18;
+
+        for (DisplayMode mode : DisplayMode.values()) {
+            int idx = mode.ordinal();
+            int bx = modeStartX + idx * (modeW + modeGap);
+            boolean active = mode == current;
+
+            // Background overlay
+            int bg = active ? palette.sectionBgActive() : palette.sectionBg();
+            context.fill(bx + 1, modeBtnY + 1, bx + modeW - 1, modeBtnY + 19, bg);
+
+            // Bottom accent when active
+            if (active) {
+                context.fill(bx + 1, modeBtnY + 18, bx + modeW - 1, modeBtnY + 20, palette.textAqua());
+            }
+
+            // Label
+            String label = Text.translatable("murilloskills.ore_filter.mode." + mode.name().toLowerCase()).getString();
+            String prefix = active ? "● " : "○ ";
+            int color = active ? palette.textAqua() : palette.textGray();
+            context.drawCenteredTextWithShadow(textRenderer, prefix + label, bx + modeW / 2, modeBtnY + 6, color);
+        }
+    }
+
     private OreType[] getFilterableOres() {
-        return new OreType[] {
+        return new OreType[]{
                 OreType.COAL, OreType.COPPER, OreType.IRON, OreType.GOLD,
                 OreType.LAPIS, OreType.REDSTONE, OreType.DIAMOND, OreType.EMERALD,
                 OreType.ANCIENT_DEBRIS, OreType.NETHER_QUARTZ, OreType.NETHER_GOLD

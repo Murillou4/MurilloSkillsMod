@@ -46,9 +46,11 @@ public final class SkillSelectionNetworkHandler {
                     List<MurilloSkillsList> incoming = payload.selectedSkills();
                     int newCount = incoming.size();
 
-                    // Validation: Must select between 1 and 3 skills
-                    if (incoming == null || newCount < 1 || newCount > SkillSelectionC2SPayload.MAX_SELECTED_SKILLS) {
-                        player.sendMessage(Text.translatable("murilloskills.selection.select_1_to_3")
+                    int maxSkills = com.murilloskills.utils.SkillConfig.getMaxSelectedSkills();
+
+                    // Validation: Must select between 1 and max skills
+                    if (incoming == null || newCount < 1 || newCount > maxSkills) {
+                        player.sendMessage(Text.translatable("murilloskills.selection.select_1_to_3", maxSkills)
                                 .formatted(Formatting.RED), true);
                         return;
                     }
@@ -74,11 +76,11 @@ public final class SkillSelectionNetworkHandler {
 
                         // Feedback Messages
                         int currentCount = data.getSelectedSkills().size();
-                        if (currentCount == SkillSelectionC2SPayload.MAX_SELECTED_SKILLS) {
+                        if (currentCount == maxSkills) {
                             // Complete selection
                             player.sendMessage(Text.translatable("murilloskills.selection.success")
                                     .formatted(Formatting.GREEN, Formatting.BOLD), false);
-                            player.sendMessage(Text.translatable("murilloskills.selection.chose_3")
+                            player.sendMessage(Text.translatable("murilloskills.selection.chose_3", maxSkills)
                                     .formatted(Formatting.YELLOW), false);
 
                             // Grant "Trio Chosen" advancement
@@ -97,8 +99,8 @@ public final class SkillSelectionNetworkHandler {
                             }
                         } else {
                             // Partial selection
-                            int remaining = SkillSelectionC2SPayload.MAX_SELECTED_SKILLS - currentCount;
-                            player.sendMessage(Text.translatable("murilloskills.selection.partial_saved", currentCount)
+                            int remaining = maxSkills - currentCount;
+                            player.sendMessage(Text.translatable("murilloskills.selection.partial_saved", currentCount, maxSkills)
                                     .formatted(Formatting.GREEN), false);
                             player.sendMessage(
                                     Text.translatable("murilloskills.selection.can_choose_more", remaining)

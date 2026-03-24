@@ -12,6 +12,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
+import com.murilloskills.client.config.UltmineClientConfig;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
@@ -76,6 +77,7 @@ public class UltmineRadialMenuScreen extends Screen {
     private int hoveredIndex = -1;
     private int selectedIndex = 0;
     private int initialSelectedIndex = 0;
+    private int currentVariant = 0;
     private boolean selectionChanged = false;
     private long openedAtMs;
 
@@ -100,6 +102,7 @@ public class UltmineRadialMenuScreen extends Screen {
             }
         }
         selectionChanged = false;
+        currentVariant = UltmineClientState.getVariant();
 
         ensureRadialTextures();
     }
@@ -183,6 +186,14 @@ public class UltmineRadialMenuScreen extends Screen {
         if ((key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER || key == GLFW.GLFW_KEY_SPACE)
                 && selectedIndex >= 0) {
             selectShape(selectedIndex);
+            return true;
+        }
+        if (key == GLFW.GLFW_KEY_A || key == GLFW.GLFW_KEY_LEFT) {
+            cycleVariant(-1);
+            return true;
+        }
+        if (key == GLFW.GLFW_KEY_D || key == GLFW.GLFW_KEY_RIGHT) {
+            cycleVariant(1);
             return true;
         }
         return super.keyPressed(keyInput);
@@ -374,15 +385,27 @@ public class UltmineRadialMenuScreen extends Screen {
     }
 
     private void renderCenterPanel(DrawContext context, int centerX, int centerY, float eased) {
-        drawScaledCenteredText(context, this.title, centerX, centerY - 11,
+        drawScaledCenteredText(context, this.title, centerX, centerY - 16,
                 withAlpha(PALETTE.textWhite(), Math.round(234 * eased)), CENTER_TITLE_SCALE, true);
         drawScaledCenteredText(context,
                 Text.translatable("murilloskills.ultmine.menu.current", shapeNameTexts[selectedIndex]),
-                centerX, centerY + 3, withAlpha(PALETTE.textWhite(), Math.round(226 * eased)), CENTER_CURRENT_SCALE, true);
+                centerX, centerY - 2, withAlpha(PALETTE.textWhite(), Math.round(226 * eased)), CENTER_CURRENT_SCALE, true);
+
+        int activeIndex = hoveredIndex >= 0 ? hoveredIndex : selectedIndex;
+        if (activeIndex >= 0 && activeIndex < shapes.length) {
+            UltmineShape shape = shapes[activeIndex];
+            int variantCount = UltmineShape.getVariantCount(shape);
+            if (variantCount > 1) {
+                String variantKey = UltmineShape.getVariantTranslationKey(shape, currentVariant);
+                Text variantText = Text.literal("\u25C0 ").append(Text.translatable(variantKey)).append(" \u25B6");
+                drawScaledCenteredText(context, variantText, centerX, centerY + 12,
+                        withAlpha(PALETTE.textLight(), Math.round(210 * eased)), CENTER_CURRENT_SCALE, true);
+            }
+        }
     }
 
     private void renderHintText(DrawContext context) {
-        drawScaledCenteredText(context, Text.literal("LMB select  |  Wheel cycle  |  ESC cancel"),
+        drawScaledCenteredText(context, Text.literal("LMB select  |  Wheel cycle  |  A/D variant  |  ESC cancel"),
                 this.width / 2, this.height - 20, withAlpha(PALETTE.textGray(), 128), HINT_SCALE, false);
     }
 
@@ -426,8 +449,23 @@ public class UltmineRadialMenuScreen extends Screen {
         }
         UltmineShape shape = shapes[index];
         UltmineClientState.applyShapeDefaults(shape);
+        currentVariant = UltmineClientState.getVariant();
         ClientPlayNetworking.send(new UltmineShapeSelectC2SPayload(
-                shape, UltmineClientState.getDepth(), UltmineClientState.getLength()));
+                shape, UltmineClientState.getDepth(), UltmineClientState.getLength(), currentVariant));
+    }
+
+    private void cycleVariant(int direction) {
+        int activeIndex = hoveredIndex >= 0 ? hoveredIndex : selectedIndex;
+        if (activeIndex < 0 || activeIndex >= shapes.length) return;
+        UltmineShape shape = shapes[activeIndex];
+        int count = UltmineShape.getVariantCount(shape);
+        if (count <= 1) return;
+        currentVariant = ((currentVariant + direction) % count + count) % count;
+        UltmineClientState.setVariant(currentVariant);
+        UltmineClientConfig.setShapeVariant(shape, currentVariant);
+        UltmineClientConfig.save();
+        ClientPlayNetworking.send(new UltmineShapeSelectC2SPayload(
+                shape, UltmineClientState.getDepth(), UltmineClientState.getLength(), currentVariant));
     }
 
     private static void clearImage(NativeImage image) {

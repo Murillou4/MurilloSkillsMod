@@ -16,7 +16,8 @@ import java.util.Map;
 public record SkillsSyncPayload(
         Map<MurilloSkillsList, PlayerSkillData.SkillStats> skills,
         String paragonSkillName,
-        List<MurilloSkillsList> selectedSkills) implements CustomPayload {
+        List<MurilloSkillsList> selectedSkills,
+        int maxSelectedSkills) implements CustomPayload {
 
     public static final CustomPayload.Id<SkillsSyncPayload> ID = new CustomPayload.Id<>(
             Identifier.of(MurilloSkills.MOD_ID, "skills_sync"));
@@ -30,6 +31,7 @@ public record SkillsSyncPayload(
                     buf.writeInt(v.level);
                     buf.writeDouble(v.xp);
                     buf.writeLong(v.lastAbilityUse);
+                    buf.writeInt(v.prestige);
                 });
 
                 // Write paragon skill name
@@ -40,6 +42,9 @@ public record SkillsSyncPayload(
                 for (MurilloSkillsList skill : payload.selectedSkills) {
                     buf.writeEnumConstant(skill);
                 }
+
+                // Write max selected skills
+                buf.writeVarInt(payload.maxSelectedSkills);
             },
             (buf) -> {
                 // Read skills map
@@ -50,7 +55,8 @@ public record SkillsSyncPayload(
                     int level = buf.readInt();
                     double xp = buf.readDouble();
                     long lastUse = buf.readLong();
-                    skills.put(key, new PlayerSkillData.SkillStats(level, xp, lastUse));
+                    int prestige = buf.readInt();
+                    skills.put(key, new PlayerSkillData.SkillStats(level, xp, lastUse, prestige));
                 }
 
                 // Read paragon skill name
@@ -63,7 +69,10 @@ public record SkillsSyncPayload(
                     selectedSkills.add(buf.readEnumConstant(MurilloSkillsList.class));
                 }
 
-                return new SkillsSyncPayload(skills, paragonName, selectedSkills);
+                // Read max selected skills
+                int maxSelectedSkills = buf.readVarInt();
+
+                return new SkillsSyncPayload(skills, paragonName, selectedSkills, maxSelectedSkills);
             });
 
     @Override

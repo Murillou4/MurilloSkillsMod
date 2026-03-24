@@ -1,12 +1,17 @@
 package com.murilloskills.skills;
 
 import com.murilloskills.data.ModAttachments;
+import com.murilloskills.models.SkillReceptorResult;
 import com.murilloskills.network.UltmineResultS2CPayload;
+import com.murilloskills.utils.MinerXpGetter;
 import com.murilloskills.utils.SkillConfig;
+import com.murilloskills.utils.SkillsNetworkUtils;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -34,11 +39,14 @@ public final class VeinMinerHandler {
     private static final Set<UUID> ACTIVE_PLAYERS = ConcurrentHashMap.newKeySet();
     // Per-player drops-to-inventory preference (overrides global config)
     private static final Map<UUID, Boolean> DROPS_TO_INVENTORY = new ConcurrentHashMap<>();
+    // Per-player XP direct-to-player preference
+    private static final Map<UUID, Boolean> XP_DIRECT_TO_PLAYER = new ConcurrentHashMap<>();
 
     // Ultmine per-player shape preferences
     private static final Map<UUID, UltmineShape> ULTMINE_SHAPE = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> ULTMINE_DEPTH = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> ULTMINE_LENGTH = new ConcurrentHashMap<>();
+    private static final Map<UUID, Integer> ULTMINE_VARIANT = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> ULTMINE_LAST_USE_TICK = new ConcurrentHashMap<>();
     private static final Map<UUID, BlockPos> ULTMINE_LAST_TARGET_POS = new ConcurrentHashMap<>();
     private static final Map<UUID, Direction> ULTMINE_LAST_TARGET_FACE = new ConcurrentHashMap<>();
@@ -122,6 +130,32 @@ public final class VeinMinerHandler {
         return DROPS_TO_INVENTORY.getOrDefault(player.getUuid(), SkillConfig.getVeinMinerDropsToInventory());
     }
 
+    /**
+     * Toggle XP direct-to-player for a player.
+     * Returns the new state (true = XP goes directly to player).
+     */
+    public static boolean toggleXpDirectToPlayer(ServerPlayerEntity player) {
+        UUID uuid = player.getUuid();
+        boolean current = XP_DIRECT_TO_PLAYER.getOrDefault(uuid, false);
+        boolean newState = !current;
+        XP_DIRECT_TO_PLAYER.put(uuid, newState);
+        return newState;
+    }
+
+    /**
+     * Set XP direct-to-player for a player.
+     */
+    public static void setXpDirectToPlayer(ServerPlayerEntity player, boolean enabled) {
+        XP_DIRECT_TO_PLAYER.put(player.getUuid(), enabled);
+    }
+
+    /**
+     * Check if XP direct-to-player is enabled for a player.
+     */
+    public static boolean isXpDirectToPlayer(ServerPlayerEntity player) {
+        return XP_DIRECT_TO_PLAYER.getOrDefault(player.getUuid(), false);
+    }
+
     public static UltmineShape getUltmineShape(ServerPlayerEntity player) {
         return ULTMINE_SHAPE.getOrDefault(player.getUuid(), UltmineShape.S_3x3);
     }
@@ -141,10 +175,23 @@ public final class VeinMinerHandler {
     }
 
     public static void setUltmineSelection(ServerPlayerEntity player, UltmineShape shape, int depth, int length) {
+        setUltmineSelection(player, shape, depth, length, 0);
+    }
+
+    public static void setUltmineSelection(ServerPlayerEntity player, UltmineShape shape, int depth, int length,
+            int variant) {
         UltmineSelection normalized = normalizeSelection(shape, depth, length);
         ULTMINE_SHAPE.put(player.getUuid(), normalized.shape());
         ULTMINE_DEPTH.put(player.getUuid(), normalized.depth());
         ULTMINE_LENGTH.put(player.getUuid(), normalized.length());
+        int maxVariant = UltmineShape.getVariantCount(normalized.shape()) - 1;
+        ULTMINE_VARIANT.put(player.getUuid(), Math.max(0, Math.min(variant, maxVariant)));
+    }
+
+    public static int getUltmineVariant(ServerPlayerEntity player) {
+        UltmineShape shape = getUltmineShape(player);
+        int maxVariant = UltmineShape.getVariantCount(shape) - 1;
+        return Math.max(0, Math.min(ULTMINE_VARIANT.getOrDefault(player.getUuid(), 0), maxVariant));
     }
 
     public static void registerUltmineTarget(ServerPlayerEntity player, BlockPos targetPos, Direction face, long worldTime) {
@@ -164,9 +211,11 @@ public final class VeinMinerHandler {
     public static void cleanupPlayerState(UUID playerUuid) {
         HOLDING_KEY.remove(playerUuid);
         DROPS_TO_INVENTORY.remove(playerUuid);
+        XP_DIRECT_TO_PLAYER.remove(playerUuid);
         ULTMINE_SHAPE.remove(playerUuid);
         ULTMINE_DEPTH.remove(playerUuid);
         ULTMINE_LENGTH.remove(playerUuid);
+        ULTMINE_VARIANT.remove(playerUuid);
         ULTMINE_LAST_USE_TICK.remove(playerUuid);
         ULTMINE_LAST_TARGET_POS.remove(playerUuid);
         ULTMINE_LAST_TARGET_FACE.remove(playerUuid);
@@ -241,12 +290,16 @@ public final class VeinMinerHandler {
         int maxBlocks = Math.max(1, SkillConfig.getVeinMinerMaxBlocks());
         Set<BlockPos> targets = collectConnectedBlocks(world, origin, originState, maxBlocks);
         boolean inventoryDrops = isDropsToInventory(player) && world instanceof ServerWorld;
+        boolean xpDirect = isXpDirectToPlayer(player) && world instanceof ServerWorld;
 
         // The origin block is already broken by the player before this handler runs.
         // Collect its dropped item first, even if there are no extra connected targets.
         if (inventoryDrops) {
             collectOriginDrops(player, (ServerWorld) world, origin);
             scheduleOriginCollection(player, world, origin);
+        }
+        if (xpDirect) {
+            collectNearbyXp(player, (ServerWorld) world, origin);
         }
 
         if (targets.isEmpty()) {
@@ -258,10 +311,21 @@ public final class VeinMinerHandler {
             if (state.isAir()) {
                 continue;
             }
+            tool = player.getMainHandStack();
+            if (!canBreakWith(tool, state, player)) {
+                continue;
+            }
             if (inventoryDrops) {
-                breakWithInventoryDrops(player, world, pos, state, tool);
+                breakWithInventoryDrops(player, world, pos, state, tool, xpDirect);
+            } else if (xpDirect && world instanceof ServerWorld serverWorld) {
+                breakWithGroundDropsAndDirectXp(player, serverWorld, pos, state, tool);
             } else {
                 world.breakBlock(pos, true, player);
+            }
+
+            // Apply tool durability damage
+            if (!player.isCreative() && !tool.isEmpty()) {
+                tool.damage(1, player, EquipmentSlot.MAINHAND);
             }
         }
 
@@ -302,6 +366,9 @@ public final class VeinMinerHandler {
             if (state.isAir()) {
                 continue;
             }
+            if (!state.getFluidState().isEmpty()) {
+                continue;
+            }
             if (state.getHardness(world, pos) < 0.0f) {
                 continue;
             }
@@ -327,7 +394,9 @@ public final class VeinMinerHandler {
 
     public static List<BlockPos> getShapeBlocks(ServerPlayerEntity player, BlockPos origin, UltmineShape shape, int depth,
             int length, Direction dir) {
-        return UltmineShapeCalculator.getShapeBlocks(origin, shape, depth, length, dir, player.getRotationVec(1.0f));
+        int variant = getUltmineVariant(player);
+        return UltmineShapeCalculator.getShapeBlocks(origin, shape, depth, length, dir, player.getRotationVec(1.0f),
+                variant);
     }
 
     /**
@@ -376,21 +445,25 @@ public final class VeinMinerHandler {
         ItemStack tool = player.getMainHandStack();
         int minedBlocks = 0;
         boolean inventoryDrops = isDropsToInventory(player) && world instanceof ServerWorld;
+        boolean xpDirect = isXpDirectToPlayer(player) && world instanceof ServerWorld;
+        List<BlockState> minedBlockStates = new ArrayList<>();
         if (inventoryDrops) {
             collectOriginDrops(player, (ServerWorld) world, origin);
             scheduleOriginCollection(player, world, origin);
+        }
+        if (xpDirect) {
+            collectNearbyXp(player, (ServerWorld) world, origin);
         }
 
         for (BlockPos pos : new LinkedHashSet<>(rawTargets)) {
             if (minedBlocks >= maxBlocks) {
                 break;
             }
-            if (tool.isEmpty()) {
-                break;
-            }
-
             BlockState state = world.getBlockState(pos);
             if (state.isAir()) {
+                continue;
+            }
+            if (!state.getFluidState().isEmpty()) {
                 continue;
             }
             if (state.getHardness(world, pos) < 0.0f) {
@@ -399,6 +472,7 @@ public final class VeinMinerHandler {
             if (!isUltmineBlockAllowed(state.getBlock())) {
                 continue;
             }
+            tool = player.getMainHandStack();
             if (!canBreakWith(tool, state, player)) {
                 continue;
             }
@@ -406,24 +480,37 @@ public final class VeinMinerHandler {
                 continue;
             }
 
+            minedBlockStates.add(state);
+
             if (inventoryDrops) {
-                breakWithInventoryDrops(player, world, pos, state, tool);
+                breakWithInventoryDrops(player, world, pos, state, tool, xpDirect);
+            } else if (xpDirect && world instanceof ServerWorld serverWorld) {
+                breakWithGroundDropsAndDirectXp(player, serverWorld, pos, state, tool);
             } else {
                 world.breakBlock(pos, true, player);
             }
             minedBlocks++;
+
+            // Apply tool durability damage
+            if (!player.isCreative() && !tool.isEmpty()) {
+                tool.damage(1, player, EquipmentSlot.MAINHAND);
+            }
         }
 
         if (inventoryDrops) {
             collectOriginDrops(player, (ServerWorld) world, origin);
             scheduleOriginCollection(player, world, origin);
         }
+        if (xpDirect) {
+            collectNearbyXp(player, (ServerWorld) world, origin);
+        }
 
         if (minedBlocks <= 0) {
-            sendUltmineResult(player, false, 0, requested, "murilloskills.ultmine.result.no_valid_blocks",
-                    sendResultPacket);
             return;
         }
+
+        // Grant miner XP for ultmine blocks
+        grantUltmineMinerXp(player, minedBlockStates);
 
         if (!player.isCreative() && xpCost > 0) {
             player.addExperienceLevels(-xpCost);
@@ -525,12 +612,9 @@ public final class VeinMinerHandler {
         if (player.isCreative()) {
             return true;
         }
-        if (tool.isEmpty()) {
-            return false;
-        }
 
         if (state.isToolRequired()) {
-            return tool.isSuitableFor(state);
+            return !tool.isEmpty() && tool.isSuitableFor(state);
         }
 
         return true;
@@ -538,6 +622,11 @@ public final class VeinMinerHandler {
 
     private static void breakWithInventoryDrops(ServerPlayerEntity player, World world, BlockPos pos,
             BlockState state, ItemStack tool) {
+        breakWithInventoryDrops(player, world, pos, state, tool, false);
+    }
+
+    private static void breakWithInventoryDrops(ServerPlayerEntity player, World world, BlockPos pos,
+            BlockState state, ItemStack tool, boolean directXp) {
         if (!(world instanceof ServerWorld serverWorld)) {
             world.breakBlock(pos, true, player);
             return;
@@ -554,7 +643,39 @@ public final class VeinMinerHandler {
         }
 
         world.breakBlock(pos, false, player);
+        // Always spawn XP orbs so the amount is determined by Minecraft's block logic
         state.onStacksDropped(serverWorld, pos, tool, true);
+        // When directXp is on, immediately collect spawned orbs to the player
+        if (directXp) {
+            collectNearbyXp(player, serverWorld, pos);
+        }
+    }
+
+    /**
+     * Breaks a block, drops items on the ground normally, but gives XP directly to the player.
+     */
+    private static void breakWithGroundDropsAndDirectXp(ServerPlayerEntity player, ServerWorld serverWorld,
+            BlockPos pos, BlockState state, ItemStack tool) {
+        List<ItemStack> drops = Block.getDroppedStacks(state, serverWorld, pos, serverWorld.getBlockEntity(pos), player, tool);
+        serverWorld.breakBlock(pos, false, player);
+        for (ItemStack drop : drops) {
+            Block.dropStack(serverWorld, pos, drop);
+        }
+        state.onStacksDropped(serverWorld, pos, tool, true);
+        collectNearbyXp(player, serverWorld, pos);
+    }
+
+    /**
+     * Collects nearby XP orbs and grants them directly to the player.
+     */
+    private static void collectNearbyXp(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
+        Box searchBox = new Box(pos).expand(2.0);
+        List<ExperienceOrbEntity> orbs = world.getEntitiesByClass(
+                ExperienceOrbEntity.class, searchBox, entity -> !entity.isRemoved());
+        for (ExperienceOrbEntity orb : orbs) {
+            player.addExperience(orb.getValue());
+            orb.discard();
+        }
     }
 
     private static void collectOriginDrops(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
@@ -659,12 +780,85 @@ public final class VeinMinerHandler {
             safeLength = SkillConfig.getUltmineShapeDefaultLength(safeShape);
         }
 
-        return new UltmineSelection(safeShape, safeDepth, safeLength);
+        return new UltmineSelection(safeShape, safeDepth, safeLength, 0);
+    }
+
+    /**
+     * Grants Miner skill XP for blocks broken via Ultmine.
+     * Miners (with MINER selected) get full XP for ores, reduced for stone.
+     * Non-miners get half ore XP and minimal stone XP.
+     * Diminishing returns kick in after 20 blocks to prevent stone farming abuse.
+     */
+    private static void grantUltmineMinerXp(ServerPlayerEntity player, List<BlockState> minedStates) {
+        if (minedStates.isEmpty()) return;
+
+        ItemStack tool = player.getMainHandStack();
+        boolean silkTouch = BlockBreakHandler.hasSilkTouch(tool.getEnchantments());
+
+        var data = player.getAttachedOrCreate(ModAttachments.PLAYER_SKILLS);
+        boolean isMiner = data.hasSelectedSkills()
+                && data.getSelectedSkills().contains(MurilloSkillsList.MINER);
+
+        int stoneXpRef = SkillConfig.getMinerXpStone();
+        int totalXp = 0;
+        int blockIndex = 0;
+
+        for (BlockState state : minedStates) {
+            SkillReceptorResult result = MinerXpGetter.isMinerXpBlock(state.getBlock(), silkTouch, false);
+            if (!result.didGainXp()) {
+                blockIndex++;
+                continue;
+            }
+
+            int baseXp = result.getXpAmount();
+            boolean isOre = baseXp > stoneXpRef;
+
+            // Miner: full ore XP, 30% stone | Non-miner: 50% ore, 10% stone
+            float skillMultiplier = isMiner
+                    ? (isOre ? 1.0f : 0.3f)
+                    : (isOre ? 0.5f : 0.1f);
+
+            // Diminishing returns for mass mining
+            float volumeMultiplier;
+            if (blockIndex < 20) {
+                volumeMultiplier = 1.0f;
+            } else if (blockIndex < 50) {
+                volumeMultiplier = 0.5f;
+            } else {
+                volumeMultiplier = 0.25f;
+            }
+
+            totalXp += Math.max(1, Math.round(baseXp * skillMultiplier * volumeMultiplier));
+            blockIndex++;
+        }
+
+        // Cap total XP per ultmine use
+        int maxXpPerUse = isMiner ? 500 : 200;
+        totalXp = Math.min(totalXp, maxXpPerUse);
+
+        if (totalXp <= 0) return;
+
+        var xpResult = data.addXpToSkill(MurilloSkillsList.MINER, totalXp);
+
+        if (xpResult.leveledUp()) {
+            var stats = data.getSkill(MurilloSkillsList.MINER);
+            com.murilloskills.utils.SkillAttributes.updateAllStats(player, data);
+            com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(player, "Minerador", xpResult);
+        }
+
+        SkillsNetworkUtils.syncSkills(player);
+        com.murilloskills.utils.XpToastSender.send(player, MurilloSkillsList.MINER, totalXp,
+                "Ultmine (" + minedStates.size() + " blocks)");
+
+        // Track daily challenge progress
+        com.murilloskills.utils.DailyChallengeManager.recordProgress(player,
+                com.murilloskills.utils.DailyChallengeManager.ChallengeType.MINE_BLOCKS, minedStates.size());
+        com.murilloskills.utils.DailyChallengeManager.syncChallenges(player);
     }
 
     private record PendingOriginCollection(BlockPos pos, long expireTick) {
     }
 
-    private record UltmineSelection(UltmineShape shape, int depth, int length) {
+    private record UltmineSelection(UltmineShape shape, int depth, int length, int variant) {
     }
 }

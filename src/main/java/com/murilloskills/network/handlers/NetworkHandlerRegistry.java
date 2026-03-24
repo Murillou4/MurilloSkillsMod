@@ -61,8 +61,9 @@ public final class NetworkHandlerRegistry {
             registerHandler("UltmineShapeSelect", UltmineShapeSelectC2SPayload.ID,
                     UltmineShapeSelectNetworkHandler.create());
             registerHandler("UltminePreviewRequest", UltmineRequestC2SPayload.ID, UltmineRequestNetworkHandler.create());
+            registerHandler("XpDirectToggle", XpDirectToggleC2SPayload.ID, XpDirectToggleNetworkHandler.create());
 
-            LOGGER.info("Successfully registered 14 network handlers");
+            LOGGER.info("Successfully registered 16 network handlers");
 
         } catch (Exception e) {
             LOGGER.error("CRITICAL: Failed to register network handlers!", e);
