@@ -3,13 +3,13 @@
 **Last updated:** 2026-03-24
 **Current milestone:** v1.2.x — Polimento e Estabilidade
 **Current phase:** 4 (UX e Dívida Técnica)
-**Overall status:** Phase 4 Plan 01 complete — R4.3 config wiring and R4.4 dead code removal done
+**Overall status:** Phase 4 Plan 02 complete — R4.5 HUD renderer ColorPalette migration done
 
 ---
 
 ## Active Work
 
-**Phase 4 Plan 02** is next: remaining UX and technical debt items.
+**Phase 4** in progress — Plans 01 and 02 complete. Check ROADMAP.md for remaining work.
 
 ---
 
