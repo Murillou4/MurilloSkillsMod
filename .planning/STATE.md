@@ -2,14 +2,14 @@
 
 **Last updated:** 2026-03-24
 **Current milestone:** v1.2.x — Polimento e Estabilidade
-**Current phase:** 2 (Correções de Bugs Críticos)
-**Overall status:** Phase 1 complete — ready for Phase 2
+**Current phase:** 4 (UX e Dívida Técnica)
+**Overall status:** Phase 4 Plan 01 complete — R4.3 config wiring and R4.4 dead code removal done
 
 ---
 
 ## Active Work
 
-**Phase 2** is next: fix the 5 high-priority bugs (memory leaks, daily challenge persistence, C2S validation, null check, damage type strings).
+**Phase 4 Plan 02** is next: remaining UX and technical debt items.
 
 ---
 
@@ -18,9 +18,9 @@
 | Phase | Name | Status |
 |-------|------|--------|
 | 1 | Publicar WIP (v1.2.16 + v1.2.17) | Complete |
-| 2 | Correções de Bugs Críticos | Not started |
-| 3 | Refatoração SkillsScreen | Not started |
-| 4 | UX e Dívida Técnica | Not started |
+| 2 | Correções de Bugs Críticos | Complete |
+| 3 | Refatoração SkillsScreen | Complete |
+| 4 | UX e Dívida Técnica | In progress |
 
 ---
 
@@ -31,6 +31,7 @@
 - SkillConfig.java migration deferred (regression risk)
 - All UI improvements in scope (SkillsScreen, HUD overlays)
 - No deadline
+- Pre-existing Phase 3 renderer build errors (SkillsScreen, SkillCardRenderer, SkillTooltipRenderer) out of scope for Phase 4 plan 01 — separate working tree issue
 
 ---
 
