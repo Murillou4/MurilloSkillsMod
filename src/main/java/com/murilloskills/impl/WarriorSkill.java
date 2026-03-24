@@ -75,8 +75,6 @@ public class WarriorSkill extends AbstractSkill {
 
             // 4. Ativa o Berserk
             stats.lastAbilityUse = worldTime;
-            // 4. Ativa o Berserk
-            stats.lastAbilityUse = worldTime;
             // Persistence handled automatically
 
             startBerserk(player);
@@ -261,5 +259,12 @@ public class WarriorSkill extends AbstractSkill {
         player.sendMessage(Text.translatable("murilloskills.warrior.berserk_ended").formatted(Formatting.GRAY), true);
 
         LOGGER.debug("Player {} saiu do modo Berserk", player.getName().getString());
+    }
+
+    /**
+     * Cleanup player state when they disconnect to prevent memory leaks.
+     */
+    public static void cleanupPlayerState(java.util.UUID playerUuid) {
+        berserkPlayers.remove(playerUuid);
     }
 }

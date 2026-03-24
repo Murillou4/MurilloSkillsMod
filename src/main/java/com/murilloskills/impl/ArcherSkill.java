@@ -71,8 +71,6 @@ public class ArcherSkill extends AbstractSkill {
 
             // 4. Ativa o Master Ranger
             stats.lastAbilityUse = worldTime;
-            // 4. Ativa o Master Ranger
-            stats.lastAbilityUse = worldTime;
             // Persistence handled automatically
 
             startMasterRanger(player);

@@ -80,8 +80,6 @@ public class BlacksmithSkill extends AbstractSkill {
 
             // 4. Activate Titanium Aura
             stats.lastAbilityUse = worldTime;
-            // 4. Activate Titanium Aura
-            stats.lastAbilityUse = worldTime;
             // Persistence handled automatically
 
             startTitaniumAura(player);
@@ -307,5 +305,12 @@ public class BlacksmithSkill extends AbstractSkill {
      */
     public static float getReflectedDamage(float originalDamage) {
         return originalDamage * SkillConfig.BLACKSMITH_THORNS_REFLECT;
+    }
+
+    /**
+     * Cleanup player state when they disconnect to prevent memory leaks.
+     */
+    public static void cleanupPlayerState(java.util.UUID playerUuid) {
+        titaniumAuraPlayers.remove(playerUuid);
     }
 }

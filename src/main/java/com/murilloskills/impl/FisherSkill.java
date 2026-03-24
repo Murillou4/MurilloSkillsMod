@@ -74,8 +74,6 @@ public class FisherSkill extends AbstractSkill {
 
             // 4. Activate Rain Dance
             stats.lastAbilityUse = worldTime;
-            // 4. Activate Rain Dance
-            stats.lastAbilityUse = worldTime;
             // Persistence handled automatically
 
             startRainDance(player);
@@ -279,5 +277,12 @@ public class FisherSkill extends AbstractSkill {
         player.sendMessage(Text.translatable("murilloskills.fisher.rain_dance_ended").formatted(Formatting.GRAY), true);
 
         LOGGER.debug("Player {} saiu do Rain Dance", player.getName().getString());
+    }
+
+    /**
+     * Cleanup player state when they disconnect to prevent memory leaks.
+     */
+    public static void cleanupPlayerState(java.util.UUID playerUuid) {
+        rainDancePlayers.remove(playerUuid);
     }
 }

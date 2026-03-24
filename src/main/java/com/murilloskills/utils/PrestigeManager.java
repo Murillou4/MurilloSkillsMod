@@ -23,8 +23,6 @@ import net.minecraft.util.Formatting;
 public class PrestigeManager {
 
     // Configurações
-    // Configurações
-    // Configurações
     // MAX_PRESTIGE_LEVEL available via SkillConfig.getMaxPrestigeLevel()
     // XP_BONUS_PER_PRESTIGE and PASSIVE_BONUS_PER_PRESTIGE are now in SkillConfig
 

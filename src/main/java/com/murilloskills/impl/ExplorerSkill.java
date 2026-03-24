@@ -235,7 +235,6 @@ public class ExplorerSkill extends AbstractSkill {
         }
 
         // Sync with client
-        // state.markDirty(); // Auto-persisted
         SkillsNetworkUtils.syncSkills(player);
     }
 
@@ -324,7 +323,6 @@ public class ExplorerSkill extends AbstractSkill {
         boolean currentlyEnabled = playerData.getToggle(MurilloSkillsList.EXPLORER, TOGGLE_NIGHT_VISION, true);
         boolean newState = !currentlyEnabled;
         playerData.setToggle(MurilloSkillsList.EXPLORER, TOGGLE_NIGHT_VISION, newState);
-        // state.markDirty(); // Auto-persisted
 
         if (newState) {
             player.sendMessage(
@@ -346,7 +344,6 @@ public class ExplorerSkill extends AbstractSkill {
         boolean currentlyEnabled = playerData.getToggle(MurilloSkillsList.EXPLORER, TOGGLE_STEP_ASSIST, true);
         boolean newState = !currentlyEnabled;
         playerData.setToggle(MurilloSkillsList.EXPLORER, TOGGLE_STEP_ASSIST, newState);
-        // state.markDirty(); // Auto-persisted
 
         if (newState) {
             player.sendMessage(
@@ -581,5 +578,14 @@ public class ExplorerSkill extends AbstractSkill {
     public static float getHungerReductionMultiplier(int level) {
         float reduction = level * SkillConfig.EXPLORER_HUNGER_REDUCTION_PER_LEVEL;
         return Math.max(0.5f, 1.0f - reduction); // Cap at 50% reduction
+    }
+
+    /**
+     * Cleanup player state when they disconnect to prevent memory leaks.
+     */
+    public static void cleanupPlayerState(java.util.UUID playerUuid) {
+        treasureHunterActive.remove(playerUuid);
+        lastPositions.remove(playerUuid);
+        accumulatedDistance.remove(playerUuid);
     }
 }
