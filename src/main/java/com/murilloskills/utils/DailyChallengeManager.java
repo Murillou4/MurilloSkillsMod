@@ -1,5 +1,7 @@
 package com.murilloskills.utils;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -30,25 +32,22 @@ public class DailyChallengeManager {
     // Configurações
     // Note: Constants replaced by SkillConfig getters
 
-    // Dados de desafios por jogador - mapa de UUID para dados do player
-    private static final Map<UUID, PlayerChallengeData> playerChallenges = new HashMap<>();
-
     /**
      * Obtém ou gera desafios diários para um jogador.
      * Usa tempo de jogo do Minecraft para reset (configurável, padrão: 24000 ticks
      * = 20 minutos).
      */
     public static List<DailyChallenge> getDailyChallenges(ServerPlayerEntity player) {
-        UUID playerId = player.getUuid();
         long currentGameDay = getCurrentGameDay((ServerWorld) player.getEntityWorld());
+        PlayerSkillData playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
 
-        PlayerChallengeData data = playerChallenges.get(playerId);
+        PlayerChallengeData data = playerData.dailyChallenges;
 
         // Verificar se precisa gerar novos desafios (novo ciclo de jogo)
         if (data == null || data.gameDayCycle != currentGameDay) {
             boolean wasExisting = data != null;
             data = generateNewChallenges(player, currentGameDay);
-            playerChallenges.put(playerId, data);
+            playerData.dailyChallenges = data;
 
             // Notificar jogador sobre novos desafios (exceto primeira vez)
             if (wasExisting) {
@@ -103,8 +102,8 @@ public class DailyChallengeManager {
      * selected skills.
      */
     public static void forceRegenerate(ServerPlayerEntity player) {
-        UUID playerId = player.getUuid();
-        playerChallenges.remove(playerId);
+        PlayerSkillData playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+        playerData.dailyChallenges = null;
         // Next call to getDailyChallenges will generate new challenges
         getDailyChallenges(player);
         syncChallenges(player);
@@ -253,9 +252,10 @@ public class DailyChallengeManager {
 
         // Verificar se completou todos os desafios
         if (allChallengesComplete(player)) {
-            PlayerChallengeData data = playerChallenges.get(player.getUuid());
-            if (data != null && !data.bonusAwarded) {
-                data.bonusAwarded = true;
+            PlayerSkillData data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+            PlayerChallengeData challengeData = data.dailyChallenges;
+            if (challengeData != null && !challengeData.bonusAwarded) {
+                challengeData.bonusAwarded = true;
                 awardAllCompleteBonus(player);
             }
         }
@@ -353,29 +353,50 @@ public class DailyChallengeManager {
         public boolean completed;
 
         public DailyChallenge(ChallengeType type, int targetAmount, MurilloSkillsList relatedSkill) {
+            this(type, targetAmount, relatedSkill, 0, false);
+        }
+
+        public DailyChallenge(ChallengeType type, int targetAmount, MurilloSkillsList relatedSkill, int currentProgress,
+                boolean completed) {
             this.type = type;
             this.targetAmount = targetAmount;
             this.relatedSkill = relatedSkill;
-            this.currentProgress = 0;
-            this.completed = false;
+            this.currentProgress = currentProgress;
+            this.completed = completed;
         }
+
+        public static final Codec<DailyChallenge> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.STRING.fieldOf("type").xmap(ChallengeType::valueOf, Enum::name).forGetter(c -> c.type),
+                Codec.INT.fieldOf("targetAmount").forGetter(c -> c.targetAmount),
+                Codec.STRING.optionalFieldOf("relatedSkill").xmap(
+                        s -> s.map(MurilloSkillsList::valueOf).orElse(null),
+                        s -> Optional.ofNullable(s).map(Enum::name)).forGetter(c -> c.relatedSkill),
+                Codec.INT.fieldOf("currentProgress").forGetter(c -> c.currentProgress),
+                Codec.BOOL.fieldOf("completed").forGetter(c -> c.completed))
+                .apply(instance, DailyChallenge::new));
 
         public float getProgressPercentage() {
             return (float) currentProgress / targetAmount;
         }
     }
 
-    private static class PlayerChallengeData {
-        final long gameDayCycle;
-        final List<DailyChallenge> challenges;
-        boolean bonusAwarded;
+    public static class PlayerChallengeData {
+        public final long gameDayCycle;
+        public final List<DailyChallenge> challenges;
+        public boolean bonusAwarded;
 
-        PlayerChallengeData(long gameDayCycle, List<DailyChallenge> challenges, boolean bonusAwarded) {
+        public PlayerChallengeData(long gameDayCycle, List<DailyChallenge> challenges, boolean bonusAwarded) {
             this.gameDayCycle = gameDayCycle;
             this.challenges = challenges;
             this.bonusAwarded = bonusAwarded;
         }
-    }
+
+        public static final Codec<PlayerChallengeData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.LONG.fieldOf("gameDayCycle").forGetter(d -> d.gameDayCycle),
+                DailyChallenge.CODEC.listOf().fieldOf("challenges").forGetter(d -> d.challenges),
+                Codec.BOOL.fieldOf("bonusAwarded").forGetter(d -> d.bonusAwarded))
+                .apply(instance, PlayerChallengeData::new));
+        }
 
     public enum ChallengeType {
         // Miner

@@ -10,6 +10,7 @@ import com.murilloskills.utils.SkillConfig;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
+import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import org.spongepowered.asm.mixin.Mixin;
@@ -86,11 +87,8 @@ public abstract class LivingEntityMixin {
             int blacksmithPrestige = playerData.getSkill(MurilloSkillsList.BLACKSMITH).prestige;
 
             // Check if damage is fire or explosion
-            boolean isFireOrExplosion = source.getName().contains("fire")
-                    || source.getName().contains("explosion")
-                    || source.getName().contains("lava")
-                    || source.getName().contains("inFire")
-                    || source.getName().contains("onFire");
+            boolean isFireOrExplosion = source.isIn(DamageTypeTags.IS_FIRE)
+                    || source.isIn(DamageTypeTags.IS_EXPLOSION);
 
             // Apply Blacksmith damage multiplier (with prestige bonus)
             float damageMultiplier = com.murilloskills.impl.BlacksmithSkill
@@ -112,7 +110,7 @@ public abstract class LivingEntityMixin {
             int builderLevel = playerData.getSkill(MurilloSkillsList.BUILDER).level;
 
             // Check if damage is from falling
-            boolean isFallDamage = source.getName().contains("fall");
+            boolean isFallDamage = source.isIn(DamageTypeTags.IS_FALL);
 
             if (isFallDamage && com.murilloskills.impl.BuilderSkill.shouldReduceFallDamage(builderLevel)) {
                 float fallMultiplier = com.murilloskills.impl.BuilderSkill.getFallDamageMultiplier(builderLevel);
@@ -125,7 +123,7 @@ public abstract class LivingEntityMixin {
             int explorerLevel = playerData.getSkill(MurilloSkillsList.EXPLORER).level;
 
             // Check if damage is from falling
-            boolean isFallDamage = source.getName().contains("fall");
+            boolean isFallDamage = source.isIn(DamageTypeTags.IS_FALL);
 
             if (isFallDamage && com.murilloskills.impl.ExplorerSkill.hasFeatherFeet(explorerLevel)) {
                 float fallMultiplier = com.murilloskills.impl.ExplorerSkill.getFallDamageMultiplier(explorerLevel);

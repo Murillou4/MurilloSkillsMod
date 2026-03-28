@@ -4,6 +4,14 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.18] - 2026-03-28
+
+### 🐛 Bugfix
+
+- **Farmer XP com Ultmine**: corrigido bug onde o Farmer não ganhava XP ao quebrar crops, pumpkins, melons e outros itens de farm usando o Ultmine. O `VeinMinerHandler` agora concede XP de Farmer para blocos de crop quebrados, com diminishing returns e cap de 500 XP por uso (consistente com o Miner). Também rastreia progresso de daily challenges (`HARVEST_CROPS`) e achievement (`Mega Farmer`).
+
+---
+
 ## [1.2.17] - 2026-03-23
 
 ### ⚔️ Warrior - Looting Passivo

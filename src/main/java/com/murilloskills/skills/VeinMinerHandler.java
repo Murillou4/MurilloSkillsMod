@@ -3,6 +3,7 @@ package com.murilloskills.skills;
 import com.murilloskills.data.ModAttachments;
 import com.murilloskills.models.SkillReceptorResult;
 import com.murilloskills.network.UltmineResultS2CPayload;
+import com.murilloskills.utils.FarmerXpGetter;
 import com.murilloskills.utils.MinerXpGetter;
 import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillsNetworkUtils;
@@ -10,6 +11,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.CropBlock;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.ItemEntity;
@@ -151,9 +153,10 @@ public final class VeinMinerHandler {
 
     /**
      * Check if XP direct-to-player is enabled for a player.
+     * Falls back to server config default if not set per-player.
      */
     public static boolean isXpDirectToPlayer(ServerPlayerEntity player) {
-        return XP_DIRECT_TO_PLAYER.getOrDefault(player.getUuid(), false);
+        return XP_DIRECT_TO_PLAYER.getOrDefault(player.getUuid(), SkillConfig.getVeinMinerXpDirectToPlayer());
     }
 
     public static UltmineShape getUltmineShape(ServerPlayerEntity player) {
@@ -324,7 +327,7 @@ public final class VeinMinerHandler {
             }
 
             // Apply tool durability damage
-            if (!player.isCreative() && !tool.isEmpty()) {
+            if (SkillConfig.getVeinMinerDamageToolPerBlock() && !player.isCreative() && !tool.isEmpty()) {
                 tool.damage(1, player, EquipmentSlot.MAINHAND);
             }
         }
@@ -492,7 +495,7 @@ public final class VeinMinerHandler {
             minedBlocks++;
 
             // Apply tool durability damage
-            if (!player.isCreative() && !tool.isEmpty()) {
+            if (SkillConfig.getVeinMinerDamageToolPerBlock() && !player.isCreative() && !tool.isEmpty()) {
                 tool.damage(1, player, EquipmentSlot.MAINHAND);
             }
         }
@@ -501,9 +504,6 @@ public final class VeinMinerHandler {
             collectOriginDrops(player, (ServerWorld) world, origin);
             scheduleOriginCollection(player, world, origin);
         }
-        if (xpDirect) {
-            collectNearbyXp(player, (ServerWorld) world, origin);
-        }
 
         if (minedBlocks <= 0) {
             return;
@@ -511,6 +511,9 @@ public final class VeinMinerHandler {
 
         // Grant miner XP for ultmine blocks
         grantUltmineMinerXp(player, minedBlockStates);
+
+        // Grant farmer XP for crop blocks
+        grantUltmineFarmerXp(player, minedBlockStates);
 
         if (!player.isCreative() && xpCost > 0) {
             player.addExperienceLevels(-xpCost);
@@ -534,7 +537,8 @@ public final class VeinMinerHandler {
 
     private static int getLegacyUltmineLimit() {
         int baseLegacy = Math.max(1, SkillConfig.getVeinMinerMaxBlocks());
-        int boostedLegacy = Math.max(1, Math.round(baseLegacy * 1.25f));
+        float multiplier = SkillConfig.getVeinMinerLegacyUltmineMultiplier();
+        int boostedLegacy = Math.max(1, Math.round(baseLegacy * multiplier));
         int ultmineCap = Math.max(1, SkillConfig.getUltmineMaxBlocksPerUse());
         return Math.min(boostedLegacy, ultmineCap);
     }
@@ -571,7 +575,7 @@ public final class VeinMinerHandler {
         return resolveMiningDirection(player);
     }
 
-    private static boolean shouldUseUltmine(ServerPlayerEntity player) {
+    public static boolean shouldUseUltmine(ServerPlayerEntity player) {
         if (!SkillConfig.isUltmineEnabled()) {
             return false;
         }
@@ -643,11 +647,15 @@ public final class VeinMinerHandler {
         }
 
         world.breakBlock(pos, false, player);
-        // Always spawn XP orbs so the amount is determined by Minecraft's block logic
-        state.onStacksDropped(serverWorld, pos, tool, true);
-        // When directXp is on, immediately collect spawned orbs to the player
         if (directXp) {
-            collectNearbyXp(player, serverWorld, pos);
+            // Award vanilla XP directly without spawning orbs (avoids entity-query timing issues)
+            state.onStacksDropped(serverWorld, pos, tool, false);
+            int vanillaXp = getVanillaBlockXpDrop(serverWorld, state, tool);
+            if (vanillaXp > 0) {
+                player.addExperience(vanillaXp);
+            }
+        } else {
+            state.onStacksDropped(serverWorld, pos, tool, true);
         }
     }
 
@@ -661,12 +669,17 @@ public final class VeinMinerHandler {
         for (ItemStack drop : drops) {
             Block.dropStack(serverWorld, pos, drop);
         }
-        state.onStacksDropped(serverWorld, pos, tool, true);
-        collectNearbyXp(player, serverWorld, pos);
+        // Award vanilla XP directly without spawning orbs
+        state.onStacksDropped(serverWorld, pos, tool, false);
+        int vanillaXp = getVanillaBlockXpDrop(serverWorld, state, tool);
+        if (vanillaXp > 0) {
+            player.addExperience(vanillaXp);
+        }
     }
 
     /**
-     * Collects nearby XP orbs and grants them directly to the player.
+     * Collects nearby XP orbs (spawned by the game's normal block break) and grants them to the player.
+     * Used only for the origin block which is broken by the game before our handler runs.
      */
     private static void collectNearbyXp(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
         Box searchBox = new Box(pos).expand(2.0);
@@ -676,6 +689,36 @@ public final class VeinMinerHandler {
             player.addExperience(orb.getValue());
             orb.discard();
         }
+    }
+
+    /**
+     * Calculates the vanilla XP amount a block would drop (matching Minecraft's ore XP tables).
+     * Used when xpDirect is enabled to award XP without spawning orb entities.
+     */
+    private static int getVanillaBlockXpDrop(ServerWorld world, BlockState state, ItemStack tool) {
+        if (BlockBreakHandler.hasSilkTouch(tool.getEnchantments())) return 0;
+
+        Block block = state.getBlock();
+        var random = world.getRandom();
+
+        if (block == Blocks.COAL_ORE || block == Blocks.DEEPSLATE_COAL_ORE)
+            return random.nextBetween(0, 2);
+        if (block == Blocks.LAPIS_ORE || block == Blocks.DEEPSLATE_LAPIS_ORE)
+            return random.nextBetween(2, 5);
+        if (block == Blocks.REDSTONE_ORE || block == Blocks.DEEPSLATE_REDSTONE_ORE)
+            return random.nextBetween(1, 5);
+        if (block == Blocks.DIAMOND_ORE || block == Blocks.DEEPSLATE_DIAMOND_ORE)
+            return random.nextBetween(3, 7);
+        if (block == Blocks.EMERALD_ORE || block == Blocks.DEEPSLATE_EMERALD_ORE)
+            return random.nextBetween(3, 7);
+        if (block == Blocks.NETHER_QUARTZ_ORE)
+            return random.nextBetween(2, 5);
+        if (block == Blocks.NETHER_GOLD_ORE)
+            return random.nextBetween(0, 1);
+        if (block == Blocks.SCULK)
+            return 1;
+
+        return 0;
     }
 
     private static void collectOriginDrops(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
@@ -756,6 +799,9 @@ public final class VeinMinerHandler {
             return true;
         }
         // Check if they are equivalent variants (e.g. deepslate_iron_ore <-> iron_ore)
+        if (!SkillConfig.getVeinMinerMatchDeepslateVariants()) {
+            return false;
+        }
         Block equivalent = BLOCK_EQUIVALENTS.get(origin);
         return equivalent != null && equivalent == candidate;
     }
@@ -854,6 +900,104 @@ public final class VeinMinerHandler {
         com.murilloskills.utils.DailyChallengeManager.recordProgress(player,
                 com.murilloskills.utils.DailyChallengeManager.ChallengeType.MINE_BLOCKS, minedStates.size());
         com.murilloskills.utils.DailyChallengeManager.syncChallenges(player);
+    }
+
+    /**
+     * Grants Farmer XP for crop blocks broken during ultmine.
+     * Similar diminishing returns as miner XP to prevent farming abuse.
+     */
+    private static void grantUltmineFarmerXp(ServerPlayerEntity player, List<BlockState> minedStates) {
+        if (minedStates.isEmpty()) return;
+
+        var data = player.getAttachedOrCreate(ModAttachments.PLAYER_SKILLS);
+        if (!data.hasSelectedSkills() || !data.getSelectedSkills().contains(MurilloSkillsList.FARMER)) {
+            return;
+        }
+
+        int totalXp = 0;
+        int cropCount = 0;
+        int blockIndex = 0;
+
+        for (BlockState state : minedStates) {
+            Block block = state.getBlock();
+            if (!FarmerXpGetter.isCropBlock(block)) {
+                blockIndex++;
+                continue;
+            }
+
+            boolean isMature = isCropMatureFromState(state, block);
+            SkillReceptorResult result = FarmerXpGetter.getCropHarvestXp(block, isMature);
+            if (!result.didGainXp()) {
+                blockIndex++;
+                continue;
+            }
+
+            int baseXp = result.getXpAmount();
+
+            // Diminishing returns for mass harvesting
+            float volumeMultiplier;
+            if (blockIndex < 20) {
+                volumeMultiplier = 1.0f;
+            } else if (blockIndex < 50) {
+                volumeMultiplier = 0.5f;
+            } else {
+                volumeMultiplier = 0.25f;
+            }
+
+            totalXp += Math.max(1, Math.round(baseXp * volumeMultiplier));
+            cropCount++;
+            blockIndex++;
+        }
+
+        if (totalXp <= 0) return;
+
+        // Cap total XP per ultmine use
+        totalXp = Math.min(totalXp, 500);
+
+        var xpResult = data.addXpToSkill(MurilloSkillsList.FARMER, totalXp);
+
+        if (xpResult.leveledUp()) {
+            var stats = data.getSkill(MurilloSkillsList.FARMER);
+            com.murilloskills.utils.SkillAttributes.updateAllStats(player, data);
+            com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(player, "Agricultor", xpResult);
+            com.murilloskills.utils.SkillNotifier.notifyLevelUp(player, MurilloSkillsList.FARMER, stats.level);
+        }
+
+        SkillsNetworkUtils.syncSkills(player);
+        com.murilloskills.utils.XpToastSender.send(player, MurilloSkillsList.FARMER, totalXp,
+                "Ultmine (" + cropCount + " crops)");
+
+        // Track daily challenge progress
+        com.murilloskills.utils.DailyChallengeManager.recordProgress(player,
+                com.murilloskills.utils.DailyChallengeManager.ChallengeType.HARVEST_CROPS, cropCount);
+        com.murilloskills.utils.DailyChallengeManager.syncChallenges(player);
+
+        // Track crops harvested for Mega Farmer achievement
+        com.murilloskills.utils.AchievementTracker.incrementAndCheck(
+                player, MurilloSkillsList.FARMER,
+                com.murilloskills.utils.AchievementTracker.KEY_CROPS_HARVESTED, cropCount);
+    }
+
+    /**
+     * Checks crop maturity from the captured BlockState (before the block was broken).
+     */
+    private static boolean isCropMatureFromState(BlockState state, Block block) {
+        if (block instanceof CropBlock cropBlock) {
+            return cropBlock.isMature(state);
+        }
+        if (block == Blocks.NETHER_WART) {
+            return state.get(net.minecraft.block.NetherWartBlock.AGE) >= 3;
+        }
+        if (block == Blocks.SWEET_BERRY_BUSH) {
+            return state.get(net.minecraft.block.SweetBerryBushBlock.AGE) >= 2;
+        }
+        if (block == Blocks.COCOA) {
+            return state.get(net.minecraft.block.CocoaBlock.AGE) >= 2;
+        }
+        if (block == Blocks.MELON || block == Blocks.PUMPKIN) {
+            return true;
+        }
+        return false;
     }
 
     private record PendingOriginCollection(BlockPos pos, long expireTick) {

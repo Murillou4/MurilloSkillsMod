@@ -750,6 +750,9 @@
     "murilloskills.xp_direct.enabled": "Orbes de XP agora vão direto pra você!",
     "murilloskills.xp_direct.disabled": "Orbes de XP vão cair no chão",
     "murilloskills.ultmine_config.no_options": "Sem opções configuráveis para este formato",
+    "murilloskills.ultmine_config.legacy.max_blocks": "Max Blocos",
+    "murilloskills.ultmine_config.legacy.deepslate": "Deepslate = Normal",
+    "murilloskills.ultmine_config.legacy.tool_damage": "Dano na Ferramenta",
     "murilloskills.ultmine_config.save": "✓ Salvar",
     "murilloskills.ultmine_config.reset": "↺ Resetar"
 }

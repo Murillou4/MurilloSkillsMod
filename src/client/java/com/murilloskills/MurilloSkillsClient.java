@@ -190,10 +190,8 @@ public class MurilloSkillsClient implements ClientModInitializer {
         // --- SYNC CLIENT CONFIG ON JOIN ---
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             UltmineClientConfig.load();
-            // Sync XP direct-to-player preference to server
-            if (UltmineClientConfig.isXpDirectToPlayer()) {
-                ClientPlayNetworking.send(new XpDirectToggleC2SPayload(true));
-            }
+            // Always sync XP direct-to-player preference to server (respects client choice over server default)
+            ClientPlayNetworking.send(new XpDirectToggleC2SPayload(UltmineClientConfig.isXpDirectToPlayer()));
         });
 
         // --- KEYBINDINGS ---

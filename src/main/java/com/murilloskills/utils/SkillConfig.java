@@ -84,6 +84,22 @@ public class SkillConfig {
         return ModConfig.get().veinMiner.dropsToInventory;
     }
 
+    public static boolean getVeinMinerXpDirectToPlayer() {
+        return ModConfig.get().veinMiner.xpDirectToPlayer;
+    }
+
+    public static float getVeinMinerLegacyUltmineMultiplier() {
+        return ModConfig.get().veinMiner.legacyUltmineMultiplier;
+    }
+
+    public static boolean getVeinMinerMatchDeepslateVariants() {
+        return ModConfig.get().veinMiner.matchDeepslateVariants;
+    }
+
+    public static boolean getVeinMinerDamageToolPerBlock() {
+        return ModConfig.get().veinMiner.damageToolPerBlock;
+    }
+
     // --- ULTMINE ---
     public static boolean isUltmineEnabled() {
         return ModConfig.get().ultmine.enabled;

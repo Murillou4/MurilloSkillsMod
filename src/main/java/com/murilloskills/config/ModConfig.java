@@ -211,6 +211,7 @@ public class ModConfig {
         public int abilityCooldownSeconds = 450;
         public int brushMaxDistance = 6;
         public int highBuildYThreshold = 100;
+        public int builderMaxFillBlocks = 1000;
     }
 
     public static class ExplorerConfig {
@@ -242,6 +243,10 @@ public class ModConfig {
     public static class VeinMinerConfig {
         public int maxBlocks = 64;
         public boolean dropsToInventory = true;
+        public boolean xpDirectToPlayer = false;
+        public float legacyUltmineMultiplier = 1.25f;
+        public boolean matchDeepslateVariants = true;
+        public boolean damageToolPerBlock = true;
     }
 
     public static class UltmineConfig {

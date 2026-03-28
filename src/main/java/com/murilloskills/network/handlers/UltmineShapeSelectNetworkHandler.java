@@ -21,6 +21,14 @@ public final class UltmineShapeSelectNetworkHandler {
         return (payload, context) -> context.server().execute(() -> {
             try {
                 var player = context.player();
+
+                // Validar se o jogador pode usar Ultmine (skill Miner level 100+)
+                if (!VeinMinerHandler.shouldUseUltmine(player)) {
+                    player.sendMessage(Text.translatable("murilloskills.error.level_required", 100,
+                            Text.translatable("murilloskills.skill.name.miner")).formatted(Formatting.RED), true);
+                    return;
+                }
+
                 VeinMinerHandler.setUltmineSelection(player, payload.shape(), payload.depth(), payload.length(),
                         payload.variant());
                 player.sendMessage(

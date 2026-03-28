@@ -28,12 +28,15 @@ public class EnchantmentHelperMixin {
             if (enchantment.matchesKey(Enchantments.LOOTING)) {
                 PlayerSkillData playerData = player
                         .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
-                int warriorLevel = playerData.getSkill(MurilloSkillsList.WARRIOR).level;
+                
+                // Guard: Only apply looting bonus if WARRIOR is selected
+                if (playerData.isSkillSelected(MurilloSkillsList.WARRIOR)) {
+                    int warriorLevel = playerData.getSkill(MurilloSkillsList.WARRIOR).level;
+                    int bonusLooting = (int) (warriorLevel * SkillConfig.getWarriorLootingPerLevel());
 
-                int bonusLooting = (int) (warriorLevel * SkillConfig.getWarriorLootingPerLevel());
-
-                if (bonusLooting > 0) {
-                    cir.setReturnValue(cir.getReturnValue() + bonusLooting);
+                    if (bonusLooting > 0) {
+                        cir.setReturnValue(cir.getReturnValue() + bonusLooting);
+                    }
                 }
             }
         }

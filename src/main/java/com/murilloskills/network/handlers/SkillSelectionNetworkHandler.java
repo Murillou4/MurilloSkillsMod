@@ -44,12 +44,17 @@ public final class SkillSelectionNetworkHandler {
                     }
 
                     List<MurilloSkillsList> incoming = payload.selectedSkills();
-                    int newCount = incoming.size();
 
+                    if (incoming == null) {
+                        LOGGER.warn("Recebido payload de seleção de skill nulo do player {}", player.getName().getString());
+                        return;
+                    }
+
+                    int newCount = incoming.size();
                     int maxSkills = com.murilloskills.utils.SkillConfig.getMaxSelectedSkills();
 
                     // Validation: Must select between 1 and max skills
-                    if (incoming == null || newCount < 1 || newCount > maxSkills) {
+                    if (newCount < 1 || newCount > maxSkills) {
                         player.sendMessage(Text.translatable("murilloskills.selection.select_1_to_3", maxSkills)
                                 .formatted(Formatting.RED), true);
                         return;
@@ -127,7 +132,7 @@ public final class SkillSelectionNetworkHandler {
      */
     private static void trackSynergyForMaster(net.minecraft.server.network.ServerPlayerEntity player,
             String synergyId, com.murilloskills.data.PlayerSkillData data) {
-        // Map synergy ID to bit position
+        // Map synergy ID to bit position (1 to 14)
         int bit = switch (synergyId) {
             case "iron_will" -> 1;
             case "forge_master" -> 2;
@@ -136,6 +141,13 @@ public final class SkillSelectionNetworkHandler {
             case "treasure_hunter" -> 16;
             case "combat_master" -> 32;
             case "master_crafter" -> 64;
+            case "survivor" -> 128;
+            case "industrial" -> 256;
+            case "sea_warrior" -> 512;
+            case "green_archer" -> 1024;
+            case "prospector" -> 2048;
+            case "adventurer" -> 4096;
+            case "hermit" -> 8192;
             default -> 0;
         };
 
@@ -154,8 +166,8 @@ public final class SkillSelectionNetworkHandler {
         int newMask = currentMask | bit;
         data.achievementStats.put("synergies_activated", newMask);
 
-        // Check if all 7 synergies activated (bitmask = 127 = 1+2+4+8+16+32+64)
-        if (newMask == 127) {
+        // Check if all 14 synergies activated (bitmask = 16383 = 2^14 - 1)
+        if (newMask == 16383) {
             com.murilloskills.utils.AdvancementGranter.grantSynergyMaster(player);
         }
     }

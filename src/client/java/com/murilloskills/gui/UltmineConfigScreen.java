@@ -218,9 +218,13 @@ public class UltmineConfigScreen extends Screen {
         int maxDepth = SkillConfig.getUltmineShapeMaxDepth(selectedShape);
         int maxLength = SkillConfig.getUltmineShapeMaxLength(selectedShape);
         int variantCount = UltmineShape.getVariantCount(selectedShape);
-        if (maxDepth > 1) configRows++;
-        if (maxLength > 1) configRows++;
-        if (variantCount > 1) configRows++;
+        if (selectedShape == UltmineShape.LEGACY) {
+            configRows = 3; // max_blocks, deepslate, tool_damage
+        } else {
+            if (maxDepth > 1) configRows++;
+            if (maxLength > 1) configRows++;
+            if (variantCount > 1) configRows++;
+        }
 
         int shapeConfigH = 30 + configRows * 24 + 10;
 
@@ -491,8 +495,38 @@ public class UltmineConfigScreen extends Screen {
                     valueCenterX, rowY + 5, palette.textAqua());
         }
 
-        // If no configurable options
-        if (maxDepth <= 1 && maxLength <= 1 && variantCount <= 1) {
+        // Legacy mode: show relevant info instead of "no options"
+        if (selectedShape == UltmineShape.LEGACY) {
+            int infoY = shapeConfigY + 32;
+            int infoLabelX = panelX + PANEL_PADDING * 2;
+            int infoValueX = centerX + 20;
+
+            // Max blocks
+            String maxBlocksLabel = Text.translatable("murilloskills.ultmine_config.legacy.max_blocks").getString();
+            context.drawTextWithShadow(textRenderer, maxBlocksLabel, infoLabelX, infoY, palette.textLight());
+            context.drawTextWithShadow(textRenderer,
+                    Text.literal(String.valueOf(SkillConfig.getVeinMinerMaxBlocks())).formatted(Formatting.AQUA),
+                    infoValueX, infoY, palette.textAqua());
+
+            // Deepslate variants
+            infoY += 14;
+            String deepslateLabel = Text.translatable("murilloskills.ultmine_config.legacy.deepslate").getString();
+            context.drawTextWithShadow(textRenderer, deepslateLabel, infoLabelX, infoY, palette.textLight());
+            boolean deepslate = SkillConfig.getVeinMinerMatchDeepslateVariants();
+            context.drawTextWithShadow(textRenderer,
+                    Text.literal(deepslate ? "ON" : "OFF").formatted(deepslate ? Formatting.GREEN : Formatting.RED),
+                    infoValueX, infoY, deepslate ? palette.textGreen() : 0xFFFF5555);
+
+            // Tool damage per block
+            infoY += 14;
+            String toolDmgLabel = Text.translatable("murilloskills.ultmine_config.legacy.tool_damage").getString();
+            context.drawTextWithShadow(textRenderer, toolDmgLabel, infoLabelX, infoY, palette.textLight());
+            boolean toolDmg = SkillConfig.getVeinMinerDamageToolPerBlock();
+            context.drawTextWithShadow(textRenderer,
+                    Text.literal(toolDmg ? "ON" : "OFF").formatted(toolDmg ? Formatting.GREEN : Formatting.RED),
+                    infoValueX, infoY, toolDmg ? palette.textGreen() : 0xFFFF5555);
+        } else if (maxDepth <= 1 && maxLength <= 1 && variantCount <= 1) {
+            // If no configurable options for other shapes
             int noConfigY = shapeConfigY + 32;
             context.drawCenteredTextWithShadow(textRenderer,
                     Text.translatable("murilloskills.ultmine_config.no_options").formatted(Formatting.GRAY),

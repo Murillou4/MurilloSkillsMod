@@ -751,6 +751,9 @@
   "murilloskills.xp_direct.enabled": "XP orbs now go directly to you!",
   "murilloskills.xp_direct.disabled": "XP orbs will drop on the ground",
   "murilloskills.ultmine_config.no_options": "No configurable options for this shape",
+  "murilloskills.ultmine_config.legacy.max_blocks": "Max Blocks",
+  "murilloskills.ultmine_config.legacy.deepslate": "Deepslate = Normal",
+  "murilloskills.ultmine_config.legacy.tool_damage": "Tool Damage",
   "murilloskills.ultmine_config.save": "✓ Save",
   "murilloskills.ultmine_config.reset": "↺ Reset"
 }

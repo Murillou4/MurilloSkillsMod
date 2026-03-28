@@ -23,6 +23,9 @@ public class PlayerSkillData {
     // Achievement tracking stats (key = achievement stat name, value = count)
     public Map<String, Integer> achievementStats = new HashMap<>();
 
+    // Daily Challenges persistence
+    public com.murilloskills.utils.DailyChallengeManager.PlayerChallengeData dailyChallenges = null;
+
     public PlayerSkillData() {
         for (MurilloSkillsList skill : MurilloSkillsList.values()) {
             skills.put(skill, new SkillStats(0, 0.0, -1, 0)); // -1 = nunca usou, 0 = sem prestige
@@ -167,8 +170,10 @@ public class PlayerSkillData {
             Codec.unboundedMap(Codec.STRING, Codec.BOOL).optionalFieldOf("skillToggles", Map.of())
                     .forGetter(d -> d.skillToggles),
             Codec.unboundedMap(Codec.STRING, Codec.INT).optionalFieldOf("achievementStats", Map.of())
-                    .forGetter(d -> d.achievementStats))
-            .apply(instance, (paragonOpt, skillsMap, selectedList, toggles, achStats) -> {
+                    .forGetter(d -> d.achievementStats),
+            com.murilloskills.utils.DailyChallengeManager.PlayerChallengeData.CODEC.optionalFieldOf("dailyChallenges")
+                    .forGetter(d -> Optional.ofNullable(d.dailyChallenges)))
+            .apply(instance, (paragonOpt, skillsMap, selectedList, toggles, achStats, dailyOpt) -> {
                 PlayerSkillData data = new PlayerSkillData();
 
                 // Parse paragon skill (safe)
@@ -204,6 +209,9 @@ public class PlayerSkillData {
                 // Copy toggles and achievement stats
                 data.skillToggles = new HashMap<>(toggles);
                 data.achievementStats = new HashMap<>(achStats);
+
+                // Load daily challenges if present
+                data.dailyChallenges = dailyOpt.orElse(null);
 
                 return data;
             }));
