@@ -21,7 +21,9 @@ import com.murilloskills.network.XpGainS2CPayload;
 import com.murilloskills.client.config.UltmineClientConfig;
 import com.murilloskills.data.UltmineClientState;
 import com.murilloskills.render.AreaPlantingHud;
+import com.murilloskills.render.AutoTorchHud;
 import com.murilloskills.render.OreHighlighter;
+import com.murilloskills.render.PathfinderHud;
 import com.murilloskills.render.RainDanceEffect;
 import com.murilloskills.render.TreasureHighlighter;
 import com.murilloskills.render.UltminePreview;
@@ -66,6 +68,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
     private static KeyBinding fillModeCycleKey;
     private static KeyBinding veinMinerToggleKey;
     private static KeyBinding veinMinerDropsToggleKey;
+    private static KeyBinding autoTorchToggleKey;
     private static KeyBinding ultmineRadialMenuKey;
 
     // Vein Miner hold state tracking
@@ -175,7 +178,23 @@ public class MurilloSkillsClient implements ClientModInitializer {
             context.client().execute(() -> UltmineClientState.updatePreview(payload.positions()));
         });
 
-        // 9. Ultmine result feedback
+        // 9. Pathfinder speed boost state sync
+        ClientPlayNetworking.registerGlobalReceiver(
+                com.murilloskills.network.PathfinderSyncS2CPayload.ID, (payload, context) -> {
+                    context.client().execute(() -> {
+                        PathfinderHud.setActive(payload.active());
+                    });
+                });
+
+        // 10. Auto-Torch state sync
+        ClientPlayNetworking.registerGlobalReceiver(
+                com.murilloskills.network.AutoTorchSyncS2CPayload.ID, (payload, context) -> {
+                    context.client().execute(() -> {
+                        AutoTorchHud.setEnabled(payload.enabled());
+                    });
+                });
+
+        // 11. Ultmine result feedback
         ClientPlayNetworking.registerGlobalReceiver(UltmineResultS2CPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
                 if (context.client().player == null || payload.messageKey() == null || payload.messageKey().isEmpty()) {
@@ -258,6 +277,12 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_COMMA,
                 KEYBIND_CATEGORY));
 
+        autoTorchToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.murilloskills.auto_torch_toggle",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_T,
+                KEYBIND_CATEGORY));
+
         ultmineRadialMenuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.murilloskills.ultmine_menu",
                 InputUtil.Type.KEYSYM,
@@ -296,6 +321,10 @@ public class MurilloSkillsClient implements ClientModInitializer {
             while (speedBoostToggleKey.wasPressed()) {
                 // Envia pacote para toggle de speed boost (Explorer)
                 ClientPlayNetworking.send(new SpeedBoostToggleC2SPayload());
+            }
+            while (autoTorchToggleKey.wasPressed()) {
+                // Envia pacote para toggle de auto-torch (Miner)
+                ClientPlayNetworking.send(new com.murilloskills.network.AutoTorchToggleC2SPayload());
             }
             while (fillModeCycleKey.wasPressed()) {
                 // Envia pacote para ciclar entre modos de preenchimento (Builder)
@@ -350,8 +379,11 @@ public class MurilloSkillsClient implements ClientModInitializer {
         WorldRenderEvents.END_MAIN.register(VeinMinerPreview::render);
         WorldRenderEvents.END_MAIN.register(UltminePreview::render);
 
-        // HUD rendering for Area Planting indicator
+        // HUD rendering for indicators
         HudRenderCallback.EVENT.register(AreaPlantingHud::render);
+        HudRenderCallback.EVENT.register(PathfinderHud::render);
+        HudRenderCallback.EVENT.register(AutoTorchHud::render);
+        HudRenderCallback.EVENT.register(com.murilloskills.render.FarmerCropHud::render);
         HudRenderCallback.EVENT.register((context, tickDelta) -> XpToastRenderer.render(context));
     }
 

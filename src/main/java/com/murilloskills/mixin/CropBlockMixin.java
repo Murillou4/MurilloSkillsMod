@@ -67,6 +67,15 @@ public class CropBlockMixin {
                     if (currentAge < maxAge) {
                         BlockState grownState = cropBlock.withAge(currentAge + 1);
                         world.setBlockState(pos, grownState, 2);
+
+                        // Spawn green particles to show the boost visually
+                        world.spawnParticles(
+                                net.minecraft.particle.ParticleTypes.HAPPY_VILLAGER,
+                                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                                3, // count
+                                0.3, 0.2, 0.3, // spread
+                                0.0 // speed
+                        );
                     }
                 }
             }

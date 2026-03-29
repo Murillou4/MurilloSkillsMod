@@ -18,8 +18,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Miner skill implementation with all miner-specific logic.
@@ -32,6 +31,9 @@ import java.util.List;
 public class MinerSkill extends AbstractSkill {
 
     private static final Identifier MINER_SPEED_ID = Identifier.of("murilloskills", "miner_speed_bonus");
+
+    // Toggle key name for persistent storage
+    private static final String TOGGLE_AUTO_TORCH = "autoTorch";
 
     @Override
     public MurilloSkillsList getSkillType() {
@@ -98,6 +100,13 @@ public class MinerSkill extends AbstractSkill {
             // --- LEVEL 10: NIGHT VISION ---
             if (meetsLevelRequirement(level, SkillConfig.MINER_NIGHT_VISION_LEVEL)) {
                 handleNightVision(player);
+            }
+
+            // --- LEVEL 25: AUTO-TORCH ---
+            if (meetsLevelRequirement(level, SkillConfig.MINER_AUTO_TORCH_LEVEL)) {
+                if (player.age % SkillConfig.MINER_AUTO_TORCH_INTERVAL_TICKS == 0 && isAutoTorchEnabled(player)) {
+                    handleAutoTorch(player);
+                }
             }
 
             // --- LEVEL 60: RADAR ---
@@ -260,5 +269,131 @@ public class MinerSkill extends AbstractSkill {
      */
     private MinerScanResultPayload.OreType getOreType(net.minecraft.block.Block block) {
         return ORE_MAP.getOrDefault(block, MinerScanResultPayload.OreType.OTHER);
+    }
+
+    // =====================================================
+    // AUTO-TORCH SYSTEM (Level 25+)
+    // =====================================================
+
+    /**
+     * Handles auto-torch placement when the player is in a dark area.
+     * Places torches optimally to prevent mob spawning.
+     */
+    private void handleAutoTorch(ServerPlayerEntity player) {
+        net.minecraft.server.world.ServerWorld world = player.getEntityWorld();
+        BlockPos playerPos = player.getBlockPos();
+
+        // Only in overworld-like dimensions (skip Nether ceiling, etc.)
+        // Mobs spawn at block light level 0 since 1.18
+
+        // Check if area around player is dark enough to warrant a torch
+        int blockLight = world.getLightLevel(net.minecraft.world.LightType.BLOCK, playerPos);
+        if (blockLight > SkillConfig.MINER_AUTO_TORCH_LIGHT_THRESHOLD) {
+            return; // Already well-lit
+        }
+
+        // Find torch in inventory
+        int torchSlot = findTorchSlot(player);
+        if (torchSlot == -1) {
+            return; // No torches available
+        }
+
+        // Find the best position to place a torch
+        BlockPos torchPos = findBestTorchPosition(world, playerPos);
+        if (torchPos == null) {
+            return; // No valid position found
+        }
+
+        // Place the torch
+        net.minecraft.block.BlockState torchState = net.minecraft.block.Blocks.TORCH.getDefaultState();
+        if (world.getBlockState(torchPos).isAir() && torchState.canPlaceAt(world, torchPos)) {
+            world.setBlockState(torchPos, torchState, net.minecraft.block.Block.NOTIFY_ALL);
+
+            // Consume torch from inventory
+            player.getInventory().getStack(torchSlot).decrement(1);
+
+            // Play placement sound
+            world.playSound(null, torchPos,
+                    net.minecraft.sound.SoundEvents.BLOCK_WOOD_PLACE,
+                    net.minecraft.sound.SoundCategory.BLOCKS, 0.5f, 1.0f);
+        }
+    }
+
+    /**
+     * Finds a torch or soul torch in the player's inventory.
+     * Returns the slot index, or -1 if none found.
+     */
+    private int findTorchSlot(ServerPlayerEntity player) {
+        for (int i = 0; i < player.getInventory().size(); i++) {
+            net.minecraft.item.Item item = player.getInventory().getStack(i).getItem();
+            if (item == net.minecraft.item.Items.TORCH || item == net.minecraft.item.Items.SOUL_TORCH) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Finds the optimal position to place a torch near the player.
+     * Prioritizes the darkest nearby position that would have the most impact
+     * on preventing mob spawning (light level 0 blocks).
+     */
+    private BlockPos findBestTorchPosition(net.minecraft.server.world.ServerWorld world, BlockPos center) {
+        // Search in a small radius around the player for the best spot
+        BlockPos bestPos = null;
+        int bestScore = -1;
+
+        // Check positions in a 3-block radius, preferring closer positions
+        for (int dx = -3; dx <= 3; dx++) {
+            for (int dz = -3; dz <= 3; dz++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    BlockPos candidate = center.add(dx, dy, dz);
+
+                    // Must be air and have a solid block below
+                    if (!world.getBlockState(candidate).isAir()) continue;
+                    if (!world.getBlockState(candidate.down()).isSolidBlock(world, candidate.down())) continue;
+
+                    // Check if torch can be placed here
+                    if (!net.minecraft.block.Blocks.TORCH.getDefaultState().canPlaceAt(world, candidate)) continue;
+
+                    // Score = number of dark blocks (light <= 0) in a 7-block radius that would be lit
+                    // Simple heuristic: prefer darker areas closer to the player
+                    int currentLight = world.getLightLevel(net.minecraft.world.LightType.BLOCK, candidate);
+                    int distance = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+                    int score = (14 - currentLight) * 10 - distance; // Darker = better, closer = better
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestPos = candidate.toImmutable();
+                    }
+                }
+            }
+        }
+
+        return bestPos;
+    }
+
+    /**
+     * Toggles auto-torch for the player (persistent across death/logout).
+     * Returns the new state.
+     */
+    public static boolean toggleAutoTorch(ServerPlayerEntity player) {
+        var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+        boolean currentlyEnabled = playerData.getToggle(MurilloSkillsList.MINER, TOGGLE_AUTO_TORCH, false);
+        boolean newState = !currentlyEnabled;
+        playerData.setToggle(MurilloSkillsList.MINER, TOGGLE_AUTO_TORCH, newState);
+        return newState;
+    }
+
+    /**
+     * Checks if auto-torch is enabled for the player (persistent storage).
+     */
+    public static boolean isAutoTorchEnabled(ServerPlayerEntity player) {
+        try {
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+            return playerData.getToggle(MurilloSkillsList.MINER, TOGGLE_AUTO_TORCH, false); // Default: disabled
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

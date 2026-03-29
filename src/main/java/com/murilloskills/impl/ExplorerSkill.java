@@ -158,12 +158,19 @@ public class ExplorerSkill extends AbstractSkill {
             if (meetsLevelRequirement(level, SkillConfig.EXPLORER_PATHFINDER_LEVEL)) {
                 var speedAttr = player.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
                 if (speedAttr != null) {
+                    boolean wasActive = speedAttr.getModifier(EXPLORER_PATHFINDER_SPEED_ID) != null;
                     speedAttr.removeModifier(EXPLORER_PATHFINDER_SPEED_ID);
-                    if (player.isSprinting() && isSpeedBoostEnabled(player)) {
+                    boolean shouldBeActive = player.isSprinting() && isSpeedBoostEnabled(player);
+                    if (shouldBeActive) {
                         speedAttr.addTemporaryModifier(new EntityAttributeModifier(
                                 EXPLORER_PATHFINDER_SPEED_ID,
                                 0.4, // equivalent to Speed II (+40%)
                                 EntityAttributeModifier.Operation.ADD_MULTIPLIED_BASE));
+                    }
+                    // Sync HUD indicator when state changes
+                    if (wasActive != shouldBeActive) {
+                        ServerPlayNetworking.send(player,
+                                new com.murilloskills.network.PathfinderSyncS2CPayload(shouldBeActive));
                     }
                 }
             }

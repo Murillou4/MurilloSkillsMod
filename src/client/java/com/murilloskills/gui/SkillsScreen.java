@@ -810,6 +810,10 @@ public class SkillsScreen extends Screen {
                             tooltip.add(
                                     Text.translatable("murilloskills.passive.miner.durability")
                                             .formatted(Formatting.AQUA));
+                        if (level >= SkillConfig.MINER_AUTO_TORCH_LEVEL)
+                            tooltip.add(
+                                    Text.translatable("murilloskills.passive.miner.auto_torch")
+                                            .formatted(Formatting.AQUA));
                         if (level >= SkillConfig.MINER_RADAR_LEVEL)
                             tooltip.add(
                                     Text.translatable("murilloskills.passive.miner.ore_radar")

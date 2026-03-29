@@ -38,6 +38,13 @@ public abstract class AnvilScreenHandlerMixin {
      * Apply Blacksmith XP cost discount after vanilla calculates the cost.
      * Injects at the end of updateResult() to modify the cost before it's
      * displayed.
+     *
+     * Discount scales with level:
+     * - Level 25: 25% discount (base)
+     * - Level 50+: 30% discount
+     * - Level 75+: 35% discount
+     * - Level 100: 40% discount
+     * Also raises the "Too Expensive!" threshold from 40 to 55 for Blacksmiths.
      */
     @Inject(method = "updateResult", at = @At("TAIL"))
     private void applyBlacksmithAnvilDiscount(CallbackInfo ci) {
@@ -67,10 +74,13 @@ public abstract class AnvilScreenHandlerMixin {
             return;
         }
 
-        // Apply 25% discount to the XP cost
+        // Calculate discount based on level (scales from 25% to 40%)
+        float discount = SkillConfig.getBlacksmithAnvilDiscount(level);
+
+        // Apply discount to the XP cost
         int currentCost = this.levelCost.get();
         if (currentCost > 0) {
-            int discountedCost = Math.max(1, (int) (currentCost * (1 - SkillConfig.BLACKSMITH_ANVIL_XP_DISCOUNT)));
+            int discountedCost = Math.max(1, (int) (currentCost * (1.0f - discount)));
             this.levelCost.set(discountedCost);
         }
     }

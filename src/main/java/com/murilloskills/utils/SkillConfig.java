@@ -189,6 +189,9 @@ public class SkillConfig {
     public static final float MINER_SPEED_PER_LEVEL = 0.03f;
     public static final float MINER_FORTUNE_PER_LEVEL = 0.03f;
     public static final int MINER_NIGHT_VISION_LEVEL = 10;
+    public static final int MINER_AUTO_TORCH_LEVEL = 25;
+    public static final int MINER_AUTO_TORCH_INTERVAL_TICKS = 40; // every 2 seconds
+    public static final int MINER_AUTO_TORCH_LIGHT_THRESHOLD = 3; // place torch when block light <= this
     public static final int MINER_DURABILITY_LEVEL = 30;
     public static final int MINER_RADAR_LEVEL = 60;
     public static final int MINER_MASTER_LEVEL = 100;
@@ -634,7 +637,19 @@ public class SkillConfig {
     public static final int BLACKSMITH_MASTER_LEVEL = 100;
     public static final float BLACKSMITH_IRON_SKIN_BONUS = 0.05f;
     public static final float BLACKSMITH_ANVIL_XP_DISCOUNT = 0.25f;
+    public static final float BLACKSMITH_ANVIL_XP_DISCOUNT_MAX = 0.40f;
+    public static final int BLACKSMITH_ANVIL_TOO_EXPENSIVE_CAP = 55;
     public static final float BLACKSMITH_ANVIL_MATERIAL_SAVE = 0.10f;
+
+    /**
+     * Get the anvil XP discount based on Blacksmith level.
+     * Scales from 25% at level 25 to 40% at level 100.
+     */
+    public static float getBlacksmithAnvilDiscount(int level) {
+        if (level < BLACKSMITH_EFFICIENT_ANVIL_LEVEL) return 0f;
+        float progress = Math.min(1.0f, (float)(level - BLACKSMITH_EFFICIENT_ANVIL_LEVEL) / (100 - BLACKSMITH_EFFICIENT_ANVIL_LEVEL));
+        return BLACKSMITH_ANVIL_XP_DISCOUNT + progress * (BLACKSMITH_ANVIL_XP_DISCOUNT_MAX - BLACKSMITH_ANVIL_XP_DISCOUNT);
+    }
     public static final float BLACKSMITH_FIRE_EXPLOSION_RESIST = 0.10f;
     public static final float BLACKSMITH_THORNS_CHANCE = 0.30f;
     public static final float BLACKSMITH_THORNS_REFLECT = 0.35f;

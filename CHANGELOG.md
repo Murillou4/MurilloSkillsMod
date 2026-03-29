@@ -4,6 +4,36 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.22] - 2026-03-29
+
+### ⛏️ Miner - Auto-Tocha (Nível 25+)
+
+- **Colocação automática de tochas**: a partir do nível 25, o Minerador coloca tochas automaticamente em áreas escuras (light level ≤ 3). Consome tochas do inventário, prioriza posições mais escuras e próximas. Verifica a cada 2 segundos.
+- **Toggle (tecla T)**: ativa/desativa a funcionalidade. Estado persiste entre mortes e logout.
+- **HUD indicator**: ícone na tela mostra quando Auto-Tocha está ativo.
+- **Networking completo**: novo payload C2S para toggle e S2C para sync do estado ao client.
+
+### 🔨 Blacksmith - Desconto de Bigorna Escalável
+
+- **Desconto agora escala com nível**: de 25% (nível 25) até 40% (nível 100), ao invés de ser fixo em 25%.
+- **Teto "Too Expensive!" aumentado**: Blacksmiths agora podem usar bigornas até 55 níveis (era 40).
+
+### 🌱 Farmer - Partículas de Crescimento
+
+- **Feedback visual**: partículas verdes (Happy Villager) aparecem quando o boost de crescimento do Farmer é ativado em crops.
+- **HUD de Crop Boost**: indicador na tela mostra a % de boost de crescimento atual do Farmer.
+
+### 🗺️ Explorer - Pathfinder HUD Sync
+
+- **Indicador HUD do Pathfinder**: agora sincroniza o estado do speed boost para o client, mostrando um indicador na tela quando Pathfinder está ativo.
+
+### 🔧 Melhorias
+
+- Tooltips de passivas do Miner na tela de skills agora incluem Auto-Tocha.
+- Novas traduções (pt_br, en_us, es_es) para todas as features adicionadas.
+
+---
+
 ## [1.2.21] - 2026-03-29
 
 ### ⚡ Velocidade do Explorador
