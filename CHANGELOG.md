@@ -10,6 +10,15 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 - **Toggle de Speed do Pathfinder (Nível 45)**: adicionado toggle (tecla B) para ativar/desativar o bônus de velocidade ao correr do Explorador. O efeito agora usa um attribute modifier customizado ao invés do Speed do Minecraft, eliminando o aumento de FOV indesejado. Equivalente a Speed II (+40%) enquanto corre, sem partículas e sem distorção visual.
 
+### 🐛 Bugfix
+
+- **FOV estável com buffs do Explorer**: adicionado mixin client-side que impede os modifiers de velocidade do Explorador (passivo + Pathfinder) de afetar o cálculo de FOV. Sem mais oscilação visual ao correr.
+
+### 🏹 Archer - Looting Passivo
+
+- **Looting por nível**: o Archer agora ganha bônus de Looting passivo baseado no nível (+2% por nível, máximo +2 níveis de Looting no nível 100). Funciona como o Looting do Warrior — aplica-se automaticamente ao matar mobs. Acumula com o Looting do Warrior se ambas skills estiverem selecionadas.
+- Tooltip na tela de skills exibe o bônus atual de Looting.
+
 ---
 
 ## [1.2.20] - 2026-03-29
