@@ -3,7 +3,8 @@
 	"package": "com.murilloskills.mixin.client",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"ExampleClientMixin"
+		"ExampleClientMixin",
+		"ExplorerFovMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
