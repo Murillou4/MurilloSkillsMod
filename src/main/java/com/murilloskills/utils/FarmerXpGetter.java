@@ -68,6 +68,10 @@ public class FarmerXpGetter {
         else if (block == Blocks.COCOA) {
             return new SkillReceptorResult(true, SkillConfig.getFarmerXpCocoa());
         }
+        // Sugar Cane
+        else if (block == Blocks.SUGAR_CANE) {
+            return new SkillReceptorResult(true, SkillConfig.getFarmerXpSugarCane());
+        }
 
         return new SkillReceptorResult(false, 0);
     }
@@ -135,7 +139,8 @@ public class FarmerXpGetter {
                 block == Blocks.PUMPKIN ||
                 block == Blocks.NETHER_WART ||
                 block == Blocks.SWEET_BERRY_BUSH ||
-                block == Blocks.COCOA;
+                block == Blocks.COCOA ||
+                block == Blocks.SUGAR_CANE;
     }
 
     /**
@@ -166,8 +171,8 @@ public class FarmerXpGetter {
         else if (block == Blocks.COCOA) {
             return age >= 2;
         }
-        // Melon and Pumpkin are always "mature" when harvested as blocks
-        else if (block == Blocks.MELON || block == Blocks.PUMPKIN) {
+        // Melon, Pumpkin and Sugar Cane are always "mature" when harvested as blocks
+        else if (block == Blocks.MELON || block == Blocks.PUMPKIN || block == Blocks.SUGAR_CANE) {
             return true;
         }
 

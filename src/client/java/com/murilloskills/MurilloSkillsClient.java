@@ -13,6 +13,7 @@ import com.murilloskills.network.RainDanceS2CPayload;
 import com.murilloskills.network.SkillAbilityC2SPayload;
 import com.murilloskills.network.SkillsSyncPayload;
 import com.murilloskills.network.TreasureHunterS2CPayload;
+import com.murilloskills.network.SpeedBoostToggleC2SPayload;
 import com.murilloskills.network.VeinMinerDropsToggleC2SPayload;
 import com.murilloskills.network.VeinMinerToggleC2SPayload;
 import com.murilloskills.network.XpDirectToggleC2SPayload;
@@ -61,6 +62,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
     private static KeyBinding hollowFillToggleKey;
     private static KeyBinding nightVisionToggleKey;
     private static KeyBinding stepAssistToggleKey;
+    private static KeyBinding speedBoostToggleKey;
     private static KeyBinding fillModeCycleKey;
     private static KeyBinding veinMinerToggleKey;
     private static KeyBinding veinMinerDropsToggleKey;
@@ -232,6 +234,12 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_V,
                 KEYBIND_CATEGORY));
 
+        speedBoostToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.murilloskills.speed_boost_toggle",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_B,
+                KEYBIND_CATEGORY));
+
         fillModeCycleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.murilloskills.fill_mode_cycle",
                 InputUtil.Type.KEYSYM,
@@ -284,6 +292,10 @@ public class MurilloSkillsClient implements ClientModInitializer {
             while (stepAssistToggleKey.wasPressed()) {
                 // Envia pacote para toggle de step assist (Explorer)
                 ClientPlayNetworking.send(new StepAssistToggleC2SPayload());
+            }
+            while (speedBoostToggleKey.wasPressed()) {
+                // Envia pacote para toggle de speed boost (Explorer)
+                ClientPlayNetworking.send(new SpeedBoostToggleC2SPayload());
             }
             while (fillModeCycleKey.wasPressed()) {
                 // Envia pacote para ciclar entre modos de preenchimento (Builder)

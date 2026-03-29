@@ -366,14 +366,34 @@ public class DailyChallengeManager {
         }
 
         public static final Codec<DailyChallenge> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                Codec.STRING.fieldOf("type").xmap(ChallengeType::valueOf, Enum::name).forGetter(c -> c.type),
+                Codec.STRING.fieldOf("type").xmap(
+                        name -> {
+                            try {
+                                return ChallengeType.valueOf(name);
+                            } catch (Exception e) {
+                                return ChallengeType.MINE_BLOCKS;
+                            }
+                        }, Enum::name).forGetter(c -> c.type),
                 Codec.INT.fieldOf("targetAmount").forGetter(c -> c.targetAmount),
-                Codec.STRING.optionalFieldOf("relatedSkill").xmap(
-                        s -> s.map(MurilloSkillsList::valueOf).orElse(null),
-                        s -> Optional.ofNullable(s).map(Enum::name)).forGetter(c -> c.relatedSkill),
+                Codec.STRING.optionalFieldOf("relatedSkill")
+                        .forGetter(c -> Optional.ofNullable(c.relatedSkill).map(Enum::name)),
                 Codec.INT.fieldOf("currentProgress").forGetter(c -> c.currentProgress),
                 Codec.BOOL.fieldOf("completed").forGetter(c -> c.completed))
-                .apply(instance, DailyChallenge::new));
+                .apply(instance, (type, targetAmount, relatedSkillName, currentProgress, completed) ->
+                        new DailyChallenge(
+                                type,
+                                targetAmount,
+                                relatedSkillName.flatMap(DailyChallenge::parseRelatedSkill).orElse(null),
+                                currentProgress,
+                                completed)));
+
+        private static Optional<MurilloSkillsList> parseRelatedSkill(String name) {
+            try {
+                return Optional.of(MurilloSkillsList.valueOf(name));
+            } catch (Exception e) {
+                return Optional.empty();
+            }
+        }
 
         public float getProgressPercentage() {
             return (float) currentProgress / targetAmount;
@@ -392,9 +412,9 @@ public class DailyChallengeManager {
         }
 
         public static final Codec<PlayerChallengeData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                Codec.LONG.fieldOf("gameDayCycle").forGetter(d -> d.gameDayCycle),
-                DailyChallenge.CODEC.listOf().fieldOf("challenges").forGetter(d -> d.challenges),
-                Codec.BOOL.fieldOf("bonusAwarded").forGetter(d -> d.bonusAwarded))
+                Codec.LONG.optionalFieldOf("gameDayCycle", -1L).forGetter(d -> d.gameDayCycle),
+                DailyChallenge.CODEC.listOf().optionalFieldOf("challenges", List.of()).forGetter(d -> d.challenges),
+                Codec.BOOL.optionalFieldOf("bonusAwarded", false).forGetter(d -> d.bonusAwarded))
                 .apply(instance, PlayerChallengeData::new));
         }
 

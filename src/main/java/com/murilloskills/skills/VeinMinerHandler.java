@@ -1,17 +1,12 @@
 package com.murilloskills.skills;
 
 import com.murilloskills.data.ModAttachments;
-import com.murilloskills.models.SkillReceptorResult;
 import com.murilloskills.network.UltmineResultS2CPayload;
-import com.murilloskills.utils.FarmerXpGetter;
-import com.murilloskills.utils.MinerXpGetter;
 import com.murilloskills.utils.SkillConfig;
-import com.murilloskills.utils.SkillsNetworkUtils;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.CropBlock;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.ItemEntity;
@@ -449,7 +444,6 @@ public final class VeinMinerHandler {
         int minedBlocks = 0;
         boolean inventoryDrops = isDropsToInventory(player) && world instanceof ServerWorld;
         boolean xpDirect = isXpDirectToPlayer(player) && world instanceof ServerWorld;
-        List<BlockState> minedBlockStates = new ArrayList<>();
         if (inventoryDrops) {
             collectOriginDrops(player, (ServerWorld) world, origin);
             scheduleOriginCollection(player, world, origin);
@@ -483,8 +477,6 @@ public final class VeinMinerHandler {
                 continue;
             }
 
-            minedBlockStates.add(state);
-
             if (inventoryDrops) {
                 breakWithInventoryDrops(player, world, pos, state, tool, xpDirect);
             } else if (xpDirect && world instanceof ServerWorld serverWorld) {
@@ -493,6 +485,7 @@ public final class VeinMinerHandler {
                 world.breakBlock(pos, true, player);
             }
             minedBlocks++;
+            applyPerBlockSkillHandlers(player, world, pos, state);
 
             // Apply tool durability damage
             if (SkillConfig.getVeinMinerDamageToolPerBlock() && !player.isCreative() && !tool.isEmpty()) {
@@ -508,12 +501,6 @@ public final class VeinMinerHandler {
         if (minedBlocks <= 0) {
             return;
         }
-
-        // Grant miner XP for ultmine blocks
-        grantUltmineMinerXp(player, minedBlockStates);
-
-        // Grant farmer XP for crop blocks
-        grantUltmineFarmerXp(player, minedBlockStates);
 
         if (!player.isCreative() && xpCost > 0) {
             player.addExperienceLevels(-xpCost);
@@ -790,6 +777,16 @@ public final class VeinMinerHandler {
     }
 
     /**
+     * Reuses the same per-block skill flow as a normal manual break so ultmine
+     * applies farmer passives, miner XP, streaks, and other side-effects
+     * consistently for every extra block it breaks.
+     */
+    private static void applyPerBlockSkillHandlers(ServerPlayerEntity player, World world, BlockPos pos, BlockState state) {
+        BlockBreakHandler.handle(player, world, pos, state);
+        CropHarvestHandler.handle(player, world, pos, state);
+    }
+
+    /**
      * Check if two blocks should be considered the same for vein mining.
      * Handles: same block identity, deepslate/regular ore equivalents.
      * Redstone ore lit/unlit are already the same Block object in MC 1.21+.
@@ -827,177 +824,6 @@ public final class VeinMinerHandler {
         }
 
         return new UltmineSelection(safeShape, safeDepth, safeLength, 0);
-    }
-
-    /**
-     * Grants Miner skill XP for blocks broken via Ultmine.
-     * Miners (with MINER selected) get full XP for ores, reduced for stone.
-     * Non-miners get half ore XP and minimal stone XP.
-     * Diminishing returns kick in after 20 blocks to prevent stone farming abuse.
-     */
-    private static void grantUltmineMinerXp(ServerPlayerEntity player, List<BlockState> minedStates) {
-        if (minedStates.isEmpty()) return;
-
-        ItemStack tool = player.getMainHandStack();
-        boolean silkTouch = BlockBreakHandler.hasSilkTouch(tool.getEnchantments());
-
-        var data = player.getAttachedOrCreate(ModAttachments.PLAYER_SKILLS);
-        boolean isMiner = data.hasSelectedSkills()
-                && data.getSelectedSkills().contains(MurilloSkillsList.MINER);
-
-        int stoneXpRef = SkillConfig.getMinerXpStone();
-        int totalXp = 0;
-        int blockIndex = 0;
-
-        for (BlockState state : minedStates) {
-            SkillReceptorResult result = MinerXpGetter.isMinerXpBlock(state.getBlock(), silkTouch, false);
-            if (!result.didGainXp()) {
-                blockIndex++;
-                continue;
-            }
-
-            int baseXp = result.getXpAmount();
-            boolean isOre = baseXp > stoneXpRef;
-
-            // Miner: full ore XP, 30% stone | Non-miner: 50% ore, 10% stone
-            float skillMultiplier = isMiner
-                    ? (isOre ? 1.0f : 0.3f)
-                    : (isOre ? 0.5f : 0.1f);
-
-            // Diminishing returns for mass mining
-            float volumeMultiplier;
-            if (blockIndex < 20) {
-                volumeMultiplier = 1.0f;
-            } else if (blockIndex < 50) {
-                volumeMultiplier = 0.5f;
-            } else {
-                volumeMultiplier = 0.25f;
-            }
-
-            totalXp += Math.max(1, Math.round(baseXp * skillMultiplier * volumeMultiplier));
-            blockIndex++;
-        }
-
-        // Cap total XP per ultmine use
-        int maxXpPerUse = isMiner ? 500 : 200;
-        totalXp = Math.min(totalXp, maxXpPerUse);
-
-        if (totalXp <= 0) return;
-
-        var xpResult = data.addXpToSkill(MurilloSkillsList.MINER, totalXp);
-
-        if (xpResult.leveledUp()) {
-            var stats = data.getSkill(MurilloSkillsList.MINER);
-            com.murilloskills.utils.SkillAttributes.updateAllStats(player, data);
-            com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(player, "Minerador", xpResult);
-        }
-
-        SkillsNetworkUtils.syncSkills(player);
-        com.murilloskills.utils.XpToastSender.send(player, MurilloSkillsList.MINER, totalXp,
-                "Ultmine (" + minedStates.size() + " blocks)");
-
-        // Track daily challenge progress
-        com.murilloskills.utils.DailyChallengeManager.recordProgress(player,
-                com.murilloskills.utils.DailyChallengeManager.ChallengeType.MINE_BLOCKS, minedStates.size());
-        com.murilloskills.utils.DailyChallengeManager.syncChallenges(player);
-    }
-
-    /**
-     * Grants Farmer XP for crop blocks broken during ultmine.
-     * Similar diminishing returns as miner XP to prevent farming abuse.
-     */
-    private static void grantUltmineFarmerXp(ServerPlayerEntity player, List<BlockState> minedStates) {
-        if (minedStates.isEmpty()) return;
-
-        var data = player.getAttachedOrCreate(ModAttachments.PLAYER_SKILLS);
-        if (!data.hasSelectedSkills() || !data.getSelectedSkills().contains(MurilloSkillsList.FARMER)) {
-            return;
-        }
-
-        int totalXp = 0;
-        int cropCount = 0;
-        int blockIndex = 0;
-
-        for (BlockState state : minedStates) {
-            Block block = state.getBlock();
-            if (!FarmerXpGetter.isCropBlock(block)) {
-                blockIndex++;
-                continue;
-            }
-
-            boolean isMature = isCropMatureFromState(state, block);
-            SkillReceptorResult result = FarmerXpGetter.getCropHarvestXp(block, isMature);
-            if (!result.didGainXp()) {
-                blockIndex++;
-                continue;
-            }
-
-            int baseXp = result.getXpAmount();
-
-            // Diminishing returns for mass harvesting
-            float volumeMultiplier;
-            if (blockIndex < 20) {
-                volumeMultiplier = 1.0f;
-            } else if (blockIndex < 50) {
-                volumeMultiplier = 0.5f;
-            } else {
-                volumeMultiplier = 0.25f;
-            }
-
-            totalXp += Math.max(1, Math.round(baseXp * volumeMultiplier));
-            cropCount++;
-            blockIndex++;
-        }
-
-        if (totalXp <= 0) return;
-
-        // Cap total XP per ultmine use
-        totalXp = Math.min(totalXp, 500);
-
-        var xpResult = data.addXpToSkill(MurilloSkillsList.FARMER, totalXp);
-
-        if (xpResult.leveledUp()) {
-            var stats = data.getSkill(MurilloSkillsList.FARMER);
-            com.murilloskills.utils.SkillAttributes.updateAllStats(player, data);
-            com.murilloskills.utils.VanillaXpRewarder.checkAndRewardMilestone(player, "Agricultor", xpResult);
-            com.murilloskills.utils.SkillNotifier.notifyLevelUp(player, MurilloSkillsList.FARMER, stats.level);
-        }
-
-        SkillsNetworkUtils.syncSkills(player);
-        com.murilloskills.utils.XpToastSender.send(player, MurilloSkillsList.FARMER, totalXp,
-                "Ultmine (" + cropCount + " crops)");
-
-        // Track daily challenge progress
-        com.murilloskills.utils.DailyChallengeManager.recordProgress(player,
-                com.murilloskills.utils.DailyChallengeManager.ChallengeType.HARVEST_CROPS, cropCount);
-        com.murilloskills.utils.DailyChallengeManager.syncChallenges(player);
-
-        // Track crops harvested for Mega Farmer achievement
-        com.murilloskills.utils.AchievementTracker.incrementAndCheck(
-                player, MurilloSkillsList.FARMER,
-                com.murilloskills.utils.AchievementTracker.KEY_CROPS_HARVESTED, cropCount);
-    }
-
-    /**
-     * Checks crop maturity from the captured BlockState (before the block was broken).
-     */
-    private static boolean isCropMatureFromState(BlockState state, Block block) {
-        if (block instanceof CropBlock cropBlock) {
-            return cropBlock.isMature(state);
-        }
-        if (block == Blocks.NETHER_WART) {
-            return state.get(net.minecraft.block.NetherWartBlock.AGE) >= 3;
-        }
-        if (block == Blocks.SWEET_BERRY_BUSH) {
-            return state.get(net.minecraft.block.SweetBerryBushBlock.AGE) >= 2;
-        }
-        if (block == Blocks.COCOA) {
-            return state.get(net.minecraft.block.CocoaBlock.AGE) >= 2;
-        }
-        if (block == Blocks.MELON || block == Blocks.PUMPKIN) {
-            return true;
-        }
-        return false;
     }
 
     private record PendingOriginCollection(BlockPos pos, long expireTick) {

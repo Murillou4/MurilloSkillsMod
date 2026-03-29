@@ -171,7 +171,10 @@ public class PlayerSkillData {
                     .forGetter(d -> d.skillToggles),
             Codec.unboundedMap(Codec.STRING, Codec.INT).optionalFieldOf("achievementStats", Map.of())
                     .forGetter(d -> d.achievementStats),
-            com.murilloskills.utils.DailyChallengeManager.PlayerChallengeData.CODEC.optionalFieldOf("dailyChallenges")
+            com.murilloskills.utils.DailyChallengeManager.PlayerChallengeData.CODEC
+                    .optionalFieldOf("dailyChallenges")
+                    // Wrap in lenient codec: if dailyChallenges exists but fails to decode,
+                    // treat as empty instead of crashing all player data
                     .forGetter(d -> Optional.ofNullable(d.dailyChallenges)))
             .apply(instance, (paragonOpt, skillsMap, selectedList, toggles, achStats, dailyOpt) -> {
                 PlayerSkillData data = new PlayerSkillData();
@@ -240,7 +243,7 @@ public class PlayerSkillData {
         public static final Codec<SkillStats> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.INT.fieldOf("level").forGetter(s -> s.level),
                 Codec.DOUBLE.fieldOf("xp").forGetter(s -> s.xp),
-                Codec.LONG.optionalFieldOf("lastAbilityUse", 0L).forGetter(s -> s.lastAbilityUse),
+                Codec.LONG.optionalFieldOf("lastAbilityUse", -1L).forGetter(s -> s.lastAbilityUse),
                 Codec.INT.optionalFieldOf("prestige", 0).forGetter(s -> s.prestige))
                 .apply(instance, SkillStats::new));
 

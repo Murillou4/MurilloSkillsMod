@@ -37,20 +37,6 @@ public class OreFilterScreen extends Screen {
     private int maxOresSectionY;
     private int bottomY;
 
-    // Ore colors for accent borders
-    private static final int[] ORE_COLORS = {
-            0xFF555555, // COAL
-            0xFFE87B35, // COPPER
-            0xFFD8AF93, // IRON
-            0xFFFFD700, // GOLD
-            0xFF2626CC, // LAPIS
-            0xFFFF3333, // REDSTONE
-            0xFF4AEDD9, // DIAMOND
-            0xFF00FF66, // EMERALD
-            0xFF7B4F3A, // ANCIENT_DEBRIS
-            0xFFE8E4D8, // NETHER_QUARTZ
-            0xFFFFAA00  // NETHER_GOLD
-    };
 
     public OreFilterScreen(Screen parent) {
         super(Text.translatable("murilloskills.ore_filter.title"));
@@ -228,7 +214,7 @@ public class OreFilterScreen extends Screen {
             int r = (int) (8 + ratio * 6);
             int g = (int) (8 + ratio * 4);
             int b = (int) (16 + ratio * 10);
-            context.fill(0, y, this.width, y + 1, 0xF0000000 | (r << 16) | (g << 8) | b);
+            context.fill(0, y, this.width, y + 1, palette.bgOverlay() | (r << 16) | (g << 8) | b);
         }
     }
 
@@ -340,7 +326,7 @@ public class OreFilterScreen extends Screen {
             int row = i / cols;
             int x = startX + col * (cardW + cardGap);
             int y = oreGridY + row * (cardH + cardGap);
-            int oreColor = i < ORE_COLORS.length ? ORE_COLORS[i] : 0xFF888888;
+            int oreColor = palette.getOreColor(ore);
 
             // Card background overlay (on top of button)
             int bgColor = enabled ? palette.sectionBgActive() : palette.sectionBg();
@@ -366,7 +352,7 @@ public class OreFilterScreen extends Screen {
             int dotX = iconX + 18;
             int textY = y + (cardH - 8) / 2;
             String dot = enabled ? "●" : "○";
-            int dotColor = enabled ? 0xFF55FF55 : 0xFF555555;
+            int dotColor = enabled ? palette.statusReady() : palette.textMuted();
             context.drawTextWithShadow(textRenderer, dot, dotX, textY, dotColor);
 
             // Ore name

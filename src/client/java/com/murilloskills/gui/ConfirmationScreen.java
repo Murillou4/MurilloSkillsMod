@@ -109,7 +109,7 @@ public class ConfirmationScreen extends Screen {
         long tick = MinecraftClient.getInstance().world != null ? MinecraftClient.getInstance().world.getTime() : 0;
         float pulse = 0.8f + 0.2f * (float) Math.sin(tick * 0.15);
         int pulseAlpha = (int) (255 * pulse);
-        int warningColor = (pulseAlpha << 24) | 0xFFAA00;
+        int warningColor = (pulseAlpha << 24) | (PALETTE.textYellow() & 0x00FFFFFF);
 
         Text warningIcon = Text.translatable("murilloskills.gui.icon.warning");
         int iconWidth = this.textRenderer.getWidth(warningIcon);
@@ -148,7 +148,7 @@ public class ConfirmationScreen extends Screen {
             int r = (int) (8 + ratio * 4);
             int g = (int) (8 + ratio * 4);
             int b = (int) (16 + ratio * 8);
-            int color = 0xF0000000 | (r << 16) | (g << 8) | b;
+            int color = PALETTE.bgOverlay() | (r << 16) | (g << 8) | b;
             context.fill(0, y, this.width, y + 1, color);
         }
 

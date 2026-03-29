@@ -210,7 +210,7 @@ public class ModInfoScreen extends Screen {
                         int r = (int) (8 + ratio * 4);
                         int g = (int) (8 + ratio * 4);
                         int b = (int) (16 + ratio * 8);
-                        int color = 0xF0000000 | (r << 16) | (g << 8) | b;
+                        int color = PALETTE.bgOverlay() | (r << 16) | (g << 8) | b;
                         context.fill(0, y, this.width, y + 1, color);
                 }
 
@@ -244,12 +244,12 @@ public class ModInfoScreen extends Screen {
                 for (int y = 0; y < headerHeight; y++) {
                         float ratio = (float) y / headerHeight;
                         int alpha = (int) (0xF0 * (1 - ratio * 0.3f));
-                        int color = (alpha << 24) | 0x101020;
+                        int color = (alpha << 24) | PALETTE.headerGradientBase();
                         context.fill(0, y, this.width, y + 1, color);
                 }
 
                 // Decorative lines
-                context.fill(0, headerHeight - 2, this.width, headerHeight - 1, 0x25FFFFFF);
+                context.fill(0, headerHeight - 2, this.width, headerHeight - 1, PALETTE.headerAccentLine());
 
                 // Golden accent line centered
                 int accentWidth = this.width / 2;
@@ -263,7 +263,7 @@ public class ModInfoScreen extends Screen {
                 int titleY = 8;
 
                 // Shadow
-                context.drawText(textRenderer, titleText, titleX + 1, titleY + 1, 0x40000000, false);
+                context.drawText(textRenderer, titleText, titleX + 1, titleY + 1, PALETTE.panelShadow(), false);
                 // Main text
                 context.drawTextWithShadow(textRenderer,
                                 Text.literal(titleText).formatted(Formatting.GOLD, Formatting.BOLD),
@@ -506,7 +506,7 @@ public class ModInfoScreen extends Screen {
                         int skillColor = PALETTE.getSkillColor(skill);
 
                         // Card background with hover highlight
-                        int bgColor = isSelected ? 0xE0202035 : (isHovered ? 0xD01E1E30 : 0xC0161622);
+                        int bgColor = isSelected ? PALETTE.sectionBgActive() : (isHovered ? PALETTE.sectionBg() : PALETTE.cardBgSubtle());
                         context.fill(cardX, y, cardX + cardWidth, y + cardHeight, bgColor);
 
                         // Border - highlighted for selected, subtle glow for hovered
@@ -536,7 +536,7 @@ public class ModInfoScreen extends Screen {
                         // Skill name (abbreviated if needed)
                         String skillName = Text.translatable("murilloskills.skill.name." + skill.name().toLowerCase())
                                         .getString();
-                        int nameColor = isSelected ? skillColor : (isHovered ? 0xFFDDDDEE : PALETTE.textGray());
+                        int nameColor = isSelected ? skillColor : (isHovered ? PALETTE.textLight() : PALETTE.textGray());
                         int maxNameWidth = cardWidth - 24;
                         if (textRenderer.getWidth(skillName) > maxNameWidth) {
                                 while (textRenderer.getWidth(skillName + "..") > maxNameWidth && skillName.length() > 2) {
@@ -582,9 +582,9 @@ public class ModInfoScreen extends Screen {
 
         private void renderInfoBox(DrawContext context, int x, int y, int width, int height, int accentColor) {
                 // Background
-                context.fill(x, y, x + width, y + height, 0xC0101018);
+                context.fill(x, y, x + width, y + height, PALETTE.hudIndicatorBg());
                 // Border
-                drawPanelBorder(context, x, y, width, height, 0x60FFFFFF);
+                drawPanelBorder(context, x, y, width, height, PALETTE.infoBoxBorder());
                 // Left accent
                 context.fill(x, y + 2, x + 3, y + height - 2, accentColor);
         }
@@ -597,7 +597,7 @@ public class ModInfoScreen extends Screen {
                 var stats = ClientSkillData.get(skill);
 
                 // Card background with glow for paragon
-                int bgColor = isParagon ? 0xE0201810 : 0xD0181825;
+                int bgColor = isParagon ? PALETTE.cardBgParagon() : PALETTE.sectionBg();
                 if (isParagon) {
                         // Subtle paragon glow
                         context.fill(x - 1, y - 1, x + cardWidth + 1, y + cardHeight + 1, PALETTE.cardGlowParagon());
@@ -680,7 +680,7 @@ public class ModInfoScreen extends Screen {
 
                 // Badge background
                 int width = Math.max(textRenderer.getWidth(name), textRenderer.getWidth(bonus)) + 20;
-                context.fill(x, y, x + width, y + 18, 0xC0103010);
+                context.fill(x, y, x + width, y + 18, PALETTE.synergyBadgeBg());
                 drawPanelBorder(context, x, y, width, 18, PALETTE.accentGreen());
 
                 // Check mark and text
@@ -694,12 +694,12 @@ public class ModInfoScreen extends Screen {
                 int cardHeight = 68; // Taller card
 
                 // Card background with gradient effect
-                int bgColor = isActive ? 0xD8102820 : 0xD0181822;
+                int bgColor = isActive ? PALETTE.synergyActiveBg() : PALETTE.sectionBg();
                 context.fill(x, y, x + cardWidth, y + cardHeight, bgColor);
 
                 // Glow effect for active cards
                 if (isActive) {
-                        context.fill(x + 1, y + 1, x + cardWidth - 1, y + 3, 0x30AAFFAA);
+                        context.fill(x + 1, y + 1, x + cardWidth - 1, y + 3, PALETTE.synergyActiveGlow());
                 }
 
                 // Border with accent color
@@ -747,10 +747,10 @@ public class ModInfoScreen extends Screen {
                 int bonusBarHeight = 18;
 
                 // Bonus bar background
-                context.fill(x + 12, bonusBarY, x + 12 + bonusBarWidth, bonusBarY + bonusBarHeight, 0x80101018);
+                context.fill(x + 12, bonusBarY, x + 12 + bonusBarWidth, bonusBarY + bonusBarHeight, PALETTE.bonusBarBg());
 
                 // Bonus bar border
-                int barBorderColor = isActive ? 0xFF225533 : 0xFF333344;
+                int barBorderColor = isActive ? PALETTE.bonusBarBorderActive() : PALETTE.bonusBarBorderInactive();
                 context.fill(x + 12, bonusBarY, x + 12 + bonusBarWidth, bonusBarY + 1, barBorderColor);
                 context.fill(x + 12, bonusBarY + bonusBarHeight - 1, x + 12 + bonusBarWidth, bonusBarY + bonusBarHeight,
                                 barBorderColor);
@@ -861,7 +861,7 @@ public class ModInfoScreen extends Screen {
 
                 // Skill header with icon and player progress
                 int headerH = 30;
-                context.fill(x, y, x + width, y + headerH, 0xE0181828);
+                context.fill(x, y, x + width, y + headerH, PALETTE.panelBgHeader());
                 RenderingHelper.drawPanelBorder(context, x, y, width, headerH, skillColor);
                 context.fill(x, y, x + 3, y + headerH, skillColor);
 
@@ -917,7 +917,7 @@ public class ModInfoScreen extends Screen {
                 for (Text line : passives) {
                         passivesHeight += calculateWrappedTextHeight(line.getString(), textWidth - 16);
                 }
-                context.fill(x, y, x + width, y + passivesHeight, 0xC0141420);
+                context.fill(x, y, x + width, y + passivesHeight, PALETTE.cardBgSubtle());
                 RenderingHelper.drawPanelBorder(context, x, y, width, passivesHeight, PALETTE.sectionBorder());
                 context.fill(x, y, x + 3, y + passivesHeight, PALETTE.textPurple());
 
@@ -933,7 +933,7 @@ public class ModInfoScreen extends Screen {
                 y += passivesHeight + 6;
 
                 // Timeline section with visual milestone markers
-                context.fill(x, y, x + width, y + 18, 0xC0141420);
+                context.fill(x, y, x + width, y + 18, PALETTE.cardBgSubtle());
                 RenderingHelper.drawPanelBorder(context, x, y, width, 18, PALETTE.sectionBorder());
                 context.fill(x, y, x + 3, y + 18, PALETTE.textYellow());
                 context.drawTextWithShadow(textRenderer,
@@ -949,7 +949,7 @@ public class ModInfoScreen extends Screen {
                         int lineHeight = calculateWrappedTextHeight(entry.text(), textWidth - 20);
 
                         // Vertical timeline line
-                        int lineColor = reached ? (0x60 << 24) | (skillColor & 0x00FFFFFF) : 0x30FFFFFF;
+                        int lineColor = reached ? (0x60 << 24) | (skillColor & 0x00FFFFFF) : PALETTE.headerAccentLine();
                         context.fill(timelineX, y, timelineX + 2, y + lineHeight, lineColor);
 
                         // Milestone dot
@@ -957,7 +957,7 @@ public class ModInfoScreen extends Screen {
                                 int dotColor = reached ? skillColor : PALETTE.textMuted();
                                 context.fill(timelineX - 2, y + 2, timelineX + 4, y + 8, dotColor);
                         } else {
-                                int dotColor = reached ? (0x80 << 24) | (skillColor & 0x00FFFFFF) : 0x30FFFFFF;
+                                int dotColor = reached ? (0x80 << 24) | (skillColor & 0x00FFFFFF) : PALETTE.headerAccentLine();
                                 context.fill(timelineX - 1, y + 3, timelineX + 3, y + 7, dotColor);
                         }
 
@@ -980,7 +980,7 @@ public class ModInfoScreen extends Screen {
                 int totalHeight = headerH + sources.size() * rowHeight + 8;
 
                 // Card background
-                context.fill(x, y, x + cardWidth, y + totalHeight, 0xC0141420);
+                context.fill(x, y, x + cardWidth, y + totalHeight, PALETTE.cardBgSubtle());
                 RenderingHelper.drawPanelBorder(context, x, y, cardWidth, totalHeight, PALETTE.sectionBorder());
 
                 // Left accent bar
@@ -999,7 +999,7 @@ public class ModInfoScreen extends Screen {
 
                         // Alternating row background
                         if (i % 2 == 0) {
-                                context.fill(x + 4, rowY, x + cardWidth - 4, rowY + rowHeight, 0x15FFFFFF);
+                                context.fill(x + 4, rowY, x + cardWidth - 4, rowY + rowHeight, PALETTE.alternatingRowBg());
                         }
 
                         // Name
@@ -1029,7 +1029,7 @@ public class ModInfoScreen extends Screen {
                 int totalHeight = 20 + textHeight + 6;
 
                 // Card bg
-                context.fill(x, y, x + cardWidth, y + totalHeight, 0xC0141420);
+                context.fill(x, y, x + cardWidth, y + totalHeight, PALETTE.cardBgSubtle());
                 RenderingHelper.drawPanelBorder(context, x, y, cardWidth, totalHeight, PALETTE.sectionBorder());
 
                 // Left accent bar

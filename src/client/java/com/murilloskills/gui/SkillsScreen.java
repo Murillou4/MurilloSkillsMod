@@ -504,7 +504,7 @@ public class SkillsScreen extends Screen {
             if (selectionMode) {
                 // Selection mode colors
                 if (isPendingSelect) {
-                    cardBg = isHovered ? PALETTE.sectionBgActive() : 0xE8181830;
+                    cardBg = isHovered ? PALETTE.sectionBgActive() : PALETTE.cardBgPending();
                     borderColor = PALETTE.accentGreen();
                 } else {
                     cardBg = isHovered ? PALETTE.sectionBgActive() : PALETTE.sectionBg();
@@ -513,13 +513,13 @@ public class SkillsScreen extends Screen {
             } else {
                 // Normal mode colors
                 if (isParagon) {
-                    cardBg = 0xF0201810; // Special paragon tint
-                    borderColor = isHovered ? PALETTE.accentGold() : 0xFFFFD700;
+                    cardBg = PALETTE.cardBgParagon();
+                    borderColor = isHovered ? PALETTE.accentGold() : PALETTE.textGold();
                 } else if (isLocked) {
-                    cardBg = 0xD0101015; // Darker for locked
-                    borderColor = 0xFF1A1A20;
+                    cardBg = PALETTE.cardBgLocked();
+                    borderColor = PALETTE.cardBorderLocked();
                 } else if (isSelected) {
-                    cardBg = isHovered ? PALETTE.sectionBgActive() : 0xE8102018;
+                    cardBg = isHovered ? PALETTE.sectionBgActive() : PALETTE.cardBgSelected();
                     borderColor = isHovered ? PALETTE.accentGold() : PALETTE.accentGreen();
                 } else {
                     cardBg = isHovered ? PALETTE.sectionBgActive() : PALETTE.sectionBg();
@@ -574,7 +574,7 @@ public class SkillsScreen extends Screen {
             if (isLocked) {
                 // CHANGED: Clearer feedback that skill is inactive, not just "locked"
                 context.drawText(this.textRenderer, Text.literal("NOT ACTIVE"), x + 28, y + 40,
-                        0xFFAA0000, false);
+                        PALETTE.statusInactive(), false);
             } else if (isParagon) {
                 long cooldownTicks = getSkillCooldown(skill);
                 long timeSinceUse = worldTime - stats.lastAbilityUse;
@@ -583,18 +583,18 @@ public class SkillsScreen extends Screen {
                 // Ou se já passou o cooldown, também está pronto
                 if (stats.lastAbilityUse < 0 || timeSinceUse >= cooldownTicks) {
                     context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.ready"), x + 28, y + 40,
-                            0xFF00FF00, false);
+                            PALETTE.statusReady(), false);
                 } else {
                     long secondsLeft = (cooldownTicks - timeSinceUse) / 20;
                     String cdText = formatTime(secondsLeft);
                     context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.cooldown", cdText), x + 28,
-                            y + 40, 0xFFFF5555, false);
+                            y + 40, PALETTE.statusCooldown(), false);
                 }
                 context.drawTextWithShadow(this.textRenderer, Text.translatable("murilloskills.gui.icon.paragon"),
-                        x + 120, y - 4, 0xFFFFAA00);
+                        x + 120, y - 4, PALETTE.textYellow());
             } else if (isSelected) {
                 context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.active"), x + 28, y + 40,
-                        0xFF00AA00, false);
+                        PALETTE.statusActive(), false);
             }
 
             // Render perk roadmap dots (shows progress toward perks)
@@ -1153,11 +1153,11 @@ public class SkillsScreen extends Screen {
         int shineColor = PALETTE.progressBarShine();
 
         if (isLocked) {
-            fillColor = 0xFF663344;
-            shineColor = 0x20FF4444;
+            fillColor = PALETTE.progressLockedFill();
+            shineColor = PALETTE.progressLockedShine();
         } else if (stats.level >= 100) {
             fillColor = PALETTE.accentGold();
-            shineColor = 0x60FFFFFF;
+            shineColor = PALETTE.progressMaxShine();
         } else {
             fillColor = PALETTE.progressBarFill();
         }
@@ -1213,7 +1213,7 @@ public class SkillsScreen extends Screen {
             if (isClose && !unlocked) {
                 // Yellow marker for close perks
                 context.fill(markerX, markerY, markerX + markerSize, markerY + markerSize, PALETTE.textYellow());
-                RenderingHelper.drawPanelBorder(context, markerX, markerY, markerSize, markerSize, 0xFFAAAA44);
+                RenderingHelper.drawPanelBorder(context, markerX, markerY, markerSize, markerSize, PALETTE.perkCloseMarker());
             } else {
                 // Use styled milestone marker
                 RenderingHelper.renderMilestoneMarker(context, markerX, markerY, markerSize, unlocked, isMaster,
@@ -1310,7 +1310,7 @@ public class SkillsScreen extends Screen {
         if (ClientSkillData.areAllChallengesComplete()) {
             int bonusY = y + 4;
             // Glow background
-            context.fill(panelX + 4, bonusY - 2, panelX + panelWidth - 4, bonusY + 14, 0x40FFD700);
+            context.fill(panelX + 4, bonusY - 2, panelX + panelWidth - 4, bonusY + 14, PALETTE.cardGlowParagon());
             Text bonus = Text.translatable("murilloskills.gui.challenges.all_complete");
             int bonusWidth = textRenderer.getWidth(bonus);
             context.drawTextWithShadow(textRenderer, bonus,
@@ -1343,14 +1343,7 @@ public class SkillsScreen extends Screen {
      * Gets prestige color for display based on prestige level.
      */
     private int getPrestigeColor(int prestige) {
-        return switch (prestige) {
-            case 1, 2 -> 0xFF88FF88; // Light green
-            case 3, 4 -> 0xFF88FFFF; // Cyan
-            case 5, 6 -> 0xFFFFFF88; // Yellow
-            case 7, 8 -> 0xFFFF88FF; // Magenta
-            case 9, 10 -> 0xFFFFDD00; // Gold
-            default -> 0xFFFFFFFF; // White
-        };
+        return PALETTE.getPrestigeColor(prestige);
     }
 
     @Override
@@ -1368,12 +1361,12 @@ public class SkillsScreen extends Screen {
         for (int i = 0; i < headerHeight; i++) {
             float ratio = (float) i / headerHeight;
             int alpha = (int) (0xF0 * (1 - ratio * 0.3f));
-            int color = (alpha << 24) | 0x101018;
+            int color = (alpha << 24) | PALETTE.headerGradientBase();
             context.fill(0, i, this.width, i + 1, color);
         }
 
         // Decorative accent line at bottom
-        context.fill(0, headerHeight - 2, this.width, headerHeight - 1, 0x30FFFFFF);
+        context.fill(0, headerHeight - 2, this.width, headerHeight - 1, PALETTE.headerAccentLine());
         context.fill(this.width / 4, headerHeight - 1, this.width * 3 / 4, headerHeight, PALETTE.accentGold());
 
         // Title
@@ -1465,7 +1458,7 @@ public class SkillsScreen extends Screen {
             int r = (int) (8 + ratio * 4);
             int g = (int) (8 + ratio * 4);
             int b = (int) (16 + ratio * 8);
-            int color = 0xF0000000 | (r << 16) | (g << 8) | b;
+            int color = PALETTE.bgOverlay() | (r << 16) | (g << 8) | b;
             context.fill(0, y, this.width, y + 1, color);
         }
     }

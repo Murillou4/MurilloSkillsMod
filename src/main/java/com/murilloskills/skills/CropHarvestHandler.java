@@ -134,8 +134,8 @@ public class CropHarvestHandler {
             return age >= 2;
         }
 
-        // Melon and Pumpkin are always "mature"
-        if (block == Blocks.MELON || block == Blocks.PUMPKIN) {
+        // Melon, Pumpkin and Sugar Cane are always "mature"
+        if (block == Blocks.MELON || block == Blocks.PUMPKIN || block == Blocks.SUGAR_CANE) {
             return true;
         }
 
@@ -215,6 +215,8 @@ public class CropHarvestHandler {
             seeds = new ItemStack(Items.POTATO);
         else if (block == Blocks.NETHER_WART)
             seeds = new ItemStack(Items.NETHER_WART);
+        else if (block == Blocks.SUGAR_CANE)
+            seeds = new ItemStack(Items.SUGAR_CANE);
 
         if (seeds != null) {
             ItemEntity itemEntity = new ItemEntity(world,

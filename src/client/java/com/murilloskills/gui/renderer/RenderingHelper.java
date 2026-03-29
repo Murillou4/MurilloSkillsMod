@@ -15,6 +15,8 @@ import net.minecraft.util.Formatting;
  */
 public final class RenderingHelper {
 
+    private static final ColorPalette PALETTE = ColorPalette.premium();
+
     private RenderingHelper() {
         // Prevent instantiation - utility class
     }
@@ -75,9 +77,9 @@ public final class RenderingHelper {
     public static void renderInfoBox(DrawContext context, int x, int y, int width, int height,
             int accentColor) {
         // Background
-        context.fill(x, y, x + width, y + height, 0xC0101018);
+        context.fill(x, y, x + width, y + height, PALETTE.hudIndicatorBg());
         // Border
-        drawPanelBorder(context, x, y, width, height, 0x60FFFFFF);
+        drawPanelBorder(context, x, y, width, height, PALETTE.dividerColor());
         // Left accent
         context.fill(x, y + 2, x + 3, y + height - 2, accentColor);
     }
@@ -104,7 +106,7 @@ public final class RenderingHelper {
         context.fill(x, y, x + width, y + height, emptyColor);
 
         // Border
-        drawPanelBorder(context, x, y, width, height, 0x40FFFFFF);
+        drawPanelBorder(context, x, y, width, height, PALETTE.dividerColor());
 
         // Filled portion
         int fillWidth = (int) (width * progress);
@@ -178,7 +180,7 @@ public final class RenderingHelper {
         context.fill(x - radius + 1, y - radius, x + radius - 1, y + radius, bgColor);
 
         // Highlight
-        context.fill(x - radius + 1, y - radius + 1, x + radius - 1, y - radius + 3, 0x20FFFFFF);
+        context.fill(x - radius + 1, y - radius + 1, x + radius - 1, y - radius + 3, PALETTE.panelHighlight());
     }
 
     /**
@@ -227,7 +229,7 @@ public final class RenderingHelper {
         int bgColor = unlocked
                 ? (isMaster ? palette.accentGold() : palette.accentGreen())
                 : palette.textMuted();
-        int borderColor = isMaster ? 0xFFFFD700 : 0x80FFFFFF;
+        int borderColor = isMaster ? palette.accentGold() : palette.scrollbarFg();
 
         // Marker background
         context.fill(x, y, x + size, y + size, bgColor);
@@ -237,8 +239,8 @@ public final class RenderingHelper {
 
         // Checkmark or lock inside
         if (unlocked && size >= 6) {
-            context.fill(x + size / 4, y + size / 2, x + size / 2, y + size - 2, 0xFFFFFFFF);
-            context.fill(x + size / 2, y + 2, x + size - 2, y + size / 2 + 1, 0xFFFFFFFF);
+            context.fill(x + size / 4, y + size / 2, x + size / 2, y + size - 2, palette.textWhite());
+            context.fill(x + size / 2, y + 2, x + size - 2, y + size / 2 + 1, palette.textWhite());
         }
     }
 

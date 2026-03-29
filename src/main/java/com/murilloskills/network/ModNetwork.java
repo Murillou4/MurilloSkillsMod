@@ -41,5 +41,6 @@ public class ModNetwork {
         PayloadTypeRegistry.playC2S().register(UltmineShapeSelectC2SPayload.ID, UltmineShapeSelectC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(UltmineRequestC2SPayload.ID, UltmineRequestC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(XpDirectToggleC2SPayload.ID, XpDirectToggleC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(SpeedBoostToggleC2SPayload.ID, SpeedBoostToggleC2SPayload.CODEC);
     }
 }

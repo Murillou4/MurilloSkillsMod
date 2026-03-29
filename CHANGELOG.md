@@ -4,6 +4,33 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.21] - 2026-03-29
+
+### ⚡ Velocidade do Explorador
+
+- **Toggle de Speed do Pathfinder (Nível 45)**: adicionado toggle (tecla B) para ativar/desativar o bônus de velocidade ao correr do Explorador. O efeito agora usa um attribute modifier customizado ao invés do Speed do Minecraft, eliminando o aumento de FOV indesejado. Equivalente a Speed II (+40%) enquanto corre, sem partículas e sem distorção visual.
+
+---
+
+## [1.2.20] - 2026-03-29
+
+### 🐛 Bugfix
+
+- **Farmer XP com cana de açúcar**: cana de açúcar agora é reconhecida como crop do Farmer, dando XP ao quebrar (2 XP base, configurável). Todas as passivas de colheita (colheita dupla, colheita dourada, sementes extras, colheita adjacente) agora se aplicam à cana.
+
+---
+
+## [1.2.19] - 2026-03-28
+
+### 🐛 Bugfix
+
+- **Ultmine agora aplica skills por bloco**: corrigido o fluxo do `Ultmine` para reutilizar os mesmos handlers da quebra manual em cada bloco adicional quebrado.
+- **Farmer com passivas completas no Ultmine**: colheitas com `Ultmine` agora aplicam corretamente XP, streak, daily challenge, achievements e passivas de harvest do Farmer bloco por bloco, ficando consistente com quebrar um por um.
+- **Miner com processamento consistente por bloco**: minérios quebrados pelo `Ultmine` agora passam pelo mesmo caminho individual do `BlockBreakHandler`, preservando o comportamento esperado por bloco e evitando diferenças entre quebra manual e quebra em área.
+- **Fortune da picareta + Fortune do Miner mantidas no loot individual**: a quebra em área continua gerando os drops bloco por bloco, sem agregar o cálculo final em lote.
+
+---
+
 ## [1.2.18] - 2026-03-28
 
 ### 🐛 Bugfix
@@ -370,4 +397,3 @@ O arquivo `config/murilloskills.json` é gerado automaticamente na primeira exec
 
 ### Resetar para Padrões
 Para restaurar os valores padrão, basta deletar o arquivo `murilloskills.json` e reiniciar o jogo.
-

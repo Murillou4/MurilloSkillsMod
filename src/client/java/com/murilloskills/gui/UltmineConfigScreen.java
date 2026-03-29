@@ -296,7 +296,7 @@ public class UltmineConfigScreen extends Screen {
             int r = (int) (8 + ratio * 6);
             int g = (int) (8 + ratio * 4);
             int b = (int) (16 + ratio * 10);
-            context.fill(0, y, this.width, y + 1, 0xF0000000 | (r << 16) | (g << 8) | b);
+            context.fill(0, y, this.width, y + 1, palette.bgOverlay() | (r << 16) | (g << 8) | b);
         }
     }
 
@@ -515,7 +515,7 @@ public class UltmineConfigScreen extends Screen {
             boolean deepslate = SkillConfig.getVeinMinerMatchDeepslateVariants();
             context.drawTextWithShadow(textRenderer,
                     Text.literal(deepslate ? "ON" : "OFF").formatted(deepslate ? Formatting.GREEN : Formatting.RED),
-                    infoValueX, infoY, deepslate ? palette.textGreen() : 0xFFFF5555);
+                    infoValueX, infoY, deepslate ? palette.textGreen() : palette.statusCooldown());
 
             // Tool damage per block
             infoY += 14;
@@ -524,7 +524,7 @@ public class UltmineConfigScreen extends Screen {
             boolean toolDmg = SkillConfig.getVeinMinerDamageToolPerBlock();
             context.drawTextWithShadow(textRenderer,
                     Text.literal(toolDmg ? "ON" : "OFF").formatted(toolDmg ? Formatting.GREEN : Formatting.RED),
-                    infoValueX, infoY, toolDmg ? palette.textGreen() : 0xFFFF5555);
+                    infoValueX, infoY, toolDmg ? palette.textGreen() : palette.statusCooldown());
         } else if (maxDepth <= 1 && maxLength <= 1 && variantCount <= 1) {
             // If no configurable options for other shapes
             int noConfigY = shapeConfigY + 32;

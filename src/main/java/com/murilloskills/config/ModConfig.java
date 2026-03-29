@@ -402,6 +402,7 @@ public class ModConfig {
         public int xpNetherWart = 5;
         public int xpSweetBerry = 2;
         public int xpCocoa = 4;
+        public int xpSugarCane = 2;
     }
 
     public static class FisherSourceConfig {

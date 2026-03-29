@@ -43,10 +43,12 @@ public class ExplorerSkill extends AbstractSkill {
     private static final Identifier EXPLORER_SPEED_ID = Identifier.of("murilloskills", "explorer_speed_bonus");
     private static final Identifier EXPLORER_LUCK_ID = Identifier.of("murilloskills", "explorer_luck_bonus");
     private static final Identifier EXPLORER_STEP_HEIGHT_ID = Identifier.of("murilloskills", "explorer_step_height");
+    private static final Identifier EXPLORER_PATHFINDER_SPEED_ID = Identifier.of("murilloskills", "explorer_pathfinder_speed");
 
     // Toggle key names for persistent storage
     private static final String TOGGLE_NIGHT_VISION = "nightVision";
     private static final String TOGGLE_STEP_ASSIST = "stepAssist";
+    private static final String TOGGLE_SPEED_BOOST = "speedBoost";
 
     @Override
     public MurilloSkillsList getSkillType() {
@@ -152,11 +154,17 @@ public class ExplorerSkill extends AbstractSkill {
                 }
             }
 
-            // --- LEVEL 45: PATHFINDER - Speed II while sprinting ---
+            // --- LEVEL 45: PATHFINDER - Explorer Speed while sprinting (no FOV change) ---
             if (meetsLevelRequirement(level, SkillConfig.EXPLORER_PATHFINDER_LEVEL)) {
-                if (player.isSprinting()) {
-                    player.addStatusEffect(new StatusEffectInstance(
-                            StatusEffects.SPEED, 40, 1, true, false, true));
+                var speedAttr = player.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
+                if (speedAttr != null) {
+                    speedAttr.removeModifier(EXPLORER_PATHFINDER_SPEED_ID);
+                    if (player.isSprinting() && isSpeedBoostEnabled(player)) {
+                        speedAttr.addTemporaryModifier(new EntityAttributeModifier(
+                                EXPLORER_PATHFINDER_SPEED_ID,
+                                0.4, // equivalent to Speed II (+40%)
+                                EntityAttributeModifier.Operation.ADD_MULTIPLIED_BASE));
+                    }
                 }
             }
 
@@ -365,6 +373,42 @@ public class ExplorerSkill extends AbstractSkill {
         try {
             var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
             return playerData.getToggle(MurilloSkillsList.EXPLORER, TOGGLE_STEP_ASSIST, true); // Default: enabled
+        } catch (Exception e) {
+            return true; // Default: enabled on error
+        }
+    }
+
+    /**
+     * Toggles pathfinder speed boost for the player (persistent across death/logout)
+     */
+    public void toggleSpeedBoost(ServerPlayerEntity player) {
+        var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+
+        boolean currentlyEnabled = playerData.getToggle(MurilloSkillsList.EXPLORER, TOGGLE_SPEED_BOOST, true);
+        boolean newState = !currentlyEnabled;
+        playerData.setToggle(MurilloSkillsList.EXPLORER, TOGGLE_SPEED_BOOST, newState);
+
+        if (newState) {
+            player.sendMessage(
+                    Text.translatable("murilloskills.explorer.speed_boost_enabled").formatted(Formatting.GREEN), true);
+        } else {
+            player.sendMessage(
+                    Text.translatable("murilloskills.explorer.speed_boost_disabled").formatted(Formatting.GRAY), true);
+            // Remove the pathfinder speed attribute modifier
+            var speedAttr = player.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
+            if (speedAttr != null) {
+                speedAttr.removeModifier(EXPLORER_PATHFINDER_SPEED_ID);
+            }
+        }
+    }
+
+    /**
+     * Checks if pathfinder speed boost is enabled for player (persistent storage)
+     */
+    public static boolean isSpeedBoostEnabled(ServerPlayerEntity player) {
+        try {
+            var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+            return playerData.getToggle(MurilloSkillsList.EXPLORER, TOGGLE_SPEED_BOOST, true); // Default: enabled
         } catch (Exception e) {
             return true; // Default: enabled on error
         }

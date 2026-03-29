@@ -1177,6 +1177,10 @@ public class SkillConfig {
         return ModConfig.get().farmerSource.xpCocoa;
     }
 
+    public static int getFarmerXpSugarCane() {
+        return ModConfig.get().farmerSource.xpSugarCane;
+    }
+
     // --- FISHER SOURCE ---
     public static int getFisherXpTreasure() {
         return ModConfig.get().fisherSource.xpTreasure;
