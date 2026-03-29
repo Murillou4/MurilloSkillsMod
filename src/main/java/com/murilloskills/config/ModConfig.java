@@ -109,6 +109,7 @@ public class ModConfig {
 
     public static class ArcherConfig {
         public float damagePerLevel = 0.03f;
+        public float lootingPerLevel = 0.02f;
         public int fastArrowsLevel = 10;
         public int bonusDamageLevel = 25;
         public int penetrationLevel = 50;

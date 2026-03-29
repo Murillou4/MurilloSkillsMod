@@ -541,6 +541,7 @@
     "murilloskills.passive.farmer.natures_vitality": "• Vitalidade Natural (Regen em Terra Arada)",
     "murilloskills.passive.farmer.seed_master": "• Mestre das Sementes (Pressa I)",
     "murilloskills.passive.archer.arrow_damage": "• Dano de Flecha: +%s%%",
+    "murilloskills.passive.archer.extra_looting": "• Saque Extra: +%s",
     "murilloskills.passive.archer.arrow_speed": "• Velocidade de Flecha: +%s%%",
     "murilloskills.passive.archer.bonus_damage": "• Bônus de Dano: +%s%%",
     "murilloskills.passive.archer.penetration": "• Penetração (Piercing)",

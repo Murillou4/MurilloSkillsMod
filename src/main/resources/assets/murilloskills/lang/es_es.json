@@ -319,6 +319,7 @@
     "murilloskills.passive.farmer.natures_vitality": "• Vitalidad Natural (Regen en Tierra de Cultivo)",
     "murilloskills.passive.farmer.seed_master": "• Maestro de Semillas (Prisa I)",
     "murilloskills.passive.archer.arrow_damage": "• Daño de Flecha: +%s%%",
+    "murilloskills.passive.archer.extra_looting": "• Saqueo Extra: +%s",
     "murilloskills.passive.archer.arrow_speed": "• Velocidad de Flecha: +%s%%",
     "murilloskills.passive.archer.bonus_damage": "• Bono de Daño: +%s%%",
     "murilloskills.passive.archer.penetration": "• Penetración (Perforante)",

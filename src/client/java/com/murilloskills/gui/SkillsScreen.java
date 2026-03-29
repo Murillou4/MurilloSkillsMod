@@ -897,6 +897,13 @@ public class SkillsScreen extends Screen {
                                 .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                 .formatted(Formatting.GREEN));
 
+                        int baseLooting = (int) (level * SkillConfig.ARCHER_LOOTING_PER_LEVEL);
+                        int looting = (int) (baseLooting * prestigeMultiplier);
+                        if (looting > 0)
+                            tooltip.add(Text.translatable("murilloskills.passive.archer.extra_looting", looting)
+                                    .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
+                                    .formatted(Formatting.GREEN));
+
                         // Nível 10: Flechas mais rápidas
                         if (level >= SkillConfig.ARCHER_FAST_ARROWS_LEVEL) {
                             int speedBonus = (int) ((SkillConfig.ARCHER_ARROW_SPEED_MULTIPLIER - 1) * 100);

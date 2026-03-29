@@ -529,6 +529,7 @@
   "murilloskills.passive.farmer.natures_vitality": "• Nature's Vitality (Regen on Farmland)",
   "murilloskills.passive.farmer.seed_master": "• Seed Master (Haste I)",
   "murilloskills.passive.archer.arrow_damage": "• Arrow Damage: +%s%%",
+  "murilloskills.passive.archer.extra_looting": "• Extra Looting: +%s",
   "murilloskills.passive.archer.arrow_speed": "• Arrow Speed: +%s%%",
   "murilloskills.passive.archer.bonus_damage": "• Damage Bonus: +%s%%",
   "murilloskills.passive.archer.penetration": "• Penetration (Piercing)",

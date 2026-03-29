@@ -270,6 +270,10 @@ public class SkillConfig {
         return ModConfig.get().archer.damagePerLevel;
     }
 
+    public static float getArcherLootingPerLevel() {
+        return ModConfig.get().archer.lootingPerLevel;
+    }
+
     public static int getArcherFastArrowsLevel() {
         return ModConfig.get().archer.fastArrowsLevel;
     }
@@ -320,6 +324,7 @@ public class SkillConfig {
 
     // Legacy constants
     public static final float ARCHER_DAMAGE_PER_LEVEL = 0.03f;
+    public static final float ARCHER_LOOTING_PER_LEVEL = 0.02f;
     public static final int ARCHER_FAST_ARROWS_LEVEL = 10;
     public static final int ARCHER_BONUS_DAMAGE_LEVEL = 25;
     public static final int ARCHER_PENETRATION_LEVEL = 50;
