@@ -4,6 +4,22 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.23] - 2026-03-30
+
+### 🎯 Missões Diárias - Redesign do Painel
+
+- **Correção de texto cortado**: nomes de missão longos (ex: "Long Shots (30+ blocks)") agora são truncados com ".." ao invés de invadir o indicador de status.
+- **Barra de progresso dinâmica**: largura calculada com base no texto "X/Y", eliminando sobreposição entre barra e texto de progresso.
+- **Painel mais largo** (250px vs 220px) para acomodar melhor os textos.
+- **Background por entrada**: cada missão tem fundo próprio, com destaque para missões completas.
+- **Barra de acento lateral**: indicador colorido à esquerda (verde = completa, dourada = em progresso).
+- **Indicador de XP**: missões pendentes mostram "+Xxp" à direita como preview da recompensa.
+- **Dots de progresso no header**: mini-indicadores visuais de quantas missões foram completadas.
+- **Porcentagem**: missões em andamento mostram % centralizado abaixo da barra.
+- **Bônus estilizado**: indicador "todas completas" agora tem borda dourada.
+
+---
+
 ## [1.2.22] - 2026-03-29
 
 ### ⛏️ Miner - Auto-Tocha (Nível 25+)
