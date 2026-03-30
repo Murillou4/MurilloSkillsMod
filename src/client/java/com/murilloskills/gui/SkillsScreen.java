@@ -982,6 +982,10 @@ public class SkillsScreen extends Screen {
                                 Text.translatable("murilloskills.passive.blacksmith.physical_resistance", resistance)
                                         .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                         .formatted(Formatting.GOLD));
+                        float furnaceSpeed = 1.0f + (level / 100.0f) * (SkillConfig.BLACKSMITH_FURNACE_SPEED_MAX_MULTIPLIER - 1.0f);
+                        tooltip.add(Text.translatable("murilloskills.passive.blacksmith.furnace_mastery",
+                                        String.format("%.1f", furnaceSpeed))
+                                .formatted(Formatting.GOLD));
                         if (level >= SkillConfig.BLACKSMITH_IRON_SKIN_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.blacksmith.iron_skin")
                                     .formatted(Formatting.GREEN));

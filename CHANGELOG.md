@@ -4,6 +4,19 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.24] - 2026-03-30
+
+### 🔨 Blacksmith - Domínio da Fornalha
+
+- **Fornalhas mais rápidas**: fornalhas, blast furnaces e smokers próximos ao Blacksmith agora fundem mais rápido.
+- **Escala com nível**: velocidade vai de 1.0x (nível 1) até **4.0x** (nível 100), com progressão suave.
+- **Raio de 8 blocos**: basta estar perto da fornalha para o efeito ativar.
+- **Passiva desde nível 1**: não requer milestone, escala linearmente com o nível do Blacksmith.
+- **Tooltip na GUI**: multiplicador atual de velocidade exibido nas passivas da skill screen.
+- **Configurável**: raio e multiplicador máximo ajustáveis via config.
+
+---
+
 ## [1.2.23] - 2026-03-30
 
 ### 🎯 Missões Diárias - Redesign do Painel

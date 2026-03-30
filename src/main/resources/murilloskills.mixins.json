@@ -25,6 +25,7 @@
     "SoulSandMixin",
     "GrindstoneScreenHandlerMixin",
     "FurnaceOutputMixin",
+    "AbstractFurnaceBlockEntityMixin",
     "PlayerEventsMixin",
     "CraftingResultMixin",
     "FoodEatMixin",

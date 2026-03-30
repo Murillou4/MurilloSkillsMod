@@ -190,6 +190,8 @@ public class ModConfig {
         public int abilityCooldownSeconds = 900;
         public float titaniumResistance = 0.30f;
         public float titaniumRegen = 1.0f;
+        public int furnaceSpeedRadius = 8;
+        public float furnaceSpeedMaxMultiplier = 4.0f;
     }
 
     public static class BuilderConfig {

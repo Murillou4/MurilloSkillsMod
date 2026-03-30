@@ -659,6 +659,8 @@ public class SkillConfig {
     public static final int BLACKSMITH_ABILITY_COOLDOWN_SECONDS = 900;
     public static final float BLACKSMITH_TITANIUM_RESISTANCE = 0.30f;
     public static final float BLACKSMITH_TITANIUM_REGEN = 1.0f;
+    public static final int BLACKSMITH_FURNACE_SPEED_RADIUS = 8;
+    public static final float BLACKSMITH_FURNACE_SPEED_MAX_MULTIPLIER = 4.0f;
 
     // --- BUILDER ---
     public static float getBuilderReachPerLevel() {

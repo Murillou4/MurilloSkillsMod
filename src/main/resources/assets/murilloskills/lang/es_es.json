@@ -351,6 +351,7 @@
     "murilloskills.passive.blacksmith.thorns_master": "• Maestro de Espinas (reflejo daño)",
     "murilloskills.passive.blacksmith.fire_mastery": "• Dominio del Fuego (Resistencia al Fuego)",
     "murilloskills.passive.blacksmith.repair_aura": "• Aura de Reparación (Auto-reparación)",
+    "murilloskills.passive.blacksmith.furnace_mastery": "• Dominio del Horno: %sx velocidad (cercanía)",
     "murilloskills.passive.builder.extra_reach": "• Alcance Extra: +%s bloques",
     "murilloskills.passive.builder.extended_reach": "• Alcance Extendido (+1 bloque)",
     "murilloskills.passive.builder.efficient_crafting": "• Crafteo Eficiente (economía)",

@@ -555,6 +555,7 @@
   "murilloskills.passive.blacksmith.thorns_master": "• Thorns Master (damage reflect)",
   "murilloskills.passive.blacksmith.fire_mastery": "• Fire Mastery (Fire Resistance)",
   "murilloskills.passive.blacksmith.repair_aura": "• Repair Aura (Auto-repair Held Item)",
+  "murilloskills.passive.blacksmith.furnace_mastery": "• Furnace Mastery: %sx speed (nearby)",
   "murilloskills.passive.builder.extra_reach": "• Extra Reach: +%s blocks",
   "murilloskills.passive.builder.extended_reach": "• Extended Reach (+1 block)",
   "murilloskills.passive.builder.efficient_crafting": "• Efficient Crafting (economy)",
