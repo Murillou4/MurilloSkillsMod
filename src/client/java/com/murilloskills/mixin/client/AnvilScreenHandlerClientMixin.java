@@ -1,5 +1,6 @@
 package com.murilloskills.mixin.client;
 
+import com.murilloskills.client.ui.BlacksmithCostAccessor;
 import com.murilloskills.data.ClientSkillData;
 import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.mixin.ForgingScreenHandlerAccessor;
@@ -11,6 +12,7 @@ import net.minecraft.screen.Property;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -24,13 +26,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * whenever slots sync and overwrites the Property with the vanilla value.
  * This mixin reapplies the same discount on the client using {@link ClientSkillData}
  * so the displayed level cost stays discounted regardless of sync ordering.
+ *
+ * It also exposes the original (pre-discount) cost via {@link BlacksmithCostAccessor}
+ * so the {@code AnvilScreen} mixin can render both values.
  */
 @Mixin(AnvilScreenHandler.class)
-public abstract class AnvilScreenHandlerClientMixin {
+public abstract class AnvilScreenHandlerClientMixin implements BlacksmithCostAccessor {
 
     @Shadow
     @Final
     private Property levelCost;
+
+    @Unique
+    private int murilloskills$originalLevelCost;
 
     @Inject(method = "updateResult", at = @At("TAIL"))
     private void murilloskills$applyClientAnvilDiscount(CallbackInfo ci) {
@@ -39,6 +47,9 @@ public abstract class AnvilScreenHandlerClientMixin {
         if (player == null || !player.getEntityWorld().isClient()) {
             return;
         }
+
+        int currentCost = this.levelCost.get();
+        this.murilloskills$originalLevelCost = currentCost;
 
         if (!ClientSkillData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
             return;
@@ -50,7 +61,6 @@ public abstract class AnvilScreenHandlerClientMixin {
             return;
         }
 
-        int currentCost = this.levelCost.get();
         if (currentCost <= 0) {
             return;
         }
@@ -60,5 +70,15 @@ public abstract class AnvilScreenHandlerClientMixin {
         if (discountedCost != currentCost) {
             this.levelCost.set(discountedCost);
         }
+    }
+
+    @Override
+    public int murilloskills$getOriginalLevelCost() {
+        return this.murilloskills$originalLevelCost;
+    }
+
+    @Override
+    public int[] murilloskills$getOriginalEnchantmentPower() {
+        return null;
     }
 }

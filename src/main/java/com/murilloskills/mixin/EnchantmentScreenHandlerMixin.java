@@ -9,23 +9,27 @@ import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillNotifier;
 import com.murilloskills.utils.SkillsNetworkUtils;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.screen.EnchantmentScreenHandler;
-import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.objectweb.asm.Opcodes;
 
 /**
- * Mixin for EnchantmentScreenHandler to grant Blacksmith XP when enchanting
- * items.
+ * Handles Blacksmith enchanting-table perks.
+ *
+ * The enchanting preview is generated from vanilla {@code enchantmentPower}, so
+ * we keep that array untouched on the server and only relax the level gate when
+ * the player qualifies for the Blacksmith discount. This keeps the preview and
+ * the applied enchantment in sync while preserving XP refund and bonus logic.
  */
 @Mixin(EnchantmentScreenHandler.class)
 public abstract class EnchantmentScreenHandlerMixin {
@@ -39,49 +43,34 @@ public abstract class EnchantmentScreenHandlerMixin {
     private int[] enchantmentPower;
 
     @Unique
-    private final int[] murilloskills$baseEnchantmentPower = new int[3];
-
-    @Unique
-    private boolean murilloskills$hasBaseEnchantmentPower;
-
-    @Unique
-    private ServerPlayerEntity murilloskills$owner;
-
-    @Inject(method = "<init>(ILnet/minecraft/entity/player/PlayerInventory;Lnet/minecraft/screen/ScreenHandlerContext;)V", at = @At("TAIL"))
-    private void captureOwner(int syncId, PlayerInventory playerInventory, net.minecraft.screen.ScreenHandlerContext context,
-            CallbackInfo ci) {
-        if (playerInventory.player instanceof ServerPlayerEntity serverPlayer) {
-            this.murilloskills$owner = serverPlayer;
-        }
-    }
-
-    @Inject(method = "onContentChanged", at = @At("TAIL"))
-    private void applyBlacksmithEnchantingDiscountVisuals(Inventory inventory, CallbackInfo ci) {
-        ServerPlayerEntity player = this.murilloskills$owner;
-        if (player == null) {
-            return;
-        }
-
-        if (!murilloskills$captureBaseEnchantingCosts()) {
-            return;
-        }
-
-        if (murilloskills$applyEnchantingRequirementDiscount(player)) {
-            ((ScreenHandler) (Object) this).sendContentUpdates();
-        }
-    }
+    private int murilloskills$pendingEnchantButtonId = -1;
 
     @Inject(method = "onButtonClick", at = @At("HEAD"))
-    private void ensureDiscountedEnchantingRequirements(PlayerEntity player, int id, CallbackInfoReturnable<Boolean> cir) {
-        if (!(player instanceof ServerPlayerEntity serverPlayer)) {
-            return;
+    private void murilloskills$capturePendingEnchantButton(PlayerEntity player, int id, CallbackInfoReturnable<Boolean> cir) {
+        this.murilloskills$pendingEnchantButtonId = id;
+    }
+
+    @Inject(method = "onButtonClick", at = @At("RETURN"))
+    private void murilloskills$clearPendingEnchantButton(PlayerEntity player, int id, CallbackInfoReturnable<Boolean> cir) {
+        this.murilloskills$pendingEnchantButtonId = -1;
+    }
+
+    @Redirect(
+            method = "onButtonClick",
+            at = @At(
+                    value = "FIELD",
+                    target = "Lnet/minecraft/entity/player/PlayerEntity;experienceLevel:I",
+                    opcode = Opcodes.GETFIELD,
+                    ordinal = 1))
+    private int murilloskills$useDiscountedRequirementForLevelGate(PlayerEntity player) {
+        int actualLevel = player.experienceLevel;
+        int discountedRequirement = this.murilloskills$getDiscountedRequirement(player, this.murilloskills$pendingEnchantButtonId);
+        if (discountedRequirement <= 0 || actualLevel < discountedRequirement) {
+            return actualLevel;
         }
 
-        if (!murilloskills$hasBaseEnchantmentPower) {
-            murilloskills$captureBaseEnchantingCosts();
-        }
-
-        murilloskills$applyEnchantingRequirementDiscount(serverPlayer);
+        int originalRequirement = this.murilloskills$getOriginalRequirement(this.murilloskills$pendingEnchantButtonId);
+        return Math.max(actualLevel, originalRequirement);
     }
 
     /**
@@ -152,37 +141,30 @@ public abstract class EnchantmentScreenHandlerMixin {
     }
 
     @Unique
-    private boolean murilloskills$captureBaseEnchantingCosts() {
-        boolean hasAnyCost = false;
-        for (int i = 0; i < this.enchantmentPower.length && i < this.murilloskills$baseEnchantmentPower.length; i++) {
-            this.murilloskills$baseEnchantmentPower[i] = this.enchantmentPower[i];
-            hasAnyCost |= this.enchantmentPower[i] > 0;
+    private int murilloskills$getOriginalRequirement(int id) {
+        if (id < 0 || id >= this.enchantmentPower.length) {
+            return 0;
         }
-        this.murilloskills$hasBaseEnchantmentPower = true;
-        return hasAnyCost;
+        return this.enchantmentPower[id];
     }
 
     @Unique
-    private boolean murilloskills$applyEnchantingRequirementDiscount(ServerPlayerEntity player) {
-        var playerData = player.getAttachedOrCreate(ModAttachments.PLAYER_SKILLS);
+    private int murilloskills$getDiscountedRequirement(PlayerEntity player, int id) {
+        int originalRequirement = this.murilloskills$getOriginalRequirement(id);
+        if (originalRequirement <= 0 || !(player instanceof ServerPlayerEntity serverPlayer)) {
+            return originalRequirement;
+        }
+
+        var playerData = serverPlayer.getAttachedOrCreate(ModAttachments.PLAYER_SKILLS);
         if (!playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
-            return false;
+            return originalRequirement;
         }
 
         int level = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
         if (level < SkillConfig.getBlacksmithEfficientAnvilLevel()) {
-            return false;
+            return originalRequirement;
         }
 
-        boolean changed = false;
-        for (int i = 0; i < this.enchantmentPower.length && i < this.murilloskills$baseEnchantmentPower.length; i++) {
-            int discounted = SkillConfig.getBlacksmithEnchantingTableRequirement(level,
-                    this.murilloskills$baseEnchantmentPower[i]);
-            if (this.enchantmentPower[i] != discounted) {
-                this.enchantmentPower[i] = discounted;
-                changed = true;
-            }
-        }
-        return changed;
+        return SkillConfig.getBlacksmithEnchantingTableRequirement(level, originalRequirement);
     }
 }

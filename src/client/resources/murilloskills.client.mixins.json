@@ -6,7 +6,9 @@
 		"ExampleClientMixin",
 		"ExplorerFovMixin",
 		"AnvilScreenHandlerClientMixin",
-		"EnchantmentScreenHandlerClientMixin"
+		"EnchantmentScreenHandlerClientMixin",
+		"AnvilScreenMixin",
+		"EnchantmentScreenMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

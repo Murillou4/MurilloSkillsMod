@@ -1,5 +1,6 @@
 package com.murilloskills.mixin.client;
 
+import com.murilloskills.client.ui.BlacksmithCostAccessor;
 import com.murilloskills.data.ClientSkillData;
 import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
@@ -10,6 +11,7 @@ import net.minecraft.screen.EnchantmentScreenHandler;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -17,24 +19,33 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Client-side Blacksmith enchanting-table discount.
  *
- * The server reduces {@code enchantmentPower} and syncs it via screen
- * handler Properties, but the client re-runs {@code onContentChanged}
- * when slot syncs arrive and vanilla rewrites the array with the
- * non-discounted roll. This mixin reapplies the discount using
- * {@link ClientSkillData} so the displayed required level stays low.
+ * The server keeps the vanilla {@code enchantmentPower} values so the reroll on
+ * click matches the previewed enchantment. This mixin only discounts the
+ * client's local copy for rendering and button availability, while preserving
+ * the original values for the screen overlay.
+ *
+ * It also stores the original (pre-discount) values so the
+ * {@code EnchantmentScreen} mixin can render both numbers.
  */
 @Mixin(EnchantmentScreenHandler.class)
-public abstract class EnchantmentScreenHandlerClientMixin {
+public abstract class EnchantmentScreenHandlerClientMixin implements BlacksmithCostAccessor {
 
     @Shadow
     @Final
-    private int[] enchantmentPower;
+    public int[] enchantmentPower;
+
+    @Unique
+    private final int[] murilloskills$originalEnchantmentPower = new int[3];
 
     @Inject(method = "onContentChanged", at = @At("TAIL"))
     private void murilloskills$applyClientEnchantingDiscount(Inventory inventory, CallbackInfo ci) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc == null || mc.player == null || !mc.player.getEntityWorld().isClient()) {
             return;
+        }
+
+        for (int i = 0; i < this.enchantmentPower.length && i < this.murilloskills$originalEnchantmentPower.length; i++) {
+            this.murilloskills$originalEnchantmentPower[i] = this.enchantmentPower[i];
         }
 
         if (!ClientSkillData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
@@ -57,5 +68,15 @@ public abstract class EnchantmentScreenHandlerClientMixin {
                 this.enchantmentPower[i] = discounted;
             }
         }
+    }
+
+    @Override
+    public int murilloskills$getOriginalLevelCost() {
+        return 0;
+    }
+
+    @Override
+    public int[] murilloskills$getOriginalEnchantmentPower() {
+        return this.murilloskills$originalEnchantmentPower;
     }
 }
