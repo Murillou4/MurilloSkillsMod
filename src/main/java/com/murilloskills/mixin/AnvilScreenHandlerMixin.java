@@ -13,6 +13,7 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.AnvilScreenHandler;
 import net.minecraft.screen.Property;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -70,19 +71,30 @@ public abstract class AnvilScreenHandlerMixin {
 
         int level = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
         int currentCost = this.levelCost.get();
+        boolean changed = false;
         if (level >= SkillConfig.BLACKSMITH_EFFICIENT_ANVIL_LEVEL && currentCost > 0) {
             float discount = SkillConfig.getBlacksmithAnvilDiscount(level);
-            currentCost = Math.max(1, (int) (currentCost * (1.0f - discount)));
-            this.levelCost.set(currentCost);
+            int discountedCost = Math.max(1, (int) (currentCost * (1.0f - discount)));
+            if (discountedCost != currentCost) {
+                currentCost = discountedCost;
+                this.levelCost.set(currentCost);
+                changed = true;
+            }
         }
 
         if (!BlacksmithOverEnchanting.isUnlocked(level)) {
+            if (changed) {
+                ((ScreenHandler) (Object) this).sendContentUpdates();
+            }
             return;
         }
 
         Inventory input = accessor.getInput();
         Inventory output = accessor.getOutput();
         if (input == null || output == null) {
+            if (changed) {
+                ((ScreenHandler) (Object) this).sendContentUpdates();
+            }
             return;
         }
 
@@ -94,7 +106,13 @@ public abstract class AnvilScreenHandlerMixin {
 
         if (override != null) {
             output.setStack(0, override.stack());
-            this.levelCost.set(override.levelCost());
+            currentCost = override.levelCost();
+            this.levelCost.set(currentCost);
+            changed = true;
+        }
+
+        if (changed) {
+            ((ScreenHandler) (Object) this).sendContentUpdates();
         }
     }
 

@@ -4,7 +4,9 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"ExampleClientMixin",
-		"ExplorerFovMixin"
+		"ExplorerFovMixin",
+		"AnvilScreenHandlerClientMixin",
+		"EnchantmentScreenHandlerClientMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

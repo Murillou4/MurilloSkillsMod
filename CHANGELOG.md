@@ -11,6 +11,7 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 - **Bigorna com custo exibido corretamente**: o valor mostrado na UI continua refletindo o desconto real do Blacksmith, deixando o benefício visível antes de confirmar a operação.
 - **Mesa de encantamento com custo descontado na tela**: os três slots da enchanting table agora exibem os requisitos de nível já com o desconto do Blacksmith aplicado, em vez de mostrar o valor vanilla e compensar só depois.
 - **Sincronização visual com o benefício real**: o custo renderizado e o custo efetivo voltaram a bater para o jogador durante a forja.
+- **Mixins client-side dedicados**: novos `AnvilScreenHandlerClientMixin` e `EnchantmentScreenHandlerClientMixin` reaplicam o desconto na instância local da tela usando `ClientSkillData`, evitando que o `updateResult`/`onContentChanged` do cliente sobrescrevesse o valor descontado sincronizado pelo servidor.
 
 ---
 

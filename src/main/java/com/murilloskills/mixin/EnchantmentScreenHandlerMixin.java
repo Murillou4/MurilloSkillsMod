@@ -9,11 +9,11 @@ import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillNotifier;
 import com.murilloskills.utils.SkillsNetworkUtils;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.screen.EnchantmentScreenHandler;
-import net.minecraft.screen.ScreenHandlerContext;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -38,39 +38,37 @@ public abstract class EnchantmentScreenHandlerMixin {
     @Final
     private int[] enchantmentPower;
 
-    @Shadow
-    @Final
-    private ScreenHandlerContext context;
-
-    @Shadow
-    public abstract void sendContentUpdates();
-
     @Unique
     private final int[] murilloskills$baseEnchantmentPower = new int[3];
 
     @Unique
     private boolean murilloskills$hasBaseEnchantmentPower;
 
+    @Unique
+    private ServerPlayerEntity murilloskills$owner;
+
+    @Inject(method = "<init>(ILnet/minecraft/entity/player/PlayerInventory;Lnet/minecraft/screen/ScreenHandlerContext;)V", at = @At("TAIL"))
+    private void captureOwner(int syncId, PlayerInventory playerInventory, net.minecraft.screen.ScreenHandlerContext context,
+            CallbackInfo ci) {
+        if (playerInventory.player instanceof ServerPlayerEntity serverPlayer) {
+            this.murilloskills$owner = serverPlayer;
+        }
+    }
+
     @Inject(method = "onContentChanged", at = @At("TAIL"))
     private void applyBlacksmithEnchantingDiscountVisuals(Inventory inventory, CallbackInfo ci) {
-        this.context.run((world, pos) -> {
-            if (!(world instanceof ServerWorld serverWorld)) {
-                return;
-            }
+        ServerPlayerEntity player = this.murilloskills$owner;
+        if (player == null) {
+            return;
+        }
 
-            ServerPlayerEntity player = murilloskills$findViewingPlayer(serverWorld);
-            if (player == null) {
-                return;
-            }
+        if (!murilloskills$captureBaseEnchantingCosts()) {
+            return;
+        }
 
-            if (!murilloskills$captureBaseEnchantingCosts()) {
-                return;
-            }
-
-            if (murilloskills$applyEnchantingRequirementDiscount(player)) {
-                this.sendContentUpdates();
-            }
-        });
+        if (murilloskills$applyEnchantingRequirementDiscount(player)) {
+            ((ScreenHandler) (Object) this).sendContentUpdates();
+        }
     }
 
     @Inject(method = "onButtonClick", at = @At("HEAD"))
@@ -151,16 +149,6 @@ public abstract class EnchantmentScreenHandlerMixin {
         com.murilloskills.utils.AchievementTracker.incrementAndCheck(
                 serverPlayer, MurilloSkillsList.BLACKSMITH,
                 com.murilloskills.utils.AchievementTracker.KEY_ITEMS_ENCHANTED, 1);
-    }
-
-    @Unique
-    private ServerPlayerEntity murilloskills$findViewingPlayer(ServerWorld world) {
-        for (ServerPlayerEntity player : world.getPlayers()) {
-            if (player.currentScreenHandler == (Object) this) {
-                return player;
-            }
-        }
-        return null;
     }
 
     @Unique
