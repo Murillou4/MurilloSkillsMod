@@ -32,6 +32,7 @@ import com.murilloskills.render.OreHighlighter;
 import com.murilloskills.render.PathfinderHud;
 import com.murilloskills.render.RainDanceEffect;
 import com.murilloskills.render.TreasureHighlighter;
+import com.murilloskills.render.UltPlaceHud;
 import com.murilloskills.render.UltPlacePreview;
 import com.murilloskills.render.UltminePreview;
 import com.murilloskills.render.VeinMinerPreview;
@@ -367,6 +368,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
                     UltPlaceClientState.toggleEnabled();
                     UltPlaceClientState.clearPreview();
                     ClientPlayNetworking.send(UltPlaceClientState.toPayload());
+                    showUltPlaceToggleFeedback(client);
                 }
             }
             while (speedBoostToggleKey.wasPressed()) {
@@ -462,6 +464,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
         HudRenderCallback.EVENT.register(AreaPlantingHud::render);
         HudRenderCallback.EVENT.register(PathfinderHud::render);
         HudRenderCallback.EVENT.register(AutoTorchHud::render);
+        HudRenderCallback.EVENT.register(UltPlaceHud::render);
         HudRenderCallback.EVENT.register(com.murilloskills.render.FarmerCropHud::render);
         HudRenderCallback.EVENT.register((context, tickDelta) -> XpToastRenderer.render(context));
     }
@@ -473,6 +476,20 @@ public class MurilloSkillsClient implements ClientModInitializer {
             return GLFW.glfwGetMouseButton(windowHandle, boundKey.getCode()) == GLFW.GLFW_PRESS;
         }
         return InputUtil.isKeyPressed(client.getWindow(), boundKey.getCode());
+    }
+
+    private static void showUltPlaceToggleFeedback(MinecraftClient client) {
+        if (client.player == null) {
+            return;
+        }
+
+        boolean enabled = UltPlaceClientState.isEnabled();
+        String messageKey = enabled
+                ? "murilloskills.ultplace.enabled.on"
+                : "murilloskills.ultplace.enabled.off";
+        client.player.sendMessage(
+                Text.translatable(messageKey).formatted(enabled ? Formatting.AQUA : Formatting.GRAY),
+                true);
     }
 
     private static boolean shouldRouteUltPlaceToggle(MinecraftClient client) {

@@ -802,11 +802,21 @@
   "key.murilloskills.ultplace_config": "Open UltPlace Config",
   "key.murilloskills.ultplace_undo": "Undo UltPlace",
   "murilloskills.ultplace.title": "Builder UltPlace",
+  "murilloskills.ultplace.subtitle": "Configure UltPlace shape, size, and shortcuts",
+  "murilloskills.ultplace.section.toggle": "Toggle",
+  "murilloskills.ultplace.section.shape": "Shape",
+  "murilloskills.ultplace.section.config": "Settings",
+  "murilloskills.ultplace.section.actions": "Actions",
   "murilloskills.ultplace.toggle": "UltPlace",
+  "murilloskills.ultplace.state.on": "On",
+  "murilloskills.ultplace.state.off": "Off",
   "murilloskills.ultplace.size": "Size",
   "murilloskills.ultplace.length": "Length",
   "murilloskills.ultplace.variant": "Variant",
   "murilloskills.ultplace.undo": "Undo Last Placement",
+  "murilloskills.ultplace.reset": "Reset",
+  "murilloskills.ultplace.no_options": "No configurable options for this shape",
+  "murilloskills.ultplace.hints": "V toggles • B opens config • Ctrl+Z undoes",
   "murilloskills.ultplace.enabled.on": "UltPlace: ENABLED",
   "murilloskills.ultplace.enabled.off": "UltPlace: DISABLED",
   "murilloskills.ultplace.undo.success": "UltPlace restored %s blocks.",
@@ -824,7 +834,8 @@
   "murilloskills.ultplace.variant.stairs.up": "Up",
   "murilloskills.ultplace.variant.stairs.down": "Down",
   "murilloskills.ultplace.variant.column.up": "Up",
-  "murilloskills.ultplace.variant.column.down": "Down"
+  "murilloskills.ultplace.variant.column.down": "Down",
+  "murilloskills.hud.ultplace": "UltPlace %s • %s"
 }
 
 

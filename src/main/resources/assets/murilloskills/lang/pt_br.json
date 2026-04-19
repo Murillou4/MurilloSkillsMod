@@ -801,11 +801,21 @@
     "key.murilloskills.ultplace_config": "Abrir Config do UltPlace",
     "key.murilloskills.ultplace_undo": "Desfazer UltPlace",
     "murilloskills.ultplace.title": "UltPlace do Construtor",
+    "murilloskills.ultplace.subtitle": "Configure formato, tamanho e atalhos do UltPlace",
+    "murilloskills.ultplace.section.toggle": "Ativacao",
+    "murilloskills.ultplace.section.shape": "Formato",
+    "murilloskills.ultplace.section.config": "Configuracao",
+    "murilloskills.ultplace.section.actions": "Acoes",
     "murilloskills.ultplace.toggle": "UltPlace",
+    "murilloskills.ultplace.state.on": "Ligado",
+    "murilloskills.ultplace.state.off": "Desligado",
     "murilloskills.ultplace.size": "Tamanho",
     "murilloskills.ultplace.length": "Comprimento",
     "murilloskills.ultplace.variant": "Variante",
     "murilloskills.ultplace.undo": "Desfazer Ultima Colocacao",
+    "murilloskills.ultplace.reset": "Resetar",
+    "murilloskills.ultplace.no_options": "Sem opcoes configuraveis para este formato",
+    "murilloskills.ultplace.hints": "V alterna • B abre config • Ctrl+Z desfaz",
     "murilloskills.ultplace.enabled.on": "UltPlace: ATIVADO",
     "murilloskills.ultplace.enabled.off": "UltPlace: DESATIVADO",
     "murilloskills.ultplace.undo.success": "UltPlace restaurou %s blocos.",
@@ -823,7 +833,8 @@
     "murilloskills.ultplace.variant.stairs.up": "Subindo",
     "murilloskills.ultplace.variant.stairs.down": "Descendo",
     "murilloskills.ultplace.variant.column.up": "Para Cima",
-    "murilloskills.ultplace.variant.column.down": "Para Baixo"
+    "murilloskills.ultplace.variant.column.down": "Para Baixo",
+    "murilloskills.hud.ultplace": "UltPlace %s • %s"
 }
 
 

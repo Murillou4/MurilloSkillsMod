@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.32] - 2026-04-19
+
+### 🏗️ Builder - UltPlace HUD e Polimento Final
+
+- **HUD do UltPlace registrado**: o indicador visual do UltPlace agora é renderizado corretamente no HUD, mostrando shape e dimensões enquanto o modo está ativo.
+- **Feedback imediato no toggle**: a tecla `V` agora exibe mensagem instantânea no action bar ao ligar ou desligar o UltPlace.
+- **Localização completa**: adicionadas as chaves faltantes da tela/configuração do UltPlace em `pt_br`, `en_us` e `es_es`, incluindo seções, hints, estados e texto do HUD.
+
+---
+
 ## [1.2.31] - 2026-04-19
 
 ### 🏗️ Builder - UltPlace Ghost Preview
