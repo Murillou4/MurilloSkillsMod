@@ -625,6 +625,19 @@ public class SkillConfig {
         return ModConfig.get().blacksmith.anvilXpDiscount;
     }
 
+    public static float getBlacksmithAnvilXpDiscountMax() {
+        return Math.max(getBlacksmithAnvilXpDiscount(), ModConfig.get().blacksmith.anvilXpDiscountMax);
+    }
+
+    public static float getBlacksmithEnchantingTableXpDiscount() {
+        return Math.max(0.0f, ModConfig.get().blacksmith.enchantingTableXpDiscount);
+    }
+
+    public static float getBlacksmithEnchantingTableXpDiscountMax() {
+        return Math.max(getBlacksmithEnchantingTableXpDiscount(),
+                ModConfig.get().blacksmith.enchantingTableXpDiscountMax);
+    }
+
     public static float getBlacksmithAnvilMaterialSave() {
         return ModConfig.get().blacksmith.anvilMaterialSave;
     }
@@ -677,6 +690,14 @@ public class SkillConfig {
         return ModConfig.get().blacksmith.titaniumRegen;
     }
 
+    public static int getBlacksmithFurnaceSpeedRadius() {
+        return Math.max(1, ModConfig.get().blacksmith.furnaceSpeedRadius);
+    }
+
+    public static float getBlacksmithFurnaceSpeedMaxMultiplier() {
+        return Math.max(1.0f, ModConfig.get().blacksmith.furnaceSpeedMaxMultiplier);
+    }
+
     // --- BLACKSMITH NEW GETTERS ---
     public static int getBlacksmithFireMasteryLevel() {
         return ModConfig.get().blacksmith.fireMasteryLevel;
@@ -702,22 +723,58 @@ public class SkillConfig {
     public static final int BLACKSMITH_OVERENCHANT_LEVEL = 99;
     public static final int BLACKSMITH_MASTER_LEVEL = 100;
     public static final float BLACKSMITH_IRON_SKIN_BONUS = 0.05f;
-    public static final float BLACKSMITH_ANVIL_XP_DISCOUNT = 0.25f;
-    public static final float BLACKSMITH_ANVIL_XP_DISCOUNT_MAX = 0.40f;
+    public static final float BLACKSMITH_ANVIL_XP_DISCOUNT = 0.40f;
+    public static final float BLACKSMITH_ANVIL_XP_DISCOUNT_MAX = 0.65f;
     public static final int BLACKSMITH_ANVIL_TOO_EXPENSIVE_CAP = 55;
     public static final float BLACKSMITH_ANVIL_MATERIAL_SAVE = 0.10f;
+    public static final float BLACKSMITH_ENCHANTING_TABLE_XP_DISCOUNT = 0.40f;
+    public static final float BLACKSMITH_ENCHANTING_TABLE_XP_DISCOUNT_MAX = 0.60f;
     public static final int BLACKSMITH_OVERENCHANT_MAX_LEVEL = 8;
     public static final int BLACKSMITH_OVERENCHANT_BASE_COST = 6;
     public static final int BLACKSMITH_OVERENCHANT_STEP_COST = 4;
 
     /**
      * Get the anvil XP discount based on Blacksmith level.
-     * Scales from 25% at level 25 to 40% at level 100.
+     * Scales from 40% at level 25 to 65% at level 100.
      */
     public static float getBlacksmithAnvilDiscount(int level) {
-        if (level < BLACKSMITH_EFFICIENT_ANVIL_LEVEL) return 0f;
-        float progress = Math.min(1.0f, (float)(level - BLACKSMITH_EFFICIENT_ANVIL_LEVEL) / (100 - BLACKSMITH_EFFICIENT_ANVIL_LEVEL));
-        return BLACKSMITH_ANVIL_XP_DISCOUNT + progress * (BLACKSMITH_ANVIL_XP_DISCOUNT_MAX - BLACKSMITH_ANVIL_XP_DISCOUNT);
+        int unlockLevel = getBlacksmithEfficientAnvilLevel();
+        int maxLevel = Math.max(unlockLevel + 1, getBlacksmithMasterLevel());
+        if (level < unlockLevel) {
+            return 0f;
+        }
+        float progress = Math.min(1.0f, (float) (level - unlockLevel) / (maxLevel - unlockLevel));
+        float baseDiscount = getBlacksmithAnvilXpDiscount();
+        float maxDiscount = getBlacksmithAnvilXpDiscountMax();
+        return baseDiscount + progress * (maxDiscount - baseDiscount);
+    }
+
+    /**
+     * Get the enchanting table XP discount based on Blacksmith level.
+     * Scales from 40% at level 25 to 60% at level 100.
+     */
+    public static float getBlacksmithEnchantingTableDiscount(int level) {
+        int unlockLevel = getBlacksmithEfficientAnvilLevel();
+        int maxLevel = Math.max(unlockLevel + 1, getBlacksmithMasterLevel());
+        if (level < unlockLevel) {
+            return 0f;
+        }
+        float progress = Math.min(1.0f, (float) (level - unlockLevel) / (maxLevel - unlockLevel));
+        float baseDiscount = getBlacksmithEnchantingTableXpDiscount();
+        float maxDiscount = getBlacksmithEnchantingTableXpDiscountMax();
+        return baseDiscount + progress * (maxDiscount - baseDiscount);
+    }
+
+    /**
+     * Refunds part of the experience levels spent in the enchanting table while
+     * still guaranteeing that at least one level is consumed.
+     */
+    public static int getBlacksmithEnchantingTableRefundLevels(int level, int spentLevels) {
+        if (spentLevels <= 1) {
+            return 0;
+        }
+        int refund = Math.round(spentLevels * getBlacksmithEnchantingTableDiscount(level));
+        return Math.max(0, Math.min(spentLevels - 1, refund));
     }
     public static final float BLACKSMITH_FIRE_EXPLOSION_RESIST = 0.10f;
     public static final float BLACKSMITH_THORNS_CHANCE = 0.30f;
@@ -729,7 +786,7 @@ public class SkillConfig {
     public static final float BLACKSMITH_TITANIUM_RESISTANCE = 0.30f;
     public static final float BLACKSMITH_TITANIUM_REGEN = 1.0f;
     public static final int BLACKSMITH_FURNACE_SPEED_RADIUS = 8;
-    public static final float BLACKSMITH_FURNACE_SPEED_MAX_MULTIPLIER = 4.0f;
+    public static final float BLACKSMITH_FURNACE_SPEED_MAX_MULTIPLIER = 4.5f;
 
     // --- BUILDER ---
     public static float getBuilderReachPerLevel() {

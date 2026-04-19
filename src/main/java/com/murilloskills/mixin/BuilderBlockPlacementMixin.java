@@ -1,23 +1,28 @@
 package com.murilloskills.mixin;
 
 import com.murilloskills.events.BlockPlacementHandler;
+import com.murilloskills.skills.UltPlacePlanner;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Fires only after BlockItem placement succeeds, preventing Builder XP exploits on failed clicks.
@@ -40,12 +45,25 @@ public abstract class BuilderBlockPlacementMixin {
             capturedStack.setCount(1);
         }
 
+        BlockItem self = (BlockItem) (Object) this;
+        Map<BlockPos, BlockState> previousStates = new LinkedHashMap<>();
+        UltPlacePlanner.PlannedPlacement primaryPlacement = UltPlacePlanner.predictPrimaryPlacement(self, context);
+        if (primaryPlacement != null) {
+            for (UltPlacePlanner.PreviewBlock previewBlock : primaryPlacement.footprint()) {
+                previousStates.put(previewBlock.pos().toImmutable(),
+                        context.getWorld().getBlockState(previewBlock.pos()));
+            }
+        } else {
+            previousStates.put(context.getBlockPos().toImmutable(),
+                    context.getWorld().getBlockState(context.getBlockPos()));
+        }
+
         MURILLOSKILLS$PLACEMENT_CAPTURE.set(new PlacementCapture(
-                context.getBlockPos().toImmutable(),
                 context.getSide(),
                 context.getHand(),
                 capturedStack,
-                context.getWorld().getBlockState(context.getBlockPos())));
+                context.getHitPos(),
+                previousStates));
     }
 
     @Inject(method = "place(Lnet/minecraft/item/ItemPlacementContext;)Lnet/minecraft/util/ActionResult;", at = @At("RETURN"))
@@ -75,16 +93,20 @@ public abstract class BuilderBlockPlacementMixin {
             if (!sourceStack.isEmpty()) {
                 sourceStack.setCount(1);
             }
-            BlockState previousState = capture != null ? capture.previousState() : world.getBlockState(pos);
+            Vec3d hitPos = capture != null ? capture.hitPos() : pos.toCenterPos();
+            Map<BlockPos, BlockState> previousStates = capture != null
+                    ? capture.previousStates()
+                    : Map.of(pos.toImmutable(), world.getBlockState(pos));
 
             BlockPlacementHandler.onBlockPlaced(serverPlayer, serverWorld, pos.toImmutable(), state.getBlock(),
-                    face, hand, sourceStack, previousState);
+                    face, hand, sourceStack, hitPos, previousStates);
         } finally {
             MURILLOSKILLS$PLACEMENT_CAPTURE.remove();
         }
     }
 
     @Unique
-    private record PlacementCapture(BlockPos pos, Direction face, Hand hand, ItemStack stack, BlockState previousState) {
+    private record PlacementCapture(Direction face, Hand hand, ItemStack stack, Vec3d hitPos,
+            Map<BlockPos, BlockState> previousStates) {
     }
 }

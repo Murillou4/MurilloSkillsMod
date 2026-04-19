@@ -56,6 +56,14 @@ public abstract class EnchantmentScreenHandlerMixin {
             return;
         }
 
+        if (!serverPlayer.isCreative()) {
+            int spentLevels = Math.max(1, id + 1);
+            int refundedLevels = SkillConfig.getBlacksmithEnchantingTableRefundLevels(blacksmithLevel, spentLevels);
+            if (refundedLevels > 0) {
+                serverPlayer.addExperienceLevels(refundedLevels);
+            }
+        }
+
         if (BlacksmithOverEnchanting.isUnlocked(blacksmithLevel)
                 && serverPlayer.getRandom().nextFloat() < SkillConfig.getBlacksmithSuperEnchantChance()) {
             if (BlacksmithOverEnchanting.tryApplyEnchantingTableBonus(this.inventory.getStack(0), serverPlayer.getRandom())) {

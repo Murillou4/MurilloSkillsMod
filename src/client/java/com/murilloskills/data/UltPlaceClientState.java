@@ -1,6 +1,10 @@
 package com.murilloskills.data;
 
 import com.murilloskills.network.UltPlaceConfigC2SPayload;
+import com.murilloskills.skills.UltPlaceAnchorMode;
+import com.murilloskills.skills.UltPlacePlanner;
+import com.murilloskills.skills.UltPlaceRotationMode;
+import com.murilloskills.skills.UltPlaceSelection;
 import com.murilloskills.skills.UltPlaceShape;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.util.math.BlockPos;
@@ -8,8 +12,10 @@ import net.minecraft.util.math.BlockPos;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Client-side UltPlace selection and preview cache.
@@ -19,7 +25,11 @@ public final class UltPlaceClientState {
 
     private static UltPlaceShape selectedShape = UltPlaceShape.PLANE_NXN;
     private static boolean enabled = false;
-    private static List<BlockPos> preview = List.of();
+    private static List<UltPlacePlanner.PreviewBlock> preview = List.of();
+    private static Set<BlockPos> validatedPreviewPositions = Set.of();
+    private static long activeValidationRequestKey = 0L;
+    private static long appliedValidationRequestKey = 0L;
+    private static String previewFallbackReason = null;
 
     static {
         resetSelections();
@@ -36,6 +46,10 @@ public final class UltPlaceClientState {
         selectedShape = UltPlaceShape.PLANE_NXN;
         enabled = false;
         preview = List.of();
+        validatedPreviewPositions = Set.of();
+        activeValidationRequestKey = 0L;
+        appliedValidationRequestKey = 0L;
+        previewFallbackReason = null;
     }
 
     public static UltPlaceShape getSelectedShape() {
@@ -59,6 +73,14 @@ public final class UltPlaceClientState {
         return getSelection(selectedShape).variant;
     }
 
+    public static UltPlaceAnchorMode getAnchorMode() {
+        return getSelection(selectedShape).anchorMode;
+    }
+
+    public static UltPlaceRotationMode getRotationMode() {
+        return getSelection(selectedShape).rotationMode;
+    }
+
     public static void setSize(int size) {
         ShapeSelection selection = getSelection(selectedShape);
         selection.size = clampSize(selectedShape, size);
@@ -73,6 +95,14 @@ public final class UltPlaceClientState {
         ShapeSelection selection = getSelection(selectedShape);
         int maxVariant = UltPlaceShape.getVariantCount(selectedShape) - 1;
         selection.variant = Math.max(0, Math.min(variant, maxVariant));
+    }
+
+    public static void setAnchorMode(UltPlaceAnchorMode anchorMode) {
+        getSelection(selectedShape).anchorMode = UltPlaceAnchorMode.normalize(selectedShape, anchorMode);
+    }
+
+    public static void setRotationMode(UltPlaceRotationMode rotationMode) {
+        getSelection(selectedShape).rotationMode = UltPlaceRotationMode.normalize(selectedShape, rotationMode);
     }
 
     public static void adjustSize(int delta) {
@@ -92,6 +122,26 @@ public final class UltPlaceClientState {
         setVariant((current + delta + count) % count);
     }
 
+    public static void adjustAnchorMode(int delta) {
+        if (!selectedShape.supportsAnchorMode()) {
+            setAnchorMode(UltPlaceAnchorMode.CENTER);
+            return;
+        }
+        UltPlaceAnchorMode[] values = UltPlaceAnchorMode.values();
+        int current = getAnchorMode().ordinal();
+        setAnchorMode(values[(current + delta + values.length) % values.length]);
+    }
+
+    public static void adjustRotationMode(int delta) {
+        if (!selectedShape.supportsRotationMode()) {
+            setRotationMode(UltPlaceRotationMode.AUTO);
+            return;
+        }
+        UltPlaceRotationMode[] values = UltPlaceRotationMode.values();
+        int current = getRotationMode().ordinal();
+        setRotationMode(values[(current + delta + values.length) % values.length]);
+    }
+
     public static boolean isEnabled() {
         return enabled;
     }
@@ -104,24 +154,82 @@ public final class UltPlaceClientState {
         enabled = !enabled;
     }
 
-    public static void updatePreview(List<BlockPos> positions) {
-        if (positions == null || positions.isEmpty()) {
+    public static void updateSpeculativePreview(List<UltPlacePlanner.PreviewBlock> blocks, String fallbackReason) {
+        if (blocks == null || blocks.isEmpty()) {
             preview = List.of();
-            return;
+        } else {
+            preview = Collections.unmodifiableList(new ArrayList<>(blocks));
         }
-        preview = Collections.unmodifiableList(new ArrayList<>(positions));
+        previewFallbackReason = fallbackReason;
+        validatedPreviewPositions = Set.of();
+        activeValidationRequestKey = 0L;
+        appliedValidationRequestKey = 0L;
     }
 
-    public static List<BlockPos> getPreview() {
-        return preview;
+    public static void beginValidation(long requestKey) {
+        activeValidationRequestKey = requestKey;
+        appliedValidationRequestKey = 0L;
+        validatedPreviewPositions = Set.of();
+    }
+
+    public static void applyValidatedPreview(long requestKey, List<BlockPos> positions) {
+        if (requestKey != activeValidationRequestKey) {
+            return;
+        }
+        if (positions == null || positions.isEmpty()) {
+            validatedPreviewPositions = Set.of();
+        } else {
+            validatedPreviewPositions = Collections.unmodifiableSet(new LinkedHashSet<>(positions));
+        }
+        appliedValidationRequestKey = requestKey;
+    }
+
+    public static List<UltPlacePlanner.PreviewBlock> getPreview() {
+        if (preview.isEmpty()) {
+            return preview;
+        }
+        if (activeValidationRequestKey == 0L || appliedValidationRequestKey != activeValidationRequestKey) {
+            return preview;
+        }
+
+        List<UltPlacePlanner.PreviewBlock> filtered = new ArrayList<>();
+        for (UltPlacePlanner.PreviewBlock block : preview) {
+            if (validatedPreviewPositions.contains(block.pos())) {
+                filtered.add(block);
+            }
+        }
+        return Collections.unmodifiableList(filtered);
+    }
+
+    public static BlockPos getPrimaryPreviewPos() {
+        for (UltPlacePlanner.PreviewBlock block : getPreview()) {
+            if (block.anchor()) {
+                return block.pos();
+            }
+        }
+        return null;
+    }
+
+    public static String getPreviewFallbackReason() {
+        return previewFallbackReason;
     }
 
     public static void clearPreview() {
         preview = List.of();
+        validatedPreviewPositions = Set.of();
+        activeValidationRequestKey = 0L;
+        appliedValidationRequestKey = 0L;
+        previewFallbackReason = null;
     }
 
     public static UltPlaceConfigC2SPayload toPayload() {
-        return new UltPlaceConfigC2SPayload(selectedShape, getSize(), getLength(), getVariant(), enabled);
+        return new UltPlaceConfigC2SPayload(selectedShape, getSize(), getLength(), getVariant(),
+                getAnchorMode(), getRotationMode(), enabled);
+    }
+
+    public static UltPlaceSelection toSelection() {
+        return new UltPlaceSelection(selectedShape, getSize(), getLength(), getVariant(), getAnchorMode(),
+                getRotationMode());
     }
 
     private static ShapeSelection getSelection(UltPlaceShape shape) {
@@ -132,7 +240,9 @@ public final class UltPlaceClientState {
         return new ShapeSelection(
                 SkillConfig.getUltPlaceShapeDefaultSize(shape),
                 SkillConfig.getUltPlaceShapeDefaultLength(shape),
-                0);
+                0,
+                UltPlaceAnchorMode.CENTER,
+                UltPlaceRotationMode.AUTO);
     }
 
     private static int clampSize(UltPlaceShape shape, int value) {
@@ -147,11 +257,16 @@ public final class UltPlaceClientState {
         private int size;
         private int length;
         private int variant;
+        private UltPlaceAnchorMode anchorMode;
+        private UltPlaceRotationMode rotationMode;
 
-        private ShapeSelection(int size, int length, int variant) {
+        private ShapeSelection(int size, int length, int variant,
+                UltPlaceAnchorMode anchorMode, UltPlaceRotationMode rotationMode) {
             this.size = size;
             this.length = length;
             this.variant = variant;
+            this.anchorMode = anchorMode;
+            this.rotationMode = rotationMode;
         }
     }
 }

@@ -22,17 +22,18 @@ public final class UltPlacePreviewNetworkHandler {
                 var world = player.getEntityWorld();
 
                 if (!UltPlaceHandler.isEnabled(player)) {
-                    ServerPlayNetworking.send(player, new UltPlacePreviewS2CPayload(List.of()));
+                    ServerPlayNetworking.send(player, new UltPlacePreviewS2CPayload(payload.requestKey(), List.of()));
                     return;
                 }
 
                 if (player.getEyePos().squaredDistanceTo(payload.targetPos().toCenterPos()) > 81.0) {
-                    ServerPlayNetworking.send(player, new UltPlacePreviewS2CPayload(List.of()));
+                    ServerPlayNetworking.send(player, new UltPlacePreviewS2CPayload(payload.requestKey(), List.of()));
                     return;
                 }
 
-                var preview = UltPlaceHandler.getValidatedPreview(player, world, payload.targetPos(), payload.face());
-                ServerPlayNetworking.send(player, new UltPlacePreviewS2CPayload(preview));
+                var preview = UltPlaceHandler.getValidatedPreview(player, world, payload.targetPos(), payload.face(),
+                        payload.hitPos());
+                ServerPlayNetworking.send(player, new UltPlacePreviewS2CPayload(payload.requestKey(), preview));
             } catch (Exception e) {
                 LOGGER.error("Failed to process UltPlace preview request", e);
             }

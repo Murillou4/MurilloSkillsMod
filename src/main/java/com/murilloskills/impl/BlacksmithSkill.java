@@ -23,7 +23,7 @@ import java.util.UUID;
  * Features:
  * - Passive: 2% physical damage resistance per level (max 200% at level 100)
  * - Level 10: Iron Skin (+5% physical resistance)
- * - Level 25: Efficient Anvil (25% XP discount, 10% material save)
+ * - Level 25: Efficient Anvil (strong XP discount, 10% material save)
  * - Level 50: Forged Resilience (+10% fire/explosion resistance, +1 Protection)
  * - Level 75: Thorns Master (20% reflect 25% damage, 50% knockback reduction)
  * - Level 100: Titanium Aura (active ability)

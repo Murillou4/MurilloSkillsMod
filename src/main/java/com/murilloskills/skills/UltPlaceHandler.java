@@ -7,12 +7,15 @@ import com.murilloskills.utils.SkillConfig;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -23,6 +26,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,26 +38,35 @@ public final class UltPlaceHandler {
     private static final Map<UUID, Integer> SIZES = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> LENGTHS = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> VARIANTS = new ConcurrentHashMap<>();
+    private static final Map<UUID, UltPlaceAnchorMode> ANCHOR_MODES = new ConcurrentHashMap<>();
+    private static final Map<UUID, UltPlaceRotationMode> ROTATION_MODES = new ConcurrentHashMap<>();
     private static final Map<UUID, Boolean> ENABLED = new ConcurrentHashMap<>();
     private static final Map<UUID, ArrayDeque<UndoSnapshot>> UNDO_HISTORY = new ConcurrentHashMap<>();
-    private static final java.util.Set<UUID> ACTIVE_PLAYERS = ConcurrentHashMap.newKeySet();
+    private static final Set<UUID> ACTIVE_PLAYERS = ConcurrentHashMap.newKeySet();
+    private static final Set<UUID> SYNTHETIC_PLACEMENTS = ConcurrentHashMap.newKeySet();
 
     private UltPlaceHandler() {
     }
 
     public static void setSelection(ServerPlayerEntity player, UltPlaceShape shape, int size, int length, int variant,
-            boolean enabled) {
-        UltPlaceSelection normalized = normalizeSelection(shape, size, length, variant);
+            UltPlaceAnchorMode anchorMode, UltPlaceRotationMode rotationMode, boolean enabled) {
+        UltPlaceSelection normalized = normalizeSelection(shape, size, length, variant, anchorMode, rotationMode);
         UUID uuid = player.getUuid();
         SHAPES.put(uuid, normalized.shape());
         SIZES.put(uuid, normalized.size());
         LENGTHS.put(uuid, normalized.length());
         VARIANTS.put(uuid, normalized.variant());
+        ANCHOR_MODES.put(uuid, normalized.anchorMode());
+        ROTATION_MODES.put(uuid, normalized.rotationMode());
         ENABLED.put(uuid, enabled);
     }
 
     public static boolean isEnabled(ServerPlayerEntity player) {
         return ENABLED.getOrDefault(player.getUuid(), false);
+    }
+
+    public static boolean isSyntheticPlacementActive(ServerPlayerEntity player) {
+        return player != null && SYNTHETIC_PLACEMENTS.contains(player.getUuid());
     }
 
     public static UltPlaceShape getShape(ServerPlayerEntity player) {
@@ -78,6 +91,19 @@ public final class UltPlaceHandler {
         return Math.max(0, Math.min(VARIANTS.getOrDefault(player.getUuid(), 0), maxVariant));
     }
 
+    public static UltPlaceAnchorMode getAnchorMode(ServerPlayerEntity player) {
+        return UltPlaceAnchorMode.normalize(getShape(player), ANCHOR_MODES.get(player.getUuid()));
+    }
+
+    public static UltPlaceRotationMode getRotationMode(ServerPlayerEntity player) {
+        return UltPlaceRotationMode.normalize(getShape(player), ROTATION_MODES.get(player.getUuid()));
+    }
+
+    public static UltPlaceSelection getSelection(ServerPlayerEntity player) {
+        return normalizeSelection(getShape(player), getSize(player), getLength(player), getVariant(player),
+                getAnchorMode(player), getRotationMode(player));
+    }
+
     public static boolean canUseUltPlace(ServerPlayerEntity player) {
         if (player == null || !SkillConfig.isBuilderUltPlaceEnabled()) {
             return false;
@@ -92,123 +118,117 @@ public final class UltPlaceHandler {
     }
 
     public static List<BlockPos> getValidatedPreview(ServerPlayerEntity player, World world, BlockPos targetPos,
-            Direction face) {
-        if (!(world instanceof ServerWorld) || player == null || targetPos == null || face == null) {
+            Direction face, Vec3d hitPos) {
+        if (!(world instanceof ServerWorld serverWorld) || player == null || targetPos == null || face == null) {
             return List.of();
         }
         if (!canUseUltPlace(player) || !isEnabled(player)) {
             return List.of();
         }
 
-        ItemStack held = getHeldBlockStack(player);
-        if (!(held.getItem() instanceof BlockItem)) {
+        HeldBlockSelection held = getHeldBlockSelection(player);
+        if (held == null) {
             return List.of();
         }
 
-        BlockPos origin = resolvePlacementOrigin(world, targetPos, face);
-        if (!canPlaceAt(world, origin)) {
+        int availablePlacements = InventoryBlockFinder.countMatchingBlocks(player, held.stack());
+        if (availablePlacements <= 0) {
             return List.of();
         }
 
-        int availableBlocks = InventoryBlockFinder.countMatchingBlocks(player, held);
-        if (availableBlocks <= 0) {
+        UltPlacePlanner.UltPlacePlan plan = UltPlacePlanner.planPreview(serverWorld, player, held.hand(), held.stack(),
+                targetPos, face, hitPos, getSelection(player),
+                Math.min(SkillConfig.getUltPlaceMaxBlocksPerUse(), availablePlacements));
+        if (plan.previewBlocks().isEmpty()) {
             return List.of();
         }
-
-        UltPlaceSelection selection = normalizeSelection(getShape(player), getSize(player), getLength(player),
-                getVariant(player));
-        List<BlockPos> raw = UltPlaceShapeCalculator.getShapeBlocks(origin, selection.shape(), selection.size(),
-                selection.length(), face, player.getRotationVec(1.0f), selection.variant());
 
         LinkedHashSet<BlockPos> valid = new LinkedHashSet<>();
-        int maxAllowed = Math.min(SkillConfig.getUltPlaceMaxBlocksPerUse(), availableBlocks);
-        for (BlockPos pos : raw) {
-            if (valid.size() >= maxAllowed) {
-                break;
-            }
-            if (!canPlayerModify(world, player, pos)) {
+        for (UltPlacePlanner.PlannedPlacement placement : plan.placements()) {
+            if (!canPlayerModifyAll(serverWorld, player, placement.footprint())) {
                 continue;
             }
-            if (!canPlaceAt(world, pos)) {
-                continue;
+            for (UltPlacePlanner.PreviewBlock previewBlock : placement.footprint()) {
+                valid.add(previewBlock.pos().toImmutable());
             }
-            valid.add(pos.toImmutable());
         }
 
         return new ArrayList<>(valid);
     }
 
     public static void handle(ServerPlayerEntity player, ServerWorld world, BlockPos origin, Direction face,
-            Hand hand, ItemStack sourceStack, BlockState previousState) {
+            Hand hand, ItemStack sourceStack, Vec3d hitPos, Map<BlockPos, BlockState> previousStates) {
         if (player == null || world == null || origin == null || face == null || sourceStack == null) {
             return;
         }
-        if (!canUseUltPlace(player) || !isEnabled(player)) {
+        if (!canUseUltPlace(player) || !isEnabled(player) || BuilderSkill.isCreativeBrushActive(player)) {
             return;
         }
-        if (BuilderSkill.isCreativeBrushActive(player)) {
+        if (!(sourceStack.getItem() instanceof BlockItem blockItem)) {
             return;
         }
-        if (!(sourceStack.getItem() instanceof BlockItem)) {
-            return;
-        }
-        if (ACTIVE_PLAYERS.contains(player.getUuid())) {
+        if (!ACTIVE_PLAYERS.add(player.getUuid())) {
             return;
         }
 
-        ACTIVE_PLAYERS.add(player.getUuid());
         try {
-            UltPlaceSelection selection = normalizeSelection(getShape(player), getSize(player), getLength(player),
-                    getVariant(player));
+            UltPlaceSelection selection = getSelection(player);
             if (selection.shape() == UltPlaceShape.SINGLE) {
                 return;
             }
 
-            BlockState placedState = world.getBlockState(origin);
-            if (placedState.isAir()) {
+            int maxPerUse = SkillConfig.getUltPlaceMaxBlocksPerUse();
+            int remainingPlacements = Math.min(Math.max(0, maxPerUse - 1),
+                    InventoryBlockFinder.countMatchingBlocks(player, sourceStack));
+            if (remainingPlacements <= 0) {
                 return;
             }
 
-            int maxBlocks = SkillConfig.getUltPlaceMaxBlocksPerUse();
-            List<BlockPos> raw = UltPlaceShapeCalculator.getShapeBlocks(origin, selection.shape(), selection.size(),
-                    selection.length(), face, player.getRotationVec(1.0f), selection.variant());
-            LinkedHashSet<BlockPos> unique = new LinkedHashSet<>(raw);
+            UltPlacePlanner.UltPlacePlan plan = UltPlacePlanner.planFromOrigin(world, player, hand,
+                    copySingle(sourceStack), origin, face, hitPos, selection, remainingPlacements);
+            if (plan.placements().isEmpty()) {
+                if (plan.fallbackReason() != null) {
+                    player.sendMessage(Text.translatable(plan.fallbackReason()).formatted(Formatting.YELLOW), true);
+                }
+                return;
+            }
 
             List<UndoEntry> snapshotEntries = new ArrayList<>();
-            int placedExtras = 0;
-            int placementsUsed = 0;
+            Set<BlockPos> capturedPositions = new LinkedHashSet<>();
+            addCapturedStates(snapshotEntries, capturedPositions, previousStates);
 
-            if (previousState != null) {
-                snapshotEntries.add(new UndoEntry(origin.toImmutable(), previousState));
-                placementsUsed = 1;
+            int itemsPlaced = previousStates == null || previousStates.isEmpty() ? 0 : 1;
+            SYNTHETIC_PLACEMENTS.add(player.getUuid());
+            try {
+                for (UltPlacePlanner.PlannedPlacement placement : plan.placements()) {
+                    if (!canPlayerModifyAll(world, player, placement.footprint())) {
+                        continue;
+                    }
+
+                    ItemStack liveStack = InventoryBlockFinder.findMatchingBlock(player, sourceStack, hand);
+                    if (liveStack == null || liveStack.isEmpty()) {
+                        break;
+                    }
+
+                    List<UndoEntry> pendingSnapshots = captureCurrentStates(world, placement.footprint(), capturedPositions);
+                    ActionResult result = blockItem.place(createPlacementContext(player, hand, liveStack,
+                            placement.anchorPos(), face, hitPos));
+                    if (result == null || !result.isAccepted()) {
+                        continue;
+                    }
+
+                    snapshotEntries.addAll(pendingSnapshots);
+                    for (UndoEntry pendingSnapshot : pendingSnapshots) {
+                        capturedPositions.add(pendingSnapshot.pos());
+                    }
+                    itemsPlaced++;
+                }
+            } finally {
+                SYNTHETIC_PLACEMENTS.remove(player.getUuid());
             }
 
-            for (BlockPos pos : unique) {
-                if (pos.equals(origin)) {
-                    continue;
-                }
-                if (placementsUsed >= maxBlocks) {
-                    break;
-                }
-                if (!canPlayerModify(world, player, pos)) {
-                    continue;
-                }
-                BlockState currentState = world.getBlockState(pos);
-                if (!canReplace(currentState)) {
-                    continue;
-                }
-                if (!InventoryBlockFinder.consumeOneMatchingBlock(player, sourceStack, hand)) {
-                    break;
-                }
-
-                snapshotEntries.add(new UndoEntry(pos.toImmutable(), currentState));
-                world.setBlockState(pos, placedState);
-                placedExtras++;
-                placementsUsed++;
-            }
-
-            if (placedExtras > 0) {
-                pushUndoSnapshot(player, new UndoSnapshot(copySingle(sourceStack), placedState, snapshotEntries));
+            if (itemsPlaced > 1 && !snapshotEntries.isEmpty()) {
+                pushUndoSnapshot(player, new UndoSnapshot(copySingle(sourceStack), itemsPlaced, snapshotEntries));
             }
         } finally {
             ACTIVE_PLAYERS.remove(player.getUuid());
@@ -231,7 +251,7 @@ public final class UltPlaceHandler {
             return false;
         }
 
-        int refunded = 0;
+        int restoredEntries = 0;
         List<UndoEntry> entries = snapshot.entries();
         for (int i = entries.size() - 1; i >= 0; i--) {
             UndoEntry entry = entries.get(i);
@@ -239,13 +259,16 @@ public final class UltPlaceHandler {
                 continue;
             }
             world.setBlockState(entry.pos(), entry.previousState());
-            refunded++;
+            restoredEntries++;
         }
 
-        InventoryBlockFinder.refundMatchingBlocks(player, snapshot.itemTemplate(), refunded);
-        player.sendMessage(Text.translatable("murilloskills.ultplace.undo.success", refunded)
+        int refundedItems = restoredEntries == entries.size() ? snapshot.itemsPlaced() : 0;
+        if (refundedItems > 0) {
+            InventoryBlockFinder.refundMatchingBlocks(player, snapshot.itemTemplate(), refundedItems);
+        }
+        player.sendMessage(Text.translatable("murilloskills.ultplace.undo.success", refundedItems)
                 .formatted(Formatting.AQUA), true);
-        return true;
+        return refundedItems > 0;
     }
 
     public static void cleanupPlayerState(UUID playerUuid) {
@@ -253,47 +276,80 @@ public final class UltPlaceHandler {
         SIZES.remove(playerUuid);
         LENGTHS.remove(playerUuid);
         VARIANTS.remove(playerUuid);
+        ANCHOR_MODES.remove(playerUuid);
+        ROTATION_MODES.remove(playerUuid);
         ENABLED.remove(playerUuid);
         UNDO_HISTORY.remove(playerUuid);
         ACTIVE_PLAYERS.remove(playerUuid);
+        SYNTHETIC_PLACEMENTS.remove(playerUuid);
     }
 
-    public static BlockPos resolvePlacementOrigin(World world, BlockPos targetPos, Direction face) {
-        if (world == null || targetPos == null || face == null) {
-            return targetPos;
+    private static ItemPlacementContext createPlacementContext(ServerPlayerEntity player, Hand hand, ItemStack stack,
+            BlockPos pos, Direction face, Vec3d baseHitPos) {
+        Vec3d safeHitPos = baseHitPos == null ? pos.toCenterPos() : baseHitPos;
+        Vec3d localOffset = safeHitPos.subtract(
+                Math.floor(safeHitPos.x),
+                Math.floor(safeHitPos.y),
+                Math.floor(safeHitPos.z));
+        Vec3d hitPos = new Vec3d(pos.getX() + localOffset.x, pos.getY() + localOffset.y, pos.getZ() + localOffset.z);
+        return new ItemPlacementContext(player, hand, stack, new BlockHitResult(hitPos, face, pos, false));
+    }
+
+    private static HeldBlockSelection getHeldBlockSelection(PlayerEntity player) {
+        if (player == null) {
+            return null;
         }
-        BlockState targetState = world.getBlockState(targetPos);
-        if (canReplace(targetState)) {
-            return targetPos.toImmutable();
-        }
-        return targetPos.offset(face).toImmutable();
-    }
 
-    public static boolean canPlaceAt(World world, BlockPos pos) {
-        return world != null && pos != null && canReplace(world.getBlockState(pos));
-    }
-
-    private static ItemStack getHeldBlockStack(PlayerEntity player) {
         ItemStack main = player.getMainHandStack();
         if (main.getItem() instanceof BlockItem) {
-            return copySingle(main);
+            return new HeldBlockSelection(Hand.MAIN_HAND, copySingle(main));
         }
         ItemStack off = player.getOffHandStack();
         if (off.getItem() instanceof BlockItem) {
-            return copySingle(off);
+            return new HeldBlockSelection(Hand.OFF_HAND, copySingle(off));
         }
-        return ItemStack.EMPTY;
+        return null;
     }
 
-    private static boolean canReplace(BlockState state) {
-        return state != null && (state.isAir() || state.isReplaceable() || !state.getFluidState().isEmpty());
+    private static boolean canPlayerModifyAll(ServerWorld world, ServerPlayerEntity player,
+            List<UltPlacePlanner.PreviewBlock> footprint) {
+        for (UltPlacePlanner.PreviewBlock previewBlock : footprint) {
+            if (!canPlayerModify(world, player, previewBlock.pos())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean canPlayerModify(World world, ServerPlayerEntity player, BlockPos pos) {
-        if (world instanceof ServerWorld serverWorld) {
-            return player.canModifyAt(serverWorld, pos);
+        return player.canModifyAt((ServerWorld) world, pos);
+    }
+
+    private static void addCapturedStates(List<UndoEntry> target, Set<BlockPos> seen,
+            Map<BlockPos, BlockState> capturedStates) {
+        if (capturedStates == null || capturedStates.isEmpty()) {
+            return;
         }
-        return true;
+        for (Map.Entry<BlockPos, BlockState> entry : capturedStates.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null || seen.contains(entry.getKey())) {
+                continue;
+            }
+            target.add(new UndoEntry(entry.getKey().toImmutable(), entry.getValue()));
+            seen.add(entry.getKey().toImmutable());
+        }
+    }
+
+    private static List<UndoEntry> captureCurrentStates(ServerWorld world, List<UltPlacePlanner.PreviewBlock> footprint,
+            Set<BlockPos> alreadyCaptured) {
+        List<UndoEntry> pending = new ArrayList<>();
+        for (UltPlacePlanner.PreviewBlock previewBlock : footprint) {
+            BlockPos pos = previewBlock.pos();
+            if (alreadyCaptured.contains(pos)) {
+                continue;
+            }
+            pending.add(new UndoEntry(pos.toImmutable(), world.getBlockState(pos)));
+        }
+        return pending;
     }
 
     private static void pushUndoSnapshot(ServerPlayerEntity player, UndoSnapshot snapshot) {
@@ -305,7 +361,8 @@ public final class UltPlaceHandler {
         }
     }
 
-    private static UltPlaceSelection normalizeSelection(UltPlaceShape shape, int size, int length, int variant) {
+    private static UltPlaceSelection normalizeSelection(UltPlaceShape shape, int size, int length, int variant,
+            UltPlaceAnchorMode anchorMode, UltPlaceRotationMode rotationMode) {
         UltPlaceShape safeShape = shape == null ? UltPlaceShape.PLANE_NXN : shape;
         int safeSize = size > 0 ? clampSize(safeShape, size) : SkillConfig.getUltPlaceShapeDefaultSize(safeShape);
         int safeLength = length > 0
@@ -313,7 +370,9 @@ public final class UltPlaceHandler {
                 : SkillConfig.getUltPlaceShapeDefaultLength(safeShape);
         int maxVariant = UltPlaceShape.getVariantCount(safeShape) - 1;
         int safeVariant = Math.max(0, Math.min(variant, maxVariant));
-        return new UltPlaceSelection(safeShape, safeSize, safeLength, safeVariant);
+        UltPlaceAnchorMode safeAnchorMode = UltPlaceAnchorMode.normalize(safeShape, anchorMode);
+        UltPlaceRotationMode safeRotationMode = UltPlaceRotationMode.normalize(safeShape, rotationMode);
+        return new UltPlaceSelection(safeShape, safeSize, safeLength, safeVariant, safeAnchorMode, safeRotationMode);
     }
 
     private static int clampSize(UltPlaceShape shape, int size) {
@@ -333,12 +392,12 @@ public final class UltPlaceHandler {
         return copy;
     }
 
-    private record UltPlaceSelection(UltPlaceShape shape, int size, int length, int variant) {
+    private record HeldBlockSelection(Hand hand, ItemStack stack) {
     }
 
     private record UndoEntry(BlockPos pos, BlockState previousState) {
     }
 
-    private record UndoSnapshot(ItemStack itemTemplate, BlockState placedState, List<UndoEntry> entries) {
+    private record UndoSnapshot(ItemStack itemTemplate, int itemsPlaced, List<UndoEntry> entries) {
     }
 }

@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Mixin for AnvilScreenHandler to grant Blacksmith XP and apply perks.
  * - XP when taking output from anvil
- * - Level 25: 25% XP cost reduction
+ * - Level 25: large XP cost reduction
  * - Tracks item repairs for daily challenges
  */
 @Mixin(AnvilScreenHandler.class)
@@ -41,10 +41,8 @@ public abstract class AnvilScreenHandlerMixin {
      * displayed.
      *
      * Discount scales with level:
-     * - Level 25: 25% discount (base)
-     * - Level 50+: 30% discount
-     * - Level 75+: 35% discount
-     * - Level 100: 40% discount
+     * - Level 25: 40% discount (base)
+     * - Level 100: 65% discount
      * Also raises the "Too Expensive!" threshold from 40 to 55 for Blacksmiths.
      */
     @Inject(method = "updateResult", at = @At("TAIL"))

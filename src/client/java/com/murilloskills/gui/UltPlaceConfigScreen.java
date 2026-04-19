@@ -3,6 +3,8 @@ package com.murilloskills.gui;
 import com.murilloskills.data.UltPlaceClientState;
 import com.murilloskills.gui.renderer.RenderingHelper;
 import com.murilloskills.network.UltPlaceUndoC2SPayload;
+import com.murilloskills.skills.UltPlaceAnchorMode;
+import com.murilloskills.skills.UltPlaceRotationMode;
 import com.murilloskills.skills.UltPlaceShape;
 import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -112,6 +114,8 @@ public class UltPlaceConfigScreen extends Screen {
         if (SkillConfig.getUltPlaceShapeMaxSize(shape) > 1) rows++;
         if (SkillConfig.getUltPlaceShapeMaxLength(shape) > 1) rows++;
         if (UltPlaceShape.getVariantCount(shape) > 1) rows++;
+        if (shape.supportsAnchorMode()) rows++;
+        if (shape.supportsRotationMode()) rows++;
         return rows;
     }
 
@@ -195,6 +199,36 @@ public class UltPlaceConfigScreen extends Screen {
                     },
                     () -> {
                         UltPlaceClientState.adjustVariant(1);
+                        syncToServer();
+                        refresh();
+                    });
+            row++;
+        }
+
+        if (current.supportsAnchorMode()) {
+            addStepperRow(centerX, rowY + row * ROW_HEIGHT,
+                    () -> {
+                        UltPlaceClientState.adjustAnchorMode(-1);
+                        syncToServer();
+                        refresh();
+                    },
+                    () -> {
+                        UltPlaceClientState.adjustAnchorMode(1);
+                        syncToServer();
+                        refresh();
+                    });
+            row++;
+        }
+
+        if (current.supportsRotationMode()) {
+            addStepperRow(centerX, rowY + row * ROW_HEIGHT,
+                    () -> {
+                        UltPlaceClientState.adjustRotationMode(-1);
+                        syncToServer();
+                        refresh();
+                    },
+                    () -> {
+                        UltPlaceClientState.adjustRotationMode(1);
                         syncToServer();
                         refresh();
                     });
@@ -426,6 +460,27 @@ public class UltPlaceConfigScreen extends Screen {
             String variantText = Text.translatable(UltPlaceShape.getVariantTranslationKey(
                     current, UltPlaceClientState.getVariant())).getString();
             renderValueBox(context, centerX, y, variantText);
+            row++;
+        }
+
+        if (current.supportsAnchorMode()) {
+            int y = rowY + row * ROW_HEIGHT;
+            context.drawTextWithShadow(textRenderer,
+                    Text.translatable("murilloskills.ultplace.anchor").getString(),
+                    labelX, y + 5, palette.textLight());
+            String anchorText = Text.translatable(UltPlaceClientState.getAnchorMode().getTranslationKey()).getString();
+            renderValueBox(context, centerX, y, anchorText);
+            row++;
+        }
+
+        if (current.supportsRotationMode()) {
+            int y = rowY + row * ROW_HEIGHT;
+            context.drawTextWithShadow(textRenderer,
+                    Text.translatable("murilloskills.ultplace.rotation").getString(),
+                    labelX, y + 5, palette.textLight());
+            String rotationText = Text.translatable(UltPlaceClientState.getRotationMode().getTranslationKey())
+                    .getString();
+            renderValueBox(context, centerX, y, rotationText);
         }
 
         if (countConfigRows(current) == 0) {

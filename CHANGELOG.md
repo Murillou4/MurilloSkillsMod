@@ -4,6 +4,26 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.33] - 2026-04-19
+
+### 🏗️ Builder - UltPlace vNext
+
+- **Planner compartilhado**: preview e placement agora usam a mesma lógica de planejamento, reduzindo divergência entre o ghost preview e o bloco realmente colocado.
+- **Placement vanilla-faithful**: expansões do UltPlace passaram a usar o pipeline vanilla de `BlockItem.place`, preservando orientação, waterlogging, NBT e comportamento de blocos especiais.
+- **Preview híbrido e sem flicker**: o cliente gera preview especulativo imediato e o servidor valida com `requestKey`, descartando respostas stale ao trocar rápido de alvo.
+- **Ancoragem e rotação**: novos controles de `anchorMode` e `rotationMode` foram adicionados ao HUD, config screen e fluxo de rede para shapes suportados.
+- **Undo e footprint completos**: o histórico de undo agora restaura todos os blocos tocados por placements multi-bloco e reembolsa por item colocado, não por célula alterada.
+- **Fallback seguro para itens complexos**: blocos com placement exótico ou difícil de prever não expandem "no chute" e mantêm apenas a colocação principal com feedback claro.
+
+### 🔨 Blacksmith - Economia de Forja Buffada
+
+- **Bigorna muito mais barata**: o desconto de XP agora escala de `40%` no nível `25` até `65%` no nível `100`.
+- **Mesa de encantamento com reembolso**: o Blacksmith agora recupera parte dos níveis gastos ao encantar, escalando de `40%` até `60%`, sem zerar o custo vanilla.
+- **Fornalha levemente mais rápida**: o teto do bônus de Furnace Mastery subiu de `4.0x` para `4.5x`.
+- **Config local alinhada**: o ambiente de teste em `run/config/murilloskills.json` foi atualizado com os novos números para validação imediata.
+
+---
+
 ## [1.2.32] - 2026-04-19
 
 ### 🏗️ Builder - UltPlace HUD e Polimento Final

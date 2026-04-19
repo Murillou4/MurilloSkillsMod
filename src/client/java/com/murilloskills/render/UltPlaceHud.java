@@ -4,6 +4,8 @@ import com.murilloskills.data.ClientSkillData;
 import com.murilloskills.data.UltPlaceClientState;
 import com.murilloskills.gui.ColorPalette;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.skills.UltPlaceAnchorMode;
+import com.murilloskills.skills.UltPlaceRotationMode;
 import com.murilloskills.skills.UltPlaceShape;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.client.MinecraftClient;
@@ -44,9 +46,11 @@ public class UltPlaceHud {
         UltPlaceShape shape = UltPlaceClientState.getSelectedShape();
         String shapeName = Text.translatable(shape.getTranslationKey()).getString();
         String dims = formatDimensions(shape);
+        String anchor = formatAnchor(shape);
+        String rotation = formatRotation(shape);
 
         Text icon = Text.literal("\u25A3 ").formatted(Formatting.GOLD);
-        Text body = Text.translatable("murilloskills.hud.ultplace", shapeName, dims)
+        Text body = Text.translatable("murilloskills.hud.ultplace", shapeName, dims, anchor, rotation)
                 .copy().formatted(Formatting.GOLD, Formatting.BOLD);
         Text fullText = icon.copy().append(body);
 
@@ -89,5 +93,19 @@ public class UltPlaceHud {
             return String.valueOf(length);
         }
         return "1";
+    }
+
+    private static String formatAnchor(UltPlaceShape shape) {
+        if (!shape.supportsAnchorMode()) {
+            return Text.translatable(UltPlaceAnchorMode.CENTER.getTranslationKey()).getString();
+        }
+        return Text.translatable(UltPlaceClientState.getAnchorMode().getTranslationKey()).getString();
+    }
+
+    private static String formatRotation(UltPlaceShape shape) {
+        if (!shape.supportsRotationMode()) {
+            return Text.translatable(UltPlaceRotationMode.AUTO.getTranslationKey()).getString();
+        }
+        return Text.translatable(UltPlaceClientState.getRotationMode().getTranslationKey()).getString();
     }
 }

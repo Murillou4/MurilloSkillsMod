@@ -29,15 +29,14 @@ public final class InventoryBlockFinder {
         return total;
     }
 
-    public static boolean consumeOneMatchingBlock(ServerPlayerEntity player, ItemStack reference, Hand preferredHand) {
+    public static ItemStack findMatchingBlock(ServerPlayerEntity player, ItemStack reference, Hand preferredHand) {
         if (player == null || reference == null || reference.isEmpty()) {
-            return false;
+            return ItemStack.EMPTY;
         }
 
         ItemStack preferredStack = getPreferredStack(player, preferredHand);
         if (matches(preferredStack, reference)) {
-            preferredStack.decrement(1);
-            return true;
+            return preferredStack;
         }
 
         var inventory = player.getInventory();
@@ -47,12 +46,20 @@ public final class InventoryBlockFinder {
                 continue;
             }
             if (matches(stack, reference)) {
-                stack.decrement(1);
-                return true;
+                return stack;
             }
         }
 
-        return false;
+        return ItemStack.EMPTY;
+    }
+
+    public static boolean consumeOneMatchingBlock(ServerPlayerEntity player, ItemStack reference, Hand preferredHand) {
+        ItemStack stack = findMatchingBlock(player, reference, preferredHand);
+        if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+        stack.decrement(1);
+        return true;
     }
 
     public static void refundMatchingBlocks(ServerPlayerEntity player, ItemStack template, int amount) {
@@ -81,7 +88,7 @@ public final class InventoryBlockFinder {
     private static boolean matches(ItemStack candidate, ItemStack reference) {
         return candidate != null
                 && !candidate.isEmpty()
-                && candidate.getItem() == reference.getItem()
+                && ItemStack.areItemsAndComponentsEqual(candidate, reference)
                 && candidate.getCount() > 0;
     }
 }

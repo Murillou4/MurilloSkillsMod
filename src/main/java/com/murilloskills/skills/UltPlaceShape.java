@@ -24,6 +24,20 @@ public enum UltPlaceShape {
         return translationKey;
     }
 
+    public boolean supportsAnchorMode() {
+        return switch (this) {
+            case PLANE_NXN, LINE, WALL, STAIRS, COLUMN, TUNNEL_3X3 -> true;
+            default -> false;
+        };
+    }
+
+    public boolean supportsRotationMode() {
+        return switch (this) {
+            case PLANE_NXN, LINE, WALL, STAIRS, COLUMN, TUNNEL_3X3 -> true;
+            default -> false;
+        };
+    }
+
     public static int getVariantCount(UltPlaceShape shape) {
         return switch (shape) {
             case STAIRS, COLUMN -> 2;

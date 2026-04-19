@@ -8,6 +8,7 @@
     "ApplyBonusLootFunctionMixin",
     "LivingEntityMixin",
     "ArrowEntityMixin",
+    "BlockItemInvoker",
     "PersistentProjectileEntityAccessor",
     "CropBlockMixin",
     "FishingBobberEntityMixin",

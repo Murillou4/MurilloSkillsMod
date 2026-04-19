@@ -38,6 +38,7 @@ import com.murilloskills.render.UltminePreview;
 import com.murilloskills.render.VeinMinerPreview;
 import com.murilloskills.render.XpToastRenderer;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.skills.UltPlacePlanner;
 import com.murilloskills.tooltip.SkillTooltipAppender;
 import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.api.ClientModInitializer;
@@ -51,11 +52,16 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import org.lwjgl.glfw.GLFW;
 
 @SuppressWarnings("deprecation") // HudRenderCallback is deprecated but still functional, migration to
@@ -86,6 +92,11 @@ public class MurilloSkillsClient implements ClientModInitializer {
     // Vein Miner hold state tracking
     private static boolean veinMinerKeyHeld = false;
     private static boolean ultmineMenuKeyHeld = false;
+    private static long lastUltPlacePreviewSignature = Long.MIN_VALUE;
+    private static long lastUltPlaceSentSignature = Long.MIN_VALUE;
+    private static long nextUltPlaceRequestKey = 1L;
+    private static long lastUltPlaceRequestTick = Long.MIN_VALUE;
+    private static long lastUltPlaceFallbackSignature = Long.MIN_VALUE;
 
     /**
      * Check if the vein miner key is currently being held.
@@ -191,7 +202,8 @@ public class MurilloSkillsClient implements ClientModInitializer {
         });
 
         ClientPlayNetworking.registerGlobalReceiver(UltPlacePreviewS2CPayload.ID, (payload, context) -> {
-            context.client().execute(() -> UltPlaceClientState.updatePreview(payload.positions()));
+            context.client().execute(() -> UltPlaceClientState.applyValidatedPreview(payload.requestKey(),
+                    payload.positions()));
         });
 
         // 9. Pathfinder speed boost state sync
@@ -228,6 +240,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             UltmineClientConfig.load();
             UltPlaceClientState.clearPreview();
+            resetUltPlacePreviewTracking();
             // Always sync XP direct-to-player preference to server (respects client choice over server default)
             ClientPlayNetworking.send(new XpDirectToggleC2SPayload(UltmineClientConfig.isXpDirectToPlayer()));
             // Sync magnet config to server
@@ -367,6 +380,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 if (shouldRouteUltPlaceToggle(client)) {
                     UltPlaceClientState.toggleEnabled();
                     UltPlaceClientState.clearPreview();
+                    resetUltPlacePreviewTracking();
                     ClientPlayNetworking.send(UltPlaceClientState.toPayload());
                     showUltPlaceToggleFeedback(client);
                 }
@@ -441,16 +455,50 @@ public class MurilloSkillsClient implements ClientModInitializer {
             if (shouldRequestUltPlacePreview(client)) {
                 HitResult hitResult = client.crosshairTarget;
                 if (hitResult instanceof BlockHitResult blockHit && client.world != null) {
-                    int interval = SkillConfig.getBuilderUltPlacePreviewRequestIntervalTicks();
-                    if (client.world.getTime() % interval == 0) {
+                    HeldBlockSelection held = getUltPlaceHeldBlockSelection(client);
+                    if (held == null) {
+                        UltPlaceClientState.clearPreview();
+                        resetUltPlacePreviewTracking();
+                        return;
+                    }
+
+                    long signature = computeUltPlacePreviewSignature(client, blockHit, held.stack());
+                    if (signature != lastUltPlacePreviewSignature) {
+                        lastUltPlacePreviewSignature = signature;
+                        int availablePlacements = Math.max(1, countMatchingUltPlaceBlocks(client, held.stack()));
+                        UltPlacePlanner.UltPlacePlan plan = UltPlacePlanner.planPreview(
+                                client.world,
+                                client.player,
+                                held.hand(),
+                                held.stack(),
+                                blockHit.getBlockPos(),
+                                blockHit.getSide(),
+                                blockHit.getPos(),
+                                UltPlaceClientState.toSelection(),
+                                Math.min(SkillConfig.getUltPlaceMaxBlocksPerUse(), availablePlacements));
+                        UltPlaceClientState.updateSpeculativePreview(plan.previewBlocks(), plan.fallbackReason());
+                        showUltPlaceFallbackFeedback(client, signature, plan.fallbackReason());
+                    }
+
+                    int interval = Math.max(1, SkillConfig.getBuilderUltPlacePreviewRequestIntervalTicks());
+                    long currentTick = client.world.getTime();
+                    if (signature != lastUltPlaceSentSignature
+                            && (lastUltPlaceRequestTick == Long.MIN_VALUE
+                                    || currentTick - lastUltPlaceRequestTick >= interval)) {
+                        long requestKey = nextUltPlaceRequestKey++;
+                        lastUltPlaceSentSignature = signature;
+                        lastUltPlaceRequestTick = currentTick;
+                        UltPlaceClientState.beginValidation(requestKey);
                         ClientPlayNetworking.send(new UltPlacePreviewRequestC2SPayload(
-                                blockHit.getBlockPos(), blockHit.getSide()));
+                                blockHit.getBlockPos(), blockHit.getSide(), blockHit.getPos(), requestKey));
                     }
                 } else {
                     UltPlaceClientState.clearPreview();
+                    resetUltPlacePreviewTracking();
                 }
             } else {
                 UltPlaceClientState.clearPreview();
+                resetUltPlacePreviewTracking();
             }
         });
 
@@ -519,5 +567,105 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 && ClientSkillData.isSkillSelected(MurilloSkillsList.BUILDER)
                 && (InputUtil.isKeyPressed(client.getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
                         || InputUtil.isKeyPressed(client.getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL));
+    }
+
+    private static HeldBlockSelection getUltPlaceHeldBlockSelection(MinecraftClient client) {
+        if (client.player == null) {
+            return null;
+        }
+
+        ItemStack main = client.player.getMainHandStack();
+        if (main.getItem() instanceof BlockItem) {
+            return new HeldBlockSelection(Hand.MAIN_HAND, copySingle(main));
+        }
+
+        ItemStack off = client.player.getOffHandStack();
+        if (off.getItem() instanceof BlockItem) {
+            return new HeldBlockSelection(Hand.OFF_HAND, copySingle(off));
+        }
+
+        return null;
+    }
+
+    private static int countMatchingUltPlaceBlocks(MinecraftClient client, ItemStack reference) {
+        if (client.player == null || reference == null || reference.isEmpty()) {
+            return 0;
+        }
+
+        int total = 0;
+        for (int slot = 0; slot < client.player.getInventory().size(); slot++) {
+            ItemStack stack = client.player.getInventory().getStack(slot);
+            if (!stack.isEmpty() && ItemStack.areItemsAndComponentsEqual(stack, reference)) {
+                total += stack.getCount();
+            }
+        }
+        return total;
+    }
+
+    private static long computeUltPlacePreviewSignature(MinecraftClient client, BlockHitResult blockHit, ItemStack stack) {
+        long signature = 17L;
+        signature = mixSignature(signature, blockHit.getBlockPos().asLong());
+        signature = mixSignature(signature, blockHit.getSide().ordinal());
+        signature = mixSignature(signature, quantizeHitOffset(blockHit.getBlockPos(), blockHit.getPos()));
+
+        var selection = UltPlaceClientState.toSelection();
+        signature = mixSignature(signature, selection.shape().ordinal());
+        signature = mixSignature(signature, selection.size());
+        signature = mixSignature(signature, selection.length());
+        signature = mixSignature(signature, selection.variant());
+        signature = mixSignature(signature, selection.anchorMode().ordinal());
+        signature = mixSignature(signature, selection.rotationMode().ordinal());
+
+        Identifier itemId = Registries.ITEM.getId(stack.getItem());
+        signature = mixSignature(signature, itemId.hashCode());
+        signature = mixSignature(signature, stack.getComponents().hashCode());
+        if (client.world != null) {
+            signature = mixSignature(signature, client.world.getRegistryKey().getValue().hashCode());
+        }
+        return signature;
+    }
+
+    private static long quantizeHitOffset(BlockPos pos, Vec3d hitPos) {
+        int qx = quantizeHitComponent(hitPos.x - pos.getX());
+        int qy = quantizeHitComponent(hitPos.y - pos.getY());
+        int qz = quantizeHitComponent(hitPos.z - pos.getZ());
+        return (qx & 3L) | ((qy & 3L) << 2) | ((qz & 3L) << 4);
+    }
+
+    private static int quantizeHitComponent(double value) {
+        double clamped = Math.max(0.0, Math.min(value, 0.999999));
+        return Math.max(0, Math.min(3, (int) Math.floor(clamped * 4.0)));
+    }
+
+    private static long mixSignature(long current, long value) {
+        return current * 31L + value;
+    }
+
+    private static void showUltPlaceFallbackFeedback(MinecraftClient client, long signature, String fallbackReason) {
+        if (client.player == null || fallbackReason == null || signature == lastUltPlaceFallbackSignature) {
+            return;
+        }
+        lastUltPlaceFallbackSignature = signature;
+        client.player.sendMessage(Text.translatable(fallbackReason).formatted(Formatting.YELLOW), true);
+    }
+
+    private static void resetUltPlacePreviewTracking() {
+        lastUltPlacePreviewSignature = Long.MIN_VALUE;
+        lastUltPlaceSentSignature = Long.MIN_VALUE;
+        nextUltPlaceRequestKey = 1L;
+        lastUltPlaceRequestTick = Long.MIN_VALUE;
+        lastUltPlaceFallbackSignature = Long.MIN_VALUE;
+    }
+
+    private static ItemStack copySingle(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack copy = stack.copy();
+        copy.setCount(1);
+        return copy;
+    }
+
+    private record HeldBlockSelection(Hand hand, ItemStack stack) {
     }
 }

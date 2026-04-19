@@ -181,7 +181,10 @@ public class ModConfig {
         public int overEnchantLevel = 99;
         public int masterLevel = 100;
         public float ironSkinBonus = 0.05f;
-        public float anvilXpDiscount = 0.25f;
+        public float anvilXpDiscount = 0.40f;
+        public float anvilXpDiscountMax = 0.65f;
+        public float enchantingTableXpDiscount = 0.40f;
+        public float enchantingTableXpDiscountMax = 0.60f;
         public float anvilMaterialSave = 0.10f;
         public float fireExplosionResist = 0.10f;
         public float thornsChance = 0.30f;
@@ -196,7 +199,7 @@ public class ModConfig {
         public float titaniumResistance = 0.30f;
         public float titaniumRegen = 1.0f;
         public int furnaceSpeedRadius = 8;
-        public float furnaceSpeedMaxMultiplier = 4.0f;
+        public float furnaceSpeedMaxMultiplier = 4.5f;
     }
 
     public static class BuilderConfig {

@@ -14,6 +14,9 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
+
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,9 +34,13 @@ public final class BlockPlacementHandler {
     }
 
     public static void onBlockPlaced(ServerPlayerEntity serverPlayer, ServerWorld world, BlockPos placementPos, Block block,
-            Direction face, Hand hand, net.minecraft.item.ItemStack sourceStack, BlockState previousState) {
+            Direction face, Hand hand, net.minecraft.item.ItemStack sourceStack, Vec3d hitPos,
+            Map<BlockPos, BlockState> previousStates) {
         var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
         if (!playerData.isSkillSelected(MurilloSkillsList.BUILDER)) {
+            return;
+        }
+        if (UltPlaceHandler.isSyntheticPlacementActive(serverPlayer)) {
             return;
         }
 
@@ -52,7 +59,7 @@ public final class BlockPlacementHandler {
                 }
             }
 
-            UltPlaceHandler.handle(serverPlayer, world, placementPos, face, hand, sourceStack, previousState);
+            UltPlaceHandler.handle(serverPlayer, world, placementPos, face, hand, sourceStack, hitPos, previousStates);
         } catch (Exception e) {
             LOGGER.error("Error processing Builder XP for block placement", e);
         }
