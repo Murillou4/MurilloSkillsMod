@@ -668,7 +668,18 @@
     "murilloskills.ultmine_config.legacy.deepslate": "Deepslate = Normal",
     "murilloskills.ultmine_config.legacy.tool_damage": "Daño Herramienta",
     "murilloskills.ultmine_config.save": "✓ Guardar",
-    "murilloskills.ultmine_config.reset": "↺ Reiniciar"
+    "murilloskills.ultmine_config.reset": "↺ Reiniciar",
+
+    "_comment_magnet": "=== MAGNETO ===",
+    "murilloskills.ultmine_config.section.magnet": "Magneto",
+    "murilloskills.ultmine_config.magnet.toggle": "Magneto",
+    "murilloskills.ultmine_config.magnet.range": "Alcance:",
+    "murilloskills.magnet.enabled": "Magneto activado",
+    "murilloskills.magnet.disabled": "Magneto desactivado",
+
+    "_comment_trash": "=== BASURA AUTO ===",
+    "murilloskills.ultmine_config.section.trash": "Basura Auto",
+    "murilloskills.ultmine_config.trash.empty": "No hay items en la lista de basura"
 }
 
 

@@ -31,6 +31,7 @@ import java.util.*;
 public class MinerSkill extends AbstractSkill {
 
     private static final Identifier MINER_SPEED_ID = Identifier.of("murilloskills", "miner_speed_bonus");
+    private static final Map<UUID, Long> masterVisionActiveUntil = new HashMap<>();
 
     // Toggle key name for persistent storage
     private static final String TOGGLE_AUTO_TORCH = "autoTorch";
@@ -69,15 +70,19 @@ public class MinerSkill extends AbstractSkill {
             // Stats are automatically synced via Data Attachments API
             // No need to force immediate save here
 
+            int durationTicks = SkillConfig.toTicks(SkillConfig.getMinerAbilityDurationSeconds());
+            masterVisionActiveUntil.put(player.getUuid(), worldTime + durationTicks);
+
             List<MinerScanResultPayload.OreEntry> ores = scanForOres(player);
 
-            if (!ores.isEmpty()) {
-                // Envia pacote para o cliente renderizar
-                ServerPlayNetworking.send(player, new MinerScanResultPayload(ores));
-                player.sendMessage(
-                        Text.translatable("murilloskills.miner.instinct_activated").formatted(Formatting.GREEN), true);
-                player.playSound(SoundEvents.ENTITY_WARDEN_SONIC_BOOM);
+            // Envia pacote para o cliente renderizar, mesmo se a lista vier vazia.
+            ServerPlayNetworking.send(player, new MinerScanResultPayload(ores, durationTicks));
 
+            player.sendMessage(
+                    Text.translatable("murilloskills.miner.instinct_activated").formatted(Formatting.GREEN), true);
+            player.playSound(SoundEvents.ENTITY_WARDEN_SONIC_BOOM);
+
+            if (!ores.isEmpty()) {
                 LOGGER.info("Player {} activated Miner Master ability at position {} - {} ores found",
                         player.getName().getString(), player.getBlockPos(), ores.size());
             } else {
@@ -96,6 +101,8 @@ public class MinerSkill extends AbstractSkill {
         try {
             if (player.age % 20 != 0)
                 return; // Executa apenas 1 vez por segundo para otimização
+
+            syncActiveMasterVision(player);
 
             // --- LEVEL 10: NIGHT VISION ---
             if (meetsLevelRequirement(level, SkillConfig.MINER_NIGHT_VISION_LEVEL)) {
@@ -120,6 +127,25 @@ public class MinerSkill extends AbstractSkill {
                 LOGGER.error("Erro no tick do Minerador para " + player.getName().getString(), e);
             }
         }
+    }
+
+    private void syncActiveMasterVision(ServerPlayerEntity player) {
+        UUID playerUuid = player.getUuid();
+        Long endTime = masterVisionActiveUntil.get(playerUuid);
+        if (endTime == null) {
+            return;
+        }
+
+        long worldTime = player.getEntityWorld().getTime();
+        int remainingTicks = (int) Math.max(0L, endTime - worldTime);
+        if (remainingTicks <= 0) {
+            masterVisionActiveUntil.remove(playerUuid);
+            ServerPlayNetworking.send(player, new MinerScanResultPayload(List.of(), 0));
+            return;
+        }
+
+        List<MinerScanResultPayload.OreEntry> ores = scanForOres(player);
+        ServerPlayNetworking.send(player, new MinerScanResultPayload(ores, remainingTicks));
     }
 
     @Override
@@ -202,40 +228,24 @@ public class MinerSkill extends AbstractSkill {
     private List<MinerScanResultPayload.OreEntry> scanForOres(ServerPlayerEntity player) {
         List<MinerScanResultPayload.OreEntry> ores = new ArrayList<>();
         BlockPos center = player.getBlockPos();
-        int radius = SkillConfig.MINER_ABILITY_RADIUS;
+        int radius = SkillConfig.getMinerAbilityRadius();
 
-        // Limit blocks scanned per invocation to prevent lag (5000 blocks max)
-        int maxBlocksToScan = SkillConfig.getMinerScanLimit();
-        int blocksScanned = 0;
-
-        // Scan in a spiral pattern from center outward for better UX
-        // (finds nearby ores first even if we hit the limit)
-        for (int r = 0; r <= radius && blocksScanned < maxBlocksToScan; r++) {
-            for (int dx = -r; dx <= r && blocksScanned < maxBlocksToScan; dx++) {
-                for (int dy = -r; dy <= r && blocksScanned < maxBlocksToScan; dy++) {
-                    for (int dz = -r; dz <= r && blocksScanned < maxBlocksToScan; dz++) {
-                        // Only check blocks at the current radius shell
-                        if (Math.abs(dx) == r || Math.abs(dy) == r || Math.abs(dz) == r) {
-                            BlockPos pos = center.add(dx, dy, dz);
-                            blocksScanned++;
-
-                            net.minecraft.block.Block block = player.getEntityWorld().getBlockState(pos).getBlock();
-                            var result = MinerXpGetter.isMinerXpBlock(block, false, true);
-                            if (result.didGainXp()) {
-                                MinerScanResultPayload.OreType oreType = getOreType(block);
-                                ores.add(new MinerScanResultPayload.OreEntry(pos.toImmutable(), oreType));
-                            }
-                        }
+        // Full volume scan — iterate every block in the cube
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dy = -radius; dy <= radius; dy++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    BlockPos pos = center.add(dx, dy, dz);
+                    net.minecraft.block.Block block = player.getEntityWorld().getBlockState(pos).getBlock();
+                    var result = MinerXpGetter.isMinerXpBlock(block, false, true);
+                    if (result.didGainXp()) {
+                        MinerScanResultPayload.OreType oreType = getOreType(block);
+                        ores.add(new MinerScanResultPayload.OreEntry(pos.toImmutable(), oreType));
                     }
                 }
             }
         }
 
-        if (blocksScanned >= maxBlocksToScan) {
-            LOGGER.debug("Miner scan hit block limit ({} blocks scanned, {} ores found)",
-                    blocksScanned, ores.size());
-        }
-
+        LOGGER.debug("Miner scan completed: {} ores found in radius {}", ores.size(), radius);
         return ores;
     }
 
@@ -395,5 +405,9 @@ public class MinerSkill extends AbstractSkill {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public static void cleanupPlayerState(UUID playerUuid) {
+        masterVisionActiveUntil.remove(playerUuid);
     }
 }

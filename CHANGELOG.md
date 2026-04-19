@@ -4,6 +4,47 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.27] - 2026-04-01
+
+### ⛏️ Miner - X-Ray Dinâmico
+
+- **Trace de minério corrigido**: o highlight agora desaparece assim que o bloco deixa de ser um minério válido, inclusive ao quebrar e coletar.
+- **Scan contínuo enquanto a habilidade estiver ativa**: os minérios destacados agora são reencontrados e atualizados conforme o player anda, em vez de ficarem presos ao primeiro scan.
+- **Sincronização de duração melhorada**: o servidor envia para o client o tempo restante real da habilidade, mantendo o x-ray consistente até o fim do efeito.
+- **Limpeza de estado**: o estado temporário do x-ray do Miner agora é limpo corretamente ao desconectar.
+
+---
+
+## [1.2.26] - 2026-04-01
+
+### 🧲 Magnet & Auto Trash
+
+- **Magnet**: novo sistema de ímã configurável na tela Ultmine Config — puxa itens e XP orbs automaticamente para o jogador com alcance de 1 a 32 blocos.
+- **Auto Trash**: lista de itens configurável que são automaticamente deletados do inventário (ex: cobblestone, dirt). Suporta scroll e remoção individual.
+- **Sincronização automática**: magnet e trash são sincronizados com o servidor ao entrar no jogo.
+
+### 🔍 Miner X-Ray Fix
+
+- **Corrigido**: habilidade X-Ray (Z) do Miner que não mostrava nenhum minério — o scan agora varre todo o volume em vez de apenas cascas (shells), garantindo que todos os ores no raio sejam encontrados.
+- **Duração aumentada**: scan de ores agora dura **7 minutos** (era 30 segundos).
+- **Limite de exibição aumentado**: agora mostra até 5000 ores (era 20).
+
+---
+
+## [1.2.25] - 2026-04-01
+
+### 🎡 Ultmine - Radial Menu Redesign
+
+- **Ícones pixel art**: cada shape agora tem um mini-ícone visual no segmento (grid 3x3, retângulo 2x1, padrão de veia, linha, escada, quadrado outline).
+- **Cores de acento por shape**: identidade visual única — azul (3x3), cyan (2x1), laranja (Legacy), verde (Line), âmbar (Stairs), roxo (20x20).
+- **Troca de variante inline**: scroll do mouse sobre um shape com variantes cicla a variante ali mesmo, sem precisar abrir config separada.
+- **Dots indicadores de variante**: bolinhas coloridas nos segmentos mostram quantas variantes existem e qual está ativa.
+- **Variantes salvas por shape**: cada shape lembra sua variante independentemente.
+- **Painel central melhorado**: mostra nome com cor de acento, dimensões (3×3, Ray, Vein), e indicador do shape selecionado ao fazer hover em outro.
+- **Hint text atualizado**: instruções de controle refletem as novas interações.
+
+---
+
 ## [1.2.24] - 2026-03-30
 
 ### 🔨 Blacksmith - Domínio da Fornalha

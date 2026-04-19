@@ -82,6 +82,7 @@ public class MinecraftEventsListener {
             com.murilloskills.impl.BuilderSkill.cleanupPlayerState(uuid);
             com.murilloskills.impl.FisherSkill.cleanupPlayerState(uuid);
             com.murilloskills.impl.ExplorerSkill.cleanupPlayerState(uuid);
+            com.murilloskills.impl.MinerSkill.cleanupPlayerState(uuid);
             com.murilloskills.impl.WarriorSkill.cleanupPlayerState(uuid);
             com.murilloskills.skills.VeinMinerHandler.cleanupPlayerState(uuid);
         });
@@ -184,6 +185,12 @@ public class MinecraftEventsListener {
 
             // Sweep delayed Vein Miner/Ultmine origin drops into inventory.
             VeinMinerHandler.tickPendingDropCollection(player);
+
+            // Magnet: pull nearby items and XP orbs toward the player.
+            VeinMinerHandler.tickMagnet(player);
+
+            // Trash: remove trash items from inventory.
+            VeinMinerHandler.tickTrash(player);
         } catch (Exception e) {
             // Logs de erro dentro do tick devem ser cuidadosos com spam
             if (player.age % 100 == 0) {

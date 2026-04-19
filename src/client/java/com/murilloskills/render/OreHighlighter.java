@@ -2,7 +2,7 @@ package com.murilloskills.render;
 
 import com.murilloskills.client.config.OreFilterConfig;
 import com.murilloskills.network.MinerScanResultPayload;
-import com.murilloskills.utils.SkillConfig;
+import com.murilloskills.utils.MinerXpGetter;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
@@ -13,6 +13,7 @@ import net.minecraft.util.math.Vec3d;
 import org.lwjgl.opengl.GL11;
 
 import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,23 +33,31 @@ public class OreHighlighter {
     private static List<MinerScanResultPayload.OreEntry> highlightedOres = null;
     private static long highlightStartTime = 0;
     private static long highlightEndTime = 0;
-    private static final long TOTAL_DURATION_TICKS = SkillConfig.toTicks(SkillConfig.MINER_ABILITY_DURATION_SECONDS);
-
     // Distance thresholds for visual hierarchy
     private static final double CLOSE_DISTANCE = 8.0; // Full brightness
     private static final double MEDIUM_DISTANCE = 16.0; // 70% brightness
     private static final double FAR_DISTANCE = 30.0; // 40% brightness
 
-    public static void setHighlights(List<MinerScanResultPayload.OreEntry> ores) {
-        highlightedOres = ores;
-        if (MinecraftClient.getInstance().world != null) {
-            highlightStartTime = MinecraftClient.getInstance().world.getTime();
-            highlightEndTime = highlightStartTime + TOTAL_DURATION_TICKS;
+    public static void setHighlights(List<MinerScanResultPayload.OreEntry> ores, int remainingDurationTicks) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (remainingDurationTicks <= 0 || client.world == null) {
+            clearHighlights();
+            return;
         }
+
+        long now = client.world.getTime();
+        if (highlightedOres == null || now >= highlightEndTime) {
+            highlightStartTime = now;
+        }
+
+        highlightedOres = new ArrayList<>(ores);
+        highlightEndTime = now + remainingDurationTicks;
     }
 
     public static void clearHighlights() {
         highlightedOres = null;
+        highlightStartTime = 0;
+        highlightEndTime = 0;
     }
 
     public static void render(WorldRenderContext context) {
@@ -61,16 +70,21 @@ public class OreHighlighter {
 
         long now = client.world.getTime();
         if (now > highlightEndTime) {
-            highlightedOres = null;
+            clearHighlights();
             return;
         }
+
+        pruneInvalidHighlights(client);
+        if (highlightedOres == null || highlightedOres.isEmpty())
+            return;
 
         // Animation timing
         long elapsed = now - highlightStartTime;
         float baseAlpha = 0.8f + 0.2f * (float) Math.sin(elapsed * 0.15);
 
         // Smooth fade out in last 25%
-        float remaining = (float) (highlightEndTime - now) / TOTAL_DURATION_TICKS;
+        float totalDurationTicks = Math.max(1L, highlightEndTime - highlightStartTime);
+        float remaining = (float) (highlightEndTime - now) / totalDurationTicks;
         if (remaining < 0.25f) {
             baseAlpha *= remaining / 0.25f;
         }
@@ -352,5 +366,24 @@ public class OreHighlighter {
         }
 
         return false;
+    }
+
+    private static void pruneInvalidHighlights(MinecraftClient client) {
+        if (highlightedOres == null || client.world == null) {
+            return;
+        }
+
+        highlightedOres.removeIf(entry -> !isStillOre(entry.pos(), client));
+        if (highlightedOres.isEmpty()) {
+            clearHighlights();
+        }
+    }
+
+    private static boolean isStillOre(BlockPos pos, MinecraftClient client) {
+        if (client.world == null) {
+            return false;
+        }
+
+        return MinerXpGetter.isMinerXpBlock(client.world.getBlockState(pos).getBlock(), false, true).didGainXp();
     }
 }

@@ -118,7 +118,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
         // 2. Scan Result (Habilidade Miner)
         ClientPlayNetworking.registerGlobalReceiver(MinerScanResultPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
-                OreHighlighter.setHighlights(payload.ores());
+                OreHighlighter.setHighlights(payload.ores(), payload.remainingDurationTicks());
             });
         });
 
@@ -213,6 +213,13 @@ public class MurilloSkillsClient implements ClientModInitializer {
             UltmineClientConfig.load();
             // Always sync XP direct-to-player preference to server (respects client choice over server default)
             ClientPlayNetworking.send(new XpDirectToggleC2SPayload(UltmineClientConfig.isXpDirectToPlayer()));
+            // Sync magnet config to server
+            ClientPlayNetworking.send(new com.murilloskills.network.MagnetConfigC2SPayload(
+                    UltmineClientConfig.isMagnetEnabled(),
+                    UltmineClientConfig.getMagnetRange()));
+            // Sync trash list to server
+            ClientPlayNetworking.send(new com.murilloskills.network.TrashListSyncC2SPayload(
+                    UltmineClientConfig.getTrashItems()));
         });
 
         // --- KEYBINDINGS ---

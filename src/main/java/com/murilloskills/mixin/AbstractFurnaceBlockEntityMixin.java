@@ -8,6 +8,7 @@ import com.murilloskills.utils.SkillConfig;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.input.SingleStackRecipeInput;
 import net.minecraft.registry.DynamicRegistryManager;
@@ -65,6 +66,7 @@ public abstract class AbstractFurnaceBlockEntityMixin {
     /**
      * Blacksmith Furnace Mastery: speeds up nearby furnaces based on Blacksmith level.
      * At level 100, furnaces cook up to 4x faster.
+     * Shows flame particles on the furnace as a visual indicator.
      */
     @Inject(method = "tick", at = @At("TAIL"))
     private static void onFurnaceTick(ServerWorld world, BlockPos pos, BlockState state,
@@ -82,8 +84,8 @@ public abstract class AbstractFurnaceBlockEntityMixin {
 
         int bestLevel = 0;
         for (ServerPlayerEntity player : nearbyPlayers) {
-            PlayerSkillData data = player.getAttached(ModAttachments.PLAYER_SKILLS);
-            if (data != null && data.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
+            PlayerSkillData data = player.getAttachedOrCreate(ModAttachments.PLAYER_SKILLS);
+            if (data.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
                 int level = data.getSkill(MurilloSkillsList.BLACKSMITH).level;
                 bestLevel = Math.max(bestLevel, level);
             }
@@ -108,5 +110,19 @@ public abstract class AbstractFurnaceBlockEntityMixin {
 
         // Add extra cook time, capped at cookingTotalTime - 1 to let normal crafting logic handle completion
         self.cookingTimeSpent = Math.min(self.cookingTimeSpent + extraTicks, self.cookingTotalTime - 1);
+
+        // Visual indicator: spawn flame particles on the furnace every 10 ticks (0.5s)
+        if (world.getTime() % 10 == 0) {
+            double x = pos.getX() + 0.5;
+            double y = pos.getY() + 1.0;
+            double z = pos.getZ() + 0.5;
+            world.spawnParticles(
+                    ParticleTypes.SOUL_FIRE_FLAME,
+                    x, y, z,
+                    2, // count
+                    0.2, 0.1, 0.2, // spread
+                    0.01 // speed
+            );
+        }
     }
 }

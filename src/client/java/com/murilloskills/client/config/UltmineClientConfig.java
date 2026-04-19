@@ -25,6 +25,9 @@ public class UltmineClientConfig {
         public boolean dropsToInventory = true;
         public boolean sameBlockOnly = false;
         public boolean xpDirectToPlayer = false;
+        public boolean magnetEnabled = false;
+        public int magnetRange = 8;
+        public java.util.List<String> trashItems = new java.util.ArrayList<>();
         public Map<String, ShapePrefs> shapePrefs = new java.util.HashMap<>();
 
         public UltmineData() {
@@ -114,6 +117,48 @@ public class UltmineClientConfig {
 
     public static void toggleXpDirectToPlayer() {
         get().xpDirectToPlayer = !get().xpDirectToPlayer;
+    }
+
+    // --- Magnet ---
+
+    public static boolean isMagnetEnabled() {
+        return get().magnetEnabled;
+    }
+
+    public static void setMagnetEnabled(boolean value) {
+        get().magnetEnabled = value;
+    }
+
+    public static void toggleMagnet() {
+        get().magnetEnabled = !get().magnetEnabled;
+    }
+
+    public static int getMagnetRange() {
+        return get().magnetRange;
+    }
+
+    public static void setMagnetRange(int range) {
+        get().magnetRange = Math.max(1, Math.min(range, 32));
+    }
+
+    // --- Trash ---
+
+    public static java.util.List<String> getTrashItems() {
+        return get().trashItems;
+    }
+
+    public static void addTrashItem(String itemId) {
+        if (!get().trashItems.contains(itemId)) {
+            get().trashItems.add(itemId);
+        }
+    }
+
+    public static void removeTrashItem(String itemId) {
+        get().trashItems.remove(itemId);
+    }
+
+    public static boolean isTrashItem(String itemId) {
+        return get().trashItems.contains(itemId);
     }
 
     // --- Per-shape prefs ---

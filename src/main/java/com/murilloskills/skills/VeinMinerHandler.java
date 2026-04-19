@@ -18,6 +18,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import java.util.ArrayDeque;
@@ -49,6 +50,13 @@ public final class VeinMinerHandler {
     private static final Map<UUID, Direction> ULTMINE_LAST_TARGET_FACE = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> ULTMINE_LAST_TARGET_TICK = new ConcurrentHashMap<>();
     private static final Map<UUID, List<PendingOriginCollection>> PENDING_ORIGIN_COLLECTIONS = new ConcurrentHashMap<>();
+
+    // Magnet per-player state
+    private static final Map<UUID, Boolean> MAGNET_ENABLED = new ConcurrentHashMap<>();
+    private static final Map<UUID, Integer> MAGNET_RANGE = new ConcurrentHashMap<>();
+
+    // Trash per-player item list
+    private static final Map<UUID, List<String>> TRASH_LISTS = new ConcurrentHashMap<>();
 
     /**
      * Map of blocks that should be considered equivalent for vein mining.
@@ -219,6 +227,9 @@ public final class VeinMinerHandler {
         ULTMINE_LAST_TARGET_FACE.remove(playerUuid);
         ULTMINE_LAST_TARGET_TICK.remove(playerUuid);
         PENDING_ORIGIN_COLLECTIONS.remove(playerUuid);
+        MAGNET_ENABLED.remove(playerUuid);
+        MAGNET_RANGE.remove(playerUuid);
+        TRASH_LISTS.remove(playerUuid);
     }
 
     /**
@@ -824,6 +835,124 @@ public final class VeinMinerHandler {
         }
 
         return new UltmineSelection(safeShape, safeDepth, safeLength, 0);
+    }
+
+    // ===== MAGNET =====
+
+    public static void setMagnetEnabled(ServerPlayerEntity player, boolean enabled) {
+        MAGNET_ENABLED.put(player.getUuid(), enabled);
+    }
+
+    public static boolean isMagnetEnabled(ServerPlayerEntity player) {
+        return MAGNET_ENABLED.getOrDefault(player.getUuid(), false);
+    }
+
+    public static void setMagnetRange(ServerPlayerEntity player, int range) {
+        MAGNET_RANGE.put(player.getUuid(), Math.max(1, Math.min(range, 32)));
+    }
+
+    public static int getMagnetRange(ServerPlayerEntity player) {
+        return MAGNET_RANGE.getOrDefault(player.getUuid(), 8);
+    }
+
+    /**
+     * Pulls nearby items and XP orbs toward the player.
+     * Called every tick from the server tick loop.
+     */
+    public static void tickMagnet(ServerPlayerEntity player) {
+        if (!isMagnetEnabled(player)) {
+            return;
+        }
+        if (!(player.getEntityWorld() instanceof ServerWorld serverWorld)) {
+            return;
+        }
+        if (player.isSpectator() || player.isDead()) {
+            return;
+        }
+
+        int range = getMagnetRange(player);
+        Vec3d playerPos = player.getEntityPos();
+        Box magnetBox = new Box(
+                playerPos.x - range, playerPos.y - range, playerPos.z - range,
+                playerPos.x + range, playerPos.y + range, playerPos.z + range);
+
+        // Pull items
+        List<ItemEntity> items = serverWorld.getEntitiesByClass(
+                ItemEntity.class, magnetBox, entity -> !entity.isRemoved() && entity.isAlive());
+        for (ItemEntity item : items) {
+            // Skip items with pickup delay (freshly dropped by player)
+            if (item.cannotPickup()) {
+                continue;
+            }
+            Vec3d itemPos = item.getEntityPos();
+            double dist = itemPos.distanceTo(playerPos);
+            if (dist < 1.5) {
+                // Close enough - teleport directly to player
+                item.setPosition(playerPos.x, playerPos.y, playerPos.z);
+            } else {
+                // Pull toward player with velocity
+                Vec3d direction = playerPos.subtract(itemPos).normalize();
+                double speed = Math.min(0.6, 1.0 / dist * 2.0);
+                item.setVelocity(direction.x * speed, direction.y * speed + 0.04, direction.z * speed);
+                item.velocityModified = true;
+            }
+        }
+
+        // Pull XP orbs
+        List<ExperienceOrbEntity> orbs = serverWorld.getEntitiesByClass(
+                ExperienceOrbEntity.class, magnetBox, entity -> !entity.isRemoved());
+        for (ExperienceOrbEntity orb : orbs) {
+            Vec3d orbPos = orb.getEntityPos();
+            double dist = orbPos.distanceTo(playerPos);
+            if (dist < 1.5) {
+                orb.setPosition(playerPos.x, playerPos.y, playerPos.z);
+            } else {
+                Vec3d direction = playerPos.subtract(orbPos).normalize();
+                double speed = Math.min(0.6, 1.0 / dist * 2.0);
+                orb.setVelocity(direction.x * speed, direction.y * speed + 0.04, direction.z * speed);
+                orb.velocityModified = true;
+            }
+        }
+    }
+
+    // ===== TRASH =====
+
+    public static void setTrashList(ServerPlayerEntity player, List<String> trashItems) {
+        TRASH_LISTS.put(player.getUuid(), new ArrayList<>(trashItems));
+    }
+
+    public static List<String> getTrashList(ServerPlayerEntity player) {
+        return TRASH_LISTS.getOrDefault(player.getUuid(), List.of());
+    }
+
+    /**
+     * Removes trash items from the player's inventory.
+     * Called every 10 ticks to avoid excessive scanning.
+     */
+    public static void tickTrash(ServerPlayerEntity player) {
+        List<String> trashList = TRASH_LISTS.get(player.getUuid());
+        if (trashList == null || trashList.isEmpty()) {
+            return;
+        }
+        if (player.isSpectator() || player.isDead()) {
+            return;
+        }
+        // Only run every 10 ticks (0.5 seconds)
+        if (player.age % 10 != 0) {
+            return;
+        }
+
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.size(); i++) {
+            ItemStack stack = inventory.getStack(i);
+            if (stack.isEmpty()) {
+                continue;
+            }
+            String itemId = Registries.ITEM.getId(stack.getItem()).toString();
+            if (trashList.contains(itemId)) {
+                inventory.setStack(i, ItemStack.EMPTY);
+            }
+        }
     }
 
     private record PendingOriginCollection(BlockPos pos, long expireTick) {

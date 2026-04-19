@@ -311,11 +311,12 @@ public class SkillsScreen extends Screen {
                     int x = startX + (col * (cardWidth + padding));
                     int y = startY + (row * (cardHeight + padding));
 
-                    // Botão de prestígio no card
+                    // Botão de prestígio no card (acima da fileira de botões inferiores)
+                    int bottomBtnSize = Math.max(12, cardHeight / 5);
                     int btnX = x + 18;
-                    int btnY = y + cardHeight - 18;
-                    int btnWidth = cardWidth - 36;
                     int btnHeight = 14;
+                    int btnY = y + cardHeight - bottomBtnSize - 4 - btnHeight - 2;
+                    int btnWidth = cardWidth - 36;
 
                     int nextPrestige = stats.prestige + 1;
                     int nextXpBonus = nextPrestige * 5; // +5% per prestige
@@ -901,12 +902,12 @@ public class SkillsScreen extends Screen {
                                 .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                 .formatted(Formatting.GREEN));
 
-                        int baseLooting = (int) (level * SkillConfig.ARCHER_LOOTING_PER_LEVEL);
-                        int looting = (int) (baseLooting * prestigeMultiplier);
-                        if (looting > 0)
-                            tooltip.add(Text.translatable("murilloskills.passive.archer.extra_looting", looting)
-                                    .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
-                                    .formatted(Formatting.GREEN));
+                        float baseLooting = level * SkillConfig.ARCHER_LOOTING_PER_LEVEL;
+                        float looting = baseLooting * prestigeMultiplier;
+                        tooltip.add(Text.translatable("murilloskills.passive.archer.extra_looting",
+                                        String.format("%.1f", looting))
+                                .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
+                                .formatted(Formatting.GREEN));
 
                         // Nível 10: Flechas mais rápidas
                         if (level >= SkillConfig.ARCHER_FAST_ARROWS_LEVEL) {

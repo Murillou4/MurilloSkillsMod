@@ -30,7 +30,7 @@ public class OreFilterConfig {
         public Map<String, OreSettings> oreSettings = new java.util.HashMap<>();
 
         public DisplayMode displayMode = DisplayMode.XRAY;
-        public int maxOres = 20; // Max ores to display
+        public int maxOres = 5000; // Max ores to display
         public boolean prioritizeRare = true; // Show diamond/emerald/debris first
 
         public OreFilterData() {

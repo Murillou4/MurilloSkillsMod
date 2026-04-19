@@ -198,7 +198,7 @@ public class SkillConfig {
     public static final float MINER_DURABILITY_CHANCE = 0.15f;
     public static final int MINER_ABILITY_COOLDOWN_SECONDS = 1200;
     public static final int MINER_ABILITY_RADIUS = 30;
-    public static final int MINER_ABILITY_DURATION_SECONDS = 30; // Aumentado de 10s para 30s
+    public static final int MINER_ABILITY_DURATION_SECONDS = 420; // 7 minutos
 
     // --- WARRIOR ---
     public static float getWarriorDamagePerLevel() {

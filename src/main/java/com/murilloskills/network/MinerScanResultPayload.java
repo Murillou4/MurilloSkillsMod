@@ -11,10 +11,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Server -> Client: Lista de blocos de minério para destacar com cores
- * Cada entrada contém posição e tipo de minério para cor apropriada
+ * Server -> Client: Lista de blocos de minério para destacar com cores.
+ * Cada entrada contém posição e tipo de minério para cor apropriada, junto da
+ * duração restante do efeito em ticks.
  */
-public record MinerScanResultPayload(List<OreEntry> ores) implements CustomPayload {
+public record MinerScanResultPayload(List<OreEntry> ores, int remainingDurationTicks) implements CustomPayload {
     public static final CustomPayload.Id<MinerScanResultPayload> ID = new CustomPayload.Id<>(
             Identifier.of(MurilloSkills.MOD_ID, "miner_scan_result"));
 
@@ -57,6 +58,7 @@ public record MinerScanResultPayload(List<OreEntry> ores) implements CustomPaylo
                     buf.writeBlockPos(entry.pos);
                     buf.writeEnumConstant(entry.type);
                 }
+                buf.writeVarInt(Math.max(0, payload.remainingDurationTicks));
             },
             (buf) -> {
                 int size = buf.readInt();
@@ -66,7 +68,8 @@ public record MinerScanResultPayload(List<OreEntry> ores) implements CustomPaylo
                     OreType type = buf.readEnumConstant(OreType.class);
                     list.add(new OreEntry(pos, type));
                 }
-                return new MinerScanResultPayload(list);
+                int remainingDurationTicks = buf.readVarInt();
+                return new MinerScanResultPayload(list, remainingDurationTicks);
             });
 
     @Override

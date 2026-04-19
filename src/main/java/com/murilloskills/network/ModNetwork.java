@@ -45,5 +45,7 @@ public class ModNetwork {
         PayloadTypeRegistry.playC2S().register(XpDirectToggleC2SPayload.ID, XpDirectToggleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SpeedBoostToggleC2SPayload.ID, SpeedBoostToggleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(AutoTorchToggleC2SPayload.ID, AutoTorchToggleC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(MagnetConfigC2SPayload.ID, MagnetConfigC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(TrashListSyncC2SPayload.ID, TrashListSyncC2SPayload.CODEC);
     }
 }

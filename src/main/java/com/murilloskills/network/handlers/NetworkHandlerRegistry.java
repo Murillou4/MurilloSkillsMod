@@ -64,8 +64,10 @@ public final class NetworkHandlerRegistry {
             registerHandler("XpDirectToggle", XpDirectToggleC2SPayload.ID, XpDirectToggleNetworkHandler.create());
             registerHandler("SpeedBoost", SpeedBoostToggleC2SPayload.ID, SpeedBoostToggleNetworkHandler.create());
             registerHandler("AutoTorch", AutoTorchToggleC2SPayload.ID, AutoTorchToggleNetworkHandler.create());
+            registerHandler("MagnetConfig", MagnetConfigC2SPayload.ID, MagnetConfigNetworkHandler.create());
+            registerHandler("TrashListSync", TrashListSyncC2SPayload.ID, TrashListSyncNetworkHandler.create());
 
-            LOGGER.info("Successfully registered 18 network handlers");
+            LOGGER.info("Successfully registered 20 network handlers");
 
         } catch (Exception e) {
             LOGGER.error("CRITICAL: Failed to register network handlers!", e);

@@ -20,9 +20,8 @@ import net.minecraft.util.math.MathHelper;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * Performance-focused Ultmine radial menu:
- * - Radial lines are rendered once into dynamic textures on open.
- * - Per-frame cost is just textured quad draw + labels.
+ * Performance-focused Ultmine radial menu with shape preview icons,
+ * per-shape accent colors, and inline variant cycling.
  */
 public class UltmineRadialMenuScreen extends Screen {
     private static final ColorPalette PALETTE = ColorPalette.premium();
@@ -36,6 +35,15 @@ public class UltmineRadialMenuScreen extends Screen {
             UltmineShape.SQUARE_20x20_D1
     };
 
+    private static final int[] SHAPE_ACCENT_COLORS = {
+            0xFF5599FF, // S_3x3 - Blue
+            0xFF44DDDD, // R_2x1 - Cyan
+            0xFFFF9944, // LEGACY - Orange
+            0xFF55DD66, // LINE - Green
+            0xFFDDAA33, // STAIRS - Amber
+            0xFFBB66FF, // SQUARE_20x20_D1 - Purple
+    };
+
     private static final float INNER_RADIUS = 58.0f;
     private static final float OUTER_RADIUS = 142.0f;
     private static final float SEGMENT_GAP_RADIANS = 0.090f;
@@ -46,10 +54,13 @@ public class UltmineRadialMenuScreen extends Screen {
     private static final long OPEN_ANIM_MS = 180L;
     private static final float STROKE_AA = 0.75f;
     private static final float LABEL_MAIN_SCALE = 1.04f;
-    private static final float LABEL_SUB_SCALE = 0.92f;
+    private static final float LABEL_SUB_SCALE = 0.80f;
     private static final float CENTER_TITLE_SCALE = 0.86f;
     private static final float CENTER_CURRENT_SCALE = 0.82f;
     private static final float HINT_SCALE = 0.78f;
+    private static final int ICON_CELL = 4;
+    private static final int ICON_GAP = 1;
+    private static final int ICON_STEP = ICON_CELL + ICON_GAP;
 
     private final UltmineShape[] shapes = SHAPE_ORDER;
     private final Text[] shortNameTexts = new Text[shapes.length];
@@ -77,7 +88,7 @@ public class UltmineRadialMenuScreen extends Screen {
     private int hoveredIndex = -1;
     private int selectedIndex = 0;
     private int initialSelectedIndex = 0;
-    private int currentVariant = 0;
+    private final int[] shapeVariants = new int[SHAPE_ORDER.length];
     private boolean selectionChanged = false;
     private long openedAtMs;
 
@@ -98,11 +109,10 @@ public class UltmineRadialMenuScreen extends Screen {
             if (shapes[i] == current) {
                 selectedIndex = i;
                 initialSelectedIndex = i;
-                break;
             }
+            shapeVariants[i] = UltmineClientConfig.getShapeVariant(shapes[i]);
         }
         selectionChanged = false;
-        currentVariant = UltmineClientState.getVariant();
 
         ensureRadialTextures();
     }
@@ -204,6 +214,15 @@ public class UltmineRadialMenuScreen extends Screen {
         if (verticalAmount == 0.0) {
             return false;
         }
+        // If hovering a shape with variants, scroll cycles variant for that shape
+        if (hoveredIndex >= 0 && hoveredIndex < shapes.length) {
+            int variantCount = UltmineShape.getVariantCount(shapes[hoveredIndex]);
+            if (variantCount > 1) {
+                cycleVariantForShape(hoveredIndex, verticalAmount > 0 ? 1 : -1);
+                return true;
+            }
+        }
+        // Otherwise cycle selected shape
         int dir = verticalAmount > 0.0 ? -1 : 1;
         selectedIndex = (selectedIndex + dir + shapes.length) % shapes.length;
         selectionChanged = true;
@@ -377,35 +396,78 @@ public class UltmineRadialMenuScreen extends Screen {
         int x = Math.round(centerX + MathHelper.cos(mid) * radius);
         int y = Math.round(centerY + MathHelper.sin(mid) * radius);
 
-        int mainColor = hovered ? withAlpha(PALETTE.textWhite(), 252) : withAlpha(PALETTE.textLight(), 236);
-        int subColor = selected ? withAlpha(PALETTE.textWhite(), 228) : withAlpha(PALETTE.textMuted(), 210);
+        int accentColor = SHAPE_ACCENT_COLORS[index];
+        boolean active = hovered || selected;
 
-        drawScaledCenteredText(context, shortNameTexts[index], x, y - 10, mainColor, LABEL_MAIN_SCALE, true);
-        drawScaledCenteredText(context, shapeNameTexts[index], x, y + 2, subColor, LABEL_SUB_SCALE, true);
+        // Shape preview icon
+        int iconAlpha = hovered ? 230 : (selected ? 190 : 90);
+        drawShapeIcon(context, x, y - 14, index, withAlpha(accentColor, iconAlpha));
+
+        // Short name in accent color when active
+        int mainColor = hovered ? withAlpha(accentColor, 255)
+                : selected ? withAlpha(PALETTE.textWhite(), 240)
+                : withAlpha(PALETTE.textLight(), 160);
+        drawScaledCenteredText(context, shortNameTexts[index], x, y + 2, mainColor, LABEL_MAIN_SCALE, true);
+
+        // Full shape name
+        int subColor = active ? withAlpha(PALETTE.textLight(), 210) : withAlpha(PALETTE.textMuted(), 120);
+        drawScaledCenteredText(context, shapeNameTexts[index], x, y + 13, subColor, LABEL_SUB_SCALE, true);
+
+        // Variant dots indicator
+        int variantCount = UltmineShape.getVariantCount(shapes[index]);
+        if (variantCount > 1) {
+            int dotAlpha = active ? 230 : 80;
+            drawVariantDots(context, x, y + 23, variantCount, shapeVariants[index], withAlpha(accentColor, dotAlpha));
+        }
     }
 
     private void renderCenterPanel(DrawContext context, int centerX, int centerY, float eased) {
-        drawScaledCenteredText(context, this.title, centerX, centerY - 16,
-                withAlpha(PALETTE.textWhite(), Math.round(234 * eased)), CENTER_TITLE_SCALE, true);
-        drawScaledCenteredText(context,
-                Text.translatable("murilloskills.ultmine.menu.current", shapeNameTexts[selectedIndex]),
-                centerX, centerY - 2, withAlpha(PALETTE.textWhite(), Math.round(226 * eased)), CENTER_CURRENT_SCALE, true);
-
         int activeIndex = hoveredIndex >= 0 ? hoveredIndex : selectedIndex;
-        if (activeIndex >= 0 && activeIndex < shapes.length) {
-            UltmineShape shape = shapes[activeIndex];
-            int variantCount = UltmineShape.getVariantCount(shape);
-            if (variantCount > 1) {
-                String variantKey = UltmineShape.getVariantTranslationKey(shape, currentVariant);
-                Text variantText = Text.literal("\u25C0 ").append(Text.translatable(variantKey)).append(" \u25B6");
-                drawScaledCenteredText(context, variantText, centerX, centerY + 12,
-                        withAlpha(PALETTE.textLight(), Math.round(210 * eased)), CENTER_CURRENT_SCALE, true);
-            }
+        if (activeIndex < 0 || activeIndex >= shapes.length) return;
+
+        UltmineShape shape = shapes[activeIndex];
+        int accentColor = SHAPE_ACCENT_COLORS[activeIndex];
+
+        // Shape name in accent color
+        drawScaledCenteredText(context, shapeNameTexts[activeIndex], centerX, centerY - 16,
+                withAlpha(accentColor, Math.round(245 * eased)), CENTER_TITLE_SCALE, true);
+
+        // Dimensions info
+        String dims;
+        if (shape == UltmineShape.LEGACY) {
+            dims = "Vein";
+        } else if (shape == UltmineShape.LINE) {
+            dims = "Ray";
+        } else {
+            dims = shape.getWidth() + "\u00D7" + shape.getHeight();
+            if (shape.getDefaultDepth() > 1) dims += " d:" + shape.getDefaultDepth();
+        }
+        drawScaledCenteredText(context, Text.literal(dims), centerX, centerY - 4,
+                withAlpha(PALETTE.textMuted(), Math.round(180 * eased)), CENTER_CURRENT_SCALE, true);
+
+        // Variant info with arrows
+        int variantCount = UltmineShape.getVariantCount(shape);
+        if (variantCount > 1) {
+            String variantKey = UltmineShape.getVariantTranslationKey(shape, shapeVariants[activeIndex]);
+            Text variantText = Text.literal("\u25C0 ").append(Text.translatable(variantKey)).append(" \u25B6");
+            drawScaledCenteredText(context, variantText, centerX, centerY + 8,
+                    withAlpha(PALETTE.textLight(), Math.round(215 * eased)), CENTER_CURRENT_SCALE, true);
+
+            drawScaledCenteredText(context, Text.literal("Scroll / A,D"), centerX, centerY + 20,
+                    withAlpha(PALETTE.textMuted(), Math.round(110 * eased)), 0.72f, false);
+        }
+
+        // Show selected shape indicator when hovering a different shape
+        if (hoveredIndex >= 0 && hoveredIndex != selectedIndex) {
+            int infoY = centerY + (variantCount > 1 ? 32 : 12);
+            Text selectedLabel = Text.literal("\u25CF ").append(shapeNameTexts[selectedIndex]);
+            drawScaledCenteredText(context, selectedLabel, centerX, infoY,
+                    withAlpha(PALETTE.textMuted(), Math.round(120 * eased)), 0.72f, false);
         }
     }
 
     private void renderHintText(DrawContext context) {
-        drawScaledCenteredText(context, Text.literal("LMB select  |  Wheel cycle  |  A/D variant  |  ESC cancel"),
+        drawScaledCenteredText(context, Text.literal("Click select  |  Scroll variant  |  A/D variant  |  ESC cancel"),
                 this.width / 2, this.height - 20, withAlpha(PALETTE.textGray(), 128), HINT_SCALE, false);
     }
 
@@ -449,23 +511,95 @@ public class UltmineRadialMenuScreen extends Screen {
         }
         UltmineShape shape = shapes[index];
         UltmineClientState.applyShapeDefaults(shape);
-        currentVariant = UltmineClientState.getVariant();
+        shapeVariants[index] = UltmineClientState.getVariant();
         ClientPlayNetworking.send(new UltmineShapeSelectC2SPayload(
-                shape, UltmineClientState.getDepth(), UltmineClientState.getLength(), currentVariant));
+                shape, UltmineClientState.getDepth(), UltmineClientState.getLength(), shapeVariants[index]));
     }
 
     private void cycleVariant(int direction) {
         int activeIndex = hoveredIndex >= 0 ? hoveredIndex : selectedIndex;
-        if (activeIndex < 0 || activeIndex >= shapes.length) return;
-        UltmineShape shape = shapes[activeIndex];
+        cycleVariantForShape(activeIndex, direction);
+    }
+
+    private void cycleVariantForShape(int shapeIndex, int direction) {
+        if (shapeIndex < 0 || shapeIndex >= shapes.length) return;
+        UltmineShape shape = shapes[shapeIndex];
         int count = UltmineShape.getVariantCount(shape);
         if (count <= 1) return;
-        currentVariant = ((currentVariant + direction) % count + count) % count;
-        UltmineClientState.setVariant(currentVariant);
-        UltmineClientConfig.setShapeVariant(shape, currentVariant);
+        int newVariant = ((shapeVariants[shapeIndex] + direction) % count + count) % count;
+        shapeVariants[shapeIndex] = newVariant;
+        UltmineClientState.setVariant(newVariant);
+        UltmineClientConfig.setShapeVariant(shape, newVariant);
         UltmineClientConfig.save();
         ClientPlayNetworking.send(new UltmineShapeSelectC2SPayload(
-                shape, UltmineClientState.getDepth(), UltmineClientState.getLength(), currentVariant));
+                shape, UltmineClientState.getDepth(), UltmineClientState.getLength(), newVariant));
+    }
+
+    private void drawShapeIcon(DrawContext context, int cx, int cy, int shapeIndex, int color) {
+        switch (shapes[shapeIndex]) {
+            case S_3x3 -> {
+                int sx = cx - (3 * ICON_STEP - ICON_GAP) / 2;
+                int sy = cy - (3 * ICON_STEP - ICON_GAP) / 2;
+                for (int r = 0; r < 3; r++)
+                    for (int c = 0; c < 3; c++)
+                        context.fill(sx + c * ICON_STEP, sy + r * ICON_STEP,
+                                sx + c * ICON_STEP + ICON_CELL, sy + r * ICON_STEP + ICON_CELL, color);
+            }
+            case R_2x1 -> {
+                int sx = cx - (2 * ICON_STEP - ICON_GAP) / 2;
+                int sy = cy - ICON_CELL / 2;
+                for (int c = 0; c < 2; c++)
+                    context.fill(sx + c * ICON_STEP, sy, sx + c * ICON_STEP + ICON_CELL, sy + ICON_CELL, color);
+            }
+            case LEGACY -> {
+                // Cross/vein pattern
+                int sx = cx - (3 * ICON_STEP - ICON_GAP) / 2;
+                int sy = cy - (3 * ICON_STEP - ICON_GAP) / 2;
+                context.fill(sx + ICON_STEP, sy, sx + ICON_STEP + ICON_CELL, sy + ICON_CELL, color);
+                context.fill(sx, sy + ICON_STEP, sx + ICON_CELL, sy + ICON_STEP + ICON_CELL, color);
+                context.fill(sx + ICON_STEP, sy + ICON_STEP, sx + ICON_STEP + ICON_CELL, sy + ICON_STEP + ICON_CELL, color);
+                context.fill(sx + 2 * ICON_STEP, sy + ICON_STEP, sx + 2 * ICON_STEP + ICON_CELL, sy + ICON_STEP + ICON_CELL, color);
+                context.fill(sx + ICON_STEP, sy + 2 * ICON_STEP, sx + ICON_STEP + ICON_CELL, sy + 2 * ICON_STEP + ICON_CELL, color);
+            }
+            case LINE -> {
+                int sx = cx - ICON_CELL / 2;
+                int sy = cy - (4 * ICON_STEP - ICON_GAP) / 2;
+                for (int r = 0; r < 4; r++)
+                    context.fill(sx, sy + r * ICON_STEP, sx + ICON_CELL, sy + r * ICON_STEP + ICON_CELL, color);
+            }
+            case STAIRS -> {
+                int sx = cx - (3 * ICON_STEP - ICON_GAP) / 2;
+                int sy = cy - (3 * ICON_STEP - ICON_GAP) / 2;
+                context.fill(sx, sy, sx + ICON_CELL, sy + ICON_CELL, color);
+                context.fill(sx + ICON_STEP, sy + ICON_STEP, sx + ICON_STEP + ICON_CELL, sy + ICON_STEP + ICON_CELL, color);
+                context.fill(sx + 2 * ICON_STEP, sy + 2 * ICON_STEP, sx + 2 * ICON_STEP + ICON_CELL, sy + 2 * ICON_STEP + ICON_CELL, color);
+            }
+            case SQUARE_20x20_D1 -> {
+                // Square outline
+                int sx = cx - (4 * ICON_STEP - ICON_GAP) / 2;
+                int sy = cy - (4 * ICON_STEP - ICON_GAP) / 2;
+                for (int i = 0; i < 4; i++) {
+                    context.fill(sx + i * ICON_STEP, sy, sx + i * ICON_STEP + ICON_CELL, sy + ICON_CELL, color);
+                    context.fill(sx + i * ICON_STEP, sy + 3 * ICON_STEP, sx + i * ICON_STEP + ICON_CELL, sy + 3 * ICON_STEP + ICON_CELL, color);
+                }
+                for (int i = 1; i < 3; i++) {
+                    context.fill(sx, sy + i * ICON_STEP, sx + ICON_CELL, sy + i * ICON_STEP + ICON_CELL, color);
+                    context.fill(sx + 3 * ICON_STEP, sy + i * ICON_STEP, sx + 3 * ICON_STEP + ICON_CELL, sy + i * ICON_STEP + ICON_CELL, color);
+                }
+            }
+        }
+    }
+
+    private void drawVariantDots(DrawContext context, int cx, int y, int total, int active, int accentColor) {
+        int dotSize = 3;
+        int dotGap = 3;
+        int totalW = total * dotSize + (total - 1) * dotGap;
+        int sx = cx - totalW / 2;
+        for (int i = 0; i < total; i++) {
+            int dx = sx + i * (dotSize + dotGap);
+            int color = (i == active) ? accentColor : withAlpha(0x00FFFFFF, 60);
+            context.fill(dx, y, dx + dotSize, y + dotSize, color);
+        }
     }
 
     private static void clearImage(NativeImage image) {
