@@ -2,14 +2,18 @@ package com.murilloskills.events;
 
 import com.murilloskills.impl.BuilderSkill;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.skills.UltPlaceHandler;
 import com.murilloskills.utils.BuilderXpGetter;
 import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillNotifier;
 import com.murilloskills.utils.SkillsNetworkUtils;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Block;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +30,8 @@ public final class BlockPlacementHandler {
         LOGGER.info("BlockPlacementHandler ready - Builder XP now uses successful post-placement hooks");
     }
 
-    public static void onBlockPlaced(ServerPlayerEntity serverPlayer, ServerWorld world, BlockPos placementPos, Block block) {
+    public static void onBlockPlaced(ServerPlayerEntity serverPlayer, ServerWorld world, BlockPos placementPos, Block block,
+            Direction face, Hand hand, net.minecraft.item.ItemStack sourceStack, BlockState previousState) {
         var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
         if (!playerData.isSkillSelected(MurilloSkillsList.BUILDER)) {
             return;
@@ -46,6 +51,8 @@ public final class BlockPlacementHandler {
                     awardCreativeBrushXp(serverPlayer, playerData, xpResult.getXpAmount(), extraBlocks);
                 }
             }
+
+            UltPlaceHandler.handle(serverPlayer, world, placementPos, face, hand, sourceStack, previousState);
         } catch (Exception e) {
             LOGGER.error("Error processing Builder XP for block placement", e);
         }

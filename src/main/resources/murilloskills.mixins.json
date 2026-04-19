@@ -13,6 +13,7 @@
     "FishingBobberEntityMixin",
     "ItemEntityFishingMixin",
     "SeedItemMixin",
+    "HoeItemMixin",
     "BoneMealItemMixin",
     "ItemStackMixin",
     "AnvilScreenHandlerMixin",

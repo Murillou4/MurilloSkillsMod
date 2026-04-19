@@ -1,6 +1,7 @@
 package com.murilloskills.utils;
 
 import com.murilloskills.config.ModConfig;
+import com.murilloskills.skills.UltPlaceShape;
 import com.murilloskills.skills.UltmineShape;
 
 /**
@@ -182,6 +183,54 @@ public class SkillConfig {
             case STAIRS -> ultmine.stairs;
             case SQUARE_20x20_D1 -> ultmine.square20x20d1;
             case LEGACY -> ultmine.legacy;
+        };
+    }
+
+    // --- BUILDER ULT PLACE ---
+    public static boolean isBuilderUltPlaceEnabled() {
+        return ModConfig.get().builderUltPlace.enabled;
+    }
+
+    public static int getUltPlaceMaxBlocksPerUse() {
+        return Math.max(1, ModConfig.get().builderUltPlace.maxBlocksPerUse);
+    }
+
+    public static int getUltPlaceUndoHistorySize() {
+        return Math.max(1, ModConfig.get().builderUltPlace.undoHistorySize);
+    }
+
+    public static int getBuilderUltPlacePreviewRequestIntervalTicks() {
+        return Math.max(1, ModConfig.get().builderUltPlace.previewRequestIntervalTicks);
+    }
+
+    public static int getUltPlaceShapeDefaultSize(UltPlaceShape shape) {
+        return Math.max(1, getUltPlaceShapeSettings(shape).defaultDepth);
+    }
+
+    public static int getUltPlaceShapeMaxSize(UltPlaceShape shape) {
+        return Math.max(1, getUltPlaceShapeSettings(shape).maxDepth);
+    }
+
+    public static int getUltPlaceShapeDefaultLength(UltPlaceShape shape) {
+        return Math.max(1, getUltPlaceShapeSettings(shape).defaultLength);
+    }
+
+    public static int getUltPlaceShapeMaxLength(UltPlaceShape shape) {
+        return Math.max(1, getUltPlaceShapeSettings(shape).maxLength);
+    }
+
+    private static ModConfig.UltmineShapeSettings getUltPlaceShapeSettings(UltPlaceShape shape) {
+        var ultPlace = ModConfig.get().builderUltPlace;
+        return switch (shape) {
+            case PLANE_NXN -> ultPlace.plane;
+            case LINE -> ultPlace.line;
+            case WALL -> ultPlace.wall;
+            case STAIRS -> ultPlace.stairs;
+            case COLUMN -> ultPlace.column;
+            case TUNNEL_3X3 -> ultPlace.tunnel3x3;
+            case CIRCLE -> ultPlace.circle;
+            case SPHERE_SHELL -> ultPlace.sphereShell;
+            case SINGLE -> ultPlace.single;
         };
     }
 

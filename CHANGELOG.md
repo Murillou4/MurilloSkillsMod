@@ -4,6 +4,23 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.31] - 2026-04-19
+
+### 🏗️ Builder - UltPlace Ghost Preview
+
+- **Preview opaco**: enquanto a toggle do UltPlace está ativa e o player segura um bloco, o preview agora exibe o **modelo 3D ghost** do bloco em cada posição que será preenchida, em vez de apenas o outline.
+- **Iluminação máxima**: ghosts são renderizados com luz cheia para serem visíveis em qualquer condição de luz do mundo.
+- **Outline mantido**: o highlight do bloco primário continua aparecendo por cima do ghost para destacar o ponto de origem.
+
+### 🌾 Farmer - Hoe em Área
+
+- **Enxada em área**: com Farmer selecionado e o modo área ativo (`G`), usar a enxada em grass/dirt/podzol/dirt_path/coarse_dirt agora ara toda a região (`3x3` → `9x9` conforme o nível desbloqueado).
+- **Durabilidade preservada**: a enxada toma apenas `1` de dano por ativação, independente de quantos blocos foram arados.
+- **Som único**: o som de tilling toca uma única vez por ativação para evitar spam.
+- **Comportamento vanilla mantido**: coarse dirt vira dirt normal (não farmland), igual ao vanilla.
+
+---
+
 ## [1.2.30] - 2026-04-19
 
 ### 🌾 Farmer - Area Mode Expansion

@@ -5,6 +5,9 @@ import com.murilloskills.network.AreaPlantingSyncS2CPayload;
 import com.murilloskills.network.HollowFillToggleC2SPayload;
 import com.murilloskills.network.MinerScanResultPayload;
 import com.murilloskills.network.NightVisionToggleC2SPayload;
+import com.murilloskills.network.UltPlacePreviewRequestC2SPayload;
+import com.murilloskills.network.UltPlacePreviewS2CPayload;
+import com.murilloskills.network.UltPlaceUndoC2SPayload;
 import com.murilloskills.network.UltminePreviewS2CPayload;
 import com.murilloskills.network.UltmineRequestC2SPayload;
 import com.murilloskills.network.UltmineResultS2CPayload;
@@ -19,13 +22,17 @@ import com.murilloskills.network.VeinMinerToggleC2SPayload;
 import com.murilloskills.network.XpDirectToggleC2SPayload;
 import com.murilloskills.network.XpGainS2CPayload;
 import com.murilloskills.client.config.UltmineClientConfig;
+import com.murilloskills.data.ClientSkillData;
+import com.murilloskills.data.UltPlaceClientState;
 import com.murilloskills.data.UltmineClientState;
+import com.murilloskills.gui.UltPlaceConfigScreen;
 import com.murilloskills.render.AreaPlantingHud;
 import com.murilloskills.render.AutoTorchHud;
 import com.murilloskills.render.OreHighlighter;
 import com.murilloskills.render.PathfinderHud;
 import com.murilloskills.render.RainDanceEffect;
 import com.murilloskills.render.TreasureHighlighter;
+import com.murilloskills.render.UltPlacePreview;
 import com.murilloskills.render.UltminePreview;
 import com.murilloskills.render.VeinMinerPreview;
 import com.murilloskills.render.XpToastRenderer;
@@ -42,6 +49,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.item.BlockItem;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.BlockHitResult;
@@ -70,6 +78,9 @@ public class MurilloSkillsClient implements ClientModInitializer {
     private static KeyBinding veinMinerDropsToggleKey;
     private static KeyBinding autoTorchToggleKey;
     private static KeyBinding ultmineRadialMenuKey;
+    private static KeyBinding ultPlaceToggleKey;
+    private static KeyBinding ultPlaceConfigKey;
+    private static KeyBinding ultPlaceUndoKey;
 
     // Vein Miner hold state tracking
     private static boolean veinMinerKeyHeld = false;
@@ -178,6 +189,10 @@ public class MurilloSkillsClient implements ClientModInitializer {
             context.client().execute(() -> UltmineClientState.updatePreview(payload.positions()));
         });
 
+        ClientPlayNetworking.registerGlobalReceiver(UltPlacePreviewS2CPayload.ID, (payload, context) -> {
+            context.client().execute(() -> UltPlaceClientState.updatePreview(payload.positions()));
+        });
+
         // 9. Pathfinder speed boost state sync
         ClientPlayNetworking.registerGlobalReceiver(
                 com.murilloskills.network.PathfinderSyncS2CPayload.ID, (payload, context) -> {
@@ -211,6 +226,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
         // --- SYNC CLIENT CONFIG ON JOIN ---
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             UltmineClientConfig.load();
+            UltPlaceClientState.clearPreview();
             // Always sync XP direct-to-player preference to server (respects client choice over server default)
             ClientPlayNetworking.send(new XpDirectToggleC2SPayload(UltmineClientConfig.isXpDirectToPlayer()));
             // Sync magnet config to server
@@ -220,6 +236,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
             // Sync trash list to server
             ClientPlayNetworking.send(new com.murilloskills.network.TrashListSyncC2SPayload(
                     UltmineClientConfig.getTrashItems()));
+            ClientPlayNetworking.send(UltPlaceClientState.toPayload());
         });
 
         // --- KEYBINDINGS ---
@@ -232,6 +249,12 @@ public class MurilloSkillsClient implements ClientModInitializer {
 
         abilityKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.murilloskills.use_ability",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_Z,
+                KEYBIND_CATEGORY));
+
+        ultPlaceUndoKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.murilloskills.ultplace_undo",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_Z,
                 KEYBIND_CATEGORY));
@@ -260,8 +283,20 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_V,
                 KEYBIND_CATEGORY));
 
+        ultPlaceToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.murilloskills.ultplace_toggle",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_V,
+                KEYBIND_CATEGORY));
+
         speedBoostToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.murilloskills.speed_boost_toggle",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_B,
+                KEYBIND_CATEGORY));
+
+        ultPlaceConfigKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.murilloskills.ultplace_config",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_B,
                 KEYBIND_CATEGORY));
@@ -306,8 +341,9 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 client.setScreen(new com.murilloskills.gui.SkillsScreen());
             }
             while (abilityKey.wasPressed()) {
-                // Envia pacote genérico de habilidade (Server decide o que fazer)
-                ClientPlayNetworking.send(new SkillAbilityC2SPayload());
+                if (!isUltPlaceUndoChord(client)) {
+                    ClientPlayNetworking.send(new SkillAbilityC2SPayload());
+                }
             }
             while (areaPlantingToggleKey.wasPressed()) {
                 // Envia pacote para ciclar o modo em área do Farmer
@@ -322,12 +358,26 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 ClientPlayNetworking.send(new NightVisionToggleC2SPayload());
             }
             while (stepAssistToggleKey.wasPressed()) {
-                // Envia pacote para toggle de step assist (Explorer)
-                ClientPlayNetworking.send(new StepAssistToggleC2SPayload());
+                if (!shouldRouteUltPlaceToggle(client)) {
+                    ClientPlayNetworking.send(new StepAssistToggleC2SPayload());
+                }
+            }
+            while (ultPlaceToggleKey.wasPressed()) {
+                if (shouldRouteUltPlaceToggle(client)) {
+                    UltPlaceClientState.toggleEnabled();
+                    UltPlaceClientState.clearPreview();
+                    ClientPlayNetworking.send(UltPlaceClientState.toPayload());
+                }
             }
             while (speedBoostToggleKey.wasPressed()) {
-                // Envia pacote para toggle de speed boost (Explorer)
-                ClientPlayNetworking.send(new SpeedBoostToggleC2SPayload());
+                if (!shouldRouteUltPlaceConfig(client)) {
+                    ClientPlayNetworking.send(new SpeedBoostToggleC2SPayload());
+                }
+            }
+            while (ultPlaceConfigKey.wasPressed()) {
+                if (shouldRouteUltPlaceConfig(client)) {
+                    client.setScreen(new UltPlaceConfigScreen(client.currentScreen));
+                }
             }
             while (autoTorchToggleKey.wasPressed()) {
                 // Envia pacote para toggle de auto-torch (Miner)
@@ -379,12 +429,34 @@ public class MurilloSkillsClient implements ClientModInitializer {
             } else {
                 UltmineClientState.clearPreview();
             }
+
+            while (ultPlaceUndoKey.wasPressed()) {
+                if (isUltPlaceUndoChord(client)) {
+                    ClientPlayNetworking.send(new UltPlaceUndoC2SPayload());
+                }
+            }
+
+            if (shouldRequestUltPlacePreview(client)) {
+                HitResult hitResult = client.crosshairTarget;
+                if (hitResult instanceof BlockHitResult blockHit && client.world != null) {
+                    int interval = SkillConfig.getBuilderUltPlacePreviewRequestIntervalTicks();
+                    if (client.world.getTime() % interval == 0) {
+                        ClientPlayNetworking.send(new UltPlacePreviewRequestC2SPayload(
+                                blockHit.getBlockPos(), blockHit.getSide()));
+                    }
+                } else {
+                    UltPlaceClientState.clearPreview();
+                }
+            } else {
+                UltPlaceClientState.clearPreview();
+            }
         });
 
         WorldRenderEvents.END_MAIN.register(OreHighlighter::render);
         WorldRenderEvents.END_MAIN.register(TreasureHighlighter::render);
         WorldRenderEvents.END_MAIN.register(VeinMinerPreview::render);
         WorldRenderEvents.END_MAIN.register(UltminePreview::render);
+        WorldRenderEvents.END_MAIN.register(UltPlacePreview::render);
 
         // HUD rendering for indicators
         HudRenderCallback.EVENT.register(AreaPlantingHud::render);
@@ -401,5 +473,34 @@ public class MurilloSkillsClient implements ClientModInitializer {
             return GLFW.glfwGetMouseButton(windowHandle, boundKey.getCode()) == GLFW.GLFW_PRESS;
         }
         return InputUtil.isKeyPressed(client.getWindow(), boundKey.getCode());
+    }
+
+    private static boolean shouldRouteUltPlaceToggle(MinecraftClient client) {
+        return isBuilderHoldingBlockItem(client);
+    }
+
+    private static boolean shouldRouteUltPlaceConfig(MinecraftClient client) {
+        return isBuilderHoldingBlockItem(client);
+    }
+
+    private static boolean shouldRequestUltPlacePreview(MinecraftClient client) {
+        return client.player != null
+                && client.world != null
+                && UltPlaceClientState.isEnabled()
+                && isBuilderHoldingBlockItem(client);
+    }
+
+    private static boolean isBuilderHoldingBlockItem(MinecraftClient client) {
+        return client.player != null
+                && ClientSkillData.isSkillSelected(MurilloSkillsList.BUILDER)
+                && (client.player.getMainHandStack().getItem() instanceof BlockItem
+                        || client.player.getOffHandStack().getItem() instanceof BlockItem);
+    }
+
+    private static boolean isUltPlaceUndoChord(MinecraftClient client) {
+        return client.player != null
+                && ClientSkillData.isSkillSelected(MurilloSkillsList.BUILDER)
+                && (InputUtil.isKeyPressed(client.getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL)
+                        || InputUtil.isKeyPressed(client.getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL));
     }
 }

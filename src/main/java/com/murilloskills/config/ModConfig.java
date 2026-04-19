@@ -56,6 +56,7 @@ public class ModConfig {
 
         public BuilderConfig builder = new BuilderConfig();
         public BuilderSourceConfig builderSource = new BuilderSourceConfig();
+        public BuilderUltPlaceConfig builderUltPlace = new BuilderUltPlaceConfig();
 
         public ExplorerConfig explorer = new ExplorerConfig();
         public VeinMinerConfig veinMiner = new VeinMinerConfig();
@@ -285,6 +286,22 @@ public class ModConfig {
         public UltmineShapeSettings legacy = new UltmineShapeSettings(1, 1, 1, 1);
     }
 
+    public static class BuilderUltPlaceConfig {
+        public boolean enabled = true;
+        public int maxBlocksPerUse = 200;
+        public int undoHistorySize = 5;
+        public int previewRequestIntervalTicks = 4;
+        public UltmineShapeSettings plane = new UltmineShapeSettings(3, 15, 1, 1);
+        public UltmineShapeSettings line = new UltmineShapeSettings(1, 1, 5, 64);
+        public UltmineShapeSettings wall = new UltmineShapeSettings(3, 15, 3, 15);
+        public UltmineShapeSettings stairs = new UltmineShapeSettings(1, 1, 8, 32);
+        public UltmineShapeSettings column = new UltmineShapeSettings(1, 1, 5, 32);
+        public UltmineShapeSettings tunnel3x3 = new UltmineShapeSettings(3, 3, 5, 32);
+        public UltmineShapeSettings circle = new UltmineShapeSettings(3, 20, 1, 1);
+        public UltmineShapeSettings sphereShell = new UltmineShapeSettings(3, 15, 1, 1);
+        public UltmineShapeSettings single = new UltmineShapeSettings(1, 1, 1, 1);
+    }
+
     public static class UltmineShapeCosts {
         public int shape3x3 = 5;
         public int shape2x1 = 2;
@@ -400,16 +417,16 @@ public class ModConfig {
     }
 
     public static class FarmerSourceConfig {
-        public int xpWheat = 3;
-        public int xpCarrot = 3;
-        public int xpPotato = 3;
-        public int xpBeetroot = 3;
-        public int xpMelon = 8;
-        public int xpPumpkin = 8;
-        public int xpNetherWart = 5;
-        public int xpSweetBerry = 2;
-        public int xpCocoa = 4;
-        public int xpSugarCane = 2;
+        public int xpWheat = 25;
+        public int xpCarrot = 25;
+        public int xpPotato = 25;
+        public int xpBeetroot = 25;
+        public int xpMelon = 35;
+        public int xpPumpkin = 35;
+        public int xpNetherWart = 30;
+        public int xpSweetBerry = 12;
+        public int xpCocoa = 20;
+        public int xpSugarCane = 10;
     }
 
     public static class FisherSourceConfig {

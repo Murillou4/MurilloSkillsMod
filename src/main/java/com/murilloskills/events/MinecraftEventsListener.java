@@ -85,6 +85,7 @@ public class MinecraftEventsListener {
             com.murilloskills.impl.MinerSkill.cleanupPlayerState(uuid);
             com.murilloskills.impl.WarriorSkill.cleanupPlayerState(uuid);
             com.murilloskills.skills.VeinMinerHandler.cleanupPlayerState(uuid);
+            com.murilloskills.skills.UltPlaceHandler.cleanupPlayerState(uuid);
         });
     }
 

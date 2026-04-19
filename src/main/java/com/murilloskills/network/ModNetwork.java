@@ -23,6 +23,7 @@ public class ModNetwork {
         PayloadTypeRegistry.playS2C().register(DailyChallengesSyncS2CPayload.ID, DailyChallengesSyncS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(UltminePreviewS2CPayload.ID, UltminePreviewS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(UltmineResultS2CPayload.ID, UltmineResultS2CPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(UltPlacePreviewS2CPayload.ID, UltPlacePreviewS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(PathfinderSyncS2CPayload.ID, PathfinderSyncS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(AutoTorchSyncS2CPayload.ID, AutoTorchSyncS2CPayload.CODEC);
     }
@@ -42,6 +43,9 @@ public class ModNetwork {
         PayloadTypeRegistry.playC2S().register(VeinMinerDropsToggleC2SPayload.ID, VeinMinerDropsToggleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(UltmineShapeSelectC2SPayload.ID, UltmineShapeSelectC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(UltmineRequestC2SPayload.ID, UltmineRequestC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(UltPlaceConfigC2SPayload.ID, UltPlaceConfigC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(UltPlacePreviewRequestC2SPayload.ID, UltPlacePreviewRequestC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(UltPlaceUndoC2SPayload.ID, UltPlaceUndoC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(XpDirectToggleC2SPayload.ID, XpDirectToggleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SpeedBoostToggleC2SPayload.ID, SpeedBoostToggleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(AutoTorchToggleC2SPayload.ID, AutoTorchToggleC2SPayload.CODEC);

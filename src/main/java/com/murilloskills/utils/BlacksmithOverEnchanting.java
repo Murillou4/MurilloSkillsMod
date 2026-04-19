@@ -9,7 +9,9 @@ import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.math.random.Random;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Deterministic over-enchanting rules for high-level Blacksmiths.
@@ -84,20 +86,36 @@ public final class BlacksmithOverEnchanting {
                 : getEnchantments(resultStack);
         boolean changed = false;
         int extraCost = 0;
+        int overMaxLevel = getMaxOverEnchantLevel();
 
-        for (Map.Entry<RegistryEntry<Enchantment>, Integer> entry : left.entrySet()) {
-            RegistryEntry<Enchantment> enchantment = entry.getKey();
-            int leftLevel = entry.getValue();
+        Set<RegistryEntry<Enchantment>> union = new LinkedHashSet<>();
+        union.addAll(left.keySet());
+        union.addAll(right.keySet());
+
+        for (RegistryEntry<Enchantment> enchantment : union) {
+            int leftLevel = left.getOrDefault(enchantment, 0);
             int rightLevel = right.getOrDefault(enchantment, 0);
             int vanillaMaxLevel = enchantment.value().getMaxLevel();
 
-            if (!shouldOverEnchant(leftLevel, rightLevel, vanillaMaxLevel)) {
+            int targetLevel;
+            if (leftLevel > 0 && leftLevel == rightLevel && leftLevel >= vanillaMaxLevel) {
+                targetLevel = leftLevel + 1;
+            } else {
+                targetLevel = Math.max(leftLevel, rightLevel);
+            }
+            targetLevel = Math.min(targetLevel, overMaxLevel);
+
+            if (targetLevel <= vanillaMaxLevel) {
                 continue;
             }
 
-            int resultLevel = getOverEnchantResultLevel(leftLevel, rightLevel, vanillaMaxLevel);
-            resultEnchantments.put(enchantment, resultLevel);
-            extraCost += getExtraAnvilCost(vanillaMaxLevel, resultLevel);
+            int currentLevel = resultEnchantments.getOrDefault(enchantment, 0);
+            if (targetLevel <= currentLevel) {
+                continue;
+            }
+
+            resultEnchantments.put(enchantment, targetLevel);
+            extraCost += getExtraAnvilCost(vanillaMaxLevel, targetLevel);
             changed = true;
         }
 

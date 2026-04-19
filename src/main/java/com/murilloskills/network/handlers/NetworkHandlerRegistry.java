@@ -61,13 +61,17 @@ public final class NetworkHandlerRegistry {
             registerHandler("UltmineShapeSelect", UltmineShapeSelectC2SPayload.ID,
                     UltmineShapeSelectNetworkHandler.create());
             registerHandler("UltminePreviewRequest", UltmineRequestC2SPayload.ID, UltmineRequestNetworkHandler.create());
+            registerHandler("UltPlaceConfig", UltPlaceConfigC2SPayload.ID, UltPlaceConfigNetworkHandler.create());
+            registerHandler("UltPlacePreviewRequest", UltPlacePreviewRequestC2SPayload.ID,
+                    UltPlacePreviewNetworkHandler.create());
+            registerHandler("UltPlaceUndo", UltPlaceUndoC2SPayload.ID, UltPlaceUndoNetworkHandler.create());
             registerHandler("XpDirectToggle", XpDirectToggleC2SPayload.ID, XpDirectToggleNetworkHandler.create());
             registerHandler("SpeedBoost", SpeedBoostToggleC2SPayload.ID, SpeedBoostToggleNetworkHandler.create());
             registerHandler("AutoTorch", AutoTorchToggleC2SPayload.ID, AutoTorchToggleNetworkHandler.create());
             registerHandler("MagnetConfig", MagnetConfigC2SPayload.ID, MagnetConfigNetworkHandler.create());
             registerHandler("TrashListSync", TrashListSyncC2SPayload.ID, TrashListSyncNetworkHandler.create());
 
-            LOGGER.info("Successfully registered 20 network handlers");
+            LOGGER.info("Successfully registered 23 network handlers");
 
         } catch (Exception e) {
             LOGGER.error("CRITICAL: Failed to register network handlers!", e);

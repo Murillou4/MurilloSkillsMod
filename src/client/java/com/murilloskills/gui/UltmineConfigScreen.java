@@ -226,7 +226,9 @@ public class UltmineConfigScreen extends Screen {
         this.addDrawableChild(magnetRangeField);
 
         // === TRASH SECTION ===
-        int trashFieldW = panelW - PANEL_PADDING * 4 - 64;
+        int browseBtnW = 80;
+        int addBtnW = 36;
+        int trashFieldW = panelW - PANEL_PADDING * 4 - browseBtnW - addBtnW - 8;
         int trashFieldX = panelX + PANEL_PADDING * 2;
 
         trashItemField = new TextFieldWidget(textRenderer, trashFieldX, trashSectionY + 16 + oY,
@@ -248,8 +250,15 @@ public class UltmineConfigScreen extends Screen {
                         syncTrashToServer();
                         refreshScreen();
                     }
-                }).dimensions(trashFieldX + trashFieldW + 4, trashSectionY + 16 + oY, 56, 18).build();
+                }).dimensions(trashFieldX + trashFieldW + 4, trashSectionY + 16 + oY, addBtnW, 18).build();
         this.addDrawableChild(addTrashBtn);
+
+        ButtonWidget browseBtn = ButtonWidget.builder(
+                Text.translatable("murilloskills.ultmine_config.trash.browse").formatted(Formatting.AQUA),
+                (b) -> MinecraftClient.getInstance().setScreen(new TrashItemPickerScreen(this)))
+                .dimensions(trashFieldX + trashFieldW + 4 + addBtnW + 4, trashSectionY + 16 + oY, browseBtnW, 18)
+                .build();
+        this.addDrawableChild(browseBtn);
 
         // Trash item remove buttons
         List<String> trashItems = UltmineClientConfig.getTrashItems();
