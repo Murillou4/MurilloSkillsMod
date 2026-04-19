@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.29] - 2026-04-19
+
+### 🩹 Hotfix - Startup Crash
+
+- **Corrigido**: crash de bootstrap ao carregar `murilloskills.mixins.json` na `1.2.28`.
+- **Causa**: o accessor `ForgingScreenHandlerAccessor` usava o tipo errado para o campo `output` da bigorna.
+- **Impacto**: o jogo agora volta a iniciar normalmente com o sistema de over-enchant do Blacksmith ativo.
+
+---
+
 ## [1.2.28] - 2026-04-19
 
 ### 🔮 Blacksmith - Master Enchanter (Level 99)

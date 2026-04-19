@@ -1,6 +1,7 @@
 package com.murilloskills.mixin;
 
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.CraftingResultInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.screen.ForgingScreenHandler;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,5 +21,5 @@ public interface ForgingScreenHandlerAccessor {
     Inventory getInput();
 
     @Accessor("output")
-    Inventory getOutput();
+    CraftingResultInventory getOutput();
 }
