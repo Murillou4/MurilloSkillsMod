@@ -55,4 +55,14 @@ class BlacksmithOverEnchantingTest {
             assertTrue(level >= 3 && level <= 8);
         }
     }
+
+    @Test
+    void enchantingTableBonusRandomIsDeterministicPerSeedAndSlot() {
+        Random first = BlacksmithOverEnchanting.createEnchantingTableBonusRandom(42, 1);
+        Random second = BlacksmithOverEnchanting.createEnchantingTableBonusRandom(42, 1);
+
+        for (int i = 0; i < 8; i++) {
+            assertEquals(first.nextFloat(), second.nextFloat());
+        }
+    }
 }

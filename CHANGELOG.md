@@ -4,6 +4,18 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.35] - 2026-04-19
+
+### 🔨 Blacksmith - Hover e Desconto Corrigidos
+
+- **Hover da enchanting table agora mostra o enchant real**: o preview do slot passou a usar a mesma rolagem determinística do bônus do Blacksmith que é aplicada no clique, então o texto exibido no hover finalmente bate com o resultado final do item.
+- **Fim do “buff surpresa” depois do clique**: corrigido o caso em que o hover mostrava algo como `Fortuna III`, mas o item saía mais forte depois. Agora preview e aplicação usam a mesma lógica.
+- **Label de desconto da bigorna não mente mais**: o overlay `original riscado -> descontado` só aparece quando o custo final realmente ficou menor.
+- **Sem falso desconto com over-enchant**: corrigido o bug visual que podia mostrar algo absurdo como `6 -> 8` como se fosse desconto. Quando o custo sobe por causa do over-enchant, a tela mantém o custo normal em vez de inverter a lógica.
+- **Overlay da bigorna mais limpo**: o texto do custo foi compactado para não invadir o `Inventory` nem atravessar a UI.
+
+---
+
 ## [1.2.34] - 2026-04-19
 
 ### 🔨 Blacksmith - Desconto Visual em Forja

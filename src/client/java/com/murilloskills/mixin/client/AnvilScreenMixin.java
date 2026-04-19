@@ -15,7 +15,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Overlays the Blacksmith dual cost label ({@code <strike>original</strike> → discounted})
- * on top of the vanilla anvil cost label whenever the discount changed the value.
+ * on top of the vanilla anvil cost label only when the final cost is actually lower.
+ * If over-enchanting or another modifier pushes the total cost above the base value,
+ * we leave the vanilla label untouched to avoid presenting an increase as a discount.
  */
 @Mixin(AnvilScreen.class)
 public abstract class AnvilScreenMixin extends net.minecraft.client.gui.screen.ingame.HandledScreen<AnvilScreenHandler> {
@@ -33,21 +35,22 @@ public abstract class AnvilScreenMixin extends net.minecraft.client.gui.screen.i
 
         int original = accessor.murilloskills$getOriginalLevelCost();
         int displayed = h.getLevelCost();
-        if (original <= 0 || displayed <= 0 || original == displayed) {
+        if (original <= 0 || displayed <= 0 || original <= displayed) {
             return;
         }
 
-        MutableText label = Text.translatable("container.repair.cost", original)
+        MutableText label = Text.literal(String.valueOf(original))
                 .formatted(Formatting.STRIKETHROUGH, Formatting.GRAY)
-                .append(Text.literal(" → " + displayed).formatted(Formatting.GREEN));
+                .append(Text.literal(" → " + displayed).formatted(Formatting.GREEN, Formatting.BOLD));
+
+        Text vanillaLabel = Text.translatable("container.repair.cost", displayed);
 
         int textWidth = this.textRenderer.getWidth(label);
         int x = this.backgroundWidth - 8 - textWidth - 2;
         int y = 69;
 
-        // Cover the vanilla label: the original strip is (xVanilla-2, 67, backgroundWidth-8, 79).
-        // We extend it left to fully cover both ours and vanilla's text.
-        int coverLeft = Math.min(x - 2, 8);
+        int vanillaX = this.backgroundWidth - 8 - this.textRenderer.getWidth(vanillaLabel) - 2;
+        int coverLeft = Math.max(8, Math.min(x, vanillaX) - 2);
         context.fill(coverLeft, 67, this.backgroundWidth - 8, 79, 0xCF000000);
         context.drawTextWithShadow(this.textRenderer, label, x, y, 0xFFFFFFFF);
     }

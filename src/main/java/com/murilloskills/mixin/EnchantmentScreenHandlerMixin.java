@@ -8,9 +8,13 @@ import com.murilloskills.utils.BlacksmithXpGetter;
 import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillNotifier;
 import com.murilloskills.utils.SkillsNetworkUtils;
+import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.screen.EnchantmentScreenHandler;
+import net.minecraft.screen.Property;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,6 +26,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.objectweb.asm.Opcodes;
+
+import java.util.List;
 
 /**
  * Handles Blacksmith enchanting-table perks.
@@ -42,17 +48,31 @@ public abstract class EnchantmentScreenHandlerMixin {
     @Final
     private int[] enchantmentPower;
 
+    @Shadow
+    @Final
+    private Property seed;
+
     @Unique
     private int murilloskills$pendingEnchantButtonId = -1;
+
+    @Unique
+    private PlayerEntity murilloskills$pendingEnchantPlayer;
+
+    @Unique
+    private boolean murilloskills$pendingTableBonusRoll;
 
     @Inject(method = "onButtonClick", at = @At("HEAD"))
     private void murilloskills$capturePendingEnchantButton(PlayerEntity player, int id, CallbackInfoReturnable<Boolean> cir) {
         this.murilloskills$pendingEnchantButtonId = id;
+        this.murilloskills$pendingEnchantPlayer = player;
+        this.murilloskills$pendingTableBonusRoll = true;
     }
 
     @Inject(method = "onButtonClick", at = @At("RETURN"))
     private void murilloskills$clearPendingEnchantButton(PlayerEntity player, int id, CallbackInfoReturnable<Boolean> cir) {
         this.murilloskills$pendingEnchantButtonId = -1;
+        this.murilloskills$pendingEnchantPlayer = null;
+        this.murilloskills$pendingTableBonusRoll = false;
     }
 
     @Redirect(
@@ -108,14 +128,6 @@ public abstract class EnchantmentScreenHandlerMixin {
             }
         }
 
-        if (BlacksmithOverEnchanting.isUnlocked(blacksmithLevel)
-                && serverPlayer.getRandom().nextFloat() < SkillConfig.getBlacksmithSuperEnchantChance()) {
-            if (BlacksmithOverEnchanting.tryApplyEnchantingTableBonus(this.inventory.getStack(0), serverPlayer.getRandom())) {
-                this.inventory.markDirty();
-                serverPlayer.currentScreenHandler.sendContentUpdates();
-            }
-        }
-
         // Get XP based on enchantment slot (id is 0, 1, or 2 for level 1, 2, 3)
         int xp = BlacksmithXpGetter.getEnchantXp(id);
 
@@ -138,6 +150,44 @@ public abstract class EnchantmentScreenHandlerMixin {
         com.murilloskills.utils.AchievementTracker.incrementAndCheck(
                 serverPlayer, MurilloSkillsList.BLACKSMITH,
                 com.murilloskills.utils.AchievementTracker.KEY_ITEMS_ENCHANTED, 1);
+    }
+
+    @Inject(method = "generateEnchantments", at = @At("RETURN"), cancellable = true)
+    private void murilloskills$applyDeterministicTableBonus(
+            DynamicRegistryManager registryManager,
+            ItemStack stack,
+            int slot,
+            int level,
+            CallbackInfoReturnable<List<EnchantmentLevelEntry>> cir) {
+        if (!this.murilloskills$pendingTableBonusRoll || slot != this.murilloskills$pendingEnchantButtonId) {
+            return;
+        }
+
+        this.murilloskills$pendingTableBonusRoll = false;
+
+        if (!(this.murilloskills$pendingEnchantPlayer instanceof ServerPlayerEntity serverPlayer)) {
+            return;
+        }
+
+        List<EnchantmentLevelEntry> generated = cir.getReturnValue();
+        if (generated == null || generated.isEmpty()) {
+            return;
+        }
+
+        var playerData = serverPlayer.getAttachedOrCreate(ModAttachments.PLAYER_SKILLS);
+        if (!playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
+            return;
+        }
+
+        int blacksmithLevel = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
+        if (!BlacksmithOverEnchanting.isUnlocked(blacksmithLevel)) {
+            return;
+        }
+
+        cir.setReturnValue(BlacksmithOverEnchanting.applyDeterministicEnchantingTableBonus(
+                generated,
+                this.seed.get(),
+                slot));
     }
 
     @Unique

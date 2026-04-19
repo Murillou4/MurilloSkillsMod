@@ -3,13 +3,16 @@ package com.murilloskills.utils;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.math.random.Random;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -165,6 +168,42 @@ public final class BlacksmithOverEnchanting {
 
         applyEnchantments(stack, upgradedEnchantments);
         return true;
+    }
+
+    public static List<EnchantmentLevelEntry> applyDeterministicEnchantingTableBonus(
+            List<EnchantmentLevelEntry> enchantments,
+            int enchantingSeed,
+            int slot) {
+        if (enchantments == null || enchantments.isEmpty()) {
+            return enchantments;
+        }
+
+        Random random = createEnchantingTableBonusRandom(enchantingSeed, slot);
+        if (random.nextFloat() >= SkillConfig.getBlacksmithSuperEnchantChance()) {
+            return enchantments;
+        }
+
+        List<EnchantmentLevelEntry> upgradedEntries = null;
+        for (int i = 0; i < enchantments.size(); i++) {
+            EnchantmentLevelEntry entry = enchantments.get(i);
+            int upgradedLevel = rollEnchantingTableLevel(entry.enchantment().value().getMaxLevel(), random);
+            if (upgradedLevel <= entry.level()) {
+                continue;
+            }
+
+            if (upgradedEntries == null) {
+                upgradedEntries = new ArrayList<>(enchantments);
+            }
+            upgradedEntries.set(i, new EnchantmentLevelEntry(entry.enchantment(), upgradedLevel));
+        }
+
+        return upgradedEntries != null ? upgradedEntries : enchantments;
+    }
+
+    static Random createEnchantingTableBonusRandom(int enchantingSeed, int slot) {
+        long seed = Integer.toUnsignedLong(enchantingSeed);
+        seed = seed * 341873128712L + (long) (slot + 1) * 132897987541L + 0x9E3779B97F4A7C15L;
+        return Random.create(seed);
     }
 
     private static Map<RegistryEntry<Enchantment>, Integer> getEnchantments(ItemStack stack) {
