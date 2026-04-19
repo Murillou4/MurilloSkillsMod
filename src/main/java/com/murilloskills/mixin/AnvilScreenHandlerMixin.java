@@ -3,6 +3,7 @@ package com.murilloskills.mixin;
 import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.events.ChallengeEventsHandler;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.BlacksmithOverEnchanting;
 import com.murilloskills.utils.BlacksmithXpGetter;
 import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillNotifier;
@@ -70,18 +71,32 @@ public abstract class AnvilScreenHandlerMixin {
         }
 
         int level = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
-        if (level < SkillConfig.BLACKSMITH_EFFICIENT_ANVIL_LEVEL) {
+        int currentCost = this.levelCost.get();
+        if (level >= SkillConfig.BLACKSMITH_EFFICIENT_ANVIL_LEVEL && currentCost > 0) {
+            float discount = SkillConfig.getBlacksmithAnvilDiscount(level);
+            currentCost = Math.max(1, (int) (currentCost * (1.0f - discount)));
+            this.levelCost.set(currentCost);
+        }
+
+        if (!BlacksmithOverEnchanting.isUnlocked(level)) {
             return;
         }
 
-        // Calculate discount based on level (scales from 25% to 40%)
-        float discount = SkillConfig.getBlacksmithAnvilDiscount(level);
+        Inventory input = accessor.getInput();
+        Inventory output = accessor.getOutput();
+        if (input == null || output == null) {
+            return;
+        }
 
-        // Apply discount to the XP cost
-        int currentCost = this.levelCost.get();
-        if (currentCost > 0) {
-            int discountedCost = Math.max(1, (int) (currentCost * (1.0f - discount)));
-            this.levelCost.set(discountedCost);
+        var override = BlacksmithOverEnchanting.tryApply(
+                input.getStack(0),
+                input.getStack(1),
+                output.getStack(0),
+                currentCost);
+
+        if (override != null) {
+            output.setStack(0, override.stack());
+            this.levelCost.set(override.levelCost());
         }
     }
 

@@ -177,6 +177,7 @@ public class ModConfig {
         public int repairAuraLevel = 60;
         public int repairAuraIntervalSeconds = 10;
         public int thornsMasterLevel = 75;
+        public int overEnchantLevel = 99;
         public int masterLevel = 100;
         public float ironSkinBonus = 0.05f;
         public float anvilXpDiscount = 0.25f;
@@ -186,6 +187,9 @@ public class ModConfig {
         public float thornsReflect = 0.35f;
         public float knockbackReduction = 0.50f;
         public float superEnchantChance = 0.25f;
+        public int overEnchantMaxLevel = 8;
+        public int overEnchantBaseCost = 6;
+        public int overEnchantStepCost = 4;
         public int abilityDurationSeconds = 25;
         public int abilityCooldownSeconds = 900;
         public float titaniumResistance = 0.30f;

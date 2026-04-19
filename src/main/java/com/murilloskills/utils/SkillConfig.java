@@ -560,6 +560,10 @@ public class SkillConfig {
         return ModConfig.get().blacksmith.thornsMasterLevel;
     }
 
+    public static int getBlacksmithOverEnchantUnlockLevel() {
+        return ModConfig.get().blacksmith.overEnchantLevel;
+    }
+
     public static int getBlacksmithMasterLevel() {
         return ModConfig.get().blacksmith.masterLevel;
     }
@@ -594,6 +598,18 @@ public class SkillConfig {
 
     public static float getBlacksmithSuperEnchantChance() {
         return ModConfig.get().blacksmith.superEnchantChance;
+    }
+
+    public static int getBlacksmithOverEnchantMaxLevel() {
+        return Math.max(1, ModConfig.get().blacksmith.overEnchantMaxLevel);
+    }
+
+    public static int getBlacksmithOverEnchantBaseCost() {
+        return Math.max(0, ModConfig.get().blacksmith.overEnchantBaseCost);
+    }
+
+    public static int getBlacksmithOverEnchantStepCost() {
+        return Math.max(0, ModConfig.get().blacksmith.overEnchantStepCost);
     }
 
     public static int getBlacksmithAbilityDurationSeconds() {
@@ -634,12 +650,16 @@ public class SkillConfig {
     public static final int BLACKSMITH_REPAIR_AURA_LEVEL = 60;
     public static final int BLACKSMITH_REPAIR_AURA_INTERVAL_SECONDS = 10;
     public static final int BLACKSMITH_THORNS_MASTER_LEVEL = 75;
+    public static final int BLACKSMITH_OVERENCHANT_LEVEL = 99;
     public static final int BLACKSMITH_MASTER_LEVEL = 100;
     public static final float BLACKSMITH_IRON_SKIN_BONUS = 0.05f;
     public static final float BLACKSMITH_ANVIL_XP_DISCOUNT = 0.25f;
     public static final float BLACKSMITH_ANVIL_XP_DISCOUNT_MAX = 0.40f;
     public static final int BLACKSMITH_ANVIL_TOO_EXPENSIVE_CAP = 55;
     public static final float BLACKSMITH_ANVIL_MATERIAL_SAVE = 0.10f;
+    public static final int BLACKSMITH_OVERENCHANT_MAX_LEVEL = 8;
+    public static final int BLACKSMITH_OVERENCHANT_BASE_COST = 6;
+    public static final int BLACKSMITH_OVERENCHANT_STEP_COST = 4;
 
     /**
      * Get the anvil XP discount based on Blacksmith level.

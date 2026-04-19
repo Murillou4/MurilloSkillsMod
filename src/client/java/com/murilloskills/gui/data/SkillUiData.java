@@ -172,6 +172,8 @@ public final class SkillUiData {
                                                 "murilloskills.perk.desc.blacksmith.repair_aura"),
                                 new PerkInfo(75, "murilloskills.perk.name.blacksmith.thorns_master",
                                                 "murilloskills.perk.desc.blacksmith.thorns_master"),
+                                new PerkInfo(99, "murilloskills.perk.name.blacksmith.master_enchanter",
+                                                "murilloskills.perk.desc.blacksmith.master_enchanter"),
                                 new PerkInfo(100, "murilloskills.perk.name.blacksmith.master",
                                                 "murilloskills.perk.desc.blacksmith.master")));
 
@@ -679,6 +681,8 @@ public final class SkillUiData {
                                                 .formatted(Formatting.GREEN));
                                 lines.add(Text.translatable("murilloskills.passive.blacksmith.thorns_master")
                                                 .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.blacksmith.master_enchanter")
+                                                .formatted(Formatting.LIGHT_PURPLE));
                         }
                         case BUILDER -> {
                                 double reach = com.murilloskills.impl.BuilderSkill.getReachBonus(level, 0);
@@ -788,6 +792,10 @@ public final class SkillUiData {
                                         + "% dano e -"
                                         + formatPercent(SkillConfig.getBlacksmithKnockbackReduction())
                                         + "% knockback");
+                }
+                if (level >= SkillConfig.getBlacksmithOverEnchantUnlockLevel()) {
+                        segments.add("Master Enchanter (bigorna até nível "
+                                        + SkillConfig.getBlacksmithOverEnchantMaxLevel() + ")");
                 }
                 if (level >= SkillConfig.getBlacksmithMasterLevel()) {
                         segments.add("Titanium Aura liberado");
@@ -904,7 +912,6 @@ public final class SkillUiData {
                 return String.format(Locale.ROOT, "%.1f", value);
         }
 }
-
 
 
 

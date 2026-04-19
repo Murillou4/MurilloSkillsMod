@@ -1005,6 +1005,9 @@ public class SkillsScreen extends Screen {
                         if (level >= SkillConfig.BLACKSMITH_THORNS_MASTER_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.blacksmith.thorns_master")
                                     .formatted(Formatting.AQUA));
+                        if (level >= SkillConfig.getBlacksmithOverEnchantUnlockLevel())
+                            tooltip.add(Text.translatable("murilloskills.passive.blacksmith.master_enchanter")
+                                    .formatted(Formatting.LIGHT_PURPLE));
                     }
                     case BUILDER -> {
                         double baseReach = level * SkillConfig.BUILDER_REACH_PER_LEVEL;

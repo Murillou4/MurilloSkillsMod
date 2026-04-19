@@ -4,6 +4,19 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.28] - 2026-04-19
+
+### 🔮 Blacksmith - Master Enchanter (Level 99)
+
+- **Nova perk no level 99**: Blacksmith agora desbloqueia **Master Enchanter** no **nível 99**, sem precisar ser Paragon.
+- **Over-enchant controlado pela bigorna**: encantamentos acima do limite vanilla agora só sobem ao combinar **dois níveis idênticos** na bigorna.
+- **Progressão passo a passo**: exemplos: `Fortuna III + Fortuna III = Fortuna IV`, `Fortuna IV + Fortuna IV = Fortuna V`, até o teto.
+- **Teto global de encantamento**: qualquer encantamento suportado pelo sistema agora pode chegar no máximo ao **nível 8**.
+- **Custo extra escalável**: cada nível acima do cap vanilla adiciona custo progressivo na bigorna para manter o upgrade controlado.
+- **UI atualizada**: a Skill Screen e o roadmap do Blacksmith agora exibem claramente a perk **Master Enchanter** antes da Titanium Aura do level 100.
+
+---
+
 ## [1.2.27] - 2026-04-01
 
 ### ⛏️ Miner - X-Ray Dinâmico
