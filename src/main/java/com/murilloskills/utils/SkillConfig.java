@@ -776,6 +776,21 @@ public class SkillConfig {
         int refund = Math.round(spentLevels * getBlacksmithEnchantingTableDiscount(level));
         return Math.max(0, Math.min(spentLevels - 1, refund));
     }
+
+    /**
+     * Gets the discounted enchanting-table level requirement shown in the UI.
+     * This uses the same Blacksmith discount curve while keeping disabled slots at 0.
+     */
+    public static int getBlacksmithEnchantingTableRequirement(int level, int vanillaRequirement) {
+        if (vanillaRequirement <= 0) {
+            return 0;
+        }
+        if (level < getBlacksmithEfficientAnvilLevel()) {
+            return vanillaRequirement;
+        }
+        int discounted = Math.round(vanillaRequirement * (1.0f - getBlacksmithEnchantingTableDiscount(level)));
+        return Math.max(1, discounted);
+    }
     public static final float BLACKSMITH_FIRE_EXPLOSION_RESIST = 0.10f;
     public static final float BLACKSMITH_THORNS_CHANCE = 0.30f;
     public static final float BLACKSMITH_THORNS_REFLECT = 0.35f;
