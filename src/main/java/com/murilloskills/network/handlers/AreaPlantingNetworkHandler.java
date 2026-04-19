@@ -12,8 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Handles toggle for 3x3 area planting (Farmer skill, Level 25+).
- * Validates level requirements and syncs state to client.
+ * Handles cycling Farmer area mode (off, 3x3, 5x5, 7x7, 9x9).
+ * Validates level requirements and syncs the selected size to the client.
  */
 public final class AreaPlantingNetworkHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger("MurilloSkills-AreaPlantingHandler");
@@ -52,15 +52,17 @@ public final class AreaPlantingNetworkHandler {
                         return;
                     }
 
-                    // Toggle and get new state
-                    boolean nowEnabled = FarmerSkill.toggleAreaPlanting(player, farmerStats.level);
+                    int newRadius = FarmerSkill.cycleAreaPlantingMode(player, farmerStats.level);
+                    boolean enabled = newRadius > 0;
+                    String areaLabel = FarmerSkill.getAreaPlantingLabel(newRadius);
 
                     // Send sync to client for HUD indicator
-                    ServerPlayNetworking.send(player, new AreaPlantingSyncS2CPayload(nowEnabled));
+                    ServerPlayNetworking.send(player, new AreaPlantingSyncS2CPayload(enabled,
+                            FarmerSkill.getAreaPlantingDiameter(newRadius)));
 
                     // Feedback message
-                    if (nowEnabled) {
-                        player.sendMessage(Text.translatable("murilloskills.farmer.area_enabled")
+                    if (enabled) {
+                        player.sendMessage(Text.translatable("murilloskills.farmer.area_enabled", areaLabel)
                                 .formatted(Formatting.GREEN), true);
                     } else {
                         player.sendMessage(Text.translatable("murilloskills.farmer.area_disabled")

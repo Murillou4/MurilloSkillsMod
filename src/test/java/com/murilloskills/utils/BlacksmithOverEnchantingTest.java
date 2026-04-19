@@ -1,5 +1,6 @@
 package com.murilloskills.utils;
 
+import net.minecraft.util.math.random.Random;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,5 +38,21 @@ class BlacksmithOverEnchantingTest {
         assertEquals(6, BlacksmithOverEnchanting.getExtraAnvilCost(3, 4));
         assertEquals(16, BlacksmithOverEnchanting.getExtraAnvilCost(3, 5));
         assertEquals(30, BlacksmithOverEnchanting.getExtraAnvilCost(3, 6));
+    }
+
+    @Test
+    void enchantingTableMinimumStartsAtVanillaCap() {
+        assertEquals(3, BlacksmithOverEnchanting.getEnchantingTableMinimumLevel(3));
+        assertEquals(5, BlacksmithOverEnchanting.getEnchantingTableMinimumLevel(5));
+        assertEquals(8, BlacksmithOverEnchanting.getEnchantingTableMinimumLevel(10));
+    }
+
+    @Test
+    void enchantingTableRollStaysWithinVanillaCapAndModCap() {
+        Random random = Random.create(1234L);
+        for (int i = 0; i < 100; i++) {
+            int level = BlacksmithOverEnchanting.rollEnchantingTableLevel(3, random);
+            assertTrue(level >= 3 && level <= 8);
+        }
     }
 }

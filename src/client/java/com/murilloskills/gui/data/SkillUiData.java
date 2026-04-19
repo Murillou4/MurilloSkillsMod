@@ -514,7 +514,10 @@ public final class SkillUiData {
                         segments.add("+5% colheita e 10% semente salva");
                 }
                 if (level >= SkillConfig.getFarmerFertileGroundLevel()) {
-                        segments.add("+25% crescimento e plantio 3x3");
+                        segments.add("+" + FarmerSkill.getFertileGroundGrowthPercent(level)
+                                        + "% crescimento e área "
+                                        + FarmerSkill.getAreaPlantingLabel(FarmerSkill.getMaxAreaPlantingRadius(level))
+                                        + " para plantio/bone meal");
                 }
                 if (level >= SkillConfig.getFarmerNaturesVitalityLevel()) {
                         segments.add("Vitalidade Natural (Regen em terra)");
@@ -607,7 +610,9 @@ public final class SkillUiData {
                                                 .formatted(Formatting.GOLD));
                                 lines.add(Text.translatable("murilloskills.passive.farmer.green_thumb")
                                                 .formatted(Formatting.GREEN));
-                                lines.add(Text.translatable("murilloskills.passive.farmer.fertile_ground")
+                                lines.add(Text.translatable("murilloskills.passive.farmer.fertile_ground",
+                                                FarmerSkill.getFertileGroundGrowthPercent(level),
+                                                FarmerSkill.getAreaPlantingLabel(FarmerSkill.getMaxAreaPlantingRadius(level)))
                                                 .formatted(Formatting.AQUA));
                                 lines.add(Text.translatable("murilloskills.passive.farmer.natures_vitality")
                                                 .formatted(Formatting.GREEN));
@@ -794,7 +799,7 @@ public final class SkillUiData {
                                         + "% knockback");
                 }
                 if (level >= SkillConfig.getBlacksmithOverEnchantUnlockLevel()) {
-                        segments.add("Master Enchanter (bigorna até nível "
+                        segments.add("Master Enchanter (mesa com chance e bigorna até nível "
                                         + SkillConfig.getBlacksmithOverEnchantMaxLevel() + ")");
                 }
                 if (level >= SkillConfig.getBlacksmithMasterLevel()) {
@@ -912,8 +917,6 @@ public final class SkillUiData {
                 return String.format(Locale.ROOT, "%.1f", value);
         }
 }
-
-
 
 
 

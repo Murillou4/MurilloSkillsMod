@@ -8,7 +8,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 /**
- * HUD indicator for Area Planting (3x3) mode.
+ * HUD indicator for the Farmer area mode.
  * Displays a styled mini-panel in the bottom-left corner when enabled.
  */
 public class AreaPlantingHud {
@@ -20,12 +20,14 @@ public class AreaPlantingHud {
     private static final int HOTBAR_OFFSET = 54;
 
     private static boolean enabled = false;
+    private static int diameter = 0;
 
     /**
-     * Set the enabled state from server sync
+     * Set the synced state from the server.
      */
-    public static void setEnabled(boolean state) {
+    public static void setState(boolean state, int syncedDiameter) {
         enabled = state;
+        diameter = state ? syncedDiameter : 0;
     }
 
     /**
@@ -48,7 +50,8 @@ public class AreaPlantingHud {
             return;
         }
 
-        Text label = Text.translatable("murilloskills.hud.area_planting");
+        String areaLabel = diameter + "x" + diameter;
+        Text label = Text.translatable("murilloskills.hud.area_planting", areaLabel);
         Text icon = Text.literal("🌾 ").formatted(Formatting.GREEN);
         Text fullText = icon.copy().append(label.copy().formatted(Formatting.GREEN, Formatting.BOLD));
 

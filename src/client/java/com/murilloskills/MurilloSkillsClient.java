@@ -133,10 +133,10 @@ public class MurilloSkillsClient implements ClientModInitializer {
             });
         });
 
-        // 4. Area Planting Sync (Farmer toggle state)
+        // 4. Area Planting Sync (Farmer area mode state)
         ClientPlayNetworking.registerGlobalReceiver(AreaPlantingSyncS2CPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
-                AreaPlantingHud.setEnabled(payload.enabled());
+                AreaPlantingHud.setState(payload.enabled(), payload.diameter());
             });
         });
 
@@ -310,7 +310,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 ClientPlayNetworking.send(new SkillAbilityC2SPayload());
             }
             while (areaPlantingToggleKey.wasPressed()) {
-                // Envia pacote para toggle de plantio em área 3x3
+                // Envia pacote para ciclar o modo em área do Farmer
                 ClientPlayNetworking.send(new AreaPlantingToggleC2SPayload());
             }
             while (hollowFillToggleKey.wasPressed()) {

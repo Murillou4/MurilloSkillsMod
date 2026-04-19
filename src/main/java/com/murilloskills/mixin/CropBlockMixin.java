@@ -1,6 +1,7 @@
 package com.murilloskills.mixin;
 
 import com.murilloskills.data.PlayerSkillData;
+import com.murilloskills.impl.FarmerSkill;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.block.BlockState;
@@ -19,8 +20,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Mixin for CropBlock to implement Fertile Ground perk (Level 25).
- * Crops grow 25% faster for players with the Farmer skill at level 25+.
+ * Mixin for CropBlock to implement Fertile Ground perk scaling.
+ * Crops grow faster for nearby Farmer players at milestone thresholds.
  */
 @Mixin(CropBlock.class)
 public class CropBlockMixin {
@@ -29,8 +30,8 @@ public class CropBlockMixin {
     private static final Logger LOGGER = LoggerFactory.getLogger("MurilloSkills-CropBlockMixin");
 
     /**
-     * Injects at the start of randomTick to potentially add extra growth.
-     * For players with Fertile Ground perk, there's a 25% chance to grow again.
+     * Injects at the end of randomTick to potentially add extra growth.
+     * The bonus growth chance scales with the Farmer level milestones.
      */
     @Inject(method = "randomTick", at = @At("TAIL"))
     private void accelerateCropGrowth(BlockState state, ServerWorld world, BlockPos pos, Random random,
@@ -38,7 +39,7 @@ public class CropBlockMixin {
         // Find the nearest player who might have planted this crop
         // Using optimized spatial search instead of iterating all players
         ServerPlayerEntity nearestFarmer = murilloskills$findNearestFarmer(world, pos,
-                SkillConfig.FARMER_FERTILE_GROUND_RADIUS);
+                SkillConfig.getFarmerFertileGroundRadius());
 
         if (nearestFarmer == null) {
             return;
@@ -54,29 +55,27 @@ public class CropBlockMixin {
 
         int farmerLevel = playerData.getSkill(MurilloSkillsList.FARMER).level;
 
-        // Fertile Ground perk (Level 25+): 25% chance for bonus growth
-        if (farmerLevel >= SkillConfig.FARMER_FERTILE_GROUND_LEVEL) {
-            if (random.nextFloat() < SkillConfig.FARMER_FERTILE_GROUND_SPEED) {
-                CropBlock cropBlock = (CropBlock) (Object) this;
+        float growthChance = FarmerSkill.getFertileGroundGrowthChance(farmerLevel);
+        if (growthChance > 0.0f && random.nextFloat() < growthChance) {
+            CropBlock cropBlock = (CropBlock) (Object) this;
 
-                // Only grow if not already mature
-                if (!cropBlock.isMature(state)) {
-                    int currentAge = cropBlock.getAge(state);
-                    int maxAge = cropBlock.getMaxAge();
+            // Only grow if not already mature
+            if (!cropBlock.isMature(state)) {
+                int currentAge = cropBlock.getAge(state);
+                int maxAge = cropBlock.getMaxAge();
 
-                    if (currentAge < maxAge) {
-                        BlockState grownState = cropBlock.withAge(currentAge + 1);
-                        world.setBlockState(pos, grownState, 2);
+                if (currentAge < maxAge) {
+                    BlockState grownState = cropBlock.withAge(currentAge + 1);
+                    world.setBlockState(pos, grownState, 2);
 
-                        // Spawn green particles to show the boost visually
-                        world.spawnParticles(
-                                net.minecraft.particle.ParticleTypes.HAPPY_VILLAGER,
-                                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-                                3, // count
-                                0.3, 0.2, 0.3, // spread
-                                0.0 // speed
-                        );
-                    }
+                    // Spawn green particles to show the boost visually
+                    world.spawnParticles(
+                            net.minecraft.particle.ParticleTypes.HAPPY_VILLAGER,
+                            pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                            3, // count
+                            0.3, 0.2, 0.3, // spread
+                            0.0 // speed
+                    );
                 }
             }
         }

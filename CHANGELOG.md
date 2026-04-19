@@ -4,6 +4,27 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.30] - 2026-04-19
+
+### 🌾 Farmer - Area Mode Expansion
+
+- **Modo em área escalável**: a tecla do Farmer agora cicla entre `OFF`, `3x3`, `5x5`, `7x7` e `9x9`, conforme os tamanhos são desbloqueados pelo nível.
+- **Progressão por milestone**:
+  - `25`: `3x3` e `25%` de crescimento extra
+  - `50`: `5x5` e `50%` de crescimento extra
+  - `75`: `7x7` e `75%` de crescimento extra
+  - `99`: `9x9` e `99%` de crescimento extra
+- **Bone meal em área**: quando o modo em área está ativo, o bone meal também é aplicado em quadrado usando o mesmo tamanho selecionado.
+- **UI atualizada**: HUD, tooltips, descrições de perks e hints de tecla agora mostram o tamanho atual e a nova progressão do Farmer.
+
+### 🔮 Blacksmith - Enchanting Table Upgrade
+
+- **Mesa de encantamento melhorada**: Blacksmith `99+` agora também pode over-enchant pela enchanting table.
+- **Chance configurável**: ao proc, cada encantamento rola entre o cap vanilla do encanto e o teto global do mod (`8`).
+- **Suporte para itens e livros**: a lógica vale para encantamentos gerados pela mesa em ambos os casos.
+
+---
+
 ## [1.2.29] - 2026-04-19
 
 ### 🩹 Hotfix - Startup Crash

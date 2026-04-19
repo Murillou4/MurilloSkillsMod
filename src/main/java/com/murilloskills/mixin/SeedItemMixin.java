@@ -29,7 +29,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Mixin for BlockItem (used by seeds) to implement 3x3 area planting.
+ * Mixin for BlockItem (used by seeds) to implement Farmer area planting.
  * Applies to wheat_seeds, beetroot_seeds, carrot, potato, nether_wart.
  */
 @Mixin(BlockItem.class)
@@ -66,7 +66,8 @@ public class SeedItemMixin {
             return; // Level too low, let vanilla handle it
         }
 
-        if (!FarmerSkill.isAreaPlantingEnabled(serverPlayer)) {
+        int radius = FarmerSkill.getAreaPlantingRadius(serverPlayer.getUuid(), farmerStats.level);
+        if (radius <= 0) {
             return; // Toggle is off, let vanilla handle it
         }
 
@@ -75,9 +76,8 @@ public class SeedItemMixin {
             return; // On cooldown, let vanilla handle single plant
         }
 
-        // Area planting is enabled - intercept and plant in 3x3
+        // Area planting is enabled - intercept and plant in the selected area
         BlockPos clickedPos = context.getBlockPos();
-        int radius = SkillConfig.FARMER_AREA_PLANTING_RADIUS;
         int planted = 0;
         int seedsNeeded = 0;
 

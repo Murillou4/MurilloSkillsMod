@@ -8,13 +8,14 @@ import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
 
 /**
- * Server -> Client: Sync area planting toggle state and show feedback
+ * Server -> Client: Sync Farmer area mode state and selected size.
  */
-public record AreaPlantingSyncS2CPayload(boolean enabled) implements CustomPayload {
+public record AreaPlantingSyncS2CPayload(boolean enabled, int diameter) implements CustomPayload {
     public static final CustomPayload.Id<AreaPlantingSyncS2CPayload> ID = new CustomPayload.Id<>(
             Identifier.of(MurilloSkills.MOD_ID, "area_planting_sync"));
     public static final PacketCodec<RegistryByteBuf, AreaPlantingSyncS2CPayload> CODEC = PacketCodec.tuple(
             PacketCodecs.BOOLEAN, AreaPlantingSyncS2CPayload::enabled,
+            PacketCodecs.VAR_INT, AreaPlantingSyncS2CPayload::diameter,
             AreaPlantingSyncS2CPayload::new);
 
     @Override

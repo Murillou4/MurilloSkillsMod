@@ -2,6 +2,7 @@ package com.murilloskills.render;
 
 import com.murilloskills.data.ClientSkillData;
 import com.murilloskills.gui.ColorPalette;
+import com.murilloskills.impl.FarmerSkill;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.block.BlockState;
@@ -17,7 +18,7 @@ import net.minecraft.util.hit.HitResult;
 /**
  * HUD overlay that shows crop growth boost info when a Farmer player
  * looks at a crop block. Similar to Jade/WTHIT tooltip but built-in.
- * Shows the growth speed bonus from the Farmer skill.
+ * Shows the current Fertile Ground growth bonus from the Farmer skill.
  */
 public class FarmerCropHud {
 
@@ -57,7 +58,7 @@ public class FarmerCropHud {
         int maxAge = cropBlock.getMaxAge();
         boolean isMature = cropBlock.isMature(state);
 
-        float growthBoost = SkillConfig.FARMER_FERTILE_GROUND_SPEED * 100; // 25%
+        int growthBoost = FarmerSkill.getFertileGroundGrowthPercent(farmerLevel);
 
         // Build display text
         int screenWidth = context.getScaledWindowWidth();
@@ -73,7 +74,7 @@ public class FarmerCropHud {
 
         // Line 2: Boost info
         Text line2 = Text.literal("  \u2B06 ")
-                .append(Text.translatable("murilloskills.hud.crop_boost", String.format("%.0f", growthBoost)))
+                .append(Text.translatable("murilloskills.hud.crop_boost", Integer.toString(growthBoost)))
                 .formatted(Formatting.YELLOW);
 
         int line1Width = client.textRenderer.getWidth(line1);

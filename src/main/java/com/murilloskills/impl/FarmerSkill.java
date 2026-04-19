@@ -32,7 +32,7 @@ import java.util.UUID;
  * - Passive: +0.5% double harvest chance per level (max 50% at level 100)
  * - Passive: +0.15% golden crop chance per level (max 15% at level 100)
  * - Level 10: Green Thumb - +5% extra harvest, 10% seed not consumed
- * - Level 25: Fertile Ground - Crops grow 25% faster
+ * - Level 25: Fertile Ground - Crops grow faster and unlock 3x3 area mode
  * - Level 50: Nutrient Cycle - 2x Bone Meal from composter, 5% extra seeds
  * - Level 75: Abundant Harvest - +15% extra harvest, 10% adjacent harvest
  * chance
@@ -44,8 +44,12 @@ public class FarmerSkill extends AbstractSkill {
     // Map to track players with Harvest Moon active (UUID → start timestamp)
     private static final Map<UUID, Long> harvestMoonPlayers = new HashMap<>();
 
-    // Map to track players with Area Planting (3x3) enabled
-    private static final Map<UUID, Boolean> areaPlantingEnabled = new HashMap<>();
+    private static final int FARMER_AREA_5X5_LEVEL = 50;
+    private static final int FARMER_AREA_7X7_LEVEL = 75;
+    private static final int FARMER_AREA_9X9_LEVEL = 99;
+
+    // Map to track the selected area mode radius (0 = disabled, 1 = 3x3, 4 = 9x9)
+    private static final Map<UUID, Integer> areaPlantingRadius = new HashMap<>();
 
     // Rate limiting for area planting (UUID → last plant time in millis)
     private static final Map<UUID, Long> areaPlantingLastUse = new HashMap<>();
@@ -243,36 +247,102 @@ public class FarmerSkill extends AbstractSkill {
     }
 
     /**
-     * Toggles area planting (3x3) for a player.
-     * Requires level 25+.
-     * 
-     * @return true if now enabled, false if now disabled or player doesn't meet
-     *         requirements
+     * Returns the Fertile Ground growth chance for the player's current level.
+     * Progression is milestone-based to keep the perk readable and predictable.
      */
-    public static boolean toggleAreaPlanting(ServerPlayerEntity player, int level) {
-        if (level < SkillConfig.FARMER_AREA_PLANTING_LEVEL) {
-            return false;
+    public static float getFertileGroundGrowthChance(int level) {
+        if (level >= FARMER_AREA_9X9_LEVEL) {
+            return 0.99f;
+        }
+        if (level >= SkillConfig.FARMER_ABUNDANT_HARVEST_LEVEL) {
+            return 0.75f;
+        }
+        if (level >= SkillConfig.FARMER_NUTRIENT_CYCLE_LEVEL) {
+            return 0.50f;
+        }
+        if (level >= SkillConfig.FARMER_FERTILE_GROUND_LEVEL) {
+            return 0.25f;
+        }
+        return 0.0f;
+    }
+
+    public static int getFertileGroundGrowthPercent(int level) {
+        return Math.round(getFertileGroundGrowthChance(level) * 100.0f);
+    }
+
+    /**
+     * Gets the maximum unlocked area planting radius for the given level.
+     * Radius 1 = 3x3, 2 = 5x5, 3 = 7x7, 4 = 9x9.
+     */
+    public static int getMaxAreaPlantingRadius(int level) {
+        if (level >= FARMER_AREA_9X9_LEVEL) {
+            return 4;
+        }
+        if (level >= SkillConfig.FARMER_ABUNDANT_HARVEST_LEVEL) {
+            return 3;
+        }
+        if (level >= SkillConfig.FARMER_NUTRIENT_CYCLE_LEVEL) {
+            return 2;
+        }
+        if (level >= SkillConfig.FARMER_AREA_PLANTING_LEVEL) {
+            return 1;
+        }
+        return 0;
+    }
+
+    /**
+     * Cycles the Farmer area mode through all unlocked sizes and off.
+     */
+    public static int getNextAreaPlantingRadius(int level, int currentRadius) {
+        int maxRadius = getMaxAreaPlantingRadius(level);
+        if (maxRadius <= 0) {
+            return 0;
         }
 
+        int clampedCurrent = Math.max(0, Math.min(currentRadius, maxRadius));
+        int nextRadius = clampedCurrent + 1;
+        return nextRadius > maxRadius ? 0 : nextRadius;
+    }
+
+    public static int cycleAreaPlantingMode(ServerPlayerEntity player, int level) {
         UUID uuid = player.getUuid();
-        boolean currentState = areaPlantingEnabled.getOrDefault(uuid, false);
-        boolean newState = !currentState;
-        areaPlantingEnabled.put(uuid, newState);
-        return newState;
+        int currentRadius = getAreaPlantingRadius(uuid, level);
+        int nextRadius = getNextAreaPlantingRadius(level, currentRadius);
+
+        if (nextRadius <= 0) {
+            areaPlantingRadius.remove(uuid);
+        } else {
+            areaPlantingRadius.put(uuid, nextRadius);
+        }
+        return nextRadius;
     }
 
-    /**
-     * Checks if area planting (3x3) is enabled for a player
-     */
-    public static boolean isAreaPlantingEnabled(ServerPlayerEntity player) {
-        return areaPlantingEnabled.getOrDefault(player.getUuid(), false);
+    public static int getAreaPlantingRadius(UUID playerUuid, int level) {
+        int maxRadius = getMaxAreaPlantingRadius(level);
+        if (maxRadius <= 0) {
+            areaPlantingRadius.remove(playerUuid);
+            return 0;
+        }
+
+        int storedRadius = areaPlantingRadius.getOrDefault(playerUuid, 0);
+        if (storedRadius > maxRadius) {
+            areaPlantingRadius.put(playerUuid, maxRadius);
+            return maxRadius;
+        }
+        return storedRadius;
     }
 
-    /**
-     * Checks if area planting (3x3) is enabled by UUID (for mixin use)
-     */
-    public static boolean isAreaPlantingEnabled(UUID playerUuid) {
-        return areaPlantingEnabled.getOrDefault(playerUuid, false);
+    public static boolean isAreaPlantingEnabled(UUID playerUuid, int level) {
+        return getAreaPlantingRadius(playerUuid, level) > 0;
+    }
+
+    public static int getAreaPlantingDiameter(int radius) {
+        return radius <= 0 ? 0 : radius * 2 + 1;
+    }
+
+    public static String getAreaPlantingLabel(int radius) {
+        int diameter = getAreaPlantingDiameter(radius);
+        return diameter <= 0 ? "OFF" : diameter + "x" + diameter;
     }
 
     /**
@@ -415,7 +485,7 @@ public class FarmerSkill extends AbstractSkill {
      */
     public static void cleanupPlayerState(UUID playerUuid) {
         harvestMoonPlayers.remove(playerUuid);
-        areaPlantingEnabled.remove(playerUuid);
+        areaPlantingRadius.remove(playerUuid);
         areaPlantingLastUse.remove(playerUuid);
     }
 
@@ -424,7 +494,7 @@ public class FarmerSkill extends AbstractSkill {
      */
     public static void cleanupAllStates() {
         harvestMoonPlayers.clear();
-        areaPlantingEnabled.clear();
+        areaPlantingRadius.clear();
         areaPlantingLastUse.clear();
     }
 }

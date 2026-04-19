@@ -7,7 +7,7 @@ import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
 
 /**
- * Client -> Server: Player pressed G to toggle 3x3 area planting (Farmer skill)
+ * Client -> Server: Player pressed G to cycle Farmer area mode.
  */
 public record AreaPlantingToggleC2SPayload() implements CustomPayload {
     public static final CustomPayload.Id<AreaPlantingToggleC2SPayload> ID = new CustomPayload.Id<>(

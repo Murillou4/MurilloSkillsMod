@@ -6,6 +6,7 @@ import net.minecraft.enchantment.Enchantment;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.util.math.random.Random;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -107,6 +108,45 @@ public final class BlacksmithOverEnchanting {
         applyEnchantments(resultStack, resultEnchantments);
         int levelCost = Math.max(1, currentCost + extraCost);
         return new OverEnchantResult(resultStack, levelCost);
+    }
+
+    public static int getEnchantingTableMinimumLevel(int vanillaMaxLevel) {
+        return Math.min(vanillaMaxLevel, getMaxOverEnchantLevel());
+    }
+
+    public static int rollEnchantingTableLevel(int vanillaMaxLevel, Random random) {
+        int minLevel = getEnchantingTableMinimumLevel(vanillaMaxLevel);
+        int maxLevel = getMaxOverEnchantLevel();
+        if (minLevel >= maxLevel) {
+            return minLevel;
+        }
+        return minLevel + random.nextInt(maxLevel - minLevel + 1);
+    }
+
+    public static boolean tryApplyEnchantingTableBonus(ItemStack stack, Random random) {
+        Map<RegistryEntry<Enchantment>, Integer> enchantments = getEnchantments(stack);
+        if (enchantments.isEmpty()) {
+            return false;
+        }
+
+        boolean changed = false;
+        Map<RegistryEntry<Enchantment>, Integer> upgradedEnchantments = new LinkedHashMap<>(enchantments);
+        for (Map.Entry<RegistryEntry<Enchantment>, Integer> entry : enchantments.entrySet()) {
+            RegistryEntry<Enchantment> enchantment = entry.getKey();
+            int currentLevel = entry.getValue();
+            int upgradedLevel = rollEnchantingTableLevel(enchantment.value().getMaxLevel(), random);
+            if (upgradedLevel > currentLevel) {
+                upgradedEnchantments.put(enchantment, upgradedLevel);
+                changed = true;
+            }
+        }
+
+        if (!changed) {
+            return false;
+        }
+
+        applyEnchantments(stack, upgradedEnchantments);
+        return true;
     }
 
     private static Map<RegistryEntry<Enchantment>, Integer> getEnchantments(ItemStack stack) {

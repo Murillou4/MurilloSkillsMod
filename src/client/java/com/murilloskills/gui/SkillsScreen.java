@@ -4,6 +4,7 @@ import com.murilloskills.data.ClientSkillData;
 
 import com.murilloskills.gui.renderer.RenderingHelper;
 import com.murilloskills.gui.data.SkillUiData;
+import com.murilloskills.impl.FarmerSkill;
 import com.murilloskills.network.ParagonActivationC2SPayload;
 import com.murilloskills.network.SkillResetC2SPayload;
 import com.murilloskills.network.SkillSelectionC2SPayload;
@@ -872,7 +873,9 @@ public class SkillsScreen extends Screen {
                             tooltip.add(Text.translatable("murilloskills.passive.farmer.green_thumb")
                                     .formatted(Formatting.GREEN));
                         if (level >= SkillConfig.FARMER_FERTILE_GROUND_LEVEL)
-                            tooltip.add(Text.translatable("murilloskills.passive.farmer.fertile_ground")
+                            tooltip.add(Text.translatable("murilloskills.passive.farmer.fertile_ground",
+                                    FarmerSkill.getFertileGroundGrowthPercent(level),
+                                    FarmerSkill.getAreaPlantingLabel(FarmerSkill.getMaxAreaPlantingRadius(level)))
                                     .formatted(Formatting.AQUA));
                         if (level >= SkillConfig.FARMER_NATURES_VITALITY_LEVEL)
                             tooltip.add(Text.translatable("murilloskills.passive.farmer.natures_vitality")
