@@ -38,7 +38,8 @@
     "SheepShearMixin",
     "PlayerSleepMixin",
     "SeedPlantMixin",
-    "ForgingScreenHandlerAccessor"
+    "ForgingScreenHandlerAccessor",
+    "ScreenHandlerInvoker"
   ],
   "injectors": {
     "defaultRequire": 1

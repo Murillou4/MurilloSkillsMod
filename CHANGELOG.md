@@ -12,6 +12,9 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 - **Sem bloqueio de `Too Expensive` no over-enchant**: Master Enchanter (`99+`) agora recompõe o resultado mesmo quando o vanilla limpava o output por custo alto, e aplica cap de custo final barato para manter a perk utilizável.
 - **Fornalha com bônus de +100% no topo**: a passiva perto do Blacksmith foi alinhada para chegar a `2x` de velocidade (dobro), com escala linear por nível.
 - **Enchanting table voltando a passar do cap vanilla**: adicionados fallbacks para configs antigas com campos de over-enchant zerados/ausentes, evitando desativação silenciosa do sistema.
+- **Edge cases de encantamento nível 8 estabilizados**: o fluxo da bigorna agora compara encantamentos por chave de registro (não por identidade de objeto), evitando clamping silencioso em merges com referências diferentes.
+- **Livros não-vanilla agora funcionam**: enchanted books que vieram com `enchantments` (sem `stored_enchantments`) voltam a ser aceitos no over-enchant do Blacksmith.
+- **Reconstrução do resultado mesmo com custo vanilla 0**: quando o vanilla bloqueia a junção e zera custo/output, o Master Enchanter tenta recompor o resultado válido a partir dos inputs.
 
 ---
 

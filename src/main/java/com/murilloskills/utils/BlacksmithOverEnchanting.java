@@ -77,16 +77,19 @@ public final class BlacksmithOverEnchanting {
 
         Map<RegistryEntry<Enchantment>, Integer> left = getEnchantments(firstInput);
         Map<RegistryEntry<Enchantment>, Integer> right = getEnchantments(secondInput);
-        if (left.isEmpty() || right.isEmpty()) {
+        if (left.isEmpty() && right.isEmpty()) {
             return null;
         }
 
         ItemStack resultStack = vanillaResult.isEmpty() ? firstInput.copy() : vanillaResult.copy();
         resultStack.setCount(1);
 
-        Map<RegistryEntry<Enchantment>, Integer> resultEnchantments = vanillaResult.isEmpty()
-                ? mergeCompatibleEnchantments(left, right)
+        Map<RegistryEntry<Enchantment>, Integer> baselineEnchantments = vanillaResult.isEmpty()
+                ? new LinkedHashMap<>(left)
                 : getEnchantments(resultStack);
+        Map<RegistryEntry<Enchantment>, Integer> resultEnchantments = vanillaResult.isEmpty()
+                ? mergeCompatibleEnchantments(baselineEnchantments, right, firstInput, resultStack)
+                : new LinkedHashMap<>(baselineEnchantments);
         boolean changed = false;
         int extraCost = 0;
         int overMaxLevel = getMaxOverEnchantLevel();
@@ -94,10 +97,15 @@ public final class BlacksmithOverEnchanting {
         Set<RegistryEntry<Enchantment>> union = new LinkedHashSet<>();
         union.addAll(left.keySet());
         union.addAll(right.keySet());
+        Set<String> processedEnchantments = new LinkedHashSet<>();
 
         for (RegistryEntry<Enchantment> enchantment : union) {
-            int leftLevel = left.getOrDefault(enchantment, 0);
-            int rightLevel = right.getOrDefault(enchantment, 0);
+            if (!processedEnchantments.add(getEnchantmentIdentity(enchantment))) {
+                continue;
+            }
+
+            int leftLevel = getLevel(left, enchantment);
+            int rightLevel = getLevel(right, enchantment);
             int vanillaMaxLevel = enchantment.value().getMaxLevel();
 
             int targetLevel;
@@ -112,14 +120,35 @@ public final class BlacksmithOverEnchanting {
                 continue;
             }
 
-            int currentLevel = resultEnchantments.getOrDefault(enchantment, 0);
+            boolean alreadyPresentInResult = containsEnchantment(resultEnchantments, enchantment);
+            if (!alreadyPresentInResult) {
+                if (!vanillaResult.isEmpty()) {
+                    // Keep vanilla compatibility rules for normal anvil merges.
+                    continue;
+                }
+                if (!canApplyToResultItem(firstInput, resultStack, enchantment)) {
+                    continue;
+                }
+                if (!isCompatibleWithExisting(resultEnchantments.keySet(), enchantment)) {
+                    continue;
+                }
+            }
+
+            int currentLevel = getLevel(resultEnchantments, enchantment);
+            int baselineLevel = getLevel(baselineEnchantments, enchantment);
             if (targetLevel <= currentLevel) {
+                if (targetLevel > baselineLevel) {
+                    extraCost += getExtraAnvilCost(vanillaMaxLevel, targetLevel);
+                    changed = true;
+                }
                 continue;
             }
 
-            resultEnchantments.put(enchantment, targetLevel);
-            extraCost += getExtraAnvilCost(vanillaMaxLevel, targetLevel);
-            changed = true;
+            setLevel(resultEnchantments, enchantment, targetLevel);
+            if (targetLevel > baselineLevel) {
+                extraCost += getExtraAnvilCost(vanillaMaxLevel, targetLevel);
+                changed = true;
+            }
         }
 
         if (!changed) {
@@ -217,9 +246,17 @@ public final class BlacksmithOverEnchanting {
 
     private static ItemEnchantmentsComponent getEnchantmentsComponent(ItemStack stack) {
         if (stack.isOf(Items.ENCHANTED_BOOK)) {
-            return stack.getOrDefault(DataComponentTypes.STORED_ENCHANTMENTS, ItemEnchantmentsComponent.DEFAULT);
+            ItemEnchantmentsComponent stored = stack.getOrDefault(
+                    DataComponentTypes.STORED_ENCHANTMENTS,
+                    ItemEnchantmentsComponent.DEFAULT);
+            if (!stored.isEmpty()) {
+                return stored;
+            }
+            // Compatibility fallback: some external commands/mods write enchanted-book data
+            // into ENCHANTMENTS instead of STORED_ENCHANTMENTS.
+            return stack.getOrDefault(DataComponentTypes.ENCHANTMENTS, ItemEnchantmentsComponent.DEFAULT);
         }
-        return stack.getEnchantments();
+        return stack.getOrDefault(DataComponentTypes.ENCHANTMENTS, ItemEnchantmentsComponent.DEFAULT);
     }
 
     private static void applyEnchantments(ItemStack stack, Map<RegistryEntry<Enchantment>, Integer> enchantments) {
@@ -240,22 +277,24 @@ public final class BlacksmithOverEnchanting {
 
     private static Map<RegistryEntry<Enchantment>, Integer> mergeCompatibleEnchantments(
             Map<RegistryEntry<Enchantment>, Integer> left,
-            Map<RegistryEntry<Enchantment>, Integer> right) {
+            Map<RegistryEntry<Enchantment>, Integer> right,
+            ItemStack firstInput,
+            ItemStack resultStack) {
         Map<RegistryEntry<Enchantment>, Integer> merged = new LinkedHashMap<>(left);
         for (Map.Entry<RegistryEntry<Enchantment>, Integer> entry : right.entrySet()) {
             RegistryEntry<Enchantment> enchantment = entry.getKey();
             int rightLevel = entry.getValue();
-            int leftLevel = merged.getOrDefault(enchantment, 0);
+            int leftLevel = getLevel(merged, enchantment);
 
             if (leftLevel > 0) {
                 int resultLevel = getOverEnchantResultLevel(leftLevel, rightLevel, enchantment.value().getMaxLevel());
-                merged.put(enchantment, Math.max(leftLevel, resultLevel));
+                setLevel(merged, enchantment, Math.max(leftLevel, resultLevel));
                 continue;
             }
 
             boolean compatible = true;
             for (RegistryEntry<Enchantment> existing : merged.keySet()) {
-                if (existing.equals(enchantment)) {
+                if (sameEnchantment(existing, enchantment)) {
                     continue;
                 }
                 if (!Enchantment.canBeCombined(existing, enchantment)) {
@@ -264,11 +303,89 @@ public final class BlacksmithOverEnchanting {
                 }
             }
 
-            if (compatible) {
-                merged.put(enchantment, rightLevel);
+            if (compatible && canApplyToResultItem(firstInput, resultStack, enchantment)) {
+                setLevel(merged, enchantment, rightLevel);
             }
         }
         return merged;
+    }
+
+    private static boolean canApplyToResultItem(
+            ItemStack firstInput,
+            ItemStack resultStack,
+            RegistryEntry<Enchantment> enchantment) {
+        if (resultStack.isOf(Items.ENCHANTED_BOOK) || firstInput.isOf(Items.ENCHANTED_BOOK)) {
+            return true;
+        }
+        return enchantment.value().isAcceptableItem(resultStack) || enchantment.value().isAcceptableItem(firstInput);
+    }
+
+    private static boolean isCompatibleWithExisting(
+            Set<RegistryEntry<Enchantment>> existingEnchantments,
+            RegistryEntry<Enchantment> candidate) {
+        for (RegistryEntry<Enchantment> existing : existingEnchantments) {
+            if (sameEnchantment(existing, candidate)) {
+                continue;
+            }
+            if (!Enchantment.canBeCombined(existing, candidate)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static int getLevel(Map<RegistryEntry<Enchantment>, Integer> enchantments, RegistryEntry<Enchantment> target) {
+        RegistryEntry<Enchantment> match = findMatchingEnchantment(enchantments, target);
+        return match != null ? enchantments.getOrDefault(match, 0) : 0;
+    }
+
+    private static boolean containsEnchantment(
+            Map<RegistryEntry<Enchantment>, Integer> enchantments,
+            RegistryEntry<Enchantment> target) {
+        return findMatchingEnchantment(enchantments, target) != null;
+    }
+
+    private static void setLevel(
+            Map<RegistryEntry<Enchantment>, Integer> enchantments,
+            RegistryEntry<Enchantment> target,
+            int level) {
+        RegistryEntry<Enchantment> match = findMatchingEnchantment(enchantments, target);
+        if (match != null) {
+            enchantments.put(match, level);
+        } else {
+            enchantments.put(target, level);
+        }
+    }
+
+    private static RegistryEntry<Enchantment> findMatchingEnchantment(
+            Map<RegistryEntry<Enchantment>, Integer> enchantments,
+            RegistryEntry<Enchantment> target) {
+        for (RegistryEntry<Enchantment> candidate : enchantments.keySet()) {
+            if (sameEnchantment(candidate, target)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private static boolean sameEnchantment(
+            RegistryEntry<Enchantment> first,
+            RegistryEntry<Enchantment> second) {
+        if (first == second) {
+            return true;
+        }
+        var firstKey = first.getKey();
+        var secondKey = second.getKey();
+        if (firstKey.isPresent() && secondKey.isPresent()) {
+            return firstKey.get().equals(secondKey.get());
+        }
+        return first.value() == second.value();
+    }
+
+    private static String getEnchantmentIdentity(RegistryEntry<Enchantment> enchantment) {
+        return enchantment.getKey()
+                .map(key -> key.getValue().toString())
+                .orElseGet(() -> "direct:" + System.identityHashCode(enchantment.value()));
     }
 
     private static int getConfiguredUnlockLevel() {

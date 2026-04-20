@@ -1,5 +1,6 @@
 package com.murilloskills.mixin;
 
+import com.murilloskills.accessor.AnvilCostSyncAccessor;
 import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.events.ChallengeEventsHandler;
 import com.murilloskills.skills.MurilloSkillsList;
@@ -9,11 +10,13 @@ import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillNotifier;
 import com.murilloskills.utils.SkillsNetworkUtils;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.AnvilScreenHandler;
 import net.minecraft.screen.Property;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerContext;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,7 +25,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Mixin for AnvilScreenHandler to grant Blacksmith XP and apply perks.
@@ -31,7 +33,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * - Tracks item repairs for daily challenges
  */
 @Mixin(AnvilScreenHandler.class)
-public abstract class AnvilScreenHandlerMixin {
+public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
 
     @Unique
     private static final int MURILLOSKILLS_BLACKSMITH_MASTERY_MAX_ANVIL_COST = 25;
@@ -44,10 +46,21 @@ public abstract class AnvilScreenHandlerMixin {
     @Unique
     private int murilloskills$vanillaLevelCost;
 
+    @Unique
+    private final Property murilloskills$originalLevelCost = Property.create();
+
+    @Inject(method = "<init>(ILnet/minecraft/entity/player/PlayerInventory;Lnet/minecraft/screen/ScreenHandlerContext;)V", at = @At("TAIL"))
+    private void murilloskills$registerOriginalCostProperty(int syncId, PlayerInventory inventory,
+            ScreenHandlerContext context, CallbackInfo ci) {
+        ((ScreenHandlerInvoker) (Object) this).murilloskills$invokeAddProperty(this.murilloskills$originalLevelCost);
+    }
+
     /**
      * Apply Blacksmith XP cost discount after vanilla calculates the cost.
-     * Injects at the end of updateResult() to modify the cost before it's
-     * displayed.
+     *
+     * We run at TAIL for compatibility and push an extra content sync whenever
+     * our adjustments change the final cost/output so the client UI stays in
+     * lockstep with what is actually charged on take.
      *
      * Discount scales with level:
      * - Level 25: 40% discount (base)
@@ -57,35 +70,32 @@ public abstract class AnvilScreenHandlerMixin {
     @Inject(method = "updateResult", at = @At("TAIL"))
     private void applyBlacksmithAnvilDiscount(CallbackInfo ci) {
         this.murilloskills$vanillaLevelCost = this.levelCost.get();
-        this.murilloskills$refreshFinalAnvilCost();
-    }
-
-    @Inject(method = "canTakeOutput", at = @At("HEAD"))
-    private void murilloskills$refreshFinalCostBeforeTake(PlayerEntity player, boolean present,
-            CallbackInfoReturnable<Boolean> cir) {
-        this.murilloskills$refreshFinalAnvilCost();
+        boolean changed = this.murilloskills$refreshFinalAnvilCost();
+        if (changed) {
+            ((ScreenHandler) (Object) this).sendContentUpdates();
+        }
     }
 
     @Unique
-    private void murilloskills$refreshFinalAnvilCost() {
+    private boolean murilloskills$refreshFinalAnvilCost() {
         // Use accessor to get player from parent class
         ForgingScreenHandlerAccessor accessor = (ForgingScreenHandlerAccessor) this;
         PlayerEntity player = accessor.getPlayer();
 
         // Only apply on server side
         if (player == null || player.getEntityWorld().isClient()) {
-            return;
+            return false;
         }
 
         if (!(player instanceof ServerPlayerEntity serverPlayer)) {
-            return;
+            return false;
         }
 
         var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
         Inventory input = accessor.getInput();
         Inventory output = accessor.getOutput();
         if (input == null || output == null) {
-            return;
+            return false;
         }
 
         ItemStack firstInput = input.getStack(0);
@@ -93,27 +103,42 @@ public abstract class AnvilScreenHandlerMixin {
         ItemStack vanillaOutput = output.getStack(0);
 
         int baseCost = this.murilloskills$vanillaLevelCost > 0 ? this.murilloskills$vanillaLevelCost : this.levelCost.get();
-        if (baseCost <= 0) {
-            return;
+        int safeBaseCost = Math.max(0, baseCost);
+
+        boolean changed = false;
+        if (this.murilloskills$originalLevelCost.get() != safeBaseCost) {
+            this.murilloskills$originalLevelCost.set(safeBaseCost);
+            changed = true;
         }
 
         // Only apply discount if player has BLACKSMITH selected and meets level
         // requirement
-        if (!playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
-            if (this.levelCost.get() != baseCost) {
-                this.levelCost.set(baseCost);
+        boolean blacksmithSelected = playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH);
+        if (!blacksmithSelected) {
+            if (this.levelCost.get() != safeBaseCost) {
+                this.levelCost.set(safeBaseCost);
+                changed = true;
             }
-            return;
+            return changed;
         }
 
         int level = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
-        int finalCost = baseCost;
-        if (level >= SkillConfig.getBlacksmithEfficientAnvilLevel()) {
-            float discount = SkillConfig.getBlacksmithAnvilDiscount(level);
-            finalCost = Math.max(1, Math.round(baseCost * (1.0f - discount)));
+        boolean masterEnchanterUnlocked = BlacksmithOverEnchanting.isUnlocked(level);
+
+        if (safeBaseCost <= 0 && !masterEnchanterUnlocked) {
+            if (this.levelCost.get() != 0) {
+                this.levelCost.set(0);
+                changed = true;
+            }
+            return changed;
         }
 
-        boolean masterEnchanterUnlocked = BlacksmithOverEnchanting.isUnlocked(level);
+        int finalCost = safeBaseCost > 0 ? safeBaseCost : 1;
+        if (safeBaseCost > 0 && level >= SkillConfig.getBlacksmithEfficientAnvilLevel()) {
+            float discount = SkillConfig.getBlacksmithAnvilDiscount(level);
+            finalCost = Math.max(1, Math.round(safeBaseCost * (1.0f - discount)));
+        }
+
         if (masterEnchanterUnlocked) {
             var override = BlacksmithOverEnchanting.tryApply(
                     firstInput,
@@ -121,10 +146,9 @@ public abstract class AnvilScreenHandlerMixin {
                     vanillaOutput,
                     finalCost);
 
-            // Vanilla clears the output when cost >= 40 before our tail-injection runs.
-            // Rebuild over-enchant results from the two inputs so Master Enchanter can
-            // still craft high-level books/items.
-            if (override == null && vanillaOutput.isEmpty() && baseCost >= 40) {
+            // Rebuild over-enchant results from the two inputs when vanilla blocks or
+            // clears the output (too expensive or invalid intermediate states).
+            if (override == null && vanillaOutput.isEmpty()) {
                 override = BlacksmithOverEnchanting.tryApply(
                         firstInput,
                         secondInput,
@@ -133,17 +157,28 @@ public abstract class AnvilScreenHandlerMixin {
             }
 
             if (override != null) {
-                output.setStack(0, override.stack());
+                ItemStack overrideStack = override.stack();
+                if (!ItemStack.areEqual(output.getStack(0), overrideStack)) {
+                    output.setStack(0, overrideStack);
+                    changed = true;
+                }
                 finalCost = override.levelCost();
+            } else if (safeBaseCost <= 0) {
+                finalCost = 0;
             }
 
             // Master Enchanter should never hit "Too Expensive" and should feel cheap.
-            finalCost = Math.max(1, Math.min(finalCost, MURILLOSKILLS_BLACKSMITH_MASTERY_MAX_ANVIL_COST));
+            if (finalCost > 0) {
+                finalCost = Math.max(1, Math.min(finalCost, MURILLOSKILLS_BLACKSMITH_MASTERY_MAX_ANVIL_COST));
+            }
         }
 
         if (this.levelCost.get() != finalCost) {
             this.levelCost.set(finalCost);
+            changed = true;
         }
+
+        return changed;
     }
 
     /**
@@ -151,8 +186,6 @@ public abstract class AnvilScreenHandlerMixin {
      */
     @Inject(method = "onTakeOutput", at = @At("HEAD"))
     private void onBlacksmithAnvilUse(PlayerEntity player, ItemStack stack, CallbackInfo ci) {
-        this.murilloskills$refreshFinalAnvilCost();
-
         if (player.getEntityWorld().isClient() || !(player instanceof ServerPlayerEntity serverPlayer)) {
             return;
         }
@@ -213,5 +246,10 @@ public abstract class AnvilScreenHandlerMixin {
 
         // Grant "First Forge" advancement (first anvil use)
         com.murilloskills.utils.AdvancementGranter.grantFirstForge(serverPlayer);
+    }
+
+    @Override
+    public int murilloskills$getSyncedOriginalLevelCost() {
+        return this.murilloskills$originalLevelCost.get();
     }
 }
