@@ -8,6 +8,8 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ### 🔨 Blacksmith - Hover e Desconto Corrigidos
 
+- **Hover da enchanting table volta a bater com o resultado aplicado**: o bônus determinístico que só disparava no clique (nunca no preview) foi removido da mesa, eliminando o caso em que o hover mostrava um enchant/nível diferente do que ia parar no item. Over-enchanting continua disponível via bigorna.
+- **Desconto do nível exigido agora aparece na enchanting table**: o valor descontado é aplicado na hora do render (quando os `Property` do servidor já estão sincronizados), com o número original cortado ao lado — antes, a modificação era feita em `onContentChanged TAIL`, que disparava com valores obsoletos e deixava a UI mostrando o custo vanilla.
 - **Hover da enchanting table agora mostra o enchant real**: o preview do slot passou a usar a mesma rolagem determinística do bônus do Blacksmith que é aplicada no clique, então o texto exibido no hover finalmente bate com o resultado final do item.
 - **Fim do “buff surpresa” depois do clique**: corrigido o caso em que o hover mostrava algo como `Fortuna III`, mas o item saía mais forte depois. Agora preview e aplicação usam a mesma lógica.
 - **Label de desconto da bigorna não mente mais**: o overlay `original riscado -> descontado` só aparece quando o custo final realmente ficou menor.
