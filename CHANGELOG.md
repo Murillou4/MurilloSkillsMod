@@ -8,6 +8,8 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ### 🔨 Blacksmith - Hover e Desconto Corrigidos
 
+- **Bigorna volta a mostrar o desconto mesmo quando o jogador não tem XP suficiente**: o label `riscado → descontado` estava sendo pulado quando o custo ficava em vermelho (falta de XP / lapis), escondendo completamente o benefício do Blacksmith. Agora o dual-label aparece em qualquer cor, só ajustando o tom (verde para afford, vermelho para não-afford).
+- **Label da bigorna compactado para não invadir o `Inventory`**: formato passou a ser `<strike>X</strike> Y` em vez de `X → Y`, reduzindo ~20px de largura e garantindo que o label do custo não encoste no rótulo da barra de inventário.
 - **Hover da enchanting table volta a bater com o resultado aplicado**: o bônus determinístico que só disparava no clique (nunca no preview) foi removido da mesa, eliminando o caso em que o hover mostrava um enchant/nível diferente do que ia parar no item. Over-enchanting continua disponível via bigorna.
 - **Desconto do nível exigido agora aparece na enchanting table**: o valor descontado é aplicado na hora do render (quando os `Property` do servidor já estão sincronizados), com o número original cortado ao lado — antes, a modificação era feita em `onContentChanged TAIL`, que disparava com valores obsoletos e deixava a UI mostrando o custo vanilla.
 - **Hover da enchanting table agora mostra o enchant real**: o preview do slot passou a usar a mesma rolagem determinística do bônus do Blacksmith que é aplicada no clique, então o texto exibido no hover finalmente bate com o resultado final do item.

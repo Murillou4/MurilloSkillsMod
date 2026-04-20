@@ -18,9 +18,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Replaces the vanilla anvil cost draw with the Blacksmith dual-cost label
- * ({@code <strike>original</strike> → discounted}) when the final cost is actually
- * lower. Rendering the entire cost block ourselves avoids the vanilla text
- * repainting over the custom discount label on later UI passes.
+ * ({@code <strike>X</strike> Y}) when the final cost is actually lower. The
+ * label uses a compact format so it does not overlap the {@code Inventory}
+ * header and keeps the "can't afford" red color even when a discount is
+ * applied, so the player still sees the indicator instead of plain vanilla
+ * text.
  */
 @Mixin(AnvilScreen.class)
 public abstract class AnvilScreenMixin extends net.minecraft.client.gui.screen.ingame.HandledScreen<AnvilScreenHandler> {
@@ -39,36 +41,49 @@ public abstract class AnvilScreenMixin extends net.minecraft.client.gui.screen.i
 
         AnvilScreenHandler h = this.handler;
         int displayed = h.getLevelCost();
-        if (displayed > 0) {
-            int color = -8323296;
-            Text label = null;
-            if (displayed >= 40 && !this.client.player.isInCreativeMode()) {
-                label = Text.translatable("container.repair.expensive");
+        if (displayed <= 0) {
+            ci.cancel();
+            return;
+        }
+
+        boolean creativeMode = this.client.player != null && this.client.player.isInCreativeMode();
+        int color = -8323296;
+        Text label = null;
+
+        if (displayed >= 40 && !creativeMode) {
+            label = Text.translatable("container.repair.expensive");
+            color = -40864;
+        } else if (h.getSlot(2).hasStack()) {
+            label = Text.translatable("container.repair.cost", displayed);
+            if (!h.getSlot(2).canTakeItems(this.player)) {
                 color = -40864;
-            } else if (h.getSlot(2).hasStack()) {
-                label = Text.translatable("container.repair.cost", displayed);
-                if (!h.getSlot(2).canTakeItems(this.player)) {
-                    color = -40864;
-                }
-            }
-
-            if (label != null) {
-                if (color == -8323296 && h instanceof BlacksmithCostAccessor accessor) {
-                    int original = accessor.murilloskills$getOriginalLevelCost();
-                    if (original > displayed) {
-                        MutableText dualLabel = Text.literal(String.valueOf(original))
-                                .formatted(Formatting.STRIKETHROUGH, Formatting.GRAY)
-                                .append(Text.literal(" → " + displayed).formatted(Formatting.GREEN, Formatting.BOLD));
-                        label = dualLabel;
-                        color = 0xFFFFFFFF;
-                    }
-                }
-
-                int x = this.backgroundWidth - 8 - this.textRenderer.getWidth(label) - 2;
-                context.fill(x - 2, 67, this.backgroundWidth - 8, 79, 1325400064);
-                context.drawTextWithShadow(this.textRenderer, label, x, 69, color);
             }
         }
+
+        if (label == null) {
+            ci.cancel();
+            return;
+        }
+
+        int original = 0;
+        if (h instanceof BlacksmithCostAccessor accessor) {
+            original = accessor.murilloskills$getOriginalLevelCost();
+        }
+
+        boolean hasDiscount = original > displayed && displayed < 40;
+        if (hasDiscount) {
+            Formatting discountedColor = (color == -40864) ? Formatting.RED : Formatting.GREEN;
+            MutableText dualLabel = Text.literal(String.valueOf(original))
+                    .formatted(Formatting.STRIKETHROUGH, Formatting.GRAY)
+                    .append(Text.literal(" "))
+                    .append(Text.literal(String.valueOf(displayed)).formatted(discountedColor, Formatting.BOLD));
+            label = dualLabel;
+            color = 0xFFFFFFFF;
+        }
+
+        int x = this.backgroundWidth - 8 - this.textRenderer.getWidth(label) - 2;
+        context.fill(x - 2, 67, this.backgroundWidth - 8, 79, 1325400064);
+        context.drawTextWithShadow(this.textRenderer, label, x, 69, color);
 
         ci.cancel();
     }
