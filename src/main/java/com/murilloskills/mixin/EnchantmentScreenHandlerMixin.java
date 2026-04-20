@@ -3,13 +3,19 @@ package com.murilloskills.mixin;
 import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.data.ModAttachments;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.BlacksmithOverEnchanting;
 import com.murilloskills.utils.BlacksmithXpGetter;
 import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillNotifier;
 import com.murilloskills.utils.SkillsNetworkUtils;
+import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.screen.EnchantmentScreenHandler;
+import net.minecraft.screen.Property;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,16 +24,20 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.objectweb.asm.Opcodes;
+
+import java.util.List;
 
 /**
  * Handles Blacksmith enchanting-table perks.
  *
- * The enchanting preview is generated from vanilla {@code enchantmentPower}, so
- * we keep that array untouched on the server and only relax the level gate when
- * the player qualifies for the Blacksmith discount. This keeps the preview and
- * the applied enchantment in sync while still refunding part of the XP cost.
+ * We keep vanilla {@code enchantmentPower} untouched for slot requirements, then
+ * reuse the deterministic Blacksmith bonus when the table generates its final
+ * enchantment list. This keeps the preview, the applied enchantment, and the XP
+ * refund flow in sync while still allowing eligible Blacksmiths to roll past
+ * vanilla caps.
  */
 @Mixin(EnchantmentScreenHandler.class)
 public abstract class EnchantmentScreenHandlerMixin {
@@ -40,8 +50,23 @@ public abstract class EnchantmentScreenHandlerMixin {
     @Final
     private int[] enchantmentPower;
 
+    @Shadow
+    @Final
+    private Property seed;
+
+    @Unique
+    private PlayerEntity murilloskills$owner;
+
     @Unique
     private int murilloskills$pendingEnchantButtonId = -1;
+
+    @Inject(
+            method = "<init>(ILnet/minecraft/entity/player/PlayerInventory;Lnet/minecraft/screen/ScreenHandlerContext;)V",
+            at = @At("TAIL"))
+    private void murilloskills$captureOwner(int syncId, PlayerInventory playerInventory,
+            net.minecraft.screen.ScreenHandlerContext context, CallbackInfo ci) {
+        this.murilloskills$owner = playerInventory.player;
+    }
 
     @Inject(method = "onButtonClick", at = @At("HEAD"))
     private void murilloskills$capturePendingEnchantButton(PlayerEntity player, int id, CallbackInfoReturnable<Boolean> cir) {
@@ -128,6 +153,39 @@ public abstract class EnchantmentScreenHandlerMixin {
         com.murilloskills.utils.AchievementTracker.incrementAndCheck(
                 serverPlayer, MurilloSkillsList.BLACKSMITH,
                 com.murilloskills.utils.AchievementTracker.KEY_ITEMS_ENCHANTED, 1);
+    }
+
+    @Inject(method = "generateEnchantments", at = @At("RETURN"), cancellable = true)
+    private void murilloskills$applyBlacksmithEnchantingTableBonus(
+            DynamicRegistryManager registryManager,
+            ItemStack stack,
+            int slot,
+            int level,
+            CallbackInfoReturnable<List<EnchantmentLevelEntry>> cir) {
+        List<EnchantmentLevelEntry> enchantments = cir.getReturnValue();
+        if (enchantments == null || enchantments.isEmpty()) {
+            return;
+        }
+
+        if (!(this.murilloskills$owner instanceof ServerPlayerEntity serverPlayer)) {
+            return;
+        }
+
+        var playerData = serverPlayer.getAttachedOrCreate(ModAttachments.PLAYER_SKILLS);
+        if (!playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
+            return;
+        }
+
+        int blacksmithLevel = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
+        if (!BlacksmithOverEnchanting.isUnlocked(blacksmithLevel)) {
+            return;
+        }
+
+        List<EnchantmentLevelEntry> upgradedEnchantments = BlacksmithOverEnchanting
+                .applyDeterministicEnchantingTableBonus(enchantments, this.seed.get(), slot);
+        if (upgradedEnchantments != enchantments) {
+            cir.setReturnValue(upgradedEnchantments);
+        }
     }
 
     @Unique

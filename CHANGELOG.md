@@ -6,6 +6,11 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ## [1.2.35] - 2026-04-19
 
+### 🔮 Blacksmith - Over-Enchant da Mesa Corrigido
+
+- **Mesa agora realmente ultrapassa o cap vanilla**: o bônus `Master Enchanter` do Blacksmith volta a atuar na lista final de encantamentos gerada pela enchanting table, permitindo que os níveis rolem do limite vanilla até `8` quando o proc acontece.
+- **Preview e item final continuam sincronizados**: a mesma rolagem determinística é aplicada tanto no hover quanto no encantamento efetivamente gravado no item, evitando qualquer mismatch enquanto libera o over-enchant da mesa.
+
 ### 🔨 Blacksmith - Hover e Desconto Corrigidos
 
 - **Bigorna volta a mostrar o desconto mesmo quando o jogador não tem XP suficiente**: o label `riscado → descontado` estava sendo pulado quando o custo ficava em vermelho (falta de XP / lapis), escondendo completamente o benefício do Blacksmith. Agora o dual-label aparece em qualquer cor, só ajustando o tom (verde para afford, vermelho para não-afford).

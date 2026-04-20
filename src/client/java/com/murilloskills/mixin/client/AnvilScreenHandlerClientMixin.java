@@ -1,80 +1,24 @@
 package com.murilloskills.mixin.client;
 
 import com.murilloskills.client.ui.BlacksmithCostAccessor;
-import com.murilloskills.data.ClientSkillData;
-import com.murilloskills.data.PlayerSkillData;
-import com.murilloskills.mixin.ForgingScreenHandlerAccessor;
-import com.murilloskills.skills.MurilloSkillsList;
-import com.murilloskills.utils.SkillConfig;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.screen.AnvilScreenHandler;
-import net.minecraft.screen.Property;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Client-side Blacksmith anvil discount.
+ * Client-side Blacksmith anvil accessor.
  *
- * The server-side mixin ({@link com.murilloskills.mixin.AnvilScreenHandlerMixin})
- * discounts the cost and syncs the Property, but in single-player (and even in
- * multiplayer on tick boundaries) the client's own {@code updateResult} runs
- * whenever slots sync and overwrites the Property with the vanilla value.
- * This mixin reapplies the same discount on the client using {@link ClientSkillData}
- * so the displayed level cost stays discounted regardless of sync ordering.
- *
- * It also exposes the original (pre-discount) cost via {@link BlacksmithCostAccessor}
- * so the {@code AnvilScreen} mixin can render both values.
+ * The server mixin applies the discount and syncs the discounted {@code levelCost}
+ * to the client, so this mixin no longer re-applies anything. The original
+ * (pre-discount) value shown in the dual-cost label is reverse-computed at render
+ * time from the Blacksmith discount formula, which sidesteps the sync-ordering
+ * problems we used to hit when tracking it via {@code updateResult}.
  */
 @Mixin(AnvilScreenHandler.class)
 public abstract class AnvilScreenHandlerClientMixin implements BlacksmithCostAccessor {
 
-    @Shadow
-    @Final
-    private Property levelCost;
-
-    @Unique
-    private int murilloskills$originalLevelCost;
-
-    @Inject(method = "updateResult", at = @At("TAIL"))
-    private void murilloskills$applyClientAnvilDiscount(CallbackInfo ci) {
-        ForgingScreenHandlerAccessor accessor = (ForgingScreenHandlerAccessor) this;
-        PlayerEntity player = accessor.getPlayer();
-        if (player == null || !player.getEntityWorld().isClient()) {
-            return;
-        }
-
-        int currentCost = this.levelCost.get();
-        this.murilloskills$originalLevelCost = currentCost;
-
-        if (!ClientSkillData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
-            return;
-        }
-
-        PlayerSkillData.SkillStats stats = ClientSkillData.get(MurilloSkillsList.BLACKSMITH);
-        int level = stats != null ? stats.level : 0;
-        if (level < SkillConfig.BLACKSMITH_EFFICIENT_ANVIL_LEVEL) {
-            return;
-        }
-
-        if (currentCost <= 0) {
-            return;
-        }
-
-        float discount = SkillConfig.getBlacksmithAnvilDiscount(level);
-        int discountedCost = Math.max(1, (int) (currentCost * (1.0f - discount)));
-        if (discountedCost != currentCost) {
-            this.levelCost.set(discountedCost);
-        }
-    }
-
     @Override
     public int murilloskills$getOriginalLevelCost() {
-        return this.murilloskills$originalLevelCost;
+        return 0;
     }
 
     @Override
