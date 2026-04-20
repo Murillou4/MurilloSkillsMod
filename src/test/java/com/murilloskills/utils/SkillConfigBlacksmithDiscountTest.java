@@ -40,4 +40,23 @@ class SkillConfigBlacksmithDiscountTest {
         assertEquals(2, SkillConfig.getBlacksmithEnchantingTableRefundLevels(100, 3));
         assertEquals(0, SkillConfig.getBlacksmithEnchantingTableRefundLevels(100, 1));
     }
+
+    @Test
+    void overEnchantingUsesLegacyFallbacksWhenConfigFieldsAreMissing() {
+        resetConfig();
+        ModConfig.ConfigData config = ModConfig.get();
+
+        // Simulate legacy JSON missing newer over-enchant fields (Gson may deserialize as zero).
+        config.blacksmith.overEnchantLevel = 0;
+        config.blacksmith.overEnchantMaxLevel = 0;
+        config.blacksmith.overEnchantBaseCost = 0;
+        config.blacksmith.overEnchantStepCost = 0;
+        config.blacksmith.superEnchantChance = 0.0f;
+
+        assertEquals(SkillConfig.BLACKSMITH_OVERENCHANT_LEVEL, SkillConfig.getBlacksmithOverEnchantUnlockLevel());
+        assertEquals(SkillConfig.BLACKSMITH_OVERENCHANT_MAX_LEVEL, SkillConfig.getBlacksmithOverEnchantMaxLevel());
+        assertEquals(SkillConfig.BLACKSMITH_OVERENCHANT_BASE_COST, SkillConfig.getBlacksmithOverEnchantBaseCost());
+        assertEquals(SkillConfig.BLACKSMITH_OVERENCHANT_STEP_COST, SkillConfig.getBlacksmithOverEnchantStepCost());
+        assertEquals(SkillConfig.BLACKSMITH_SUPER_ENCHANT_CHANCE, SkillConfig.getBlacksmithSuperEnchantChance());
+    }
 }

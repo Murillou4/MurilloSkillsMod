@@ -4,6 +4,17 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.36] - 2026-04-20
+
+### 🔨 Blacksmith - Correções de Campo (Level 99)
+
+- **Desconto da bigorna voltou a aparecer**: corrigida a leitura do custo original no client para o comparativo visual (`riscado -> descontado`) funcionar de forma confiável.
+- **Sem bloqueio de `Too Expensive` no over-enchant**: Master Enchanter (`99+`) agora recompõe o resultado mesmo quando o vanilla limpava o output por custo alto, e aplica cap de custo final barato para manter a perk utilizável.
+- **Fornalha com bônus de +100% no topo**: a passiva perto do Blacksmith foi alinhada para chegar a `2x` de velocidade (dobro), com escala linear por nível.
+- **Enchanting table voltando a passar do cap vanilla**: adicionados fallbacks para configs antigas com campos de over-enchant zerados/ausentes, evitando desativação silenciosa do sistema.
+
+---
+
 ## [1.2.35] - 2026-04-19
 
 ### 🔮 Blacksmith - Over-Enchant da Mesa Corrigido

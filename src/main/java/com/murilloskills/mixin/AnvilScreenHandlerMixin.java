@@ -33,6 +33,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(AnvilScreenHandler.class)
 public abstract class AnvilScreenHandlerMixin {
 
+    @Unique
+    private static final int MURILLOSKILLS_BLACKSMITH_MASTERY_MAX_ANVIL_COST = 25;
+
     // Shadow the levelCost property from AnvilScreenHandler
     @Shadow
     @Final
@@ -49,7 +52,7 @@ public abstract class AnvilScreenHandlerMixin {
      * Discount scales with level:
      * - Level 25: 40% discount (base)
      * - Level 100: 65% discount
-     * Also raises the "Too Expensive!" threshold from 40 to 55 for Blacksmiths.
+     * - Level 99+: cost is additionally capped for Master Enchanter operations
      */
     @Inject(method = "updateResult", at = @At("TAIL"))
     private void applyBlacksmithAnvilDiscount(CallbackInfo ci) {
@@ -81,9 +84,13 @@ public abstract class AnvilScreenHandlerMixin {
         var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
         Inventory input = accessor.getInput();
         Inventory output = accessor.getOutput();
-        if (input == null || output == null || output.getStack(0).isEmpty()) {
+        if (input == null || output == null) {
             return;
         }
+
+        ItemStack firstInput = input.getStack(0);
+        ItemStack secondInput = input.getStack(1);
+        ItemStack vanillaOutput = output.getStack(0);
 
         int baseCost = this.murilloskills$vanillaLevelCost > 0 ? this.murilloskills$vanillaLevelCost : this.levelCost.get();
         if (baseCost <= 0) {
@@ -101,27 +108,37 @@ public abstract class AnvilScreenHandlerMixin {
 
         int level = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
         int finalCost = baseCost;
-        if (level >= SkillConfig.BLACKSMITH_EFFICIENT_ANVIL_LEVEL) {
+        if (level >= SkillConfig.getBlacksmithEfficientAnvilLevel()) {
             float discount = SkillConfig.getBlacksmithAnvilDiscount(level);
-            finalCost = Math.max(1, (int) (baseCost * (1.0f - discount)));
+            finalCost = Math.max(1, Math.round(baseCost * (1.0f - discount)));
         }
 
-        if (!BlacksmithOverEnchanting.isUnlocked(level)) {
-            if (this.levelCost.get() != finalCost) {
-                this.levelCost.set(finalCost);
+        boolean masterEnchanterUnlocked = BlacksmithOverEnchanting.isUnlocked(level);
+        if (masterEnchanterUnlocked) {
+            var override = BlacksmithOverEnchanting.tryApply(
+                    firstInput,
+                    secondInput,
+                    vanillaOutput,
+                    finalCost);
+
+            // Vanilla clears the output when cost >= 40 before our tail-injection runs.
+            // Rebuild over-enchant results from the two inputs so Master Enchanter can
+            // still craft high-level books/items.
+            if (override == null && vanillaOutput.isEmpty() && baseCost >= 40) {
+                override = BlacksmithOverEnchanting.tryApply(
+                        firstInput,
+                        secondInput,
+                        ItemStack.EMPTY,
+                        finalCost);
             }
-            return;
-        }
 
-        var override = BlacksmithOverEnchanting.tryApply(
-                input.getStack(0),
-                input.getStack(1),
-                output.getStack(0),
-                finalCost);
+            if (override != null) {
+                output.setStack(0, override.stack());
+                finalCost = override.levelCost();
+            }
 
-        if (override != null) {
-            output.setStack(0, override.stack());
-            finalCost = override.levelCost();
+            // Master Enchanter should never hit "Too Expensive" and should feel cheap.
+            finalCost = Math.max(1, Math.min(finalCost, MURILLOSKILLS_BLACKSMITH_MASTERY_MAX_ANVIL_COST));
         }
 
         if (this.levelCost.get() != finalCost) {

@@ -1,6 +1,10 @@
 package com.murilloskills.mixin.client;
 
 import com.murilloskills.client.ui.BlacksmithCostAccessor;
+import com.murilloskills.data.ClientSkillData;
+import com.murilloskills.data.PlayerSkillData;
+import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.SkillConfig;
 import net.minecraft.screen.AnvilScreenHandler;
 import org.spongepowered.asm.mixin.Mixin;
 
@@ -18,7 +22,29 @@ public abstract class AnvilScreenHandlerClientMixin implements BlacksmithCostAcc
 
     @Override
     public int murilloskills$getOriginalLevelCost() {
-        return 0;
+        AnvilScreenHandler handler = (AnvilScreenHandler) (Object) this;
+        int discountedCost = handler.getLevelCost();
+        if (discountedCost <= 0) {
+            return 0;
+        }
+
+        if (!ClientSkillData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
+            return discountedCost;
+        }
+
+        PlayerSkillData.SkillStats stats = ClientSkillData.get(MurilloSkillsList.BLACKSMITH);
+        int level = stats != null ? stats.level : 0;
+        if (level < SkillConfig.getBlacksmithEfficientAnvilLevel()) {
+            return discountedCost;
+        }
+
+        float discount = SkillConfig.getBlacksmithAnvilDiscount(level);
+        if (discount <= 0.0f || discount >= 1.0f) {
+            return discountedCost;
+        }
+
+        int originalCost = Math.round(discountedCost / (1.0f - discount));
+        return Math.max(discountedCost, originalCost);
     }
 
     @Override

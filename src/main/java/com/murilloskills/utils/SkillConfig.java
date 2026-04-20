@@ -610,7 +610,8 @@ public class SkillConfig {
     }
 
     public static int getBlacksmithOverEnchantUnlockLevel() {
-        return ModConfig.get().blacksmith.overEnchantLevel;
+        int configured = ModConfig.get().blacksmith.overEnchantLevel;
+        return configured > 0 ? configured : BLACKSMITH_OVERENCHANT_LEVEL;
     }
 
     public static int getBlacksmithMasterLevel() {
@@ -659,19 +660,26 @@ public class SkillConfig {
     }
 
     public static float getBlacksmithSuperEnchantChance() {
-        return ModConfig.get().blacksmith.superEnchantChance;
+        float configured = ModConfig.get().blacksmith.superEnchantChance;
+        if (configured <= 0.0f) {
+            return BLACKSMITH_SUPER_ENCHANT_CHANCE;
+        }
+        return Math.min(1.0f, configured);
     }
 
     public static int getBlacksmithOverEnchantMaxLevel() {
-        return Math.max(1, ModConfig.get().blacksmith.overEnchantMaxLevel);
+        int configured = ModConfig.get().blacksmith.overEnchantMaxLevel;
+        return configured > 1 ? configured : BLACKSMITH_OVERENCHANT_MAX_LEVEL;
     }
 
     public static int getBlacksmithOverEnchantBaseCost() {
-        return Math.max(0, ModConfig.get().blacksmith.overEnchantBaseCost);
+        int configured = ModConfig.get().blacksmith.overEnchantBaseCost;
+        return configured > 0 ? configured : BLACKSMITH_OVERENCHANT_BASE_COST;
     }
 
     public static int getBlacksmithOverEnchantStepCost() {
-        return Math.max(0, ModConfig.get().blacksmith.overEnchantStepCost);
+        int configured = ModConfig.get().blacksmith.overEnchantStepCost;
+        return configured > 0 ? configured : BLACKSMITH_OVERENCHANT_STEP_COST;
     }
 
     public static int getBlacksmithAbilityDurationSeconds() {
