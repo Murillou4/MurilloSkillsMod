@@ -12,7 +12,9 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 - **Fim do “buff surpresa” depois do clique**: corrigido o caso em que o hover mostrava algo como `Fortuna III`, mas o item saía mais forte depois. Agora preview e aplicação usam a mesma lógica.
 - **Label de desconto da bigorna não mente mais**: o overlay `original riscado -> descontado` só aparece quando o custo final realmente ficou menor.
 - **Sem falso desconto com over-enchant**: corrigido o bug visual que podia mostrar algo absurdo como `6 -> 8` como se fosse desconto. Quando o custo sobe por causa do over-enchant, a tela mantém o custo normal em vez de inverter a lógica.
+- **Bigorna agora cobra o XP descontado de verdade**: o custo final do Blacksmith passou a ser reaplicado no servidor também na validação da retirada e no momento de consumir XP, impedindo o valor vanilla de voltar na hora do clique.
 - **Overlay da bigorna mais limpo**: o texto do custo foi compactado para não invadir o `Inventory` nem atravessar a UI.
+- **Render da bigorna ficou estável**: o bloco de custo da tela agora é redesenhado pela mod no lugar do vanilla, evitando sobreposição e flicker do label antigo por cima do desconto.
 
 ---
 
