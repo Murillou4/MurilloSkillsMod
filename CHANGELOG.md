@@ -4,6 +4,17 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.38] - 2026-04-22
+
+### 🔨 Blacksmith - Custo da Bigorna Corrigido (Level 99)
+
+- **Nunca mais cobra acima do vanilla**: o custo final do Blacksmith agora é limitado para não ultrapassar o valor base calculado pela bigorna vanilla.
+- **Desconto agora entra no custo total do over-enchant**: no Master Enchanter, o desconto é aplicado depois da composição do custo completo, evitando casos como `4 vanilla -> 7 com Blacksmith`.
+- **Fallback client-side ajustado para Master Enchanter**: o cliente não força desconto local quando o over-enchant está desbloqueado, evitando divergência visual em operações avançadas.
+- **Cap padrão de desconto aumentado**: `anvilXpDiscountMax` padrão foi elevado para `0.90` (90%), beneficiando configs legadas que não tinham esse campo.
+
+---
+
 ## [1.2.37] - 2026-04-22
 
 ### 🔨 Blacksmith - Desconto da Bigorna (Visual + Aplicação)

@@ -74,6 +74,9 @@ public abstract class AnvilScreenHandlerClientMixin implements BlacksmithCostAcc
         if (level < SkillConfig.getBlacksmithEfficientAnvilLevel()) {
             return;
         }
+        if (BlacksmithOverEnchanting.isUnlocked(level)) {
+            return;
+        }
 
         int originalCost = this.murilloskills$getOriginalLevelCost();
         if (originalCost <= 0) {

@@ -182,7 +182,7 @@ public class ModConfig {
         public int masterLevel = 100;
         public float ironSkinBonus = 0.05f;
         public float anvilXpDiscount = 0.40f;
-        public float anvilXpDiscountMax = 0.65f;
+        public float anvilXpDiscountMax = 0.90f;
         public float enchantingTableXpDiscount = 0.40f;
         public float enchantingTableXpDiscountMax = 0.60f;
         public float anvilMaterialSave = 0.10f;

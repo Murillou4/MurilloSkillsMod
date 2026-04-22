@@ -83,7 +83,7 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
      *
      * Discount scales with level:
      * - Level 25: 40% discount (base)
-     * - Level 100: 65% discount
+     * - Level 100: up to 90% discount (configurable)
      * - Level 99+: cost is additionally capped for Master Enchanter operations
      */
     @Inject(method = "updateResult", at = @At("TAIL"), order = 2000)
@@ -192,18 +192,16 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
             return changed;
         }
 
-        int finalCost = safeBaseCost > 0 ? safeBaseCost : 1;
-        if (safeBaseCost > 0 && level >= SkillConfig.getBlacksmithEfficientAnvilLevel()) {
-            float discount = SkillConfig.getBlacksmithAnvilDiscount(level);
-            finalCost = Math.max(1, Math.round(safeBaseCost * (1.0f - discount)));
-        }
+        boolean canApplyDiscount = safeBaseCost > 0 && level >= SkillConfig.getBlacksmithEfficientAnvilLevel();
+        float discount = canApplyDiscount ? SkillConfig.getBlacksmithAnvilDiscount(level) : 0f;
+        int preDiscountCost = safeBaseCost > 0 ? safeBaseCost : 1;
 
         if (masterEnchanterUnlocked) {
             var override = BlacksmithOverEnchanting.tryApply(
                     firstInput,
                     secondInput,
                     vanillaOutput,
-                    finalCost);
+                    preDiscountCost);
 
             // Rebuild over-enchant results from the two inputs when vanilla blocks or
             // clears the output (too expensive or invalid intermediate states).
@@ -212,7 +210,7 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
                         firstInput,
                         secondInput,
                         ItemStack.EMPTY,
-                        finalCost);
+                        preDiscountCost);
             }
 
             if (override != null) {
@@ -221,15 +219,26 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
                     output.setStack(0, overrideStack);
                     changed = true;
                 }
-                finalCost = override.levelCost();
+                preDiscountCost = override.levelCost();
             } else if (safeBaseCost <= 0) {
-                finalCost = 0;
+                preDiscountCost = 0;
             }
 
             // Master Enchanter should never hit "Too Expensive" and should feel cheap.
-            if (finalCost > 0) {
-                finalCost = Math.max(1, Math.min(finalCost, MURILLOSKILLS_BLACKSMITH_MASTERY_MAX_ANVIL_COST));
+            if (preDiscountCost > 0) {
+                preDiscountCost = Math.max(1,
+                        Math.min(preDiscountCost, MURILLOSKILLS_BLACKSMITH_MASTERY_MAX_ANVIL_COST));
             }
+        }
+
+        int finalCost = preDiscountCost;
+        if (canApplyDiscount && finalCost > 0) {
+            finalCost = Math.max(1, Math.round(finalCost * (1.0f - discount)));
+        }
+
+        // Blacksmith perk should never make an operation more expensive than vanilla.
+        if (safeBaseCost > 0 && finalCost > safeBaseCost) {
+            finalCost = safeBaseCost;
         }
 
         if (this.levelCost.get() != finalCost) {

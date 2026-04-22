@@ -20,10 +20,10 @@ class SkillConfigBlacksmithDiscountTest {
     }
 
     @Test
-    void anvilDiscountStartsAtFortyPercentAndCapsAtSixtyFivePercent() {
+    void anvilDiscountStartsAtFortyPercentAndCapsAtNinetyPercent() {
         resetConfig();
         assertEquals(0.40f, SkillConfig.getBlacksmithAnvilDiscount(25));
-        assertEquals(0.65f, SkillConfig.getBlacksmithAnvilDiscount(100));
+        assertEquals(0.90f, SkillConfig.getBlacksmithAnvilDiscount(100));
     }
 
     @Test

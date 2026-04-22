@@ -732,7 +732,7 @@ public class SkillConfig {
     public static final int BLACKSMITH_MASTER_LEVEL = 100;
     public static final float BLACKSMITH_IRON_SKIN_BONUS = 0.05f;
     public static final float BLACKSMITH_ANVIL_XP_DISCOUNT = 0.40f;
-    public static final float BLACKSMITH_ANVIL_XP_DISCOUNT_MAX = 0.65f;
+    public static final float BLACKSMITH_ANVIL_XP_DISCOUNT_MAX = 0.90f;
     public static final int BLACKSMITH_ANVIL_TOO_EXPENSIVE_CAP = 55;
     public static final float BLACKSMITH_ANVIL_MATERIAL_SAVE = 0.10f;
     public static final float BLACKSMITH_ENCHANTING_TABLE_XP_DISCOUNT = 0.40f;
@@ -743,7 +743,7 @@ public class SkillConfig {
 
     /**
      * Get the anvil XP discount based on Blacksmith level.
-     * Scales from 40% at level 25 to 65% at level 100.
+     * Scales from 40% at level 25 to up to 90% at level 100.
      */
     public static float getBlacksmithAnvilDiscount(int level) {
         int unlockLevel = getBlacksmithEfficientAnvilLevel();
