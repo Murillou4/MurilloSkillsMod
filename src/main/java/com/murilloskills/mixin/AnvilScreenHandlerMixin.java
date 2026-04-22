@@ -25,6 +25,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Mixin for AnvilScreenHandler to grant Blacksmith XP and apply perks.
@@ -67,13 +68,27 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
      * - Level 100: 65% discount
      * - Level 99+: cost is additionally capped for Master Enchanter operations
      */
-    @Inject(method = "updateResult", at = @At("TAIL"))
+    @Inject(method = "updateResult", at = @At("TAIL"), order = 2000)
     private void applyBlacksmithAnvilDiscount(CallbackInfo ci) {
         this.murilloskills$vanillaLevelCost = this.levelCost.get();
         boolean changed = this.murilloskills$refreshFinalAnvilCost();
         if (changed) {
             ((ScreenHandler) (Object) this).sendContentUpdates();
         }
+    }
+
+    /**
+     * Re-evaluate final anvil cost right before vanilla checks level gate.
+     *
+     * This protects against third-party flow changes that can reapply vanilla cost
+     * after updateResult and before the output-take check.
+     */
+    @Inject(method = "canTakeOutput", at = @At("HEAD"), order = 2000)
+    private void murilloskills$refreshBeforeCanTake(
+            PlayerEntity player,
+            boolean present,
+            CallbackInfoReturnable<Boolean> cir) {
+        this.murilloskills$refreshFinalAnvilCost();
     }
 
     @Unique
@@ -194,6 +209,9 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
         ForgingScreenHandlerAccessor accessor = (ForgingScreenHandlerAccessor) this;
         Inventory input = accessor.getInput();
 
+        // Keep charged level cost in sync right before vanilla consumes XP.
+        this.murilloskills$refreshFinalAnvilCost();
+
         // Check if this was actually a repair operation
         ItemStack inputItem = input.getStack(0);
         boolean wasRepair = false;
@@ -220,6 +238,7 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
         }
 
         var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+        this.murilloskills$applyTakeOutputMasterEnchanterFallback(playerData, input, stack);
 
         // Only grant XP if player has BLACKSMITH selected
         if (!playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
@@ -251,5 +270,43 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
     @Override
     public int murilloskills$getSyncedOriginalLevelCost() {
         return this.murilloskills$originalLevelCost.get();
+    }
+
+    @Unique
+    private void murilloskills$applyTakeOutputMasterEnchanterFallback(
+            PlayerSkillData playerData,
+            Inventory input,
+            ItemStack takenStack) {
+        if (!playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
+            return;
+        }
+
+        int level = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
+        if (!BlacksmithOverEnchanting.isUnlocked(level)) {
+            return;
+        }
+
+        ItemStack firstInput = input.getStack(0);
+        ItemStack secondInput = input.getStack(1);
+        if (firstInput.isEmpty() || secondInput.isEmpty() || takenStack.isEmpty()) {
+            return;
+        }
+
+        int currentCost = Math.max(1, this.levelCost.get());
+        var override = BlacksmithOverEnchanting.tryApply(firstInput, secondInput, takenStack, currentCost);
+        if (override == null) {
+            return;
+        }
+
+        ItemStack overrideStack = override.stack();
+        if (!ItemStack.areEqual(takenStack, overrideStack)) {
+            takenStack.applyComponentsFrom(overrideStack.getComponents());
+            takenStack.setCount(overrideStack.getCount());
+        }
+
+        int cappedCost = Math.max(1, Math.min(override.levelCost(), MURILLOSKILLS_BLACKSMITH_MASTERY_MAX_ANVIL_COST));
+        if (this.levelCost.get() != cappedCost) {
+            this.levelCost.set(cappedCost);
+        }
     }
 }

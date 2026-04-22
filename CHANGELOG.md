@@ -15,6 +15,7 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 - **Edge cases de encantamento nível 8 estabilizados**: o fluxo da bigorna agora compara encantamentos por chave de registro (não por identidade de objeto), evitando clamping silencioso em merges com referências diferentes.
 - **Livros não-vanilla agora funcionam**: enchanted books que vieram com `enchantments` (sem `stored_enchantments`) voltam a ser aceitos no over-enchant do Blacksmith.
 - **Reconstrução do resultado mesmo com custo vanilla 0**: quando o vanilla bloqueia a junção e zera custo/output, o Master Enchanter tenta recompor o resultado válido a partir dos inputs.
+- **Hardening da bigorna no momento de coleta**: o cálculo final do Blacksmith agora é revalidado também em `canTakeOutput` e `onTakeOutput`, garantindo custo/desconto e over-enchant corretos mesmo se algum fluxo intermediário sobrescrever valores após `updateResult`.
 
 ---
 
