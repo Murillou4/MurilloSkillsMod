@@ -36,7 +36,7 @@ public abstract class AnvilScreenMixin extends net.minecraft.client.gui.screen.i
     private void murilloskills$drawDualCost(DrawContext context, int mouseX, int mouseY, CallbackInfo ci) {
         AnvilScreenHandler h = this.handler;
         int displayed = h.getLevelCost();
-        if (displayed <= 0 || displayed >= 40) {
+        if (displayed < 0 || displayed >= 40) {
             return;
         }
         if (!h.getSlot(2).hasStack()) {
@@ -67,20 +67,10 @@ public abstract class AnvilScreenMixin extends net.minecraft.client.gui.screen.i
         String discountedText = Integer.toString(displayed);
         String savingsText = " (" + savingsPercent + "%)";
 
-        int labelWidth = this.textRenderer.getWidth(originalText)
-                + this.textRenderer.getWidth(arrowText)
-                + this.textRenderer.getWidth(discountedText)
-                + this.textRenderer.getWidth(savingsText);
-
-        int x = this.backgroundWidth - 8 - labelWidth - 2;
-        int y = 58;
-        int panelLeft = x - 4;
-        int panelRight = this.backgroundWidth - 8;
-        int panelTop = y - 3;
-        int panelBottom = y + 11;
-        context.fill(panelLeft, panelTop, panelRight, panelBottom, 0xD015171E);
-        context.fill(panelLeft, panelTop, panelRight, panelTop + 1, 0x66FFFFFF);
-        context.fill(panelLeft, panelBottom - 1, panelRight, panelBottom, 0x88000000);
+        String vanillaCostText = Text.translatable("container.repair.cost", displayed).getString();
+        int vanillaCostX = this.backgroundWidth - 8 - this.textRenderer.getWidth(vanillaCostText);
+        int x = vanillaCostX;
+        int y = 57;
 
         int drawX = x;
         context.drawTextWithShadow(this.textRenderer, Text.literal(originalText), drawX, y, 0xFFB7BEC9);
