@@ -5,6 +5,7 @@ import com.murilloskills.data.UltmineClientState;
 import com.murilloskills.gui.renderer.RenderingHelper;
 import com.murilloskills.network.MagnetConfigC2SPayload;
 import com.murilloskills.network.TrashListSyncC2SPayload;
+import com.murilloskills.network.UltmineClassicBlockListSyncC2SPayload;
 import com.murilloskills.network.UltmineShapeSelectC2SPayload;
 import com.murilloskills.network.VeinMinerDropsToggleC2SPayload;
 import com.murilloskills.network.XpDirectToggleC2SPayload;
@@ -23,7 +24,7 @@ import java.util.List;
 
 /**
  * Client-side Ultmine configuration screen.
- * Allows customizing per-shape depth/length/variant, global toggles, magnet, and trash list.
+ * Allows customizing per-shape depth/length/variant, global toggles, magnet, trash list, and classic block lock list.
  */
 public class UltmineConfigScreen extends Screen {
 
@@ -34,6 +35,7 @@ public class UltmineConfigScreen extends Screen {
     private static final int SECTION_GAP = 14;
     private static final int PANEL_PADDING = 10;
     private static final int MAX_VISIBLE_TRASH = 4;
+    private static final int MAX_VISIBLE_CLASSIC_BLOCKS = 4;
 
     // Selected shape for per-shape config
     private UltmineShape selectedShape = UltmineShape.S_3x3;
@@ -43,9 +45,12 @@ public class UltmineConfigScreen extends Screen {
     private TextFieldWidget lengthField;
     private TextFieldWidget magnetRangeField;
     private TextFieldWidget trashItemField;
+    private TextFieldWidget classicBlockField;
 
     // Trash scroll offset
     private int trashScrollOffset = 0;
+    // Classic blocked blocks scroll offset
+    private int classicBlockScrollOffset = 0;
 
     // Layout
     private int panelX, panelY, panelW, panelH;
@@ -56,6 +61,7 @@ public class UltmineConfigScreen extends Screen {
     private int shapeConfigY;
     private int magnetSectionY;
     private int trashSectionY;
+    private int classicBlockSectionY;
     private int bottomY;
 
     public UltmineConfigScreen(Screen parent) {
@@ -262,6 +268,8 @@ public class UltmineConfigScreen extends Screen {
 
         // Trash item remove buttons
         List<String> trashItems = UltmineClientConfig.getTrashItems();
+        int maxTrashScroll = Math.max(0, trashItems.size() - MAX_VISIBLE_TRASH);
+        trashScrollOffset = Math.max(0, Math.min(trashScrollOffset, maxTrashScroll));
         int visibleCount = Math.min(MAX_VISIBLE_TRASH, trashItems.size() - trashScrollOffset);
         for (int i = 0; i < visibleCount; i++) {
             int idx = i + trashScrollOffset;
@@ -296,6 +304,84 @@ public class UltmineConfigScreen extends Screen {
             if (trashScrollOffset + MAX_VISIBLE_TRASH < trashItems.size()) {
                 ButtonWidget scrollDownBtn = ButtonWidget.builder(Text.literal("\u25BC"), (b) -> {
                     trashScrollOffset = Math.min(trashItems.size() - MAX_VISIBLE_TRASH, trashScrollOffset + 1);
+                    refreshScreen();
+                }).dimensions(scrollCenterX + 2, scrollBtnY, scrollBtnW, 14).build();
+                this.addDrawableChild(scrollDownBtn);
+            }
+        }
+
+        // === CLASSIC BLOCK LOCK SECTION ===
+        int classicFieldW = panelW - PANEL_PADDING * 4 - browseBtnW - addBtnW - 8;
+        int classicFieldX = panelX + PANEL_PADDING * 2;
+
+        classicBlockField = new TextFieldWidget(textRenderer, classicFieldX, classicBlockSectionY + 16 + oY,
+                classicFieldW, 18, Text.empty());
+        classicBlockField.setMaxLength(120);
+        classicBlockField.setPlaceholder(Text.literal("minecraft:stone").formatted(Formatting.DARK_GRAY));
+        this.addDrawableChild(classicBlockField);
+
+        ButtonWidget addClassicBlockBtn = ButtonWidget.builder(
+                Text.literal("+").formatted(Formatting.GREEN),
+                (b) -> {
+                    String blockId = classicBlockField.getText().trim();
+                    if (!blockId.isEmpty()) {
+                        if (!blockId.contains(":")) {
+                            blockId = "minecraft:" + blockId;
+                        }
+                        UltmineClientConfig.addLegacyBlockedBlock(blockId);
+                        classicBlockField.setText("");
+                        syncClassicBlockedBlocksToServer();
+                        refreshScreen();
+                    }
+                }).dimensions(classicFieldX + classicFieldW + 4, classicBlockSectionY + 16 + oY, addBtnW, 18).build();
+        this.addDrawableChild(addClassicBlockBtn);
+
+        ButtonWidget browseClassicBlocksBtn = ButtonWidget.builder(
+                Text.translatable("murilloskills.ultmine_config.classic_block_lock.browse").formatted(Formatting.AQUA),
+                (b) -> MinecraftClient.getInstance().setScreen(new UltmineClassicBlockPickerScreen(this)))
+                .dimensions(classicFieldX + classicFieldW + 4 + addBtnW + 4, classicBlockSectionY + 16 + oY, browseBtnW, 18)
+                .build();
+        this.addDrawableChild(browseClassicBlocksBtn);
+
+        List<String> blockedBlocks = UltmineClientConfig.getLegacyBlockedBlocks();
+        int maxClassicScroll = Math.max(0, blockedBlocks.size() - MAX_VISIBLE_CLASSIC_BLOCKS);
+        classicBlockScrollOffset = Math.max(0, Math.min(classicBlockScrollOffset, maxClassicScroll));
+        int visibleClassicCount = Math.min(MAX_VISIBLE_CLASSIC_BLOCKS, blockedBlocks.size() - classicBlockScrollOffset);
+        for (int i = 0; i < visibleClassicCount; i++) {
+            int idx = i + classicBlockScrollOffset;
+            if (idx >= blockedBlocks.size()) {
+                break;
+            }
+            int itemY = classicBlockSectionY + 38 + i * 16 + oY;
+
+            final String blockToRemove = blockedBlocks.get(idx);
+            ButtonWidget removeBtn = ButtonWidget.builder(
+                    Text.literal("\u2715").formatted(Formatting.RED),
+                    (b) -> {
+                        UltmineClientConfig.removeLegacyBlockedBlock(blockToRemove);
+                        syncClassicBlockedBlocksToServer();
+                        refreshScreen();
+                    }).dimensions(panelX + panelW - PANEL_PADDING * 2 - 18, itemY, 18, 14).build();
+            this.addDrawableChild(removeBtn);
+        }
+
+        if (blockedBlocks.size() > MAX_VISIBLE_CLASSIC_BLOCKS) {
+            int scrollBtnY = classicBlockSectionY + 38 + MAX_VISIBLE_CLASSIC_BLOCKS * 16 + oY;
+            int scrollBtnW = 30;
+            int scrollCenterX = centerX;
+
+            if (classicBlockScrollOffset > 0) {
+                ButtonWidget scrollUpBtn = ButtonWidget.builder(Text.literal("\u25B2"), (b) -> {
+                    classicBlockScrollOffset = Math.max(0, classicBlockScrollOffset - 1);
+                    refreshScreen();
+                }).dimensions(scrollCenterX - scrollBtnW - 2, scrollBtnY, scrollBtnW, 14).build();
+                this.addDrawableChild(scrollUpBtn);
+            }
+
+            if (classicBlockScrollOffset + MAX_VISIBLE_CLASSIC_BLOCKS < blockedBlocks.size()) {
+                ButtonWidget scrollDownBtn = ButtonWidget.builder(Text.literal("\u25BC"), (b) -> {
+                    classicBlockScrollOffset = Math.min(blockedBlocks.size() - MAX_VISIBLE_CLASSIC_BLOCKS,
+                            classicBlockScrollOffset + 1);
                     refreshScreen();
                 }).dimensions(scrollCenterX + 2, scrollBtnY, scrollBtnW, 14).build();
                 this.addDrawableChild(scrollDownBtn);
@@ -355,7 +441,13 @@ public class UltmineConfigScreen extends Screen {
         int visibleTrash = Math.min(MAX_VISIBLE_TRASH, trashItems);
         int trashH = 38 + visibleTrash * 16 + (trashItems > MAX_VISIBLE_TRASH ? 18 : 0) + 8;
 
-        bottomY = trashSectionY + trashH + SECTION_GAP;
+        classicBlockSectionY = trashSectionY + trashH + SECTION_GAP;
+
+        int blockedClassicBlocks = UltmineClientConfig.getLegacyBlockedBlocks().size();
+        int visibleClassicBlocks = Math.min(MAX_VISIBLE_CLASSIC_BLOCKS, blockedClassicBlocks);
+        int classicBlocksH = 38 + visibleClassicBlocks * 16 + (blockedClassicBlocks > MAX_VISIBLE_CLASSIC_BLOCKS ? 18 : 0) + 8;
+
+        bottomY = classicBlockSectionY + classicBlocksH + SECTION_GAP;
         contentHeight = bottomY + 28;
         panelH = contentHeight - panelY;
 
@@ -419,6 +511,11 @@ public class UltmineConfigScreen extends Screen {
         ClientPlayNetworking.send(new TrashListSyncC2SPayload(UltmineClientConfig.getTrashItems()));
     }
 
+    private void syncClassicBlockedBlocksToServer() {
+        ClientPlayNetworking.send(new UltmineClassicBlockListSyncC2SPayload(
+                UltmineClientConfig.getLegacyBlockedBlocks()));
+    }
+
     // ===== RENDERING =====
 
     @Override
@@ -442,6 +539,7 @@ public class UltmineConfigScreen extends Screen {
         renderShapeConfig(context, oY);
         renderMagnetSection(context, oY);
         renderTrashSection(context, oY);
+        renderClassicBlockSection(context, oY);
 
         // Widgets (must be rendered inside scissor too)
         super.render(context, mouseX, mouseY, delta);
@@ -452,6 +550,7 @@ public class UltmineConfigScreen extends Screen {
         renderShapeConfigValues(context, oY);
         renderMagnetContent(context, oY);
         renderTrashContent(context, oY);
+        renderClassicBlockContent(context, oY);
 
         context.disableScissor();
 
@@ -763,6 +862,57 @@ public class UltmineConfigScreen extends Screen {
         }
     }
 
+    // ===== CLASSIC BLOCK LOCK SECTION =====
+
+    private void renderClassicBlockSection(DrawContext context, int oY) {
+        renderSectionDivider(context, classicBlockSectionY + oY,
+                Text.translatable("murilloskills.ultmine_config.section.classic_block_lock").getString());
+    }
+
+    private void renderClassicBlockContent(DrawContext context, int oY) {
+        List<String> blockedBlocks = UltmineClientConfig.getLegacyBlockedBlocks();
+        int labelX = panelX + PANEL_PADDING * 2;
+
+        if (blockedBlocks.isEmpty()) {
+            context.drawTextWithShadow(textRenderer,
+                    Text.translatable("murilloskills.ultmine_config.classic_block_lock.empty")
+                            .formatted(Formatting.GRAY),
+                    labelX, classicBlockSectionY + 40 + oY, palette.textMuted());
+        } else {
+            int visibleCount = Math.min(MAX_VISIBLE_CLASSIC_BLOCKS, blockedBlocks.size() - classicBlockScrollOffset);
+            for (int i = 0; i < visibleCount; i++) {
+                int idx = i + classicBlockScrollOffset;
+                if (idx >= blockedBlocks.size()) {
+                    break;
+                }
+                int itemY = classicBlockSectionY + 38 + i * 16 + oY;
+
+                String blockId = blockedBlocks.get(idx);
+                String display = blockId.startsWith("minecraft:") ? blockId.substring(10) : blockId;
+                int maxW = panelW - PANEL_PADDING * 4 - 24;
+                if (textRenderer.getWidth(display) > maxW) {
+                    while (textRenderer.getWidth(display + "..") > maxW && display.length() > 1) {
+                        display = display.substring(0, display.length() - 1);
+                    }
+                    display = display + "..";
+                }
+
+                int color = (idx % 2 == 0) ? palette.textLight() : palette.textGray();
+                context.drawTextWithShadow(textRenderer, "\u2022 " + display, labelX, itemY + 3, color);
+            }
+
+            if (blockedBlocks.size() > MAX_VISIBLE_CLASSIC_BLOCKS) {
+                int countY = classicBlockSectionY + 38 + MAX_VISIBLE_CLASSIC_BLOCKS * 16 + oY;
+                String countText = (classicBlockScrollOffset + 1) + "-"
+                        + Math.min(classicBlockScrollOffset + MAX_VISIBLE_CLASSIC_BLOCKS, blockedBlocks.size())
+                        + " / " + blockedBlocks.size();
+                context.drawCenteredTextWithShadow(textRenderer,
+                        Text.literal(countText).formatted(Formatting.DARK_GRAY),
+                        this.width / 2, countY + 4, palette.textMuted());
+            }
+        }
+    }
+
     private void renderSectionDivider(DrawContext context, int y, String title) {
         int centerX = this.width / 2;
         int titleW = textRenderer.getWidth(title);
@@ -794,6 +944,7 @@ public class UltmineConfigScreen extends Screen {
         syncActiveShapeToServer();
         syncMagnetToServer();
         syncTrashToServer();
+        syncClassicBlockedBlocksToServer();
         MinecraftClient.getInstance().setScreen(parent);
     }
 

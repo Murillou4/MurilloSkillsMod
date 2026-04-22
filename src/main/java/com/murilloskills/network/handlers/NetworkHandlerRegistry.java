@@ -70,8 +70,10 @@ public final class NetworkHandlerRegistry {
             registerHandler("AutoTorch", AutoTorchToggleC2SPayload.ID, AutoTorchToggleNetworkHandler.create());
             registerHandler("MagnetConfig", MagnetConfigC2SPayload.ID, MagnetConfigNetworkHandler.create());
             registerHandler("TrashListSync", TrashListSyncC2SPayload.ID, TrashListSyncNetworkHandler.create());
+            registerHandler("UltmineClassicBlockListSync", UltmineClassicBlockListSyncC2SPayload.ID,
+                    UltmineClassicBlockListSyncNetworkHandler.create());
 
-            LOGGER.info("Successfully registered 23 network handlers");
+            LOGGER.info("Successfully registered 24 network handlers");
 
         } catch (Exception e) {
             LOGGER.error("CRITICAL: Failed to register network handlers!", e);

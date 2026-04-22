@@ -4,6 +4,22 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.37] - 2026-04-22
+
+### 🔨 Blacksmith - Desconto da Bigorna (Visual + Aplicação)
+
+- **Desconto voltou a ser aplicado com confiabilidade no take**: a revalidação de custo do Blacksmith agora também força `sendContentUpdates()` durante o fluxo de retirada, evitando drift entre custo recalculado e custo cobrado.
+- **UI da bigorna voltou a refletir o desconto em tempo real**: o fallback client-side deixou de depender estritamente do estado de seleção sincronizado e passou a usar o nível real do Blacksmith para manter o valor descontado estável quando elegível.
+- **Estabilização de elegibilidade em sessão aberta**: o cálculo do handler agora considera fallback por nível da skill para evitar falsos negativos transitórios que faziam o custo voltar para o vanilla durante operações de bigorna.
+
+### ⛏ Ultmine - Classic Block Lock
+
+- **Novo bloqueio por bloco no `old classic`**: adicionada lista de blocos que não disparam o Ultmine no modo `LEGACY`.
+- **Picker de blocos no estilo Auto Trash**: tela de seleção com busca, clique para adicionar/remover e botão para adicionar bloco da mão.
+- **Sync client/server da lista de bloqueio**: os blocos bloqueados agora sincronizam no login e ao editar a lista, garantindo comportamento consistente no servidor.
+
+---
+
 ## [1.2.36] - 2026-04-20
 
 ### 🔨 Blacksmith - Correções de Campo (Level 99)

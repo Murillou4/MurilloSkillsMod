@@ -51,5 +51,7 @@ public class ModNetwork {
         PayloadTypeRegistry.playC2S().register(AutoTorchToggleC2SPayload.ID, AutoTorchToggleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(MagnetConfigC2SPayload.ID, MagnetConfigC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(TrashListSyncC2SPayload.ID, TrashListSyncC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(UltmineClassicBlockListSyncC2SPayload.ID,
+                UltmineClassicBlockListSyncC2SPayload.CODEC);
     }
 }

@@ -28,6 +28,7 @@ public class UltmineClientConfig {
         public boolean magnetEnabled = false;
         public int magnetRange = 8;
         public java.util.List<String> trashItems = new java.util.ArrayList<>();
+        public java.util.List<String> legacyBlockedBlocks = new java.util.ArrayList<>();
         public Map<String, ShapePrefs> shapePrefs = new java.util.HashMap<>();
 
         public UltmineData() {
@@ -52,6 +53,17 @@ public class UltmineClientConfig {
                 String json = Files.readString(configPath);
                 data = GSON.fromJson(json, UltmineData.class);
                 if (data == null) data = new UltmineData();
+                if (data.trashItems == null) data.trashItems = new java.util.ArrayList<>();
+                if (data.legacyBlockedBlocks == null) data.legacyBlockedBlocks = new java.util.ArrayList<>();
+                if (data.shapePrefs == null) data.shapePrefs = new java.util.HashMap<>();
+                java.util.List<String> normalizedBlockedBlocks = new java.util.ArrayList<>();
+                for (String blockId : data.legacyBlockedBlocks) {
+                    String normalized = normalizeResourceId(blockId);
+                    if (!normalized.isEmpty() && !normalizedBlockedBlocks.contains(normalized)) {
+                        normalizedBlockedBlocks.add(normalized);
+                    }
+                }
+                data.legacyBlockedBlocks = normalizedBlockedBlocks;
                 // Ensure all shapes have entries
                 for (UltmineShape shape : UltmineShape.values()) {
                     data.shapePrefs.putIfAbsent(shape.name(), new ShapePrefs());
@@ -159,6 +171,45 @@ public class UltmineClientConfig {
 
     public static boolean isTrashItem(String itemId) {
         return get().trashItems.contains(itemId);
+    }
+
+    // --- Legacy Classic block lock ---
+
+    public static java.util.List<String> getLegacyBlockedBlocks() {
+        return get().legacyBlockedBlocks;
+    }
+
+    public static void addLegacyBlockedBlock(String blockId) {
+        String normalized = normalizeResourceId(blockId);
+        if (!normalized.isEmpty() && !get().legacyBlockedBlocks.contains(normalized)) {
+            get().legacyBlockedBlocks.add(normalized);
+        }
+    }
+
+    public static void removeLegacyBlockedBlock(String blockId) {
+        String normalized = normalizeResourceId(blockId);
+        if (!normalized.isEmpty()) {
+            get().legacyBlockedBlocks.remove(normalized);
+        }
+    }
+
+    public static boolean isLegacyBlockedBlock(String blockId) {
+        String normalized = normalizeResourceId(blockId);
+        return !normalized.isEmpty() && get().legacyBlockedBlocks.contains(normalized);
+    }
+
+    private static String normalizeResourceId(String id) {
+        if (id == null) {
+            return "";
+        }
+        String normalized = id.trim().toLowerCase(java.util.Locale.ROOT);
+        if (normalized.isEmpty()) {
+            return "";
+        }
+        if (!normalized.contains(":")) {
+            normalized = "minecraft:" + normalized;
+        }
+        return normalized;
     }
 
     // --- Per-shape prefs ---

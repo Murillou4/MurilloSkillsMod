@@ -108,7 +108,10 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
             PlayerEntity player,
             boolean present,
             CallbackInfoReturnable<Boolean> cir) {
-        this.murilloskills$refreshFinalAnvilCost();
+        boolean changed = this.murilloskills$refreshFinalAnvilCost();
+        if (changed) {
+            ((ScreenHandler) (Object) this).sendContentUpdates();
+        }
     }
 
     @Unique
@@ -154,11 +157,11 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
             changed = true;
         }
 
-        // Only apply discount if player has BLACKSMITH selected and meets level
-        // requirement
         boolean blacksmithSelected = playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH);
         int level = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
-        if (blacksmithSelected) {
+        boolean qualifiesByLevel = level >= SkillConfig.getBlacksmithEfficientAnvilLevel();
+        boolean blacksmithActiveForAnvil = blacksmithSelected || qualifiesByLevel;
+        if (blacksmithActiveForAnvil) {
             this.murilloskills$stickyBlacksmithSelected = true;
             if (level > this.murilloskills$stickyBlacksmithLevel) {
                 this.murilloskills$stickyBlacksmithLevel = level;
@@ -166,11 +169,11 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
         } else if (this.murilloskills$stickyBlacksmithSelected) {
             // Keep Blacksmith status stable for the opened anvil handler to avoid
             // transient attachment reads from disabling perks mid-operation.
-            blacksmithSelected = true;
+            blacksmithActiveForAnvil = true;
             level = Math.max(level, this.murilloskills$stickyBlacksmithLevel);
         }
 
-        if (!blacksmithSelected) {
+        if (!blacksmithActiveForAnvil) {
             if (this.levelCost.get() != safeBaseCost) {
                 this.levelCost.set(safeBaseCost);
                 changed = true;
@@ -251,7 +254,9 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
         Inventory input = accessor.getInput();
 
         // Keep charged level cost in sync right before vanilla consumes XP.
-        this.murilloskills$refreshFinalAnvilCost();
+        if (this.murilloskills$refreshFinalAnvilCost()) {
+            ((ScreenHandler) (Object) this).sendContentUpdates();
+        }
 
         // Check if this was actually a repair operation
         ItemStack inputItem = input.getStack(0);

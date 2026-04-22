@@ -11,6 +11,7 @@ import com.murilloskills.network.UltPlaceUndoC2SPayload;
 import com.murilloskills.network.UltminePreviewS2CPayload;
 import com.murilloskills.network.UltmineRequestC2SPayload;
 import com.murilloskills.network.UltmineResultS2CPayload;
+import com.murilloskills.network.UltmineClassicBlockListSyncC2SPayload;
 import com.murilloskills.network.StepAssistToggleC2SPayload;
 import com.murilloskills.network.RainDanceS2CPayload;
 import com.murilloskills.network.SkillAbilityC2SPayload;
@@ -250,6 +251,9 @@ public class MurilloSkillsClient implements ClientModInitializer {
             // Sync trash list to server
             ClientPlayNetworking.send(new com.murilloskills.network.TrashListSyncC2SPayload(
                     UltmineClientConfig.getTrashItems()));
+            // Sync classic-mode blocked blocks list to server
+            ClientPlayNetworking.send(new UltmineClassicBlockListSyncC2SPayload(
+                    UltmineClientConfig.getLegacyBlockedBlocks()));
             ClientPlayNetworking.send(UltPlaceClientState.toPayload());
         });
 

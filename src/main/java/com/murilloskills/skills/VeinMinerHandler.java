@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -57,6 +58,8 @@ public final class VeinMinerHandler {
 
     // Trash per-player item list
     private static final Map<UUID, List<String>> TRASH_LISTS = new ConcurrentHashMap<>();
+    // Ultmine legacy per-player blocked blocks (classic mode)
+    private static final Map<UUID, List<String>> CLASSIC_BLOCK_LOCK_LISTS = new ConcurrentHashMap<>();
 
     /**
      * Map of blocks that should be considered equivalent for vein mining.
@@ -230,6 +233,7 @@ public final class VeinMinerHandler {
         MAGNET_ENABLED.remove(playerUuid);
         MAGNET_RANGE.remove(playerUuid);
         TRASH_LISTS.remove(playerUuid);
+        CLASSIC_BLOCK_LOCK_LISTS.remove(playerUuid);
     }
 
     /**
@@ -296,6 +300,10 @@ public final class VeinMinerHandler {
 
     private static void executeLegacyVeinMining(ServerPlayerEntity player, World world, BlockPos origin, BlockState originState,
             ItemStack tool) {
+        if (isClassicModeBlockLocked(player, originState.getBlock())) {
+            return;
+        }
+
         int maxBlocks = Math.max(1, SkillConfig.getVeinMinerMaxBlocks());
         Set<BlockPos> targets = collectConnectedBlocks(world, origin, originState, maxBlocks);
         boolean inventoryDrops = isDropsToInventory(player) && world instanceof ServerWorld;
@@ -437,6 +445,9 @@ public final class VeinMinerHandler {
         List<BlockPos> rawTargets = getRawTargetsForShape(player, world, origin, originState, selection.shape(),
                 selection.depth(), selection.length(), dir);
         int requested = rawTargets.size();
+        if (requested <= 0) {
+            return;
+        }
         int maxBlocks = SkillConfig.getUltmineMaxBlocksPerUse();
         if (requested > maxBlocks) {
             sendUltmineResult(player, false, requested, maxBlocks, "murilloskills.ultmine.result.max_blocks",
@@ -525,6 +536,9 @@ public final class VeinMinerHandler {
             BlockState originState, UltmineShape shape, int depth, int length, Direction dir) {
         UltmineSelection selection = normalizeSelection(shape, depth, length);
         if (selection.shape() == UltmineShape.LEGACY) {
+            if (isClassicModeBlockLocked(player, originState.getBlock())) {
+                return List.of();
+            }
             int maxLegacyBlocks = getLegacyUltmineLimit();
             Set<BlockPos> connected = collectConnectedBlocks(world, origin, originState, maxLegacyBlocks);
             connected.add(origin.toImmutable());
@@ -923,6 +937,49 @@ public final class VeinMinerHandler {
 
     public static List<String> getTrashList(ServerPlayerEntity player) {
         return TRASH_LISTS.getOrDefault(player.getUuid(), List.of());
+    }
+
+    public static void setClassicBlockedBlockList(ServerPlayerEntity player, List<String> blockedBlocks) {
+        if (blockedBlocks == null || blockedBlocks.isEmpty()) {
+            CLASSIC_BLOCK_LOCK_LISTS.remove(player.getUuid());
+            return;
+        }
+
+        List<String> normalized = new ArrayList<>(blockedBlocks.size());
+        for (String rawId : blockedBlocks) {
+            if (rawId == null) {
+                continue;
+            }
+            String blockId = rawId.trim().toLowerCase(Locale.ROOT);
+            if (blockId.isEmpty()) {
+                continue;
+            }
+            if (!blockId.contains(":")) {
+                blockId = "minecraft:" + blockId;
+            }
+            if (!normalized.contains(blockId)) {
+                normalized.add(blockId);
+            }
+        }
+
+        if (normalized.isEmpty()) {
+            CLASSIC_BLOCK_LOCK_LISTS.remove(player.getUuid());
+        } else {
+            CLASSIC_BLOCK_LOCK_LISTS.put(player.getUuid(), normalized);
+        }
+    }
+
+    public static List<String> getClassicBlockedBlockList(ServerPlayerEntity player) {
+        return CLASSIC_BLOCK_LOCK_LISTS.getOrDefault(player.getUuid(), List.of());
+    }
+
+    private static boolean isClassicModeBlockLocked(ServerPlayerEntity player, Block block) {
+        List<String> blocked = CLASSIC_BLOCK_LOCK_LISTS.get(player.getUuid());
+        if (blocked == null || blocked.isEmpty()) {
+            return false;
+        }
+        String blockId = Registries.BLOCK.getId(block).toString();
+        return blocked.contains(blockId);
     }
 
     /**

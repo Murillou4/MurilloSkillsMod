@@ -69,9 +69,6 @@ public abstract class AnvilScreenHandlerClientMixin implements BlacksmithCostAcc
             return;
         }
 
-        if (!ClientSkillData.isSkillSelected(MurilloSkillsList.BLACKSMITH)) {
-            return;
-        }
         PlayerSkillData.SkillStats stats = ClientSkillData.get(MurilloSkillsList.BLACKSMITH);
         int level = stats != null ? stats.level : 0;
         if (level < SkillConfig.getBlacksmithEfficientAnvilLevel()) {
