@@ -706,6 +706,19 @@ public class SkillConfig {
         return Math.max(1.0f, ModConfig.get().blacksmith.furnaceSpeedMaxMultiplier);
     }
 
+    /**
+     * Global furnace mastery buff requested in field balancing.
+     * +60% speed over the configured Blacksmith furnace multiplier.
+     */
+    public static float getBlacksmithFurnaceSpeedBuffMultiplier() {
+        return BLACKSMITH_FURNACE_SPEED_BUFF_MULTIPLIER;
+    }
+
+    public static float getBlacksmithFurnaceSpeedEffectiveMaxMultiplier() {
+        return Math.max(1.0f,
+                getBlacksmithFurnaceSpeedMaxMultiplier() * getBlacksmithFurnaceSpeedBuffMultiplier());
+    }
+
     // --- BLACKSMITH NEW GETTERS ---
     public static int getBlacksmithFireMasteryLevel() {
         return ModConfig.get().blacksmith.fireMasteryLevel;
@@ -810,6 +823,7 @@ public class SkillConfig {
     public static final float BLACKSMITH_TITANIUM_REGEN = 1.0f;
     public static final int BLACKSMITH_FURNACE_SPEED_RADIUS = 8;
     public static final float BLACKSMITH_FURNACE_SPEED_MAX_MULTIPLIER = 4.5f;
+    public static final float BLACKSMITH_FURNACE_SPEED_BUFF_MULTIPLIER = 1.60f;
 
     // --- BUILDER ---
     public static float getBuilderReachPerLevel() {

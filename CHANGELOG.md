@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.40] - 2026-04-22
+
+### 🔥 Blacksmith - Furnace Mastery Corrigido + Buffado
+
+- **Corrigido o bônus quebrado da fornalha**: o cálculo da Furnace Mastery não fica mais preso em `2x`; agora ele volta a escalar com o multiplicador configurado.
+- **Buff global de +60% aplicado**: a velocidade efetiva da fornalha agora usa `furnaceSpeedMaxMultiplier * 1.6`.
+- **UI alinhada com o valor real**: o tooltip da skill Blacksmith passou a mostrar o multiplicador correto da Furnace Mastery.
+
+---
+
 ## [1.2.39] - 2026-04-22
 
 ### 🔨 Blacksmith - Desconto Sempre Aplicado na Bigorna

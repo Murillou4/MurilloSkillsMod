@@ -65,7 +65,7 @@ public abstract class AbstractFurnaceBlockEntityMixin {
 
     /**
      * Blacksmith Furnace Mastery: speeds up nearby furnaces based on Blacksmith level.
-     * At max level, furnaces cook 2x faster (+100% speed).
+     * At max level, furnaces reach the configured max multiplier with a global +60% buff.
      * Shows flame particles on the furnace as a visual indicator.
      */
     @Inject(method = "tick", at = @At("TAIL"))
@@ -94,9 +94,12 @@ public abstract class AbstractFurnaceBlockEntityMixin {
         if (bestLevel <= 0)
             return;
 
-        // +100% at max level -> +1 extra progress tick per furnace tick (2x total).
+        // Scale extra progress from level 0..max using the configured multiplier and
+        // the global +60% Blacksmith furnace speed buff.
         float normalizedLevel = Math.min(1.0f, bestLevel / (float) SkillConfig.getMaxLevel());
-        float extraFloat = normalizedLevel;
+        float effectiveMaxMultiplier = SkillConfig.getBlacksmithFurnaceSpeedEffectiveMaxMultiplier();
+        float maxExtraProgress = Math.max(0.0f, effectiveMaxMultiplier - 1.0f);
+        float extraFloat = normalizedLevel * maxExtraProgress;
         int extraTicks = (int) extraFloat;
 
         // Probabilistic rounding for fractional part (smooth scaling)
