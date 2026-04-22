@@ -16,6 +16,9 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 - **Livros não-vanilla agora funcionam**: enchanted books que vieram com `enchantments` (sem `stored_enchantments`) voltam a ser aceitos no over-enchant do Blacksmith.
 - **Reconstrução do resultado mesmo com custo vanilla 0**: quando o vanilla bloqueia a junção e zera custo/output, o Master Enchanter tenta recompor o resultado válido a partir dos inputs.
 - **Hardening da bigorna no momento de coleta**: o cálculo final do Blacksmith agora é revalidado também em `canTakeOutput` e `onTakeOutput`, garantindo custo/desconto e over-enchant corretos mesmo se algum fluxo intermediário sobrescrever valores após `updateResult`.
+- **Custo do over-enchant ficou estável em todos os recálculos**: o handler agora guarda um snapshot vanilla (`inputs + output + custo`) e usa esse baseline para recalcular, impedindo o bug em que o valor exibido mudava no clique (`mostrava X`, cobrava `Y`).
+- **Sem desativação intermitente do Blacksmith na bigorna aberta**: durante a sessão da bigorna, o estado elegível do Blacksmith fica estável para evitar edge case de leitura transitória do attachment revertendo desconto/resultado no meio da operação.
+- **Overlay de desconto refeito do zero**: a UI da bigorna agora desenha o comparativo só no `RETURN` do `drawForeground` (sem cancelar render vanilla), com painel mais limpo e risco bem menor de texto riscado/bugado.
 
 ---
 

@@ -48,6 +48,24 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
     private int murilloskills$vanillaLevelCost;
 
     @Unique
+    private ItemStack murilloskills$baselineFirstInput = ItemStack.EMPTY;
+
+    @Unique
+    private ItemStack murilloskills$baselineSecondInput = ItemStack.EMPTY;
+
+    @Unique
+    private ItemStack murilloskills$baselineVanillaOutput = ItemStack.EMPTY;
+
+    @Unique
+    private boolean murilloskills$hasBaselineSnapshot;
+
+    @Unique
+    private boolean murilloskills$stickyBlacksmithSelected;
+
+    @Unique
+    private int murilloskills$stickyBlacksmithLevel;
+
+    @Unique
     private final Property murilloskills$originalLevelCost = Property.create();
 
     @Inject(method = "<init>(ILnet/minecraft/entity/player/PlayerInventory;Lnet/minecraft/screen/ScreenHandlerContext;)V", at = @At("TAIL"))
@@ -71,6 +89,8 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
     @Inject(method = "updateResult", at = @At("TAIL"), order = 2000)
     private void applyBlacksmithAnvilDiscount(CallbackInfo ci) {
         this.murilloskills$vanillaLevelCost = this.levelCost.get();
+        ForgingScreenHandlerAccessor accessor = (ForgingScreenHandlerAccessor) this;
+        this.murilloskills$captureVanillaBaseline(accessor.getInput(), accessor.getOutput());
         boolean changed = this.murilloskills$refreshFinalAnvilCost();
         if (changed) {
             ((ScreenHandler) (Object) this).sendContentUpdates();
@@ -116,8 +136,16 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
         ItemStack firstInput = input.getStack(0);
         ItemStack secondInput = input.getStack(1);
         ItemStack vanillaOutput = output.getStack(0);
+        boolean usingBaselineSnapshot = this.murilloskills$hasBaselineSnapshot
+                && this.murilloskills$matchesBaselineInputs(firstInput, secondInput);
+        if (usingBaselineSnapshot) {
+            vanillaOutput = this.murilloskills$baselineVanillaOutput;
+        }
 
         int baseCost = this.murilloskills$vanillaLevelCost > 0 ? this.murilloskills$vanillaLevelCost : this.levelCost.get();
+        if (baseCost <= 0 && this.murilloskills$originalLevelCost.get() > 0) {
+            baseCost = this.murilloskills$originalLevelCost.get();
+        }
         int safeBaseCost = Math.max(0, baseCost);
 
         boolean changed = false;
@@ -129,6 +157,19 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
         // Only apply discount if player has BLACKSMITH selected and meets level
         // requirement
         boolean blacksmithSelected = playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH);
+        int level = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
+        if (blacksmithSelected) {
+            this.murilloskills$stickyBlacksmithSelected = true;
+            if (level > this.murilloskills$stickyBlacksmithLevel) {
+                this.murilloskills$stickyBlacksmithLevel = level;
+            }
+        } else if (this.murilloskills$stickyBlacksmithSelected) {
+            // Keep Blacksmith status stable for the opened anvil handler to avoid
+            // transient attachment reads from disabling perks mid-operation.
+            blacksmithSelected = true;
+            level = Math.max(level, this.murilloskills$stickyBlacksmithLevel);
+        }
+
         if (!blacksmithSelected) {
             if (this.levelCost.get() != safeBaseCost) {
                 this.levelCost.set(safeBaseCost);
@@ -137,7 +178,7 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
             return changed;
         }
 
-        int level = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
+        level = Math.max(level, this.murilloskills$stickyBlacksmithLevel);
         boolean masterEnchanterUnlocked = BlacksmithOverEnchanting.isUnlocked(level);
 
         if (safeBaseCost <= 0 && !masterEnchanterUnlocked) {
@@ -270,6 +311,31 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
     @Override
     public int murilloskills$getSyncedOriginalLevelCost() {
         return this.murilloskills$originalLevelCost.get();
+    }
+
+    @Unique
+    private void murilloskills$captureVanillaBaseline(Inventory input, Inventory output) {
+        if (input == null || output == null) {
+            this.murilloskills$hasBaselineSnapshot = false;
+            this.murilloskills$baselineFirstInput = ItemStack.EMPTY;
+            this.murilloskills$baselineSecondInput = ItemStack.EMPTY;
+            this.murilloskills$baselineVanillaOutput = ItemStack.EMPTY;
+            return;
+        }
+
+        this.murilloskills$baselineFirstInput = input.getStack(0).copy();
+        this.murilloskills$baselineSecondInput = input.getStack(1).copy();
+        this.murilloskills$baselineVanillaOutput = output.getStack(0).copy();
+        this.murilloskills$hasBaselineSnapshot = true;
+    }
+
+    @Unique
+    private boolean murilloskills$matchesBaselineInputs(ItemStack firstInput, ItemStack secondInput) {
+        if (!this.murilloskills$hasBaselineSnapshot) {
+            return false;
+        }
+        return ItemStack.areEqual(firstInput, this.murilloskills$baselineFirstInput)
+                && ItemStack.areEqual(secondInput, this.murilloskills$baselineSecondInput);
     }
 
     @Unique

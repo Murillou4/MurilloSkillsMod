@@ -6,10 +6,7 @@ import net.minecraft.client.gui.screen.ingame.AnvilScreen;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.AnvilScreenHandler;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Final;
@@ -18,12 +15,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Replaces the vanilla anvil cost draw with the Blacksmith dual-cost label
- * ({@code <strike>X</strike> Y}) when the final cost is actually lower. The
- * label uses a compact format so it does not overlap the {@code Inventory}
- * header and keeps the "can't afford" red color even when a discount is
- * applied, so the player still sees the indicator instead of plain vanilla
- * text.
+ * Draws a stable Blacksmith dual-cost overlay after vanilla foreground render.
+ *
+ * We inject at RETURN and paint over the vanilla cost panel only when an actual
+ * discount is present (original > displayed). This avoids replacing/canceling
+ * the full foreground pass, which can conflict with other GUI changes.
  */
 @Mixin(AnvilScreen.class)
 public abstract class AnvilScreenMixin extends net.minecraft.client.gui.screen.ingame.HandledScreen<AnvilScreenHandler> {
@@ -36,78 +32,67 @@ public abstract class AnvilScreenMixin extends net.minecraft.client.gui.screen.i
         super(handler, inventory, title);
     }
 
-    @Inject(method = "drawForeground", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "drawForeground", at = @At("RETURN"))
     private void murilloskills$drawDualCost(DrawContext context, int mouseX, int mouseY, CallbackInfo ci) {
-        super.drawForeground(context, mouseX, mouseY);
-
         AnvilScreenHandler h = this.handler;
         int displayed = h.getLevelCost();
-        if (displayed <= 0) {
-            ci.cancel();
+        if (displayed <= 0 || displayed >= 40) {
+            return;
+        }
+        if (!h.getSlot(2).hasStack()) {
             return;
         }
 
-        boolean creativeMode = this.client.player != null && this.client.player.isInCreativeMode();
-        int color = -8323296;
-        Text label = null;
-
-        if (displayed >= 40 && !creativeMode) {
-            label = Text.translatable("container.repair.expensive");
-            color = -40864;
-        } else if (h.getSlot(2).hasStack()) {
-            label = Text.translatable("container.repair.cost", displayed);
-            if (!h.getSlot(2).canTakeItems(this.player)) {
-                color = -40864;
-            }
-        }
-
-        if (label == null) {
-            ci.cancel();
-            return;
-        }
-
-        int original = 0;
+        int original = displayed;
         if (h instanceof BlacksmithCostAccessor accessor) {
-            original = accessor.murilloskills$getOriginalLevelCost();
-        }
-
-        boolean hasDiscount = original > displayed && displayed < 40;
-        if (hasDiscount) {
-            Formatting discountedColor = (color == -40864) ? Formatting.RED : Formatting.GREEN;
-            int savingsPercent = Math.max(1,
-                    Math.round((1.0f - (float) displayed / (float) Math.max(1, original)) * 100.0f));
-
-            MutableText dualLabel = Text.empty()
-                    .append(Text.literal(String.valueOf(original))
-                            .setStyle(Style.EMPTY.withFormatting(Formatting.GRAY, Formatting.STRIKETHROUGH)))
-                    .append(Text.literal(" -> ").setStyle(Style.EMPTY.withColor(0xFF868686)))
-                    .append(Text.literal(String.valueOf(displayed))
-                            .setStyle(Style.EMPTY.withFormatting(discountedColor, Formatting.BOLD)))
-                    .append(Text.literal(" (-" + savingsPercent + "%)")
-                            .setStyle(Style.EMPTY.withColor(color == -40864 ? 0xFFFF8A8A : 0xFF55FFFF)));
-
-            int maxLabelWidth = this.backgroundWidth - 16;
-            if (this.textRenderer.getWidth(dualLabel) > maxLabelWidth) {
-                dualLabel = Text.empty()
-                        .append(Text.literal(String.valueOf(original))
-                                .setStyle(Style.EMPTY.withFormatting(Formatting.GRAY, Formatting.STRIKETHROUGH)))
-                        .append(Text.literal(" -> ").setStyle(Style.EMPTY.withColor(0xFF868686)))
-                        .append(Text.literal(String.valueOf(displayed))
-                                .setStyle(Style.EMPTY.withFormatting(discountedColor, Formatting.BOLD)));
+            int syncedOriginal = accessor.murilloskills$getOriginalLevelCost();
+            if (syncedOriginal > 0) {
+                original = syncedOriginal;
             }
-
-            label = dualLabel;
-            color = 0xFFFFFFFF;
         }
 
-        int x = this.backgroundWidth - 8 - this.textRenderer.getWidth(label) - 2;
-        int panelLeft = x - 3;
-        int panelRight = this.backgroundWidth - 8;
-        context.fill(panelLeft, 66, panelRight, 80, 0xAA101014);
-        context.fill(panelLeft, 66, panelRight, 67, 0x55FFFFFF);
-        context.fill(panelLeft, 79, panelRight, 80, 0x66000000);
-        context.drawTextWithShadow(this.textRenderer, label, x, 69, color);
+        if (original <= displayed) {
+            return;
+        }
 
-        ci.cancel();
+        boolean canTake = h.getSlot(2).canTakeItems(this.player);
+        int discountedColor = canTake ? 0xFF6AFF8E : 0xFFFF6B6B;
+        int savingsColor = canTake ? 0xFF66F5FF : 0xFFFFB0B0;
+
+        int savingsPercent = Math.max(1,
+                Math.round((1.0f - (float) displayed / (float) Math.max(1, original)) * 100.0f));
+
+        String originalText = Integer.toString(original);
+        String arrowText = " -> ";
+        String discountedText = Integer.toString(displayed);
+        String savingsText = "  -" + savingsPercent + "%";
+
+        int labelWidth = this.textRenderer.getWidth(originalText)
+                + this.textRenderer.getWidth(arrowText)
+                + this.textRenderer.getWidth(discountedText)
+                + this.textRenderer.getWidth(savingsText);
+
+        int x = this.backgroundWidth - 8 - labelWidth - 2;
+        int panelLeft = x - 4;
+        int panelRight = this.backgroundWidth - 8;
+        context.fill(panelLeft, 66, panelRight, 80, 0xD015171E);
+        context.fill(panelLeft, 66, panelRight, 67, 0x66FFFFFF);
+        context.fill(panelLeft, 79, panelRight, 80, 0x88000000);
+
+        int drawX = x;
+        int y = 69;
+        context.drawTextWithShadow(this.textRenderer, Text.literal(originalText), drawX, y, 0xFFB7BEC9);
+        int originalWidth = this.textRenderer.getWidth(originalText);
+        int strikeY = y + 4;
+        context.fill(drawX, strikeY, drawX + originalWidth, strikeY + 1, 0xFF7A8090);
+
+        drawX += originalWidth;
+        context.drawTextWithShadow(this.textRenderer, Text.literal(arrowText), drawX, y, 0xFF949AA7);
+        drawX += this.textRenderer.getWidth(arrowText);
+
+        context.drawTextWithShadow(this.textRenderer, Text.literal(discountedText), drawX, y, discountedColor);
+        drawX += this.textRenderer.getWidth(discountedText);
+
+        context.drawTextWithShadow(this.textRenderer, Text.literal(savingsText), drawX, y, savingsColor);
     }
 }
