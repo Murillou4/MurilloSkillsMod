@@ -4,6 +4,20 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.39] - 2026-04-22
+
+### 🔨 Blacksmith - Desconto Sempre Aplicado na Bigorna
+
+- **Custos baixos agora também recebem desconto real**: o custo final pode chegar a `0` quando o desconto do Blacksmith reduzir operações baratas.
+- **Retirada liberada com custo zero**: o `canTakeOutput` foi ajustado para permitir pegar o resultado quando o desconto zerar o custo (sem travar o slot de saída).
+- **Sincronização client/server alinhada para custo zero**: o fallback client-side também respeita `0` de custo para evitar desync visual.
+
+### 🛠 Estabilidade - Crash ao Colocar Bigorna
+
+- **Jar reempacotado e redistribuído**: após crash report com `ZipException (invalid LOC header)`, o pacote foi rebuildado e validado com a classe `UltPlacePlanner` presente no `.jar` final.
+
+---
+
 ## [1.2.38] - 2026-04-22
 
 ### 🔨 Blacksmith - Custo da Bigorna Corrigido (Level 99)

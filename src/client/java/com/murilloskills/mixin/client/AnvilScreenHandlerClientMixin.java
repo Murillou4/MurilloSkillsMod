@@ -7,6 +7,7 @@ import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.BlacksmithOverEnchanting;
 import com.murilloskills.utils.SkillConfig;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.screen.AnvilScreenHandler;
 import net.minecraft.screen.Property;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,6 +17,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Client-side Blacksmith anvil accessor.
@@ -41,6 +43,31 @@ public abstract class AnvilScreenHandlerClientMixin implements BlacksmithCostAcc
     @Inject(method = "updateResult", at = @At("TAIL"))
     private void murilloskills$syncDiscountAfterClientRecalc(CallbackInfo ci) {
         this.murilloskills$applyClientDiscountFallback();
+    }
+
+    @Inject(method = "canTakeOutput", at = @At("RETURN"), cancellable = true)
+    private void murilloskills$allowZeroCostTakeOnClient(
+            PlayerEntity player,
+            boolean present,
+            CallbackInfoReturnable<Boolean> cir) {
+        if (cir.getReturnValueZ()) {
+            return;
+        }
+        if (!present || this.levelCost.get() != 0) {
+            return;
+        }
+
+        PlayerSkillData.SkillStats stats = ClientSkillData.get(MurilloSkillsList.BLACKSMITH);
+        int level = stats != null ? stats.level : 0;
+        if (level < SkillConfig.getBlacksmithEfficientAnvilLevel()) {
+            return;
+        }
+
+        if (!((AnvilScreenHandler) (Object) this).getSlot(2).hasStack()) {
+            return;
+        }
+
+        cir.setReturnValue(true);
     }
 
     @Override
@@ -90,7 +117,7 @@ public abstract class AnvilScreenHandlerClientMixin implements BlacksmithCostAcc
 
         this.murilloskills$fallbackOriginalLevelCost = Math.max(this.murilloskills$fallbackOriginalLevelCost, originalCost);
 
-        int discounted = Math.max(1,
+        int discounted = Math.max(0,
                 Math.round(originalCost * (1.0f - SkillConfig.getBlacksmithAnvilDiscount(level))));
         if (BlacksmithOverEnchanting.isUnlocked(level)) {
             discounted = Math.min(discounted, MURILLOSKILLS_BLACKSMITH_MASTERY_MAX_ANVIL_COST);

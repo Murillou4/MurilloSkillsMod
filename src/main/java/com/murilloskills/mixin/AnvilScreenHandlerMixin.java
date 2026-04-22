@@ -114,6 +114,41 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
         }
     }
 
+    @Inject(method = "canTakeOutput", at = @At("RETURN"), cancellable = true, order = 2100)
+    private void murilloskills$allowZeroCostTakeForBlacksmith(
+            PlayerEntity player,
+            boolean present,
+            CallbackInfoReturnable<Boolean> cir) {
+        if (cir.getReturnValueZ()) {
+            return;
+        }
+        if (player == null || player.getEntityWorld().isClient()) {
+            return;
+        }
+        if (!(player instanceof ServerPlayerEntity serverPlayer)) {
+            return;
+        }
+        if (!present || this.levelCost.get() != 0) {
+            return;
+        }
+
+        var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+        int level = playerData.getSkill(MurilloSkillsList.BLACKSMITH).level;
+        boolean blacksmithActive = playerData.isSkillSelected(MurilloSkillsList.BLACKSMITH)
+                || level >= SkillConfig.getBlacksmithEfficientAnvilLevel()
+                || this.murilloskills$stickyBlacksmithSelected;
+        if (!blacksmithActive) {
+            return;
+        }
+
+        Inventory output = ((ForgingScreenHandlerAccessor) this).getOutput();
+        if (output == null || output.getStack(0).isEmpty()) {
+            return;
+        }
+
+        cir.setReturnValue(true);
+    }
+
     @Unique
     private boolean murilloskills$refreshFinalAnvilCost() {
         // Use accessor to get player from parent class
@@ -233,7 +268,7 @@ public abstract class AnvilScreenHandlerMixin implements AnvilCostSyncAccessor {
 
         int finalCost = preDiscountCost;
         if (canApplyDiscount && finalCost > 0) {
-            finalCost = Math.max(1, Math.round(finalCost * (1.0f - discount)));
+            finalCost = Math.max(0, Math.round(finalCost * (1.0f - discount)));
         }
 
         // Blacksmith perk should never make an operation more expensive than vanilla.
