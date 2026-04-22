@@ -19,6 +19,7 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 - **Custo do over-enchant ficou estável em todos os recálculos**: o handler agora guarda um snapshot vanilla (`inputs + output + custo`) e usa esse baseline para recalcular, impedindo o bug em que o valor exibido mudava no clique (`mostrava X`, cobrava `Y`).
 - **Sem desativação intermitente do Blacksmith na bigorna aberta**: durante a sessão da bigorna, o estado elegível do Blacksmith fica estável para evitar edge case de leitura transitória do attachment revertendo desconto/resultado no meio da operação.
 - **Overlay de desconto refeito do zero**: a UI da bigorna agora desenha o comparativo só no `RETURN` do `drawForeground` (sem cancelar render vanilla), com painel mais limpo e risco bem menor de texto riscado/bugado.
+- **Fallback client-side contra drift do custo vanilla**: quando o client recalcula a bigorna e volta o custo para o valor original (`7` em vez de `4`), o handler local reaplica o desconto do Blacksmith para manter o número exibido e o gate de retirada alinhados com a perk.
 
 ---
 
