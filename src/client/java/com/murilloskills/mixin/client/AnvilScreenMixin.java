@@ -63,9 +63,9 @@ public abstract class AnvilScreenMixin extends net.minecraft.client.gui.screen.i
                 Math.round((1.0f - (float) displayed / (float) Math.max(1, original)) * 100.0f));
 
         String originalText = Integer.toString(original);
-        String arrowText = " -> ";
+        String arrowText = "→";
         String discountedText = Integer.toString(displayed);
-        String savingsText = "  -" + savingsPercent + "%";
+        String savingsText = " (" + savingsPercent + "%)";
 
         int labelWidth = this.textRenderer.getWidth(originalText)
                 + this.textRenderer.getWidth(arrowText)
@@ -73,14 +73,16 @@ public abstract class AnvilScreenMixin extends net.minecraft.client.gui.screen.i
                 + this.textRenderer.getWidth(savingsText);
 
         int x = this.backgroundWidth - 8 - labelWidth - 2;
+        int y = 58;
         int panelLeft = x - 4;
         int panelRight = this.backgroundWidth - 8;
-        context.fill(panelLeft, 66, panelRight, 80, 0xD015171E);
-        context.fill(panelLeft, 66, panelRight, 67, 0x66FFFFFF);
-        context.fill(panelLeft, 79, panelRight, 80, 0x88000000);
+        int panelTop = y - 3;
+        int panelBottom = y + 11;
+        context.fill(panelLeft, panelTop, panelRight, panelBottom, 0xD015171E);
+        context.fill(panelLeft, panelTop, panelRight, panelTop + 1, 0x66FFFFFF);
+        context.fill(panelLeft, panelBottom - 1, panelRight, panelBottom, 0x88000000);
 
         int drawX = x;
-        int y = 69;
         context.drawTextWithShadow(this.textRenderer, Text.literal(originalText), drawX, y, 0xFFB7BEC9);
         int originalWidth = this.textRenderer.getWidth(originalText);
         int strikeY = y + 4;
