@@ -289,15 +289,21 @@ public class UltmineConfigScreen extends Screen {
 
         // Trash scroll buttons if needed
         if (trashItems.size() > MAX_VISIBLE_TRASH) {
-            int scrollBtnY = trashSectionY + 38 + MAX_VISIBLE_TRASH * 16 + oY;
-            int scrollBtnW = 30;
-            int scrollCenterX = centerX;
+            int countStart = trashScrollOffset + 1;
+            int countEnd = Math.min(trashScrollOffset + MAX_VISIBLE_TRASH, trashItems.size());
+            String countText = countStart + "-" + countEnd + " / " + trashItems.size();
+            int countHalfW = textRenderer.getWidth(countText) / 2;
+
+            int scrollBtnY = trashSectionY + 38 + MAX_VISIBLE_TRASH * 16 + oY + 1;
+            int scrollBtnW = 14;
+            int leftBtnX = centerX - countHalfW - 8 - scrollBtnW;
+            int rightBtnX = centerX + countHalfW + 8;
 
             if (trashScrollOffset > 0) {
                 ButtonWidget scrollUpBtn = ButtonWidget.builder(Text.literal("\u25B2"), (b) -> {
                     trashScrollOffset = Math.max(0, trashScrollOffset - 1);
                     refreshScreen();
-                }).dimensions(scrollCenterX - scrollBtnW - 2, scrollBtnY, scrollBtnW, 14).build();
+                }).dimensions(leftBtnX, scrollBtnY, scrollBtnW, 14).build();
                 this.addDrawableChild(scrollUpBtn);
             }
 
@@ -305,7 +311,7 @@ public class UltmineConfigScreen extends Screen {
                 ButtonWidget scrollDownBtn = ButtonWidget.builder(Text.literal("\u25BC"), (b) -> {
                     trashScrollOffset = Math.min(trashItems.size() - MAX_VISIBLE_TRASH, trashScrollOffset + 1);
                     refreshScreen();
-                }).dimensions(scrollCenterX + 2, scrollBtnY, scrollBtnW, 14).build();
+                }).dimensions(rightBtnX, scrollBtnY, scrollBtnW, 14).build();
                 this.addDrawableChild(scrollDownBtn);
             }
         }
@@ -366,15 +372,21 @@ public class UltmineConfigScreen extends Screen {
         }
 
         if (blockedBlocks.size() > MAX_VISIBLE_CLASSIC_BLOCKS) {
-            int scrollBtnY = classicBlockSectionY + 38 + MAX_VISIBLE_CLASSIC_BLOCKS * 16 + oY;
-            int scrollBtnW = 30;
-            int scrollCenterX = centerX;
+            int countStart = classicBlockScrollOffset + 1;
+            int countEnd = Math.min(classicBlockScrollOffset + MAX_VISIBLE_CLASSIC_BLOCKS, blockedBlocks.size());
+            String countText = countStart + "-" + countEnd + " / " + blockedBlocks.size();
+            int countHalfW = textRenderer.getWidth(countText) / 2;
+
+            int scrollBtnY = classicBlockSectionY + 38 + MAX_VISIBLE_CLASSIC_BLOCKS * 16 + oY + 1;
+            int scrollBtnW = 14;
+            int leftBtnX = centerX - countHalfW - 8 - scrollBtnW;
+            int rightBtnX = centerX + countHalfW + 8;
 
             if (classicBlockScrollOffset > 0) {
                 ButtonWidget scrollUpBtn = ButtonWidget.builder(Text.literal("\u25B2"), (b) -> {
                     classicBlockScrollOffset = Math.max(0, classicBlockScrollOffset - 1);
                     refreshScreen();
-                }).dimensions(scrollCenterX - scrollBtnW - 2, scrollBtnY, scrollBtnW, 14).build();
+                }).dimensions(leftBtnX, scrollBtnY, scrollBtnW, 14).build();
                 this.addDrawableChild(scrollUpBtn);
             }
 
@@ -383,7 +395,7 @@ public class UltmineConfigScreen extends Screen {
                     classicBlockScrollOffset = Math.min(blockedBlocks.size() - MAX_VISIBLE_CLASSIC_BLOCKS,
                             classicBlockScrollOffset + 1);
                     refreshScreen();
-                }).dimensions(scrollCenterX + 2, scrollBtnY, scrollBtnW, 14).build();
+                }).dimensions(rightBtnX, scrollBtnY, scrollBtnW, 14).build();
                 this.addDrawableChild(scrollDownBtn);
             }
         }
