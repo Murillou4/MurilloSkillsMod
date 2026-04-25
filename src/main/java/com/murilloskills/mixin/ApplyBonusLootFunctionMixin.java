@@ -2,6 +2,8 @@ package com.murilloskills.mixin;
 
 import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.PrestigeManager;
+import com.murilloskills.utils.SkillConfig;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
@@ -43,11 +45,15 @@ public class ApplyBonusLootFunctionMixin {
             // 3. Pega os dados da Skill
             PlayerSkillData playerData = player
                     .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
-            int minerLevel = playerData.getSkill(MurilloSkillsList.MINER).level;
+            var minerStats = playerData.getSkill(MurilloSkillsList.MINER);
+            int minerLevel = minerStats.level;
+            float prestigeMultiplier = PrestigeManager.getPassiveMultiplier(minerStats.prestige);
 
-            // 4. Calcula o bônus (0.1 por nível)
-            // Ex: Nível 30 * 0.1 = 3.0 -> +3 Fortuna
-            int bonusFortune = (int) (minerLevel * 0.03);
+            // 4. Calcula o bônus (level * taxa * multiplicador) + bônus flat por prestígio
+            // Ex: Nível 100, taxa 0.03, prestígio 0 -> +3 Fortuna
+            // Ex: Nível 100, taxa 0.03, prestígio 10, fortunePerPrestige 0.5 -> +3 + 5 = +8 Fortuna
+            int bonusFortune = (int) (minerLevel * SkillConfig.getMinerFortunePerLevel() * prestigeMultiplier
+                    + minerStats.prestige * SkillConfig.getMinerFortunePerPrestige());
 
             if (bonusFortune > 0) {
                 // Retorna o nível original + o nosso bônus

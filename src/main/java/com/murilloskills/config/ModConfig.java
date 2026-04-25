@@ -81,6 +81,7 @@ public class ModConfig {
     public static class MinerConfig {
         public float speedPerLevel = 0.03f;
         public float fortunePerLevel = 0.03f;
+        public float fortunePerPrestige = 0.5f;
         public int nightVisionLevel = 10;
         public int durabilityLevel = 30;
         public int radarLevel = 60;
@@ -176,7 +177,9 @@ public class ModConfig {
         public int fireMasteryLevel = 35;
         public int forgedResilienceLevel = 50;
         public int repairAuraLevel = 60;
-        public int repairAuraIntervalSeconds = 10;
+        public int repairAuraIntervalSeconds = 1;
+        public int repairAuraAmount = 20;
+        public boolean repairAuraEquipment = true;
         public int thornsMasterLevel = 75;
         public int overEnchantLevel = 99;
         public int masterLevel = 100;

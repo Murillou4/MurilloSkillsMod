@@ -40,6 +40,10 @@ public class SkillConfig {
         return ModConfig.get().miner.fortunePerLevel;
     }
 
+    public static float getMinerFortunePerPrestige() {
+        return ModConfig.get().miner.fortunePerPrestige;
+    }
+
     public static int getMinerNightVisionLevel() {
         return ModConfig.get().miner.nightVisionLevel;
     }
@@ -729,7 +733,28 @@ public class SkillConfig {
     }
 
     public static int getBlacksmithRepairAuraIntervalSeconds() {
-        return ModConfig.get().blacksmith.repairAuraIntervalSeconds;
+        int configured = ModConfig.get().blacksmith.repairAuraIntervalSeconds;
+        return configured > 0 ? configured : BLACKSMITH_REPAIR_AURA_INTERVAL_SECONDS;
+    }
+
+    public static int getBlacksmithRepairAuraAmount() {
+        int configured = ModConfig.get().blacksmith.repairAuraAmount;
+        return configured > 0 ? configured : BLACKSMITH_REPAIR_AURA_AMOUNT;
+    }
+
+    public static boolean isBlacksmithRepairAuraEquipmentEnabled() {
+        return ModConfig.get().blacksmith.repairAuraEquipment;
+    }
+
+    public static int getBlacksmithRepairAuraAmount(int level, int prestige) {
+        int unlockLevel = getBlacksmithRepairAuraLevel();
+        int targetLevel = Math.max(unlockLevel + 1, getBlacksmithMasterLevel() - 1);
+        int maxRepair = getBlacksmithRepairAuraAmount();
+        int minRepair = Math.max(1, maxRepair / 4);
+        float progress = Math.min(1.0f, Math.max(0.0f, (float) (level - unlockLevel) / (targetLevel - unlockLevel)));
+        int baseRepair = Math.round(minRepair + (maxRepair - minRepair) * progress);
+        float prestigeMultiplier = PrestigeManager.getPassiveMultiplier(prestige);
+        return Math.max(1, Math.round(baseRepair * prestigeMultiplier));
     }
 
     // Legacy constants
@@ -739,7 +764,8 @@ public class SkillConfig {
     public static final int BLACKSMITH_FIRE_MASTERY_LEVEL = 35;
     public static final int BLACKSMITH_FORGED_RESILIENCE_LEVEL = 50;
     public static final int BLACKSMITH_REPAIR_AURA_LEVEL = 60;
-    public static final int BLACKSMITH_REPAIR_AURA_INTERVAL_SECONDS = 10;
+    public static final int BLACKSMITH_REPAIR_AURA_INTERVAL_SECONDS = 1;
+    public static final int BLACKSMITH_REPAIR_AURA_AMOUNT = 20;
     public static final int BLACKSMITH_THORNS_MASTER_LEVEL = 75;
     public static final int BLACKSMITH_OVERENCHANT_LEVEL = 99;
     public static final int BLACKSMITH_MASTER_LEVEL = 100;

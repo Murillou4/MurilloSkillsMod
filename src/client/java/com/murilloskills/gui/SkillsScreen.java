@@ -11,6 +11,7 @@ import com.murilloskills.network.SkillSelectionC2SPayload;
 import com.murilloskills.network.PrestigeC2SPayload;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.render.XpToastRenderer;
+import com.murilloskills.utils.PrestigeManager;
 import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
@@ -320,8 +321,8 @@ public class SkillsScreen extends Screen {
                     int btnWidth = cardWidth - 36;
 
                     int nextPrestige = stats.prestige + 1;
-                    int nextXpBonus = nextPrestige * 5; // +5% per prestige
-                    int nextPassiveBonus = nextPrestige * 2; // +2% per prestige
+                    int nextXpBonus = Math.round(nextPrestige * SkillConfig.getPrestigeXpBonus() * 100.0f);
+                    int nextPassiveBonus = Math.round(nextPrestige * SkillConfig.getPrestigePassiveBonus() * 100.0f);
 
                     // Build rich multiline tooltip
                     Text prestigeTooltip = Text.empty()
@@ -699,8 +700,8 @@ public class SkillsScreen extends Screen {
             // Show prestige level and bonuses if prestige > 0
             int prestige = ClientSkillData.get(skill).prestige;
             if (prestige > 0) {
-                int xpBonus = prestige * 5; // 5% per prestige
-                int passiveBonus = prestige * 2; // 2% per prestige
+                int xpBonus = Math.round(prestige * SkillConfig.getPrestigeXpBonus() * 100.0f);
+                int passiveBonus = Math.round(prestige * SkillConfig.getPrestigePassiveBonus() * 100.0f);
                 String prestigeSymbol = getPrestigeSymbol(prestige);
                 tooltip.add(Text.empty());
                 tooltip.add(Text.literal("⭐ ").formatted(Formatting.GOLD)
@@ -784,22 +785,21 @@ public class SkillsScreen extends Screen {
 
             // Passives section (only in expanded mode)
             if (isExpanded) {
-                // Get prestige multiplier for this skill (prestige variable already declared
-                // above at line 817)
-                float prestigeMultiplier = 1.0f + (prestige * 0.02f); // +2% per prestige level
+                // Keep tooltip math aligned with the same prestige formula used server-side.
+                float prestigeMultiplier = PrestigeManager.getPassiveMultiplier(prestige);
                 boolean hasPrestigeBonus = prestige > 0;
-                String prestigeIndicator = hasPrestigeBonus ? " (+P)" : "";
+                int prestigePassivePercent = Math.round(prestige * SkillConfig.getPrestigePassiveBonus() * 100.0f);
+                String prestigeIndicator = hasPrestigeBonus ? " (+" + prestigePassivePercent + "%)" : "";
 
                 switch (skill) {
                     case MINER -> {
-                        int baseSpeed = (int) (level * SkillConfig.MINER_SPEED_PER_LEVEL * 100);
-                        int speed = (int) (baseSpeed * prestigeMultiplier);
+                        int speed = (int) (level * SkillConfig.getMinerSpeedPerLevel() * 100 * prestigeMultiplier);
                         tooltip.add(Text.translatable("murilloskills.passive.miner.mining_speed", speed)
                                 .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                 .formatted(Formatting.GREEN));
 
-                        int baseFortune = (int) (level * SkillConfig.MINER_FORTUNE_PER_LEVEL);
-                        int fortune = (int) (baseFortune * prestigeMultiplier);
+                        int fortune = (int) (level * SkillConfig.getMinerFortunePerLevel() * prestigeMultiplier
+                                + prestige * SkillConfig.getMinerFortunePerPrestige());
                         if (fortune > 0)
                             tooltip.add(Text.translatable("murilloskills.passive.miner.extra_fortune", fortune)
                                     .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
@@ -822,16 +822,14 @@ public class SkillsScreen extends Screen {
                                             .formatted(Formatting.AQUA));
                     }
                     case WARRIOR -> {
-                        double baseDamage = level * SkillConfig.WARRIOR_DAMAGE_PER_LEVEL;
-                        double damage = baseDamage * prestigeMultiplier;
+                        double damage = level * SkillConfig.getWarriorDamagePerLevel() * prestigeMultiplier;
                         tooltip.add(Text
                                 .translatable("murilloskills.passive.warrior.base_damage",
                                         String.format("%.1f", damage))
                                 .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                 .formatted(Formatting.RED));
 
-                        int baseLooting = (int) (level * SkillConfig.WARRIOR_LOOTING_PER_LEVEL);
-                        int looting = (int) (baseLooting * prestigeMultiplier);
+                        int looting = (int) (level * SkillConfig.getWarriorLootingPerLevel() * prestigeMultiplier);
                         if (looting > 0)
                             tooltip.add(Text.translatable("murilloskills.passive.warrior.extra_looting", looting)
                                     .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
