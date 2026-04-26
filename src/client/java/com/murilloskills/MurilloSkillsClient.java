@@ -26,6 +26,7 @@ import com.murilloskills.client.config.UltmineClientConfig;
 import com.murilloskills.data.ClientSkillData;
 import com.murilloskills.data.UltPlaceClientState;
 import com.murilloskills.data.UltmineClientState;
+import com.murilloskills.gui.ParagonAbilityScreen;
 import com.murilloskills.gui.UltPlaceConfigScreen;
 import com.murilloskills.render.AreaPlantingHud;
 import com.murilloskills.render.AutoTorchHud;
@@ -98,6 +99,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
     private static long nextUltPlaceRequestKey = 1L;
     private static long lastUltPlaceRequestTick = Long.MIN_VALUE;
     private static long lastUltPlaceFallbackSignature = Long.MIN_VALUE;
+    private static final double ULTPLACE_PREVIEW_RANGE_PADDING = 1.0D;
 
     /**
      * Check if the vein miner key is currently being held.
@@ -361,7 +363,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
             }
             while (abilityKey.wasPressed()) {
                 if (!isUltPlaceUndoChord(client)) {
-                    ClientPlayNetworking.send(new SkillAbilityC2SPayload());
+                    handleAbilityKey(client);
                 }
             }
             while (areaPlantingToggleKey.wasPressed()) {
@@ -466,8 +468,10 @@ public class MurilloSkillsClient implements ClientModInitializer {
             }
 
             if (shouldRequestUltPlacePreview(client)) {
-                HitResult hitResult = client.crosshairTarget;
-                if (hitResult instanceof BlockHitResult blockHit && client.world != null) {
+                HitResult hitResult = getUltPlacePreviewTarget(client);
+                if (hitResult instanceof BlockHitResult blockHit
+                        && hitResult.getType() == HitResult.Type.BLOCK
+                        && client.world != null) {
                     HeldBlockSelection held = getUltPlaceHeldBlockSelection(client);
                     if (held == null) {
                         UltPlaceClientState.clearPreview();
@@ -568,11 +572,33 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 && isBuilderHoldingBlockItem(client);
     }
 
+    private static HitResult getUltPlacePreviewTarget(MinecraftClient client) {
+        if (client.player == null) {
+            return client.crosshairTarget;
+        }
+        double range = Math.max(5.0D, client.player.getBlockInteractionRange() + ULTPLACE_PREVIEW_RANGE_PADDING);
+        HitResult hitResult = client.player.raycast(range, 1.0F, false);
+        return hitResult == null ? client.crosshairTarget : hitResult;
+    }
+
     private static boolean isBuilderHoldingBlockItem(MinecraftClient client) {
         return client.player != null
                 && ClientSkillData.isSkillSelected(MurilloSkillsList.BUILDER)
                 && (client.player.getMainHandStack().getItem() instanceof BlockItem
                         || client.player.getOffHandStack().getItem() instanceof BlockItem);
+    }
+
+    private static void handleAbilityKey(MinecraftClient client) {
+        int paragonCount = ClientSkillData.getParagonSkills().size();
+        if (paragonCount > 1 && client.currentScreen == null) {
+            client.setScreen(new ParagonAbilityScreen());
+            return;
+        }
+        if (paragonCount == 1) {
+            ClientPlayNetworking.send(new SkillAbilityC2SPayload(ClientSkillData.getParagonSkill()));
+            return;
+        }
+        ClientPlayNetworking.send(new SkillAbilityC2SPayload());
     }
 
     private static boolean isUltPlaceUndoChord(MinecraftClient client) {

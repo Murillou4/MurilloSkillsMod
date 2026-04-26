@@ -291,10 +291,19 @@ public final class UltPlaceShapeCalculator {
 
     private static Direction resolveWallFace(Direction face, Vec3d lookVec, Direction horizontalFacing,
             UltPlaceRotationMode rotationMode) {
-        if (face != null && face.getAxis().isHorizontal()) {
-            return face;
+        return switch (rotationMode) {
+            case FACE_LOCKED -> face != null && face.getAxis().isHorizontal()
+                    ? face
+                    : resolvePlayerWallFace(lookVec, horizontalFacing);
+            case PLAYER_FACING, AUTO -> resolvePlayerWallFace(lookVec, horizontalFacing);
+        };
+    }
+
+    private static Direction resolvePlayerWallFace(Vec3d lookVec, Direction horizontalFacing) {
+        if (horizontalFacing != null && horizontalFacing.getAxis().isHorizontal()) {
+            return horizontalFacing;
         }
-        return resolveHorizontalDirection(lookVec, face, horizontalFacing, rotationMode);
+        return snapToCardinal(lookVec == null ? Vec3d.ZERO : lookVec, Direction.NORTH);
     }
 
     private static PlaneAxes resolvePlaneAxes(Direction face, Direction horizontalFacing,

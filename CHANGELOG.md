@@ -4,6 +4,26 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.43] - 2026-04-26
+
+### Builder - UltPlace Wall/Preview
+
+- **Wall frontal corrigido**: o modo `AUTO` e `PLAYER_FACING` agora montam a parede no plano em frente ao jogador, mesmo quando a mira encosta em uma lateral de bloco.
+- **Face Locked preservado**: o modo `FACE_LOCKED` continua respeitando a face horizontal clicada para quem quiser travar a orientação na superfície.
+- **Preview com alcance alto**: o preview do UltPlace agora usa o alcance real de interação do Builder no cliente e no servidor, em vez de cortar a validação em 9 blocos.
+
+---
+
+## [1.2.42] - 2026-04-26
+
+### Paragon - Seletor de Habilidade
+
+- **Tecla Z com múltiplos Paragons**: quando o jogador tiver mais de um Paragon, a tecla `Z` abre uma GUI para escolher qual habilidade ativar.
+- **Cooldown individual por Paragon**: cada skill Paragon mostra seu próprio cooldown e só habilita o botão quando estiver pronta.
+- **Ativação explícita no servidor**: o pacote de habilidade agora envia a skill escolhida, e o servidor valida se ela realmente é Paragon antes de ativar.
+
+---
+
 ## [1.2.41] - 2026-04-26
 
 ### Paragon - Classes Master/Sub

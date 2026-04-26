@@ -140,6 +140,53 @@ class UltPlaceShapeCalculatorTest {
     }
 
     @Test
+    void wallAutoBuildsInFrontOfPlayerEvenWhenClickedSideIsHorizontal() {
+        BlockPos origin = new BlockPos(0, 64, 0);
+
+        List<BlockPos> blocks = UltPlaceShapeCalculator.getShapeBlocks(
+                origin,
+                UltPlaceShape.WALL,
+                3,
+                3,
+                Direction.EAST,
+                new Vec3d(0.0, 0.0, -1.0),
+                Direction.NORTH,
+                0,
+                UltPlaceAnchorMode.CENTER,
+                UltPlaceRotationMode.AUTO);
+
+        assertEquals(9, blocks.size());
+        assertTrue(blocks.stream().allMatch(pos -> pos.getZ() == 0),
+                "wall AUTO deve ficar no plano frontal do jogador, não no plano lateral da face clicada");
+        assertTrue(blocks.contains(new BlockPos(-1, 63, 0)));
+        assertTrue(blocks.contains(new BlockPos(1, 65, 0)));
+        assertFalse(blocks.contains(new BlockPos(0, 64, -1)));
+    }
+
+    @Test
+    void wallFaceLockedStillUsesClickedHorizontalFace() {
+        BlockPos origin = new BlockPos(0, 64, 0);
+
+        List<BlockPos> blocks = UltPlaceShapeCalculator.getShapeBlocks(
+                origin,
+                UltPlaceShape.WALL,
+                3,
+                3,
+                Direction.EAST,
+                new Vec3d(0.0, 0.0, -1.0),
+                Direction.NORTH,
+                0,
+                UltPlaceAnchorMode.CENTER,
+                UltPlaceRotationMode.FACE_LOCKED);
+
+        assertEquals(9, blocks.size());
+        assertTrue(blocks.stream().allMatch(pos -> pos.getX() == 0));
+        assertTrue(blocks.contains(new BlockPos(0, 63, -1)));
+        assertTrue(blocks.contains(new BlockPos(0, 65, 1)));
+        assertFalse(blocks.contains(new BlockPos(-1, 64, 0)));
+    }
+
+    @Test
     void lineWithSpacingSkipsBetweenBlocks() {
         BlockPos origin = new BlockPos(0, 64, 0);
 

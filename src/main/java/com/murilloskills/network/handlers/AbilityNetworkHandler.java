@@ -4,6 +4,7 @@ import com.murilloskills.api.AbstractSkill;
 import com.murilloskills.api.SkillRegistry;
 
 import com.murilloskills.network.SkillAbilityC2SPayload;
+import com.murilloskills.utils.SkillsNetworkUtils;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -33,10 +34,17 @@ public final class AbilityNetworkHandler {
                 try {
                     var player = context.player();
                     var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
-                    var activeParagon = playerData.getActiveParagonSkill();
+                    var requestedParagon = payload.skill();
+                    var activeParagon = requestedParagon != null ? requestedParagon : playerData.getActiveParagonSkill();
 
                     if (activeParagon == null) {
                         player.sendMessage(Text.translatable("murilloskills.paragon.need_confirm")
+                                .formatted(Formatting.RED), true);
+                        return;
+                    }
+
+                    if (!playerData.isParagonSkill(activeParagon)) {
+                        player.sendMessage(Text.translatable("murilloskills.prestige.not_paragon")
                                 .formatted(Formatting.RED), true);
                         return;
                     }
@@ -46,6 +54,7 @@ public final class AbilityNetworkHandler {
                     if (skill != null) {
                         var stats = playerData.getSkill(activeParagon);
                         skill.onActiveAbility(player, stats);
+                        SkillsNetworkUtils.syncSkills(player);
                     } else {
                         LOGGER.warn("Paragon skill not found in registry: {}", activeParagon);
                         player.sendMessage(Text
