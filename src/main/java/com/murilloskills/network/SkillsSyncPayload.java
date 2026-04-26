@@ -16,6 +16,7 @@ import java.util.Map;
 public record SkillsSyncPayload(
         Map<MurilloSkillsList, PlayerSkillData.SkillStats> skills,
         String paragonSkillName,
+        List<MurilloSkillsList> paragonSkills,
         List<MurilloSkillsList> selectedSkills,
         int maxSelectedSkills) implements CustomPayload {
 
@@ -36,6 +37,12 @@ public record SkillsSyncPayload(
 
                 // Write paragon skill name
                 buf.writeString(payload.paragonSkillName);
+
+                // Write all paragon skills
+                buf.writeInt(payload.paragonSkills.size());
+                for (MurilloSkillsList skill : payload.paragonSkills) {
+                    buf.writeEnumConstant(skill);
+                }
 
                 // Write selected skills list
                 buf.writeInt(payload.selectedSkills.size());
@@ -62,6 +69,13 @@ public record SkillsSyncPayload(
                 // Read paragon skill name
                 String paragonName = buf.readString();
 
+                // Read all paragon skills
+                int paragonSize = buf.readInt();
+                List<MurilloSkillsList> paragonSkills = new ArrayList<>();
+                for (int i = 0; i < paragonSize; i++) {
+                    paragonSkills.add(buf.readEnumConstant(MurilloSkillsList.class));
+                }
+
                 // Read selected skills list
                 int selectedSize = buf.readInt();
                 List<MurilloSkillsList> selectedSkills = new ArrayList<>();
@@ -72,7 +86,7 @@ public record SkillsSyncPayload(
                 // Read max selected skills
                 int maxSelectedSkills = buf.readVarInt();
 
-                return new SkillsSyncPayload(skills, paragonName, selectedSkills, maxSelectedSkills);
+                return new SkillsSyncPayload(skills, paragonName, paragonSkills, selectedSkills, maxSelectedSkills);
             });
 
     @Override

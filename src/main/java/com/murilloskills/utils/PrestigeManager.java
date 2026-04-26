@@ -35,7 +35,7 @@ public class PrestigeManager {
                 .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
         PlayerSkillData.SkillStats stats = data.getSkill(skill);
 
-        return stats.level >= 100 && stats.prestige < SkillConfig.getMaxPrestigeLevel();
+        return data.isParagonSkill(skill) && stats.level >= 100 && stats.prestige < SkillConfig.getMaxPrestigeLevel();
     }
 
     /**

@@ -5,6 +5,7 @@ package com.murilloskills.skills;
  */
 public enum UltPlaceShape {
     PLANE_NXN("murilloskills.ultplace.shape.plane"),
+    HORIZONTAL_BOX("murilloskills.ultplace.shape.horizontal_box"),
     LINE("murilloskills.ultplace.shape.line"),
     WALL("murilloskills.ultplace.shape.wall"),
     STAIRS("murilloskills.ultplace.shape.stairs"),
@@ -26,14 +27,25 @@ public enum UltPlaceShape {
 
     public boolean supportsAnchorMode() {
         return switch (this) {
-            case PLANE_NXN, LINE, WALL, STAIRS, COLUMN, TUNNEL_3X3 -> true;
+            case PLANE_NXN, HORIZONTAL_BOX, LINE, WALL, STAIRS, COLUMN, TUNNEL_3X3 -> true;
             default -> false;
         };
     }
 
     public boolean supportsRotationMode() {
         return switch (this) {
-            case PLANE_NXN, LINE, WALL, STAIRS, COLUMN, TUNNEL_3X3 -> true;
+            case PLANE_NXN, HORIZONTAL_BOX, LINE, WALL, STAIRS, COLUMN, TUNNEL_3X3 -> true;
+            default -> false;
+        };
+    }
+
+    public boolean supportsHeight() {
+        return this == HORIZONTAL_BOX;
+    }
+
+    public boolean supportsSpacing() {
+        return switch (this) {
+            case PLANE_NXN, HORIZONTAL_BOX, WALL, LINE, COLUMN -> true;
             default -> false;
         };
     }

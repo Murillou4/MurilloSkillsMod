@@ -30,8 +30,10 @@ public final class ParagonActivationNetworkHandler {
                 try {
                     var player = context.player();
                     var data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+                    var requestedSkill = payload.skill();
+                    data.normalizeParagonState();
 
-                    if (data.paragonSkill != null) {
+                    if (data.isParagonSkill(requestedSkill)) {
                         player.sendMessage(
                                 Text.translatable("murilloskills.paragon.already_chosen").formatted(Formatting.RED),
                                 true);
@@ -39,7 +41,7 @@ public final class ParagonActivationNetworkHandler {
                     }
 
                     // Validation: Paragon can only be activated on selected skills
-                    if (!data.isSkillSelected(payload.skill())) {
+                    if (!data.isSkillSelected(requestedSkill)) {
                         player.sendMessage(
                                 Text.translatable("murilloskills.paragon.only_selected_skills")
                                         .formatted(Formatting.RED),
@@ -47,13 +49,21 @@ public final class ParagonActivationNetworkHandler {
                         return;
                     }
 
-                    var stats = data.getSkill(payload.skill());
+                    if (!data.canActivateParagonSkill(requestedSkill)) {
+                        String messageKey = requestedSkill.isMasterClass()
+                                ? "murilloskills.paragon.master_already_chosen"
+                                : "murilloskills.paragon.already_chosen";
+                        player.sendMessage(Text.translatable(messageKey).formatted(Formatting.RED), true);
+                        return;
+                    }
+
+                    var stats = data.getSkill(requestedSkill);
                     // Paragon can be selected at level 99 (locks at 99 until chosen)
                     if (stats.level >= 99) {
-                        data.paragonSkill = payload.skill();
+                        data.activateParagonSkill(requestedSkill);
 
                         SkillsNetworkUtils.syncSkills(player);
-                        player.sendMessage(Text.translatable("murilloskills.paragon.defined", payload.skill().name())
+                        player.sendMessage(Text.translatable("murilloskills.paragon.defined", requestedSkill.name())
                                 .formatted(Formatting.GOLD, Formatting.BOLD), false);
 
                         // Grant "First Paragon" advancement

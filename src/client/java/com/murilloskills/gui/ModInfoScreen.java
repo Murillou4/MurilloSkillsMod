@@ -339,7 +339,7 @@ public class ModInfoScreen extends Screen {
                 } else {
                         for (MurilloSkillsList skill : selectedSkills) {
                                 var stats = ClientSkillData.get(skill);
-                                boolean isParagon = skill == ClientSkillData.getParagonSkill();
+                                boolean isParagon = ClientSkillData.isParagonSkill(skill);
 
                                 // Skill card
                                 renderSkillMiniCard(context, x + 8, y, skill, stats.level, stats.prestige, isParagon);

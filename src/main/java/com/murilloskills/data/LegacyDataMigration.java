@@ -206,5 +206,7 @@ public class LegacyDataMigration {
             }
             LOGGER.debug("  Migrated {} achievement stats", data.achievementStats.size());
         }
+
+        data.normalizeParagonState();
     }
 }

@@ -45,10 +45,8 @@ public final class SkillResetNetworkHandler {
                     stats.xp = 0;
                     stats.lastAbilityUse = -1; // Reset cooldown too
 
-                    // If this was the paragon skill, remove paragon status
-                    if (data.paragonSkill == payload.skill()) {
-                        data.paragonSkill = null;
-                    }
+                    // If this was a paragon skill, remove only this paragon status
+                    data.clearParagonSkill(payload.skill());
 
                     // Remove skill from selection - player can now choose a new one
                     data.selectedSkills.remove(payload.skill());

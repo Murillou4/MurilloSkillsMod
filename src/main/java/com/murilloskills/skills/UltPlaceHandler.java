@@ -37,9 +37,11 @@ public final class UltPlaceHandler {
     private static final Map<UUID, UltPlaceShape> SHAPES = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> SIZES = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> LENGTHS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Integer> HEIGHTS = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> VARIANTS = new ConcurrentHashMap<>();
     private static final Map<UUID, UltPlaceAnchorMode> ANCHOR_MODES = new ConcurrentHashMap<>();
     private static final Map<UUID, UltPlaceRotationMode> ROTATION_MODES = new ConcurrentHashMap<>();
+    private static final Map<UUID, Integer> SPACINGS = new ConcurrentHashMap<>();
     private static final Map<UUID, Boolean> ENABLED = new ConcurrentHashMap<>();
     private static final Map<UUID, ArrayDeque<UndoSnapshot>> UNDO_HISTORY = new ConcurrentHashMap<>();
     private static final Set<UUID> ACTIVE_PLAYERS = ConcurrentHashMap.newKeySet();
@@ -48,16 +50,20 @@ public final class UltPlaceHandler {
     private UltPlaceHandler() {
     }
 
-    public static void setSelection(ServerPlayerEntity player, UltPlaceShape shape, int size, int length, int variant,
-            UltPlaceAnchorMode anchorMode, UltPlaceRotationMode rotationMode, boolean enabled) {
-        UltPlaceSelection normalized = normalizeSelection(shape, size, length, variant, anchorMode, rotationMode);
+    public static void setSelection(ServerPlayerEntity player, UltPlaceShape shape, int size, int length, int height,
+            int variant,
+            UltPlaceAnchorMode anchorMode, UltPlaceRotationMode rotationMode, int spacing, boolean enabled) {
+        UltPlaceSelection normalized = normalizeSelection(shape, size, length, height, variant, anchorMode, rotationMode,
+                spacing);
         UUID uuid = player.getUuid();
         SHAPES.put(uuid, normalized.shape());
         SIZES.put(uuid, normalized.size());
         LENGTHS.put(uuid, normalized.length());
+        HEIGHTS.put(uuid, normalized.height());
         VARIANTS.put(uuid, normalized.variant());
         ANCHOR_MODES.put(uuid, normalized.anchorMode());
         ROTATION_MODES.put(uuid, normalized.rotationMode());
+        SPACINGS.put(uuid, normalized.spacing());
         ENABLED.put(uuid, enabled);
     }
 
@@ -85,6 +91,12 @@ public final class UltPlaceHandler {
         return clampLength(shape, configured);
     }
 
+    public static int getHeight(ServerPlayerEntity player) {
+        UltPlaceShape shape = getShape(player);
+        int configured = HEIGHTS.getOrDefault(player.getUuid(), SkillConfig.getUltPlaceShapeDefaultHeight(shape));
+        return clampHeight(shape, configured);
+    }
+
     public static int getVariant(ServerPlayerEntity player) {
         UltPlaceShape shape = getShape(player);
         int maxVariant = UltPlaceShape.getVariantCount(shape) - 1;
@@ -99,9 +111,14 @@ public final class UltPlaceHandler {
         return UltPlaceRotationMode.normalize(getShape(player), ROTATION_MODES.get(player.getUuid()));
     }
 
+    public static int getSpacing(ServerPlayerEntity player) {
+        UltPlaceShape shape = getShape(player);
+        return clampSpacing(shape, SPACINGS.getOrDefault(player.getUuid(), 1));
+    }
+
     public static UltPlaceSelection getSelection(ServerPlayerEntity player) {
-        return normalizeSelection(getShape(player), getSize(player), getLength(player), getVariant(player),
-                getAnchorMode(player), getRotationMode(player));
+        return normalizeSelection(getShape(player), getSize(player), getLength(player), getHeight(player), getVariant(player),
+                getAnchorMode(player), getRotationMode(player), getSpacing(player));
     }
 
     public static boolean canUseUltPlace(ServerPlayerEntity player) {
@@ -275,9 +292,11 @@ public final class UltPlaceHandler {
         SHAPES.remove(playerUuid);
         SIZES.remove(playerUuid);
         LENGTHS.remove(playerUuid);
+        HEIGHTS.remove(playerUuid);
         VARIANTS.remove(playerUuid);
         ANCHOR_MODES.remove(playerUuid);
         ROTATION_MODES.remove(playerUuid);
+        SPACINGS.remove(playerUuid);
         ENABLED.remove(playerUuid);
         UNDO_HISTORY.remove(playerUuid);
         ACTIVE_PLAYERS.remove(playerUuid);
@@ -361,18 +380,23 @@ public final class UltPlaceHandler {
         }
     }
 
-    private static UltPlaceSelection normalizeSelection(UltPlaceShape shape, int size, int length, int variant,
-            UltPlaceAnchorMode anchorMode, UltPlaceRotationMode rotationMode) {
+    private static UltPlaceSelection normalizeSelection(UltPlaceShape shape, int size, int length, int height,
+            int variant, UltPlaceAnchorMode anchorMode, UltPlaceRotationMode rotationMode, int spacing) {
         UltPlaceShape safeShape = shape == null ? UltPlaceShape.PLANE_NXN : shape;
         int safeSize = size > 0 ? clampSize(safeShape, size) : SkillConfig.getUltPlaceShapeDefaultSize(safeShape);
         int safeLength = length > 0
                 ? clampLength(safeShape, length)
                 : SkillConfig.getUltPlaceShapeDefaultLength(safeShape);
+        int safeHeight = height > 0
+                ? clampHeight(safeShape, height)
+                : SkillConfig.getUltPlaceShapeDefaultHeight(safeShape);
         int maxVariant = UltPlaceShape.getVariantCount(safeShape) - 1;
         int safeVariant = Math.max(0, Math.min(variant, maxVariant));
         UltPlaceAnchorMode safeAnchorMode = UltPlaceAnchorMode.normalize(safeShape, anchorMode);
         UltPlaceRotationMode safeRotationMode = UltPlaceRotationMode.normalize(safeShape, rotationMode);
-        return new UltPlaceSelection(safeShape, safeSize, safeLength, safeVariant, safeAnchorMode, safeRotationMode);
+        int safeSpacing = clampSpacing(safeShape, spacing);
+        return new UltPlaceSelection(safeShape, safeSize, safeLength, safeHeight, safeVariant, safeAnchorMode,
+                safeRotationMode, safeSpacing);
     }
 
     private static int clampSize(UltPlaceShape shape, int size) {
@@ -381,6 +405,17 @@ public final class UltPlaceHandler {
 
     private static int clampLength(UltPlaceShape shape, int length) {
         return Math.max(1, Math.min(length, SkillConfig.getUltPlaceShapeMaxLength(shape)));
+    }
+
+    private static int clampHeight(UltPlaceShape shape, int height) {
+        return Math.max(1, Math.min(height, SkillConfig.getUltPlaceShapeMaxHeight(shape)));
+    }
+
+    private static int clampSpacing(UltPlaceShape shape, int spacing) {
+        if (shape == null || !shape.supportsSpacing()) {
+            return 1;
+        }
+        return Math.max(1, Math.min(spacing, SkillConfig.getUltPlaceShapeMaxSpacing(shape)));
     }
 
     private static ItemStack copySingle(ItemStack stack) {

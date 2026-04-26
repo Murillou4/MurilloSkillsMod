@@ -112,10 +112,12 @@ public class UltPlaceConfigScreen extends Screen {
     private static int countConfigRows(UltPlaceShape shape) {
         int rows = 0;
         if (SkillConfig.getUltPlaceShapeMaxSize(shape) > 1) rows++;
+        if (shape.supportsHeight()) rows++;
         if (SkillConfig.getUltPlaceShapeMaxLength(shape) > 1) rows++;
         if (UltPlaceShape.getVariantCount(shape) > 1) rows++;
         if (shape.supportsAnchorMode()) rows++;
         if (shape.supportsRotationMode()) rows++;
+        if (shape.supportsSpacing()) rows++;
         return rows;
     }
 
@@ -169,6 +171,21 @@ public class UltPlaceConfigScreen extends Screen {
                     },
                     () -> {
                         UltPlaceClientState.adjustSize(1);
+                        syncToServer();
+                        refresh();
+                    });
+            row++;
+        }
+
+        if (current.supportsHeight()) {
+            addStepperRow(centerX, rowY + row * ROW_HEIGHT,
+                    () -> {
+                        UltPlaceClientState.adjustHeight(-1);
+                        syncToServer();
+                        refresh();
+                    },
+                    () -> {
+                        UltPlaceClientState.adjustHeight(1);
                         syncToServer();
                         refresh();
                     });
@@ -229,6 +246,21 @@ public class UltPlaceConfigScreen extends Screen {
                     },
                     () -> {
                         UltPlaceClientState.adjustRotationMode(1);
+                        syncToServer();
+                        refresh();
+                    });
+            row++;
+        }
+
+        if (current.supportsSpacing()) {
+            addStepperRow(centerX, rowY + row * ROW_HEIGHT,
+                    () -> {
+                        UltPlaceClientState.adjustSpacing(-1);
+                        syncToServer();
+                        refresh();
+                    },
+                    () -> {
+                        UltPlaceClientState.adjustSpacing(1);
                         syncToServer();
                         refresh();
                     });
@@ -434,11 +466,24 @@ public class UltPlaceConfigScreen extends Screen {
 
         if (SkillConfig.getUltPlaceShapeMaxSize(current) > 1) {
             int y = rowY + row * ROW_HEIGHT;
+            String labelKey = current.supportsHeight()
+                    ? "murilloskills.ultplace.width"
+                    : "murilloskills.ultplace.size";
             context.drawTextWithShadow(textRenderer,
-                    Text.translatable("murilloskills.ultplace.size").getString(),
+                    Text.translatable(labelKey).getString(),
                     labelX, y + 5, palette.textLight());
             renderValueBox(context, centerX, y, String.valueOf(UltPlaceClientState.getSize()));
             renderMaxHint(context, centerX, y, SkillConfig.getUltPlaceShapeMaxSize(current));
+            row++;
+        }
+
+        if (current.supportsHeight()) {
+            int y = rowY + row * ROW_HEIGHT;
+            context.drawTextWithShadow(textRenderer,
+                    Text.translatable("murilloskills.ultplace.height").getString(),
+                    labelX, y + 5, palette.textLight());
+            renderValueBox(context, centerX, y, String.valueOf(UltPlaceClientState.getHeight()));
+            renderMaxHint(context, centerX, y, SkillConfig.getUltPlaceShapeMaxHeight(current));
             row++;
         }
 
@@ -481,6 +526,20 @@ public class UltPlaceConfigScreen extends Screen {
             String rotationText = Text.translatable(UltPlaceClientState.getRotationMode().getTranslationKey())
                     .getString();
             renderValueBox(context, centerX, y, rotationText);
+            row++;
+        }
+
+        if (current.supportsSpacing()) {
+            int y = rowY + row * ROW_HEIGHT;
+            context.drawTextWithShadow(textRenderer,
+                    Text.translatable("murilloskills.ultplace.spacing").getString(),
+                    labelX, y + 5, palette.textLight());
+            int spacing = UltPlaceClientState.getSpacing();
+            String spacingText = spacing <= 1
+                    ? Text.translatable("murilloskills.ultplace.spacing.contiguous").getString()
+                    : Text.translatable("murilloskills.ultplace.spacing.skip", spacing - 1).getString();
+            renderValueBox(context, centerX, y, spacingText);
+            renderMaxHint(context, centerX, y, SkillConfig.getUltPlaceShapeMaxSpacing(current));
         }
 
         if (countConfigRows(current) == 0) {

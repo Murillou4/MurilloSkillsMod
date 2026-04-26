@@ -34,8 +34,8 @@ public final class PrestigeNetworkHandler {
 
                     MurilloSkillsList skill = payload.skill();
 
-                    // Validation: Prestige only works on the player's Paragon skill
-                    if (data.paragonSkill != skill) {
+                    // Validation: Prestige only works on skills that are Paragon
+                    if (!data.isParagonSkill(skill)) {
                         player.sendMessage(
                                 Text.translatable("murilloskills.prestige.not_paragon")
                                         .formatted(Formatting.RED),

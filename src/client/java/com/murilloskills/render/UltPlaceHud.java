@@ -53,6 +53,12 @@ public class UltPlaceHud {
         Text body = Text.translatable("murilloskills.hud.ultplace", shapeName, dims, anchor, rotation)
                 .copy().formatted(Formatting.GOLD, Formatting.BOLD);
         Text fullText = icon.copy().append(body);
+        if (shape.supportsSpacing() && UltPlaceClientState.getSpacing() > 1) {
+            fullText = fullText.copy()
+                    .append(Text.literal(" /").formatted(Formatting.GRAY))
+                    .append(Text.literal(String.valueOf(UltPlaceClientState.getSpacing()))
+                            .formatted(Formatting.AQUA, Formatting.BOLD));
+        }
 
         int textWidth = client.textRenderer.getWidth(fullText);
         int textHeight = client.textRenderer.fontHeight;
@@ -80,14 +86,25 @@ public class UltPlaceHud {
     private static String formatDimensions(UltPlaceShape shape) {
         int size = UltPlaceClientState.getSize();
         int length = UltPlaceClientState.getLength();
+        int height = UltPlaceClientState.getHeight();
         boolean hasSize = SkillConfig.getUltPlaceShapeMaxSize(shape) > 1;
         boolean hasLength = SkillConfig.getUltPlaceShapeMaxLength(shape) > 1;
+        boolean hasHeight = SkillConfig.getUltPlaceShapeMaxHeight(shape) > 1;
 
+        if (hasSize && hasHeight && hasLength) {
+            return size + "x" + height + "x" + length;
+        }
         if (hasSize && hasLength) {
             return size + "x" + length;
         }
+        if (hasHeight && hasLength) {
+            return height + "x" + length;
+        }
         if (hasSize) {
             return String.valueOf(size);
+        }
+        if (hasHeight) {
+            return String.valueOf(height);
         }
         if (hasLength) {
             return String.valueOf(length);

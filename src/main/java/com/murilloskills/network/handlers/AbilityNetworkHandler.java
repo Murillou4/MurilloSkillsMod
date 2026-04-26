@@ -33,22 +33,23 @@ public final class AbilityNetworkHandler {
                 try {
                     var player = context.player();
                     var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+                    var activeParagon = playerData.getActiveParagonSkill();
 
-                    if (playerData.paragonSkill == null) {
+                    if (activeParagon == null) {
                         player.sendMessage(Text.translatable("murilloskills.paragon.need_confirm")
                                 .formatted(Formatting.RED), true);
                         return;
                     }
 
                     // Clean polymorphic approach using SkillRegistry
-                    AbstractSkill skill = SkillRegistry.get(playerData.paragonSkill);
+                    AbstractSkill skill = SkillRegistry.get(activeParagon);
                     if (skill != null) {
-                        var stats = playerData.getSkill(playerData.paragonSkill);
+                        var stats = playerData.getSkill(activeParagon);
                         skill.onActiveAbility(player, stats);
                     } else {
-                        LOGGER.warn("Paragon skill not found in registry: {}", playerData.paragonSkill);
+                        LOGGER.warn("Paragon skill not found in registry: {}", activeParagon);
                         player.sendMessage(Text
-                                .translatable("murilloskills.paragon.in_development", playerData.paragonSkill.name())
+                                .translatable("murilloskills.paragon.in_development", activeParagon.name())
                                 .formatted(Formatting.YELLOW), true);
                     }
 

@@ -285,6 +285,7 @@ public class SkillAdminCommands {
             }
 
             var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+            playerData.normalizeParagonState();
 
             if (skillName != null) {
                 // Show specific skill info
@@ -301,24 +302,36 @@ public class SkillAdminCommands {
                         .formatted(Formatting.YELLOW), false);
                 source.sendFeedback(() -> Text.literal("Prestige: " + stats.prestige)
                         .formatted(Formatting.LIGHT_PURPLE), false);
+                source.sendFeedback(() -> Text.literal("Class: " + skill.getSkillClass().name())
+                        .formatted(Formatting.BLUE), false);
                 source.sendFeedback(() -> Text.literal("Selected: " + playerData.isSkillSelected(skill))
                         .formatted(Formatting.AQUA), false);
+                source.sendFeedback(() -> Text.literal("Paragon: " + playerData.isParagonSkill(skill))
+                        .formatted(Formatting.GOLD), false);
             } else {
                 // Show all skills
                 source.sendFeedback(() -> Text.literal("=== Skills for " + target + " ===")
                         .formatted(Formatting.GOLD), false);
-                source.sendFeedback(() -> Text.literal("Paragon: " +
-                        (playerData.paragonSkill != null ? playerData.paragonSkill.name() : "None"))
+                var activeParagon = playerData.getActiveParagonSkill();
+                var paragonSkills = playerData.getParagonSkills();
+                source.sendFeedback(() -> Text.literal("Active Paragon: " +
+                        (activeParagon != null ? activeParagon.name() : "None"))
+                        .formatted(Formatting.LIGHT_PURPLE), false);
+                source.sendFeedback(() -> Text.literal("Paragons: " +
+                        (paragonSkills.isEmpty() ? "None" : paragonSkills))
                         .formatted(Formatting.LIGHT_PURPLE), false);
                 source.sendFeedback(() -> Text.literal("Selected: " + playerData.getSelectedSkills())
                         .formatted(Formatting.AQUA), false);
 
                 for (MurilloSkillsList skill : MurilloSkillsList.values()) {
                     var stats = playerData.getSkill(skill);
-                    String prefix = playerData.isSkillSelected(skill) ? "✓ " : "  ";
+                    String prefix = playerData.isParagonSkill(skill) ? "★ "
+                            : (playerData.isSkillSelected(skill) ? "✓ " : "  ");
                     source.sendFeedback(() -> Text.literal(prefix + skill.name() +
-                            ": Lv" + stats.level + " P" + stats.prestige)
-                            .formatted(playerData.isSkillSelected(skill) ? Formatting.GREEN : Formatting.GRAY), false);
+                            " [" + skill.getSkillClass().name() + "]: Lv" + stats.level + " P" + stats.prestige)
+                            .formatted(playerData.isParagonSkill(skill) ? Formatting.GOLD
+                                    : (playerData.isSkillSelected(skill) ? Formatting.GREEN : Formatting.GRAY)),
+                            false);
                 }
             }
             return 1;
@@ -351,6 +364,7 @@ public class SkillAdminCommands {
             stats.xp = 0;
             stats.prestige = 0;
             stats.lastAbilityUse = -1;
+            playerData.clearParagonSkill(skill);
 
             // Sync
             com.murilloskills.utils.SkillAttributes.updateAllStats(player, playerData);
@@ -388,7 +402,7 @@ public class SkillAdminCommands {
             }
 
             // Clear paragon and selected skills
-            playerData.paragonSkill = null;
+            playerData.clearAllParagonSkills();
             playerData.selectedSkills.clear();
 
             // Sync
@@ -477,10 +491,8 @@ public class SkillAdminCommands {
 
             playerData.selectedSkills.remove(skill);
 
-            // If this was paragon skill, clear it
-            if (playerData.paragonSkill == skill) {
-                playerData.paragonSkill = null;
-            }
+            // If this was a paragon skill, clear only this paragon entry
+            playerData.clearParagonSkill(skill);
 
             // Sync
             com.murilloskills.utils.SkillAttributes.updateAllStats(player, playerData);
@@ -514,6 +526,20 @@ public class SkillAdminCommands {
             }
 
             var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+            playerData.normalizeParagonState();
+
+            if (playerData.isParagonSkill(skill)) {
+                source.sendFeedback(() -> Text.literal(skill.name() + " is already Paragon for " + target)
+                        .formatted(Formatting.GOLD), true);
+                return 1;
+            }
+
+            if (!playerData.canActivateParagonSkill(skill)) {
+                source.sendError(Text.literal(skill.isMasterClass()
+                        ? "Player already has a Master Paragon. Clear paragon first to choose a different Master."
+                        : "Cannot set " + skill.name() + " as Paragon."));
+                return 0;
+            }
 
             // Auto-select skill if not selected
             if (!playerData.isSkillSelected(skill)) {
@@ -526,13 +552,16 @@ public class SkillAdminCommands {
                 playerData.selectedSkills.add(skill);
             }
 
-            playerData.paragonSkill = skill;
+            if (!playerData.activateParagonSkill(skill)) {
+                source.sendError(Text.literal("Cannot set " + skill.name() + " as Paragon."));
+                return 0;
+            }
 
             // Sync
             com.murilloskills.utils.SkillAttributes.updateAllStats(player, playerData);
             SkillsNetworkUtils.syncSkills(player);
 
-            source.sendFeedback(() -> Text.literal("Set paragon skill to " + skill.name() + " for " + target)
+            source.sendFeedback(() -> Text.literal("Added paragon skill " + skill.name() + " for " + target)
                     .formatted(Formatting.GOLD, Formatting.BOLD), true);
             LOGGER.info("Admin {} set paragon to {} for {}", source.getName(), skill.name(), player.getUuid());
             return 1;
@@ -553,20 +582,21 @@ public class SkillAdminCommands {
             }
 
             var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+            playerData.normalizeParagonState();
 
-            if (playerData.paragonSkill == null) {
-                source.sendError(Text.literal("Player " + target + " does not have a paragon skill set"));
+            var oldParagons = playerData.getParagonSkills();
+            if (oldParagons.isEmpty()) {
+                source.sendError(Text.literal("Player " + target + " does not have any paragon skill set"));
                 return 0;
             }
 
-            MurilloSkillsList oldParagon = playerData.paragonSkill;
-            playerData.paragonSkill = null;
+            playerData.clearAllParagonSkills();
 
             // Sync
             com.murilloskills.utils.SkillAttributes.updateAllStats(player, playerData);
             SkillsNetworkUtils.syncSkills(player);
 
-            source.sendFeedback(() -> Text.literal("Cleared paragon skill (" + oldParagon.name() + ") for " + target)
+            source.sendFeedback(() -> Text.literal("Cleared paragon skills (" + oldParagons + ") for " + target)
                     .formatted(Formatting.YELLOW), true);
             LOGGER.info("Admin {} cleared paragon for {}", source.getName(), player.getUuid());
             return 1;

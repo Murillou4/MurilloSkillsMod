@@ -194,8 +194,8 @@ public class AdvancementGranter {
         if (data == null)
             return false;
 
-        // Se for Paragon, todas as skills estão "ativas"
-        if (data.paragonSkill != null) {
+        // Se tiver algum Paragon, todas as skills contam como "ativas" para conquistas.
+        if (data.hasAnyParagonSkill()) {
             return true;
         }
 

@@ -175,7 +175,6 @@ public class SkillsScreen extends Screen {
         selectionButtons.clear();
 
         MurilloSkillsList[] skills = MurilloSkillsList.values();
-        MurilloSkillsList paragon = ClientSkillData.getParagonSkill();
         boolean selectionMode = isSelectionMode();
 
         if (selectionMode) {
@@ -280,9 +279,9 @@ public class SkillsScreen extends Screen {
                 MurilloSkillsList skill = skills[i];
                 var stats = ClientSkillData.get(skill);
 
-                // Paragon button only for selected skills at level 99+ with no paragon yet
+                // Master classes allow one Paragon; Sub classes can each become Paragon.
                 boolean isSelected = ClientSkillData.isSkillSelected(skill);
-                if (paragon == null && isSelected && stats.level >= 99) {
+                if (ClientSkillData.canActivateParagonSkill(skill) && isSelected && stats.level >= 99) {
                     int col = i % columns;
                     int row = i / columns;
                     int x = startX + (col * (cardWidth + padding));
@@ -306,7 +305,7 @@ public class SkillsScreen extends Screen {
                 }
 
                 // Prestige button for Paragon skill at level 100+ with prestige < 10
-                boolean isParagon = (skill == paragon);
+                boolean isParagon = ClientSkillData.isParagonSkill(skill);
                 if (isParagon && stats.level >= 100 && stats.prestige < 10) {
                     int col = i % columns;
                     int row = i / columns;
@@ -480,7 +479,6 @@ public class SkillsScreen extends Screen {
 
         MurilloSkillsList[] skills = MurilloSkillsList.values();
         List<Text> tooltipToRender = null;
-        MurilloSkillsList paragon = ClientSkillData.getParagonSkill();
         long worldTime = MinecraftClient.getInstance().world != null ? MinecraftClient.getInstance().world.getTime()
                 : 0;
 
@@ -495,7 +493,7 @@ public class SkillsScreen extends Screen {
             int y = startY + (row * (cardHeight + padding));
 
             boolean isHovered = mouseX >= x && mouseX <= x + cardWidth && mouseY >= y && mouseY <= y + cardHeight;
-            boolean isParagon = (skill == paragon);
+            boolean isParagon = ClientSkillData.isParagonSkill(skill);
             boolean isSelected = ClientSkillData.isSkillSelected(skill);
             boolean isPendingSelect = pendingSelection.contains(skill);
             boolean isLocked = !selectionMode && !isSelected && ClientSkillData.hasSelectedSkills();

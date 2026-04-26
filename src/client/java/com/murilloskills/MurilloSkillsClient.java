@@ -127,6 +127,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
                     }
                 }
                 com.murilloskills.data.ClientSkillData.setParagonSkill(paragon);
+                com.murilloskills.data.ClientSkillData.setParagonSkills(payload.paragonSkills());
 
                 // Update Selected Skills and max in Client Data
                 com.murilloskills.data.ClientSkillData.setSelectedSkills(payload.selectedSkills());
@@ -380,6 +381,9 @@ public class MurilloSkillsClient implements ClientModInitializer {
                     ClientPlayNetworking.send(new StepAssistToggleC2SPayload());
                 }
             }
+            // V key: ultPlaceToggleKey shadows stepAssistToggleKey when both default to V
+            // (Minecraft's KEY_TO_BINDINGS only routes events to one KeyBinding per physical key).
+            // Fall back to step assist when not routing to UltPlace so the V toggle keeps working.
             while (ultPlaceToggleKey.wasPressed()) {
                 if (shouldRouteUltPlaceToggle(client)) {
                     UltPlaceClientState.toggleEnabled();
@@ -387,6 +391,8 @@ public class MurilloSkillsClient implements ClientModInitializer {
                     resetUltPlacePreviewTracking();
                     ClientPlayNetworking.send(UltPlaceClientState.toPayload());
                     showUltPlaceToggleFeedback(client);
+                } else {
+                    ClientPlayNetworking.send(new StepAssistToggleC2SPayload());
                 }
             }
             while (speedBoostToggleKey.wasPressed()) {
@@ -394,9 +400,12 @@ public class MurilloSkillsClient implements ClientModInitializer {
                     ClientPlayNetworking.send(new SpeedBoostToggleC2SPayload());
                 }
             }
+            // B key: same shadowing as V — fall back to speed boost when not routing to UltPlace config.
             while (ultPlaceConfigKey.wasPressed()) {
                 if (shouldRouteUltPlaceConfig(client)) {
                     client.setScreen(new UltPlaceConfigScreen(client.currentScreen));
+                } else {
+                    ClientPlayNetworking.send(new SpeedBoostToggleC2SPayload());
                 }
             }
             while (autoTorchToggleKey.wasPressed()) {
@@ -616,9 +625,11 @@ public class MurilloSkillsClient implements ClientModInitializer {
         signature = mixSignature(signature, selection.shape().ordinal());
         signature = mixSignature(signature, selection.size());
         signature = mixSignature(signature, selection.length());
+        signature = mixSignature(signature, selection.height());
         signature = mixSignature(signature, selection.variant());
         signature = mixSignature(signature, selection.anchorMode().ordinal());
         signature = mixSignature(signature, selection.rotationMode().ordinal());
+        signature = mixSignature(signature, selection.spacing());
 
         Identifier itemId = Registries.ITEM.getId(stack.getItem());
         signature = mixSignature(signature, itemId.hashCode());

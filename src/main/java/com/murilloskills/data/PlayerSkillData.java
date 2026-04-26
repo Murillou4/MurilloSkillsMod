@@ -12,7 +12,8 @@ public class PlayerSkillData {
     public static final int MAX_SELECTED_SKILLS = 3;
 
     public EnumMap<MurilloSkillsList, SkillStats> skills = new EnumMap<>(MurilloSkillsList.class);
-    public MurilloSkillsList paragonSkill = null; // The one skill allowed to reach 100
+    public MurilloSkillsList paragonSkill = null; // Active/legacy paragon skill. Master classes still allow only one.
+    public Set<MurilloSkillsList> paragonSkills = EnumSet.noneOf(MurilloSkillsList.class);
     public List<MurilloSkillsList> selectedSkills = new ArrayList<>(); // The 2 main skills chosen by player
 
     // Persistent toggles for skill features (key format: "skillName.toggleName")
@@ -35,8 +36,12 @@ public class PlayerSkillData {
     public PlayerSkillData(MurilloSkillsList paragonSkill, EnumMap<MurilloSkillsList, SkillStats> skills,
             List<MurilloSkillsList> selectedSkills) {
         this.paragonSkill = paragonSkill;
+        if (paragonSkill != null) {
+            this.paragonSkills.add(paragonSkill);
+        }
         this.skills = skills;
         this.selectedSkills = selectedSkills != null ? new ArrayList<>(selectedSkills) : new ArrayList<>();
+        normalizeParagonState();
     }
 
     /**
@@ -80,6 +85,92 @@ public class PlayerSkillData {
      */
     public List<MurilloSkillsList> getSelectedSkills() {
         return Collections.unmodifiableList(selectedSkills);
+    }
+
+    public Set<MurilloSkillsList> getParagonSkills() {
+        normalizeParagonState();
+        if (paragonSkills.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return Collections.unmodifiableSet(EnumSet.copyOf(paragonSkills));
+    }
+
+    public boolean isParagonSkill(MurilloSkillsList skill) {
+        if (skill == null) {
+            return false;
+        }
+        normalizeParagonState();
+        return paragonSkills.contains(skill);
+    }
+
+    public boolean hasAnyParagonSkill() {
+        normalizeParagonState();
+        return !paragonSkills.isEmpty();
+    }
+
+    public MurilloSkillsList getMasterParagonSkill() {
+        normalizeParagonState();
+        for (MurilloSkillsList skill : paragonSkills) {
+            if (skill.isMasterClass()) {
+                return skill;
+            }
+        }
+        return null;
+    }
+
+    public MurilloSkillsList getActiveParagonSkill() {
+        normalizeParagonState();
+        if (paragonSkill != null && paragonSkills.contains(paragonSkill)) {
+            return paragonSkill;
+        }
+        MurilloSkillsList masterParagon = getMasterParagonSkill();
+        if (masterParagon != null) {
+            return masterParagon;
+        }
+        return paragonSkills.isEmpty() ? null : paragonSkills.iterator().next();
+    }
+
+    public boolean canActivateParagonSkill(MurilloSkillsList skill) {
+        if (skill == null) {
+            return false;
+        }
+        normalizeParagonState();
+        if (paragonSkills.contains(skill)) {
+            return false;
+        }
+        if (skill.isMasterClass()) {
+            return getMasterParagonSkill() == null;
+        }
+        return skill.isSubClass();
+    }
+
+    public boolean activateParagonSkill(MurilloSkillsList skill) {
+        if (!canActivateParagonSkill(skill)) {
+            return false;
+        }
+
+        paragonSkills.add(skill);
+        if (paragonSkill == null || skill.isMasterClass()) {
+            paragonSkill = skill;
+        }
+        normalizeParagonState();
+        return true;
+    }
+
+    public void clearParagonSkill(MurilloSkillsList skill) {
+        if (skill == null) {
+            return;
+        }
+        normalizeParagonState();
+        paragonSkills.remove(skill);
+        if (paragonSkill == skill) {
+            paragonSkill = chooseActiveParagonSkill();
+        }
+    }
+
+    public void clearAllParagonSkills() {
+        paragonSkills.clear();
+        paragonSkill = null;
     }
 
     /**
@@ -130,10 +221,7 @@ public class PlayerSkillData {
         int adjustedAmount = Math.round(amount * xpMultiplier);
 
         int maxLevelAllowed = com.murilloskills.utils.SkillConfig.getMaxLevel() - 1; // Default cap at 99
-        // Nível 100 só é permitido se paragonSkill estiver definido E for igual à skill
-        // atual
-        // Jogador deve travar no 99 até ir no menu e selecionar o Paragon
-        if (paragonSkill != null && paragonSkill == skill) {
+        if (isParagonSkill(skill)) {
             maxLevelAllowed = com.murilloskills.utils.SkillConfig.getMaxLevel();
         }
 
@@ -156,10 +244,60 @@ public class PlayerSkillData {
         return skills.get(skill);
     }
 
+    public void normalizeParagonState() {
+        if (paragonSkills == null) {
+            paragonSkills = EnumSet.noneOf(MurilloSkillsList.class);
+        } else if (!(paragonSkills instanceof EnumSet<?>)) {
+            paragonSkills = paragonSkills.isEmpty()
+                    ? EnumSet.noneOf(MurilloSkillsList.class)
+                    : EnumSet.copyOf(paragonSkills);
+        }
+
+        if (paragonSkill != null) {
+            paragonSkills.add(paragonSkill);
+        }
+
+        MurilloSkillsList keptMaster = null;
+        if (paragonSkill != null && paragonSkill.isMasterClass() && paragonSkills.contains(paragonSkill)) {
+            keptMaster = paragonSkill;
+        }
+
+        for (MurilloSkillsList skill : MurilloSkillsList.values()) {
+            if (skill.isMasterClass() && paragonSkills.contains(skill)) {
+                if (keptMaster == null) {
+                    keptMaster = skill;
+                } else if (keptMaster != skill) {
+                    paragonSkills.remove(skill);
+                }
+            }
+        }
+
+        if (paragonSkill == null || !paragonSkills.contains(paragonSkill)
+                || (keptMaster != null && paragonSkill.isSubClass())) {
+            paragonSkill = chooseActiveParagonSkill();
+        }
+    }
+
+    private MurilloSkillsList chooseActiveParagonSkill() {
+        MurilloSkillsList masterParagon = null;
+        for (MurilloSkillsList skill : paragonSkills) {
+            if (skill.isMasterClass()) {
+                masterParagon = skill;
+                break;
+            }
+        }
+        if (masterParagon != null) {
+            return masterParagon;
+        }
+        return paragonSkills.isEmpty() ? null : paragonSkills.iterator().next();
+    }
+
     // Updated Codec to include all fields with proper error handling for migration
     public static final Codec<PlayerSkillData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.optionalFieldOf("paragonSkill")
                     .forGetter(d -> Optional.ofNullable(d.paragonSkill).map(Enum::name)),
+            Codec.STRING.listOf().optionalFieldOf("paragonSkills", List.of())
+                    .forGetter(d -> d.getParagonSkills().stream().map(Enum::name).toList()),
             Codec.unboundedMap(Codec.STRING, SkillStats.CODEC).optionalFieldOf("skills", Map.of()).forGetter(d -> {
                 Map<String, SkillStats> map = new HashMap<>();
                 d.skills.forEach((k, v) -> map.put(k.name(), v));
@@ -176,7 +314,7 @@ public class PlayerSkillData {
                     // Wrap in lenient codec: if dailyChallenges exists but fails to decode,
                     // treat as empty instead of crashing all player data
                     .forGetter(d -> Optional.ofNullable(d.dailyChallenges)))
-            .apply(instance, (paragonOpt, skillsMap, selectedList, toggles, achStats, dailyOpt) -> {
+            .apply(instance, (paragonOpt, paragonList, skillsMap, selectedList, toggles, achStats, dailyOpt) -> {
                 PlayerSkillData data = new PlayerSkillData();
 
                 // Parse paragon skill (safe)
@@ -187,6 +325,13 @@ public class PlayerSkillData {
                         return Optional.empty();
                     }
                 }).orElse(null);
+
+                for (String name : paragonList) {
+                    try {
+                        data.paragonSkills.add(MurilloSkillsList.valueOf(name));
+                    } catch (Exception ignored) {
+                    }
+                }
 
                 // Parse skills map (safe)
                 skillsMap.forEach((k, v) -> {
@@ -215,6 +360,7 @@ public class PlayerSkillData {
 
                 // Load daily challenges if present
                 data.dailyChallenges = dailyOpt.orElse(null);
+                data.normalizeParagonState();
 
                 return data;
             }));

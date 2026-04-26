@@ -69,6 +69,10 @@ public final class UltPlaceClientState {
         return getSelection(selectedShape).length;
     }
 
+    public static int getHeight() {
+        return getSelection(selectedShape).height;
+    }
+
     public static int getVariant() {
         return getSelection(selectedShape).variant;
     }
@@ -81,6 +85,10 @@ public final class UltPlaceClientState {
         return getSelection(selectedShape).rotationMode;
     }
 
+    public static int getSpacing() {
+        return getSelection(selectedShape).spacing;
+    }
+
     public static void setSize(int size) {
         ShapeSelection selection = getSelection(selectedShape);
         selection.size = clampSize(selectedShape, size);
@@ -89,6 +97,11 @@ public final class UltPlaceClientState {
     public static void setLength(int length) {
         ShapeSelection selection = getSelection(selectedShape);
         selection.length = clampLength(selectedShape, length);
+    }
+
+    public static void setHeight(int height) {
+        ShapeSelection selection = getSelection(selectedShape);
+        selection.height = clampHeight(selectedShape, height);
     }
 
     public static void setVariant(int variant) {
@@ -105,12 +118,20 @@ public final class UltPlaceClientState {
         getSelection(selectedShape).rotationMode = UltPlaceRotationMode.normalize(selectedShape, rotationMode);
     }
 
+    public static void setSpacing(int spacing) {
+        getSelection(selectedShape).spacing = clampSpacing(selectedShape, spacing);
+    }
+
     public static void adjustSize(int delta) {
         setSize(getSize() + delta);
     }
 
     public static void adjustLength(int delta) {
         setLength(getLength() + delta);
+    }
+
+    public static void adjustHeight(int delta) {
+        setHeight(getHeight() + delta);
     }
 
     public static void adjustVariant(int delta) {
@@ -130,6 +151,10 @@ public final class UltPlaceClientState {
         UltPlaceAnchorMode[] values = UltPlaceAnchorMode.values();
         int current = getAnchorMode().ordinal();
         setAnchorMode(values[(current + delta + values.length) % values.length]);
+    }
+
+    public static void adjustSpacing(int delta) {
+        setSpacing(getSpacing() + delta);
     }
 
     public static void adjustRotationMode(int delta) {
@@ -223,13 +248,13 @@ public final class UltPlaceClientState {
     }
 
     public static UltPlaceConfigC2SPayload toPayload() {
-        return new UltPlaceConfigC2SPayload(selectedShape, getSize(), getLength(), getVariant(),
-                getAnchorMode(), getRotationMode(), enabled);
+        return new UltPlaceConfigC2SPayload(selectedShape, getSize(), getLength(), getHeight(), getVariant(),
+                getAnchorMode(), getRotationMode(), getSpacing(), enabled);
     }
 
     public static UltPlaceSelection toSelection() {
-        return new UltPlaceSelection(selectedShape, getSize(), getLength(), getVariant(), getAnchorMode(),
-                getRotationMode());
+        return new UltPlaceSelection(selectedShape, getSize(), getLength(), getHeight(), getVariant(), getAnchorMode(),
+                getRotationMode(), getSpacing());
     }
 
     private static ShapeSelection getSelection(UltPlaceShape shape) {
@@ -240,9 +265,11 @@ public final class UltPlaceClientState {
         return new ShapeSelection(
                 SkillConfig.getUltPlaceShapeDefaultSize(shape),
                 SkillConfig.getUltPlaceShapeDefaultLength(shape),
+                SkillConfig.getUltPlaceShapeDefaultHeight(shape),
                 0,
                 UltPlaceAnchorMode.CENTER,
-                UltPlaceRotationMode.AUTO);
+                UltPlaceRotationMode.AUTO,
+                1);
     }
 
     private static int clampSize(UltPlaceShape shape, int value) {
@@ -253,20 +280,35 @@ public final class UltPlaceClientState {
         return Math.max(1, Math.min(value, SkillConfig.getUltPlaceShapeMaxLength(shape)));
     }
 
+    private static int clampHeight(UltPlaceShape shape, int value) {
+        return Math.max(1, Math.min(value, SkillConfig.getUltPlaceShapeMaxHeight(shape)));
+    }
+
+    private static int clampSpacing(UltPlaceShape shape, int value) {
+        if (shape == null || !shape.supportsSpacing()) {
+            return 1;
+        }
+        return Math.max(1, Math.min(value, SkillConfig.getUltPlaceShapeMaxSpacing(shape)));
+    }
+
     private static final class ShapeSelection {
         private int size;
         private int length;
+        private int height;
         private int variant;
         private UltPlaceAnchorMode anchorMode;
         private UltPlaceRotationMode rotationMode;
+        private int spacing;
 
-        private ShapeSelection(int size, int length, int variant,
-                UltPlaceAnchorMode anchorMode, UltPlaceRotationMode rotationMode) {
+        private ShapeSelection(int size, int length, int height, int variant,
+                UltPlaceAnchorMode anchorMode, UltPlaceRotationMode rotationMode, int spacing) {
             this.size = size;
             this.length = length;
+            this.height = height;
             this.variant = variant;
             this.anchorMode = anchorMode;
             this.rotationMode = rotationMode;
+            this.spacing = spacing;
         }
     }
 }

@@ -223,10 +223,32 @@ public class SkillConfig {
         return Math.max(1, getUltPlaceShapeSettings(shape).maxLength);
     }
 
+    public static int getUltPlaceShapeDefaultHeight(UltPlaceShape shape) {
+        if (shape == null || !shape.supportsHeight()) {
+            return 1;
+        }
+        return Math.max(1, getUltPlaceShapeSettings(shape).defaultHeight);
+    }
+
+    public static int getUltPlaceShapeMaxHeight(UltPlaceShape shape) {
+        if (shape == null || !shape.supportsHeight()) {
+            return 1;
+        }
+        return Math.max(1, getUltPlaceShapeSettings(shape).maxHeight);
+    }
+
+    public static int getUltPlaceShapeMaxSpacing(UltPlaceShape shape) {
+        if (shape == null || !shape.supportsSpacing()) {
+            return 1;
+        }
+        return 8;
+    }
+
     private static ModConfig.UltmineShapeSettings getUltPlaceShapeSettings(UltPlaceShape shape) {
         var ultPlace = ModConfig.get().builderUltPlace;
         return switch (shape) {
             case PLANE_NXN -> ultPlace.plane;
+            case HORIZONTAL_BOX -> ultPlace.horizontalBox;
             case LINE -> ultPlace.line;
             case WALL -> ultPlace.wall;
             case STAIRS -> ultPlace.stairs;
@@ -1125,7 +1147,7 @@ public class SkillConfig {
 
     /**
      * Retorna a quantidade de níveis de XP vanilla para um milestone específico.
-     * 
+     *
      * @param level O nível do milestone
      * @return Quantidade de níveis de XP vanilla, ou 0 se não for um milestone
      */
@@ -1143,7 +1165,7 @@ public class SkillConfig {
     /**
      * Calcula o cooldown reduzido baseado no nível do jogador.
      * Aplica redução de 0.5% por nível (máximo 50% no nível 100).
-     * 
+     *
      * @param baseCooldownSeconds Cooldown base em segundos
      * @param level               Nível atual da skill do jogador
      * @return Cooldown reduzido em segundos
@@ -1155,7 +1177,7 @@ public class SkillConfig {
 
     /**
      * Calcula o cooldown reduzido em ticks.
-     * 
+     *
      * @param baseCooldownSeconds Cooldown base em segundos
      * @param level               Nível atual da skill do jogador
      * @return Cooldown reduzido em ticks

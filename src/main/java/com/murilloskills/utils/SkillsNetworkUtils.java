@@ -13,16 +13,20 @@ public class SkillsNetworkUtils {
     public static void syncSkills(ServerPlayerEntity player) {
         com.murilloskills.data.PlayerSkillData data = player
                 .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+        data.normalizeParagonState();
 
-        String paragonName = (data.paragonSkill != null) ? data.paragonSkill.name() : "null";
+        MurilloSkillsList activeParagon = data.getActiveParagonSkill();
+        String paragonName = activeParagon != null ? activeParagon.name() : "null";
+
+        List<MurilloSkillsList> paragonSkills = new ArrayList<>(data.getParagonSkills());
 
         // Get selected skills (or empty list if none selected)
         List<MurilloSkillsList> selectedSkills = data.selectedSkills != null
                 ? new ArrayList<>(data.selectedSkills)
                 : new ArrayList<>();
 
-        // Envia o pacote com Skills + Paragon Name + Selected Skills + Max Selected
+        // Envia o pacote com Skills + Paragons + Selected Skills + Max Selected
         ServerPlayNetworking.send(player, new SkillsSyncPayload(
-                data.skills, paragonName, selectedSkills, SkillConfig.getMaxSelectedSkills()));
+                data.skills, paragonName, paragonSkills, selectedSkills, SkillConfig.getMaxSelectedSkills()));
     }
 }

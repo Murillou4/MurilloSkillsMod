@@ -4,6 +4,23 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.41] - 2026-04-26
+
+### Paragon - Classes Master/Sub
+
+- **Classes Master configuradas**: `Miner`, `Warrior` e `Archer` agora formam o grupo Master, com limite de um Paragon Master por jogador.
+- **Sub classes liberadas para múltiplos Paragons**: `Farmer`, `Fisher`, `Builder`, `Blacksmith` e `Explorer` podem virar Paragon individualmente e prestigiar.
+- **Save e sync compatíveis**: saves antigos com `paragonSkill` migram automaticamente para a nova lista de Paragons, e o cliente recebe todos os Paragons ativos.
+- **GUI, comandos e prestige alinhados**: botões de Paragon/Prestige, reset, comandos admin e habilidade ativa respeitam a nova divisão Master/Sub.
+
+### Builder - UltPlace Caixa W/H/L
+
+- **Novo modo horizontal W/H/L**: o Builder ganhou a forma `Caixa W/H/L`, com largura, altura e comprimento configuráveis.
+- **Preview e HUD atualizados**: a seleção, preview validado e HUD do UltPlace agora carregam a dimensão `H` junto de `W` e `L`.
+- **Config e testes expandidos**: limites padrão, payloads e testes cobrem a nova forma horizontal.
+
+---
+
 ## [1.2.40] - 2026-04-22
 
 ### 🔥 Blacksmith - Furnace Mastery Corrigido + Buffado

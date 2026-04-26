@@ -24,12 +24,14 @@ public final class UltPlaceConfigNetworkHandler {
                     player.sendMessage(Text.translatable("murilloskills.builder.need_builder_skill")
                             .formatted(Formatting.RED), true);
                     UltPlaceHandler.setSelection(player, payload.shape(), payload.size(), payload.length(),
-                            payload.variant(), payload.anchorMode(), payload.rotationMode(), false);
+                            payload.height(), payload.variant(), payload.anchorMode(), payload.rotationMode(),
+                            payload.spacing(), false);
                     return;
                 }
 
                 UltPlaceHandler.setSelection(player, payload.shape(), payload.size(), payload.length(),
-                        payload.variant(), payload.anchorMode(), payload.rotationMode(), payload.enabled());
+                        payload.height(), payload.variant(), payload.anchorMode(), payload.rotationMode(), payload.spacing(),
+                        payload.enabled());
 
                 if (previousEnabled != payload.enabled()) {
                     String messageKey = payload.enabled()

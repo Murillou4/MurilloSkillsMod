@@ -91,8 +91,8 @@ public final class UltPlacePlanner {
         Direction horizontalFacing = player != null ? player.getHorizontalFacing() : Direction.NORTH;
 
         List<BlockPos> layout = UltPlaceShapeCalculator.getShapeBlocks(origin, safeSelection.shape(), safeSelection.size(),
-                safeSelection.length(), face, lookVec, horizontalFacing, safeSelection.variant(),
-                safeSelection.anchorMode(), safeSelection.rotationMode());
+                safeSelection.length(), safeSelection.height(), face, lookVec, horizontalFacing, safeSelection.variant(),
+                safeSelection.anchorMode(), safeSelection.rotationMode(), safeSelection.spacing());
         if (layout.isEmpty()) {
             return UltPlacePlan.empty(origin);
         }
@@ -221,12 +221,16 @@ public final class UltPlacePlanner {
         UltPlaceShape shape = selection == null || selection.shape() == null ? UltPlaceShape.PLANE_NXN : selection.shape();
         int size = selection == null ? 1 : Math.max(1, selection.size());
         int length = selection == null ? 1 : Math.max(1, selection.length());
+        int height = selection == null ? 1 : Math.max(1, selection.height());
         int variant = selection == null ? 0 : Math.max(0, selection.variant());
         UltPlaceAnchorMode anchorMode = UltPlaceAnchorMode.normalize(shape,
                 selection == null ? UltPlaceAnchorMode.CENTER : selection.anchorMode());
         UltPlaceRotationMode rotationMode = UltPlaceRotationMode.normalize(shape,
                 selection == null ? UltPlaceRotationMode.AUTO : selection.rotationMode());
-        return new UltPlaceSelection(shape, size, length, variant, anchorMode, rotationMode);
+        int spacing = shape.supportsSpacing()
+                ? Math.max(1, selection == null ? 1 : selection.spacing())
+                : 1;
+        return new UltPlaceSelection(shape, size, length, height, variant, anchorMode, rotationMode, spacing);
     }
 
     public record PreviewBlock(BlockPos pos, BlockState state, boolean anchor) {

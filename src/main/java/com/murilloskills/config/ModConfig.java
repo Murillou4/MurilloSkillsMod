@@ -298,6 +298,7 @@ public class ModConfig {
         public int undoHistorySize = 5;
         public int previewRequestIntervalTicks = 4;
         public UltmineShapeSettings plane = new UltmineShapeSettings(3, 15, 1, 1);
+        public UltmineShapeSettings horizontalBox = new UltmineShapeSettings(3, 15, 5, 32, 2, 12);
         public UltmineShapeSettings line = new UltmineShapeSettings(1, 1, 5, 64);
         public UltmineShapeSettings wall = new UltmineShapeSettings(3, 15, 3, 15);
         public UltmineShapeSettings stairs = new UltmineShapeSettings(1, 1, 8, 32);
@@ -321,6 +322,8 @@ public class ModConfig {
         public int maxDepth = 1;
         public int defaultLength = 1;
         public int maxLength = 1;
+        public int defaultHeight = 1;
+        public int maxHeight = 1;
 
         public UltmineShapeSettings() {
         }
@@ -330,6 +333,13 @@ public class ModConfig {
             this.maxDepth = maxDepth;
             this.defaultLength = defaultLength;
             this.maxLength = maxLength;
+        }
+
+        public UltmineShapeSettings(int defaultDepth, int maxDepth, int defaultLength, int maxLength,
+                int defaultHeight, int maxHeight) {
+            this(defaultDepth, maxDepth, defaultLength, maxLength);
+            this.defaultHeight = defaultHeight;
+            this.maxHeight = maxHeight;
         }
     }
 

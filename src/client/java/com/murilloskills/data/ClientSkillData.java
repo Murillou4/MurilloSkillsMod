@@ -1,15 +1,20 @@
 package com.murilloskills.data;
 
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.SkillConfig;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ClientSkillData {
     private static final Map<MurilloSkillsList, PlayerSkillData.SkillStats> skills = new HashMap<>();
     private static MurilloSkillsList paragonSkill = null;
+    private static final Set<MurilloSkillsList> paragonSkills = EnumSet.noneOf(MurilloSkillsList.class);
     private static List<MurilloSkillsList> selectedSkills = new ArrayList<>();
     private static int maxSelectedSkills = 3;
 
@@ -25,10 +30,59 @@ public class ClientSkillData {
 
     public static void setParagonSkill(MurilloSkillsList skill) {
         paragonSkill = skill;
+        if (skill != null) {
+            paragonSkills.add(skill);
+        }
     }
 
     public static MurilloSkillsList getParagonSkill() {
+        if (paragonSkill == null && !paragonSkills.isEmpty()) {
+            paragonSkill = chooseActiveParagonSkill();
+        }
         return paragonSkill;
+    }
+
+    public static void setParagonSkills(List<MurilloSkillsList> skills) {
+        paragonSkills.clear();
+        if (skills != null) {
+            paragonSkills.addAll(skills);
+        }
+        if (paragonSkill != null) {
+            paragonSkills.add(paragonSkill);
+        }
+        MurilloSkillsList masterParagon = getMasterParagonSkill();
+        if (masterParagon != null) {
+            paragonSkill = masterParagon;
+        } else if (paragonSkill == null || !paragonSkills.contains(paragonSkill)) {
+            paragonSkill = chooseActiveParagonSkill();
+        }
+    }
+
+    public static Set<MurilloSkillsList> getParagonSkills() {
+        return new HashSet<>(paragonSkills);
+    }
+
+    public static boolean isParagonSkill(MurilloSkillsList skill) {
+        return skill != null && paragonSkills.contains(skill);
+    }
+
+    public static MurilloSkillsList getMasterParagonSkill() {
+        for (MurilloSkillsList skill : paragonSkills) {
+            if (skill.isMasterClass()) {
+                return skill;
+            }
+        }
+        return null;
+    }
+
+    public static boolean canActivateParagonSkill(MurilloSkillsList skill) {
+        if (skill == null || paragonSkills.contains(skill)) {
+            return false;
+        }
+        if (skill.isMasterClass()) {
+            return getMasterParagonSkill() == null;
+        }
+        return skill.isSubClass();
     }
 
     public static void setSelectedSkills(List<MurilloSkillsList> skills) {
@@ -83,7 +137,16 @@ public class ClientSkillData {
         PlayerSkillData.SkillStats stats = skills.get(skill);
         if (stats == null)
             return false;
-        return stats.level >= 100 && stats.prestige < 10 && skill == paragonSkill;
+        return stats.level >= 100 && stats.prestige < SkillConfig.getMaxPrestigeLevel() && isParagonSkill(skill);
+    }
+
+    private static MurilloSkillsList chooseActiveParagonSkill() {
+        for (MurilloSkillsList skill : paragonSkills) {
+            if (skill.isMasterClass()) {
+                return skill;
+            }
+        }
+        return paragonSkills.isEmpty() ? null : paragonSkills.iterator().next();
     }
 
     // ============ Daily Challenges Methods ============
