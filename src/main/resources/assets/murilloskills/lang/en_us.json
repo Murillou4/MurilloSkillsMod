@@ -573,7 +573,7 @@
   "murilloskills.passive.blacksmith.fire_mastery": "• Fire Mastery (Fire Resistance)",
   "murilloskills.passive.blacksmith.repair_aura": "• Repair Aura (Repairs Equipped Gear)",
   "murilloskills.passive.blacksmith.master_enchanter": "• Master Enchanter (table chance, anvil up to level 8)",
-  "murilloskills.passive.blacksmith.furnace_mastery": "• Furnace Mastery: %sx speed (nearby)",
+  "murilloskills.passive.blacksmith.furnace_mastery": "• Machine Mastery: %sx speed (nearby furnaces/machines)",
   "murilloskills.passive.builder.extra_reach": "• Extra Reach: +%s blocks",
   "murilloskills.passive.builder.extended_reach": "• Extended Reach (+1 block)",
   "murilloskills.passive.builder.efficient_crafting": "• Efficient Crafting (economy)",

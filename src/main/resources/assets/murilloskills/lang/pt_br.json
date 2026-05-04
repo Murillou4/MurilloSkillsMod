@@ -595,7 +595,7 @@
     "murilloskills.passive.blacksmith.fire_mastery": "• Domínio do Fogo (Resistência ao Fogo)",
     "murilloskills.passive.blacksmith.repair_aura": "• Aura de Reparo (Repara equipamentos equipados)",
     "murilloskills.passive.blacksmith.master_enchanter": "• Mestre Encantador (mesa com chance, bigorna até nível 8)",
-    "murilloskills.passive.blacksmith.furnace_mastery": "• Domínio da Fornalha: %sx velocidade (proximidade)",
+    "murilloskills.passive.blacksmith.furnace_mastery": "• Domínio das Máquinas: %sx velocidade (fornalhas/máquinas próximas)",
     "murilloskills.passive.builder.extra_reach": "• Alcance Extra: +%s blocos",
     "murilloskills.passive.builder.extended_reach": "• Extended Reach (+1 bloco)",
     "murilloskills.passive.builder.efficient_crafting": "• Efficient Crafting (economia)",

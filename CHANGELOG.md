@@ -4,6 +4,17 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.55] - 2026-05-04
+
+### Blacksmith - Velocidade em Maquinas Tech Reborn
+
+- **Maquinas RebornCore aceleradas**: o bonus de velocidade do Blacksmith agora tambem aplica em maquinas com `RecipeCrafter`, como Alloy Smelter e outras maquinas do Tech Reborn.
+- **Fornalhas Tech Reborn cobertas**: Electric Furnace, Iron Furnace e Iron Alloy Furnace recebem progresso extra pela aura de Blacksmith proxima.
+- **Curva compartilhada**: fornalhas vanilla e maquinas modded usam a mesma escala configurada de velocidade e o mesmo indicador de particulas.
+- **Fix carregamento**: mixins Tech Reborn/RebornCore agora usam `@Coerce` no parametro do block entity, evitando crash de mixin apply quando RebornCore esta presente.
+
+---
+
 ## [1.2.54] - 2026-05-04
 
 ### Prestígio - Cooldown Menor
