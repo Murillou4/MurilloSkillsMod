@@ -95,6 +95,8 @@ public final class SkillUiData {
                                                 "murilloskills.perk.desc.miner.durability"),
                                 new PerkInfo(60, "murilloskills.perk.name.miner.ore_radar",
                                                 "murilloskills.perk.desc.miner.ore_radar"),
+                                new PerkInfo(75, "murilloskills.perk.name.miner.resource_fortune",
+                                                "murilloskills.perk.desc.miner.resource_fortune"),
                                 new PerkInfo(100, "murilloskills.perk.name.miner.master",
                                                 "murilloskills.perk.desc.miner.master")));
 
@@ -480,6 +482,9 @@ public final class SkillUiData {
                 if (level >= SkillConfig.getMinerRadarLevel()) {
                         segments.add("Radar de minérios");
                 }
+                if (level >= SkillConfig.getMinerResourceFortuneLevel()) {
+                        segments.add("fortuna em blocos como Glowstone");
+                }
                 if (level >= SkillConfig.getMinerMasterLevel()) {
                         segments.add("Master Miner liberado");
                 }
@@ -584,6 +589,8 @@ public final class SkillUiData {
                                                 .formatted(Formatting.AQUA));
                                 lines.add(Text.translatable("murilloskills.passive.miner.ore_radar")
                                                 .formatted(Formatting.AQUA));
+                                lines.add(Text.translatable("murilloskills.passive.miner.resource_fortune")
+                                                .formatted(Formatting.GOLD));
                         }
                         case WARRIOR -> {
                                 double damage = level * com.murilloskills.utils.SkillConfig.getWarriorDamagePerLevel()
@@ -917,6 +924,5 @@ public final class SkillUiData {
                 return String.format(Locale.ROOT, "%.1f", value);
         }
 }
-
 
 

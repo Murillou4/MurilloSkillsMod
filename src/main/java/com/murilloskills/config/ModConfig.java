@@ -85,6 +85,7 @@ public class ModConfig {
         public int nightVisionLevel = 10;
         public int durabilityLevel = 30;
         public int radarLevel = 60;
+        public int resourceFortuneLevel = 75;
         public int masterLevel = 100;
         public float durabilityChance = 0.15f;
         public int abilityCooldownSeconds = 1200;

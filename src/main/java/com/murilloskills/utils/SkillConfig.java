@@ -56,6 +56,10 @@ public class SkillConfig {
         return ModConfig.get().miner.radarLevel;
     }
 
+    public static int getMinerResourceFortuneLevel() {
+        return ModConfig.get().miner.resourceFortuneLevel;
+    }
+
     public static int getMinerMasterLevel() {
         return ModConfig.get().miner.masterLevel;
     }
@@ -269,6 +273,7 @@ public class SkillConfig {
     public static final int MINER_AUTO_TORCH_LIGHT_THRESHOLD = 3; // place torch when block light <= this
     public static final int MINER_DURABILITY_LEVEL = 30;
     public static final int MINER_RADAR_LEVEL = 60;
+    public static final int MINER_RESOURCE_FORTUNE_LEVEL = 75;
     public static final int MINER_MASTER_LEVEL = 100;
     public static final int MELTING_TOUCH_LEVEL = 99;
     public static final float MINER_DURABILITY_CHANCE = 0.15f;

@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.50] - 2026-05-04
+
+### Miner - Fortuna em Blocos Ricos
+
+- **Nova passiva no nível 75**: a Fortuna do Minerador agora também afeta blocos que usam a mecânica vanilla de Fortune, como `minecraft:glowstone`.
+- **Cobertura completa das loot tables**: o bônus entra tanto em drops por contagem (`apply_bonus`) quanto em chances por tabela (`table_bonus`), preservando minérios e blocos modded compatíveis.
+- **Prestígio preservado**: quem já prestigiou mantém o desbloqueio da fortuna em blocos ricos após resetar o nível.
+
+---
+
 ## [1.2.49] - 2026-05-04
 
 ### Ultmine - Semantica Real no Clique Direito

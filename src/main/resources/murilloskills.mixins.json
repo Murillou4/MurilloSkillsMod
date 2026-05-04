@@ -6,6 +6,7 @@
     "MurilloSkillsMixin",
     "EnchantmentHelperMixin",
     "ApplyBonusLootFunctionMixin",
+    "TableBonusLootConditionMixin",
     "BlockAfterBreakMixin",
     "LivingEntityMixin",
     "ArrowEntityMixin",
