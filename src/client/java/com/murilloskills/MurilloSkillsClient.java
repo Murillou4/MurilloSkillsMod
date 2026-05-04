@@ -12,6 +12,7 @@ import com.murilloskills.network.UltPlaceUndoC2SPayload;
 import com.murilloskills.network.UltminePreviewS2CPayload;
 import com.murilloskills.network.UltmineRequestC2SPayload;
 import com.murilloskills.network.UltmineResultS2CPayload;
+import com.murilloskills.network.UltmineUseC2SPayload;
 import com.murilloskills.network.UltmineClassicBlockListSyncC2SPayload;
 import com.murilloskills.network.UltmineShapeSelectC2SPayload;
 import com.murilloskills.network.StepAssistToggleC2SPayload;
@@ -54,13 +55,16 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.BoneMealItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -381,6 +385,27 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 KEYBIND_CATEGORY));
 
         // --- EVENTS ---
+
+        UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+            if (!world.isClient() || !SkillConfig.isUltmineEnabled()) {
+                return ActionResult.PASS;
+            }
+
+            MinecraftClient client = MinecraftClient.getInstance();
+            if (client.player == null || client.player != player
+                    || !isKeyBindingPhysicallyPressed(client, veinMinerToggleKey)) {
+                return ActionResult.PASS;
+            }
+
+            ItemStack stack = player.getStackInHand(hand);
+            if (!(stack.getItem() instanceof BoneMealItem) && !(stack.getItem() instanceof BlockItem)) {
+                return ActionResult.PASS;
+            }
+
+            ClientPlayNetworking.send(new UltmineUseC2SPayload(hitResult.getBlockPos(), hitResult.getSide(), hand,
+                    hitResult.getPos()));
+            return ActionResult.SUCCESS;
+        });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             // Update Rain Dance visual effect

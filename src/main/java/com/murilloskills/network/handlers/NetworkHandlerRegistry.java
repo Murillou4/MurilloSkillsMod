@@ -61,6 +61,7 @@ public final class NetworkHandlerRegistry {
             registerHandler("UltmineShapeSelect", UltmineShapeSelectC2SPayload.ID,
                     UltmineShapeSelectNetworkHandler.create());
             registerHandler("UltminePreviewRequest", UltmineRequestC2SPayload.ID, UltmineRequestNetworkHandler.create());
+            registerHandler("UltmineUse", UltmineUseC2SPayload.ID, UltmineUseNetworkHandler.create());
             registerHandler("UltPlaceConfig", UltPlaceConfigC2SPayload.ID, UltPlaceConfigNetworkHandler.create());
             registerHandler("UltPlacePreviewRequest", UltPlacePreviewRequestC2SPayload.ID,
                     UltPlacePreviewNetworkHandler.create());
@@ -74,7 +75,7 @@ public final class NetworkHandlerRegistry {
             registerHandler("UltmineClassicBlockListSync", UltmineClassicBlockListSyncC2SPayload.ID,
                     UltmineClassicBlockListSyncNetworkHandler.create());
 
-            LOGGER.info("Successfully registered 25 network handlers");
+            LOGGER.info("Successfully registered 26 network handlers");
 
         } catch (Exception e) {
             LOGGER.error("CRITICAL: Failed to register network handlers!", e);

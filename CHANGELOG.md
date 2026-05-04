@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.48] - 2026-05-04
+
+### Ultmine - Clique Direito Confiável
+
+- **Pacote próprio para uso em área**: clique direito com a tecla do Ultmine/Vein Miner pressionada agora envia uma ação dedicada ao servidor, evitando depender do timing do uso vanilla.
+- **Saplings e blocos em shape**: blocos colocáveis, incluindo mudas, são aplicados diretamente no shape selecionado do Ultmine.
+- **Bone meal em plantas e chão**: bone meal agora tenta fertilizar plantas e também usa o fallback vanilla de chão/grama em cada posição válida do shape.
+
+---
+
 ## [1.2.47] - 2026-05-04
 
 ### Ultmine - Ações com Clique Direito

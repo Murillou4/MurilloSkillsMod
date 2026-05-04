@@ -43,27 +43,58 @@ public final class UltmineUseHandler {
                 || !(context.getPlayer() instanceof ServerPlayerEntity serverPlayer)) {
             return false;
         }
-        if (!shouldHandleUltmineUse(serverPlayer)) {
+        if (!shouldHandleActiveUltmineUse(serverPlayer)) {
             return false;
         }
+
+        return handleBoneMealUse(serverPlayer, serverWorld, context.getStack(), context.getBlockPos(),
+                context.getSide());
+    }
+
+    public static boolean handleUseRequest(ServerPlayerEntity player, BlockPos targetPos, Direction face, Hand hand,
+            Vec3d hitPos) {
+        if (player == null || targetPos == null || face == null || hand == null
+                || !(player.getEntityWorld() instanceof ServerWorld world)) {
+            return false;
+        }
+        if (!canUseUltmine(player)) {
+            return false;
+        }
+        if (player.getEyePos().squaredDistanceTo(targetPos.toCenterPos()) > 81.0) {
+            return false;
+        }
+
+        ItemStack stack = player.getStackInHand(hand);
+        if (stack.getItem() instanceof BoneMealItem) {
+            return handleBoneMealUse(player, world, stack, targetPos, face);
+        }
+        if (stack.getItem() instanceof BlockItem blockItem) {
+            return handleBlockPlacementFromTarget(player, world, targetPos, face, hand, stack, hitPos, blockItem);
+        }
+
+        return false;
+    }
+
+    private static boolean handleBoneMealUse(ServerPlayerEntity serverPlayer, ServerWorld world, ItemStack stack,
+            BlockPos targetPos, Direction face) {
         if (!ACTIVE_PLAYERS.add(serverPlayer.getUuid())) {
             return false;
         }
 
         try {
-            ItemStack stack = context.getStack();
             int applications = 0;
             int maxApplications = SkillConfig.getUltmineMaxBlocksPerUse();
 
-            for (BlockPos targetPos : getTargets(serverPlayer, world, context.getBlockPos(), context.getSide())) {
+            for (BlockPos pos : getTargets(serverPlayer, world, targetPos, face)) {
                 if (applications >= maxApplications || stack.isEmpty()) {
                     break;
                 }
-                if (!canPlayerModify(serverWorld, serverPlayer, targetPos)) {
+                if (!canPlayerModify(world, serverPlayer, pos)) {
                     continue;
                 }
-                if (BoneMealItem.useOnFertilizable(stack, world, targetPos)) {
-                    world.syncWorldEvent(WorldEvents.BONE_MEAL_USED, targetPos, 15);
+                if (BoneMealItem.useOnFertilizable(stack, world, pos)
+                        || BoneMealItem.useOnGround(stack, world, pos, face)) {
+                    world.syncWorldEvent(WorldEvents.BONE_MEAL_USED, pos, 15);
                     applications++;
                 }
             }
@@ -79,7 +110,7 @@ public final class UltmineUseHandler {
         if (player == null || world == null || origin == null || face == null || sourceStack == null) {
             return false;
         }
-        if (isSyntheticPlacementActive(player) || !shouldHandleUltmineUse(player)) {
+        if (isSyntheticPlacementActive(player) || !shouldHandleActiveUltmineUse(player)) {
             return false;
         }
         if (!(sourceStack.getItem() instanceof BlockItem blockItem)) {
@@ -129,10 +160,54 @@ public final class UltmineUseHandler {
         }
     }
 
-    private static boolean shouldHandleUltmineUse(ServerPlayerEntity player) {
+    private static boolean handleBlockPlacementFromTarget(ServerPlayerEntity player, ServerWorld world,
+            BlockPos targetPos, Direction face, Hand hand, ItemStack sourceStack, Vec3d hitPos, BlockItem blockItem) {
+        if (!ACTIVE_PLAYERS.add(player.getUuid())) {
+            return false;
+        }
+
+        try {
+            int placed = 0;
+            int maxPlacements = SkillConfig.getUltmineMaxBlocksPerUse();
+
+            SYNTHETIC_PLACEMENTS.add(player.getUuid());
+            try {
+                for (BlockPos pos : getTargets(player, world, targetPos, face)) {
+                    if (placed >= maxPlacements) {
+                        break;
+                    }
+                    if (!canPlayerModify(world, player, pos)) {
+                        continue;
+                    }
+
+                    ItemStack liveStack = InventoryBlockFinder.findMatchingBlock(player, sourceStack, hand);
+                    if (liveStack == null || liveStack.isEmpty()) {
+                        break;
+                    }
+
+                    ActionResult result = blockItem.place(createPlacementContext(player, hand, liveStack, pos,
+                            face, hitPos));
+                    if (result != null && result.isAccepted()) {
+                        placed++;
+                    }
+                }
+            } finally {
+                SYNTHETIC_PLACEMENTS.remove(player.getUuid());
+            }
+            return placed > 0;
+        } finally {
+            ACTIVE_PLAYERS.remove(player.getUuid());
+        }
+    }
+
+    private static boolean shouldHandleActiveUltmineUse(ServerPlayerEntity player) {
         return player != null
                 && VeinMinerHandler.isVeinMinerActive(player)
-                && VeinMinerHandler.shouldUseUltmine(player);
+                && canUseUltmine(player);
+    }
+
+    private static boolean canUseUltmine(ServerPlayerEntity player) {
+        return VeinMinerHandler.shouldUseUltmine(player);
     }
 
     private static Set<BlockPos> getTargets(ServerPlayerEntity player, World world, BlockPos origin, Direction face) {
