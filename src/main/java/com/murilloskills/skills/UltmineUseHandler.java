@@ -2,6 +2,8 @@ package com.murilloskills.skills;
 
 import com.murilloskills.utils.InventoryBlockFinder;
 import com.murilloskills.utils.SkillConfig;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.BoneMealItem;
 import net.minecraft.item.ItemPlacementContext;
@@ -18,6 +20,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldEvents;
 
+import java.util.ArrayDeque;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -47,12 +50,16 @@ public final class UltmineUseHandler {
             return false;
         }
 
-        return handleBoneMealUse(serverPlayer, serverWorld, context.getStack(), context.getBlockPos(),
-                context.getSide());
+        return handleBoneMealUse(serverPlayer, serverWorld, context.getStack(), context.getBlockPos());
     }
 
     public static boolean handleUseRequest(ServerPlayerEntity player, BlockPos targetPos, Direction face, Hand hand,
             Vec3d hitPos) {
+        return handleUseRequest(player, targetPos, face, hand, hitPos, null, 0, 0, 0);
+    }
+
+    public static boolean handleUseRequest(ServerPlayerEntity player, BlockPos targetPos, Direction face, Hand hand,
+            Vec3d hitPos, UltmineShape requestedShape, int requestedDepth, int requestedLength, int requestedVariant) {
         if (player == null || targetPos == null || face == null || hand == null
                 || !(player.getEntityWorld() instanceof ServerWorld world)) {
             return false;
@@ -63,10 +70,11 @@ public final class UltmineUseHandler {
         if (player.getEyePos().squaredDistanceTo(targetPos.toCenterPos()) > 81.0) {
             return false;
         }
+        applyRequestedSelection(player, requestedShape, requestedDepth, requestedLength, requestedVariant);
 
         ItemStack stack = player.getStackInHand(hand);
         if (stack.getItem() instanceof BoneMealItem) {
-            return handleBoneMealUse(player, world, stack, targetPos, face);
+            return handleBoneMealUse(player, world, stack, targetPos);
         }
         if (stack.getItem() instanceof BlockItem blockItem) {
             return handleBlockPlacementFromTarget(player, world, targetPos, face, hand, stack, hitPos, blockItem);
@@ -75,25 +83,32 @@ public final class UltmineUseHandler {
         return false;
     }
 
+    private static void applyRequestedSelection(ServerPlayerEntity player, UltmineShape requestedShape,
+            int requestedDepth, int requestedLength, int requestedVariant) {
+        if (requestedShape != null) {
+            VeinMinerHandler.setUltmineSelection(player, requestedShape, requestedDepth, requestedLength,
+                    requestedVariant);
+        }
+    }
+
     private static boolean handleBoneMealUse(ServerPlayerEntity serverPlayer, ServerWorld world, ItemStack stack,
-            BlockPos targetPos, Direction face) {
+            BlockPos targetPos) {
         if (!ACTIVE_PLAYERS.add(serverPlayer.getUuid())) {
             return false;
         }
 
         try {
             int applications = 0;
-            int maxApplications = SkillConfig.getUltmineMaxBlocksPerUse();
 
-            for (BlockPos pos : getTargets(serverPlayer, world, targetPos, face)) {
-                if (applications >= maxApplications || stack.isEmpty()) {
+            for (BlockPos pos : getBoneMealTargets(serverPlayer, world, targetPos)) {
+                if (stack.isEmpty()) {
                     break;
                 }
                 if (!canPlayerModify(world, serverPlayer, pos)) {
                     continue;
                 }
                 if (BoneMealItem.useOnFertilizable(stack, world, pos)
-                        || BoneMealItem.useOnGround(stack, world, pos, face)) {
+                        || BoneMealItem.useOnGround(stack, world, pos, Direction.UP)) {
                     world.syncWorldEvent(WorldEvents.BONE_MEAL_USED, pos, 15);
                     applications++;
                 }
@@ -122,19 +137,16 @@ public final class UltmineUseHandler {
 
         try {
             int placed = 0;
-            int maxExtraPlacements = Math.max(0, SkillConfig.getUltmineMaxBlocksPerUse() - 1);
-            if (maxExtraPlacements <= 0) {
+            Set<BlockPos> targets = getPlacementTargets(player, world, origin, face);
+            if (targets.size() <= 1) {
                 return false;
             }
 
             SYNTHETIC_PLACEMENTS.add(player.getUuid());
             try {
-                for (BlockPos targetPos : getTargets(player, world, origin, face)) {
+                for (BlockPos targetPos : targets) {
                     if (targetPos.equals(origin)) {
                         continue;
-                    }
-                    if (placed >= maxExtraPlacements) {
-                        break;
                     }
                     if (!canPlayerModify(world, player, targetPos)) {
                         continue;
@@ -168,14 +180,10 @@ public final class UltmineUseHandler {
 
         try {
             int placed = 0;
-            int maxPlacements = SkillConfig.getUltmineMaxBlocksPerUse();
 
             SYNTHETIC_PLACEMENTS.add(player.getUuid());
             try {
-                for (BlockPos pos : getTargets(player, world, targetPos, face)) {
-                    if (placed >= maxPlacements) {
-                        break;
-                    }
+                for (BlockPos pos : getPlacementTargets(player, world, targetPos, face)) {
                     if (!canPlayerModify(world, player, pos)) {
                         continue;
                     }
@@ -222,6 +230,90 @@ public final class UltmineUseHandler {
         for (BlockPos pos : VeinMinerHandler.getShapeBlocks(player, origin, shape, depth, length, face)) {
             if (pos != null && world.isInBuildLimit(pos)) {
                 targets.add(pos.toImmutable());
+            }
+        }
+        return targets;
+    }
+
+    private static Set<BlockPos> getBoneMealTargets(ServerPlayerEntity player, World world, BlockPos origin) {
+        UltmineShape shape = VeinMinerHandler.getUltmineShape(player);
+        if (shape == UltmineShape.LEGACY) {
+            return getLegacyConnectedTargets(world, origin, SkillConfig.getUltmineMaxBlocksPerUse());
+        }
+
+        return getTargets(player, world, origin, resolveBoneMealLayoutFace(player, shape));
+    }
+
+    private static Set<BlockPos> getPlacementTargets(ServerPlayerEntity player, World world, BlockPos origin,
+            Direction clickedFace) {
+        UltmineShape shape = VeinMinerHandler.getUltmineShape(player);
+        if (shape == UltmineShape.LEGACY) {
+            return getLegacyConnectedTargets(world, origin, SkillConfig.getUltmineMaxBlocksPerUse());
+        }
+
+        return getTargets(player, world, origin, resolvePlacementLayoutFace(player, shape, clickedFace));
+    }
+
+    private static Direction resolveBoneMealLayoutFace(ServerPlayerEntity player, UltmineShape shape) {
+        return switch (shape) {
+            case LINE, STAIRS -> player.getHorizontalFacing();
+            case SQUARE_20x20_D1 -> VeinMinerHandler.getUltmineVariant(player) == 0
+                    ? Direction.UP
+                    : player.getHorizontalFacing();
+            default -> Direction.UP;
+        };
+    }
+
+    private static Direction resolvePlacementLayoutFace(ServerPlayerEntity player, UltmineShape shape,
+            Direction clickedFace) {
+        Direction safeFace = clickedFace == null ? Direction.UP : clickedFace;
+        return switch (shape) {
+            case LINE, STAIRS -> safeFace.getAxis() == Direction.Axis.Y ? player.getHorizontalFacing() : safeFace;
+            case SQUARE_20x20_D1 -> {
+                int variant = VeinMinerHandler.getUltmineVariant(player);
+                if (variant == 0) {
+                    yield Direction.UP;
+                }
+                yield safeFace.getAxis() == Direction.Axis.Y ? player.getHorizontalFacing() : safeFace;
+            }
+            default -> safeFace;
+        };
+    }
+
+    private static Set<BlockPos> getLegacyConnectedTargets(World world, BlockPos origin, int maxTargets) {
+        LinkedHashSet<BlockPos> targets = new LinkedHashSet<>();
+        if (origin == null || !world.isInBuildLimit(origin) || maxTargets <= 0) {
+            return targets;
+        }
+
+        BlockState originState = world.getBlockState(origin);
+        Block originBlock = originState.getBlock();
+        ArrayDeque<BlockPos> queue = new ArrayDeque<>();
+        LinkedHashSet<BlockPos> visited = new LinkedHashSet<>();
+        BlockPos start = origin.toImmutable();
+        queue.add(start);
+        visited.add(start);
+
+        int max = Math.max(1, maxTargets);
+        while (!queue.isEmpty() && targets.size() < max) {
+            BlockPos current = queue.poll();
+            targets.add(current.toImmutable());
+
+            for (int dx = -1; dx <= 1 && targets.size() < max; dx++) {
+                for (int dz = -1; dz <= 1 && targets.size() < max; dz++) {
+                    if (dx == 0 && dz == 0) {
+                        continue;
+                    }
+                    BlockPos next = current.add(dx, 0, dz).toImmutable();
+                    if (visited.contains(next) || !world.isInBuildLimit(next)) {
+                        continue;
+                    }
+                    if (world.getBlockState(next).getBlock() != originBlock) {
+                        continue;
+                    }
+                    visited.add(next);
+                    queue.add(next);
+                }
             }
         }
         return targets;

@@ -1,6 +1,7 @@
 package com.murilloskills.network;
 
 import com.murilloskills.MurilloSkills;
+import com.murilloskills.skills.UltmineShape;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
@@ -14,7 +15,8 @@ import net.minecraft.util.math.Vec3d;
  * Client -> Server: executes a right-click action using the selected Ultmine
  * shape.
  */
-public record UltmineUseC2SPayload(BlockPos targetPos, Direction face, Hand hand, Vec3d hitPos)
+public record UltmineUseC2SPayload(BlockPos targetPos, Direction face, Hand hand, Vec3d hitPos,
+        UltmineShape shape, int depth, int length, int variant)
         implements CustomPayload {
     public static final Id<UltmineUseC2SPayload> ID = new Id<>(
             Identifier.of(MurilloSkills.MOD_ID, "ultmine_use"));
@@ -27,12 +29,20 @@ public record UltmineUseC2SPayload(BlockPos targetPos, Direction face, Hand hand
                 buf.writeDouble(payload.hitPos.x);
                 buf.writeDouble(payload.hitPos.y);
                 buf.writeDouble(payload.hitPos.z);
+                buf.writeEnumConstant(payload.shape);
+                buf.writeVarInt(payload.depth);
+                buf.writeVarInt(payload.length);
+                buf.writeVarInt(payload.variant);
             },
             (buf) -> new UltmineUseC2SPayload(
                     buf.readBlockPos(),
                     buf.readEnumConstant(Direction.class),
                     buf.readEnumConstant(Hand.class),
-                    new Vec3d(buf.readDouble(), buf.readDouble(), buf.readDouble())));
+                    new Vec3d(buf.readDouble(), buf.readDouble(), buf.readDouble()),
+                    buf.readEnumConstant(UltmineShape.class),
+                    buf.readVarInt(),
+                    buf.readVarInt(),
+                    buf.readVarInt()));
 
     @Override
     public Id<? extends CustomPayload> getId() {

@@ -19,7 +19,8 @@ public final class UltmineUseNetworkHandler {
         return (payload, context) -> context.server().execute(() -> {
             try {
                 UltmineUseHandler.handleUseRequest(context.player(), payload.targetPos(), payload.face(),
-                        payload.hand(), payload.hitPos());
+                        payload.hand(), payload.hitPos(), payload.shape(), payload.depth(), payload.length(),
+                        payload.variant());
             } catch (Exception e) {
                 LOGGER.error("Failed to process ultmine right-click use", e);
             }

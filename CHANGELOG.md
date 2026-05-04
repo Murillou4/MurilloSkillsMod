@@ -4,6 +4,18 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.49] - 2026-05-04
+
+### Ultmine - Semantica Real no Clique Direito
+
+- **Shape enviado no uso**: o clique direito agora manda shape, depth, length e variant junto com a acao, evitando cair no default `3x3` quando o servidor estiver com selecao antiga.
+- **Classic conectado de verdade**: bone meal e colocacao em Classic usam blocos conectados do mesmo tipo no mesmo nivel, em vez de um quadrado fixo.
+- **Colocacao segue o shape selecionado**: saplings e outros blocos usam a geometria ativa do Ultmine; Line/Stairs no chao seguem a direcao horizontal do jogador.
+- **Line sem corte em 3 blocos**: shapes explicitos nao sao mais limitados pelo cap global de Classic, entao Line coloca o length selecionado inteiro.
+- **Bone meal preservado**: plantas continuam recebendo bone meal em area, com fallback de uso no chao em cada alvo valido.
+
+---
+
 ## [1.2.48] - 2026-05-04
 
 ### Ultmine - Clique Direito Confiável

@@ -403,7 +403,8 @@ public class MurilloSkillsClient implements ClientModInitializer {
             }
 
             ClientPlayNetworking.send(new UltmineUseC2SPayload(hitResult.getBlockPos(), hitResult.getSide(), hand,
-                    hitResult.getPos()));
+                    hitResult.getPos(), UltmineClientState.getSelectedShape(), UltmineClientState.getDepth(),
+                    UltmineClientState.getLength(), UltmineClientState.getVariant()));
             return ActionResult.SUCCESS;
         });
 
