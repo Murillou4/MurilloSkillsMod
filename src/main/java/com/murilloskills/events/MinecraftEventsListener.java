@@ -5,6 +5,7 @@ import com.murilloskills.api.SkillRegistry;
 
 import com.murilloskills.skills.BlockBreakHandler;
 import com.murilloskills.skills.CropHarvestHandler;
+import com.murilloskills.skills.MinerBonusDropHandler;
 import com.murilloskills.skills.MobKillHandler;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.skills.VeinMinerHandler;
@@ -39,6 +40,8 @@ public class MinecraftEventsListener {
             }
             // Handler do Minerador
             BlockBreakHandler.handle(player, world, pos, state);
+            // Drops bônus do Minerador (glowstone / folhas com machado) — contorna caps vanilla
+            MinerBonusDropHandler.onBlockBreak(player, world, pos, state);
             // Handler do Agricultor (Farmer)
             CropHarvestHandler.handle(player, world, pos, state);
         });

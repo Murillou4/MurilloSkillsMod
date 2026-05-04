@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.52] - 2026-05-04
+
+### Miner - Drops Reais em Glowstone e Folhas
+
+- **Glowstone passa de 4**: o cap vanilla `limit_count(max=4)` impedia que a Fortuna do Minerador (e do encantamento) gerasse mais pó. Agora drops extras são adicionados diretamente após a quebra, escalando com `Fortuna do Minerador + Fortuna do encantamento`.
+- **Folhas dropam mais saplings/galhos**: a `chances[]` array vanilla cap em fortune 3 anulava níveis maiores. Agora cada nível de Fortuna do Minerador (incluindo prestígio) faz uma rolagem extra para sapling (5%), galho (2%) e maçã (0.5% para oak/dark oak).
+- **Mapeamento por tipo de folha**: oak, birch, spruce, jungle, acacia, dark oak, cherry e mangrove dropam o sapling/propagule correspondente.
+
+---
+
 ## [1.2.51] - 2026-05-04
 
 ### Miner - Fortuna em Glowstone e Folhas
