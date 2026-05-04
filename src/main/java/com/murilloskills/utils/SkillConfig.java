@@ -270,6 +270,7 @@ public class SkillConfig {
     public static final int MINER_DURABILITY_LEVEL = 30;
     public static final int MINER_RADAR_LEVEL = 60;
     public static final int MINER_MASTER_LEVEL = 100;
+    public static final int MELTING_TOUCH_LEVEL = 99;
     public static final float MINER_DURABILITY_CHANCE = 0.15f;
     public static final int MINER_ABILITY_COOLDOWN_SECONDS = 1200;
     public static final int MINER_ABILITY_RADIUS = 30;

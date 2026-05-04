@@ -317,7 +317,7 @@ public record ColorPalette(
             case ANCIENT_DEBRIS -> oreAncientDebris;
             case NETHER_QUARTZ -> oreNetherQuartz;
             case NETHER_GOLD -> oreNetherGold;
-            case OTHER -> textMuted;
+            case MODDED -> textMuted;
         };
     }
 

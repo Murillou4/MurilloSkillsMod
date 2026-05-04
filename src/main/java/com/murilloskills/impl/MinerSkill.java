@@ -11,6 +11,8 @@ import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.block.Block;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
@@ -238,10 +240,9 @@ public class MinerSkill extends AbstractSkill {
             for (int dy = -radius; dy <= radius; dy++) {
                 for (int dz = -radius; dz <= radius; dz++) {
                     BlockPos pos = center.add(dx, dy, dz);
-                    net.minecraft.block.Block block = player.getEntityWorld().getBlockState(pos).getBlock();
+                    Block block = player.getEntityWorld().getBlockState(pos).getBlock();
                     if (MinerXpGetter.isDetectableOreBlock(block)) {
-                        MinerScanResultPayload.OreType oreType = getOreType(block);
-                        ores.add(new MinerScanResultPayload.OreEntry(pos.toImmutable(), oreType));
+                        ores.add(createOreEntry(pos.toImmutable(), block));
                     }
                 }
             }
@@ -252,7 +253,7 @@ public class MinerSkill extends AbstractSkill {
     }
 
     // Map instead of long if-else chain for O(1) lookup and cleaner code
-    private static final java.util.Map<net.minecraft.block.Block, MinerScanResultPayload.OreType> ORE_MAP = new java.util.HashMap<>();
+    private static final java.util.Map<Block, MinerScanResultPayload.OreType> ORE_MAP = new java.util.HashMap<>();
 
     static {
         ORE_MAP.put(net.minecraft.block.Blocks.COAL_ORE, MinerScanResultPayload.OreType.COAL);
@@ -276,11 +277,51 @@ public class MinerSkill extends AbstractSkill {
         ORE_MAP.put(net.minecraft.block.Blocks.NETHER_GOLD_ORE, MinerScanResultPayload.OreType.NETHER_GOLD);
     }
 
-    /**
-     * Determines the ore type from a block for color-coded highlighting
-     */
-    private MinerScanResultPayload.OreType getOreType(net.minecraft.block.Block block) {
-        return ORE_MAP.getOrDefault(block, MinerScanResultPayload.OreType.OTHER);
+    private MinerScanResultPayload.OreEntry createOreEntry(BlockPos pos, Block block) {
+        MinerScanResultPayload.OreType vanillaType = ORE_MAP.get(block);
+        if (vanillaType != null) {
+            return new MinerScanResultPayload.OreEntry(
+                    pos,
+                    vanillaType,
+                    vanillaType.name(),
+                    getVanillaOreDisplayName(vanillaType),
+                    vanillaType.color);
+        }
+
+        String blockId = Registries.BLOCK.getId(block).toString();
+        return new MinerScanResultPayload.OreEntry(
+                pos,
+                MinerScanResultPayload.OreType.MODDED,
+                blockId,
+                MinerXpGetter.humanizeModdedOreName(blockId),
+                getModdedOreColor(blockId));
+    }
+
+    private static String getVanillaOreDisplayName(MinerScanResultPayload.OreType type) {
+        return switch (type) {
+            case COAL -> "Coal";
+            case COPPER -> "Copper";
+            case IRON -> "Iron";
+            case GOLD -> "Gold";
+            case LAPIS -> "Lapis Lazuli";
+            case REDSTONE -> "Redstone";
+            case DIAMOND -> "Diamond";
+            case EMERALD -> "Emerald";
+            case NETHER_QUARTZ -> "Quartz";
+            case NETHER_GOLD -> "Nether Gold";
+            case ANCIENT_DEBRIS -> "Ancient Debris";
+            case MODDED -> "Modded Ore";
+        };
+    }
+
+    private static int getModdedOreColor(String blockId) {
+        int[] colors = {
+                0xFF00D1FF, 0xFFFF6B6B, 0xFFFFD166, 0xFF8BFF7A,
+                0xFFB088FF, 0xFFFF8AD8, 0xFF78E08F, 0xFFFF9F43,
+                0xFF70A1FF, 0xFF7BED9F, 0xFFECCC68, 0xFFEA8685
+        };
+        int index = Math.floorMod(blockId == null ? 0 : blockId.hashCode(), colors.length);
+        return colors[index];
     }
 
     // =====================================================

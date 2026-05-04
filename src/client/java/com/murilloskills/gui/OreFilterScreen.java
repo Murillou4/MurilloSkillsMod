@@ -2,15 +2,19 @@ package com.murilloskills.gui;
 
 import com.murilloskills.client.config.OreFilterConfig;
 import com.murilloskills.gui.renderer.RenderingHelper;
-import com.murilloskills.network.MinerScanResultPayload.OreType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Formatting;
+
+import java.util.List;
 
 /**
  * Premium ore filter configuration screen with adaptive layout.
@@ -32,6 +36,10 @@ public class OreFilterScreen extends Screen {
     private int cardW, cardH;
     private int cardGap;
     private int oreGridY;
+    private int oreViewportH;
+    private int visibleRows;
+    private int scrollRow;
+    private int maxScrollRow;
     private int maxOresSectionY;
     private int bottomY;
 
@@ -67,19 +75,22 @@ public class OreFilterScreen extends Screen {
         this.addDrawableChild(resetBtn);
 
         // === ORE TOGGLE BUTTONS ===
-        OreType[] ores = getFilterableOres();
+        List<OreFilterConfig.OreFilterOption> ores = getFilterableOres();
         int gridW = cols * cardW + (cols - 1) * cardGap;
         int startX = centerX - gridW / 2;
+        int firstIndex = scrollRow * cols;
+        int lastIndex = Math.min(ores.size(), firstIndex + visibleRows * cols);
 
-        for (int i = 0; i < ores.length; i++) {
-            final OreType ore = ores[i];
-            int col = i % cols;
-            int row = i / cols;
+        for (int i = firstIndex; i < lastIndex; i++) {
+            final OreFilterConfig.OreFilterOption ore = ores.get(i);
+            int visibleIndex = i - firstIndex;
+            int col = visibleIndex % cols;
+            int row = visibleIndex / cols;
             int x = startX + col * (cardW + cardGap);
             int y = oreGridY + row * (cardH + cardGap);
 
             ButtonWidget btn = ButtonWidget.builder(Text.empty(), (b) -> {
-                OreFilterConfig.toggleOre(ore);
+                OreFilterConfig.toggleOre(ore.key());
             }).dimensions(x, y, cardW, cardH).build();
             this.addDrawableChild(btn);
         }
@@ -126,11 +137,17 @@ public class OreFilterScreen extends Screen {
         // Vertical layout
         oreGridY = panelY + HEADER_HEIGHT + 8;
 
-        OreType[] ores = getFilterableOres();
-        int oreRows = (int) Math.ceil((double) ores.length / cols);
+        List<OreFilterConfig.OreFilterOption> ores = getFilterableOres();
+        int oreRows = (int) Math.ceil((double) ores.size() / cols);
         int oreGridH = oreRows * (cardH + cardGap) - cardGap;
 
-        maxOresSectionY = oreGridY + oreGridH + SECTION_GAP;
+        int naturalMaxOresSectionY = oreGridY + oreGridH + SECTION_GAP;
+        int maxPanelBottom = Math.min(this.height - 4, panelY + Math.max(238, this.height - 20));
+        maxOresSectionY = Math.min(naturalMaxOresSectionY, maxPanelBottom - 80);
+        oreViewportH = Math.max(cardH, maxOresSectionY - SECTION_GAP - oreGridY);
+        visibleRows = Math.max(1, (oreViewportH + cardGap) / (cardH + cardGap));
+        maxScrollRow = Math.max(0, oreRows - visibleRows);
+        scrollRow = Math.max(0, Math.min(scrollRow, maxScrollRow));
         bottomY = maxOresSectionY + 52;
 
         panelH = bottomY + 28 - panelY;
@@ -148,8 +165,8 @@ public class OreFilterScreen extends Screen {
     }
 
     private void resetDefaults() {
-        for (OreType ore : OreType.values()) {
-            OreFilterConfig.setOreEnabled(ore, true);
+        for (OreFilterConfig.OreFilterOption ore : OreFilterConfig.getFilterOptions()) {
+            OreFilterConfig.setOreEnabled(ore.key(), true);
         }
         OreFilterConfig.setMaxOres(500);
     }
@@ -178,6 +195,8 @@ public class OreFilterScreen extends Screen {
 
         // === ORE CONTENT (over buttons for layering) ===
         renderOreCardContent(context);
+
+        renderOreScrollBar(context);
 
     }
 
@@ -257,19 +276,22 @@ public class OreFilterScreen extends Screen {
     }
 
     private void renderOreCardContent(DrawContext context) {
-        OreType[] ores = getFilterableOres();
+        List<OreFilterConfig.OreFilterOption> ores = getFilterableOres();
         int gridW = cols * cardW + (cols - 1) * cardGap;
         int startX = this.width / 2 - gridW / 2;
+        int firstIndex = scrollRow * cols;
+        int lastIndex = Math.min(ores.size(), firstIndex + visibleRows * cols);
 
-        for (int i = 0; i < ores.length; i++) {
-            OreType ore = ores[i];
-            boolean enabled = OreFilterConfig.isOreEnabled(ore);
+        for (int i = firstIndex; i < lastIndex; i++) {
+            OreFilterConfig.OreFilterOption ore = ores.get(i);
+            boolean enabled = OreFilterConfig.isOreEnabled(ore.key());
 
-            int col = i % cols;
-            int row = i / cols;
+            int visibleIndex = i - firstIndex;
+            int col = visibleIndex % cols;
+            int row = visibleIndex / cols;
             int x = startX + col * (cardW + cardGap);
             int y = oreGridY + row * (cardH + cardGap);
-            int oreColor = palette.getOreColor(ore);
+            int oreColor = OreFilterConfig.getOreColor(ore.key(), ore.color());
 
             // Card background overlay (on top of button)
             int bgColor = enabled ? palette.sectionBgActive() : palette.sectionBg();
@@ -300,7 +322,9 @@ public class OreFilterScreen extends Screen {
 
             // Ore name
             int nameX = dotX + 10;
-            String name = Text.translatable("murilloskills.ore." + ore.name().toLowerCase()).getString();
+            String name = ore.vanilla()
+                    ? Text.translatable("murilloskills.ore." + ore.key().toLowerCase()).getString()
+                    : ore.displayName();
             int maxNameW = cardW - (nameX - x) - 4;
             if (textRenderer.getWidth(name) > maxNameW) {
                 while (textRenderer.getWidth(name + "..") > maxNameW && name.length() > 1) {
@@ -313,30 +337,66 @@ public class OreFilterScreen extends Screen {
         }
     }
 
-    private OreType[] getFilterableOres() {
-        return new OreType[]{
-                OreType.COAL, OreType.COPPER, OreType.IRON, OreType.GOLD,
-                OreType.LAPIS, OreType.REDSTONE, OreType.DIAMOND, OreType.EMERALD,
-                OreType.ANCIENT_DEBRIS, OreType.NETHER_QUARTZ, OreType.NETHER_GOLD,
-                OreType.OTHER
+    private void renderOreScrollBar(DrawContext context) {
+        if (maxScrollRow <= 0) {
+            return;
+        }
+
+        int barX = panelX + panelW - PANEL_PADDING + 2;
+        int barY = oreGridY;
+        int barH = oreViewportH;
+        int thumbH = Math.max(16, barH * visibleRows / (visibleRows + maxScrollRow));
+        int thumbY = barY + (barH - thumbH) * scrollRow / maxScrollRow;
+
+        context.fill(barX, barY, barX + 3, barY + barH, palette.scrollbarBg());
+        context.fill(barX, thumbY, barX + 3, thumbY + thumbH, palette.scrollbarFg());
+    }
+
+    private List<OreFilterConfig.OreFilterOption> getFilterableOres() {
+        return OreFilterConfig.getFilterOptions();
+    }
+
+    private ItemStack getIcon(OreFilterConfig.OreFilterOption ore) {
+        return switch (ore.key()) {
+            case "COAL" -> new ItemStack(Items.COAL);
+            case "COPPER" -> new ItemStack(Items.COPPER_INGOT);
+            case "IRON" -> new ItemStack(Items.IRON_INGOT);
+            case "GOLD" -> new ItemStack(Items.GOLD_INGOT);
+            case "LAPIS" -> new ItemStack(Items.LAPIS_LAZULI);
+            case "REDSTONE" -> new ItemStack(Items.REDSTONE);
+            case "DIAMOND" -> new ItemStack(Items.DIAMOND);
+            case "EMERALD" -> new ItemStack(Items.EMERALD);
+            case "ANCIENT_DEBRIS" -> new ItemStack(Items.NETHERITE_INGOT);
+            case "NETHER_QUARTZ" -> new ItemStack(Items.QUARTZ);
+            case "NETHER_GOLD" -> new ItemStack(Items.GOLD_NUGGET);
+            default -> getModdedOreIcon(ore.key());
         };
     }
 
-    private ItemStack getIcon(OreType ore) {
-        return switch (ore) {
-            case COAL -> new ItemStack(Items.COAL);
-            case COPPER -> new ItemStack(Items.COPPER_INGOT);
-            case IRON -> new ItemStack(Items.IRON_INGOT);
-            case GOLD -> new ItemStack(Items.GOLD_INGOT);
-            case LAPIS -> new ItemStack(Items.LAPIS_LAZULI);
-            case REDSTONE -> new ItemStack(Items.REDSTONE);
-            case DIAMOND -> new ItemStack(Items.DIAMOND);
-            case EMERALD -> new ItemStack(Items.EMERALD);
-            case ANCIENT_DEBRIS -> new ItemStack(Items.NETHERITE_INGOT);
-            case NETHER_QUARTZ -> new ItemStack(Items.QUARTZ);
-            case NETHER_GOLD -> new ItemStack(Items.GOLD_NUGGET);
-            case OTHER -> new ItemStack(Items.COBBLESTONE);
-        };
+    private ItemStack getModdedOreIcon(String key) {
+        try {
+            Identifier id = Identifier.of(key);
+            Item item = Registries.ITEM.get(id);
+            if (item != Items.AIR) {
+                return new ItemStack(item);
+            }
+        } catch (Exception ignored) {
+        }
+        return new ItemStack(Items.RAW_IRON);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (mouseY >= oreGridY && mouseY <= oreGridY + oreViewportH && maxScrollRow > 0) {
+            int direction = verticalAmount > 0 ? -1 : 1;
+            int nextRow = Math.max(0, Math.min(maxScrollRow, scrollRow + direction));
+            if (nextRow != scrollRow) {
+                scrollRow = nextRow;
+                refreshScreen();
+                return true;
+            }
+        }
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
     @Override

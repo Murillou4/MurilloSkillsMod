@@ -12,8 +12,7 @@ import java.util.List;
 
 /**
  * Server -> Client: Lista de blocos de minério para destacar com cores.
- * Cada entrada contém posição e tipo de minério para cor apropriada, junto da
- * duração restante do efeito em ticks.
+ * Cada entrada contém posição, chave de filtro, nome exibível e cor.
  */
 public record MinerScanResultPayload(List<OreEntry> ores, int remainingDurationTicks) implements CustomPayload {
     public static final CustomPayload.Id<MinerScanResultPayload> ID = new CustomPayload.Id<>(
@@ -34,21 +33,53 @@ public record MinerScanResultPayload(List<OreEntry> ores, int remainingDurationT
         NETHER_QUARTZ(0.9f, 0.9f, 0.9f), // White
         NETHER_GOLD(1.0f, 0.7f, 0.0f), // Orange-Gold
         ANCIENT_DEBRIS(0.6f, 0.3f, 0.1f), // Brown
-        OTHER(1.0f, 1.0f, 0.0f); // Default Yellow
+        MODDED(1.0f, 0.95f, 0.25f); // Dynamic modded ore, color comes from OreEntry
 
         public final float r, g, b;
+        public final int color;
 
         OreType(float r, float g, float b) {
             this.r = r;
             this.g = g;
             this.b = b;
+            this.color = 0xFF000000
+                    | (((int) (r * 255.0f) & 0xFF) << 16)
+                    | (((int) (g * 255.0f) & 0xFF) << 8)
+                    | ((int) (b * 255.0f) & 0xFF);
         }
     }
 
     /**
-     * Entrada de minério com posição e tipo
+     * Entrada de minério com posição e dados de filtro/render.
      */
-    public record OreEntry(BlockPos pos, OreType type) {
+    public record OreEntry(BlockPos pos, OreType type, String filterKey, String displayName, int color) {
+        public OreEntry(BlockPos pos, OreType type) {
+            this(pos, type, type.name(), "", type.color);
+        }
+
+        public String filterKey() {
+            return filterKey == null || filterKey.isBlank() ? type.name() : filterKey;
+        }
+
+        public String displayName() {
+            return displayName == null || displayName.isBlank() ? filterKey() : displayName;
+        }
+
+        public int color() {
+            return (color & 0xFF000000) == 0 ? (0xFF000000 | color) : color;
+        }
+
+        public float r() {
+            return ((color() >> 16) & 0xFF) / 255.0f;
+        }
+
+        public float g() {
+            return ((color() >> 8) & 0xFF) / 255.0f;
+        }
+
+        public float b() {
+            return (color() & 0xFF) / 255.0f;
+        }
     }
 
     public static final PacketCodec<RegistryByteBuf, MinerScanResultPayload> CODEC = PacketCodec.ofStatic(
@@ -57,6 +88,9 @@ public record MinerScanResultPayload(List<OreEntry> ores, int remainingDurationT
                 for (OreEntry entry : payload.ores) {
                     buf.writeBlockPos(entry.pos);
                     buf.writeEnumConstant(entry.type);
+                    buf.writeString(entry.filterKey());
+                    buf.writeString(entry.displayName());
+                    buf.writeInt(entry.color());
                 }
                 buf.writeVarInt(Math.max(0, payload.remainingDurationTicks));
             },
@@ -66,7 +100,10 @@ public record MinerScanResultPayload(List<OreEntry> ores, int remainingDurationT
                 for (int i = 0; i < size; i++) {
                     BlockPos pos = buf.readBlockPos();
                     OreType type = buf.readEnumConstant(OreType.class);
-                    list.add(new OreEntry(pos, type));
+                    String filterKey = buf.readString();
+                    String displayName = buf.readString();
+                    int color = buf.readInt();
+                    list.add(new OreEntry(pos, type, filterKey, displayName, color));
                 }
                 int remainingDurationTicks = buf.readVarInt();
                 return new MinerScanResultPayload(list, remainingDurationTicks);

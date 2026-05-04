@@ -26,6 +26,7 @@ public class ModNetwork {
         PayloadTypeRegistry.playS2C().register(UltPlacePreviewS2CPayload.ID, UltPlacePreviewS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(PathfinderSyncS2CPayload.ID, PathfinderSyncS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(AutoTorchSyncS2CPayload.ID, AutoTorchSyncS2CPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(MeltingTouchSyncS2CPayload.ID, MeltingTouchSyncS2CPayload.CODEC);
     }
 
     private static void registerC2SPayloads() {
@@ -49,6 +50,7 @@ public class ModNetwork {
         PayloadTypeRegistry.playC2S().register(XpDirectToggleC2SPayload.ID, XpDirectToggleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SpeedBoostToggleC2SPayload.ID, SpeedBoostToggleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(AutoTorchToggleC2SPayload.ID, AutoTorchToggleC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(MeltingTouchToggleC2SPayload.ID, MeltingTouchToggleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(MagnetConfigC2SPayload.ID, MagnetConfigC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(TrashListSyncC2SPayload.ID, TrashListSyncC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(UltmineClassicBlockListSyncC2SPayload.ID,

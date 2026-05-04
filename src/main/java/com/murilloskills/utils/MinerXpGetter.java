@@ -76,6 +76,46 @@ public class MinerXpGetter {
         return path.endsWith("_ore") || path.equals("ancient_debris");
     }
 
+    public static String humanizeModdedOreName(String blockId) {
+        if (blockId == null || blockId.isBlank()) {
+            return "Unknown Ore";
+        }
+
+        String namespace = "minecraft";
+        String path = blockId;
+        int namespaceSeparator = blockId.indexOf(':');
+        if (namespaceSeparator >= 0 && namespaceSeparator < blockId.length() - 1) {
+            namespace = blockId.substring(0, namespaceSeparator);
+            path = blockId.substring(namespaceSeparator + 1);
+        }
+
+        String cleanedPath = path
+                .replaceFirst("^deepslate_", "")
+                .replaceFirst("_ore$", "")
+                .replace('_', ' ');
+        String oreName = capitalizeWords(cleanedPath);
+        String modName = capitalizeWords(namespace.replace('_', ' '));
+        return oreName + " (" + modName + ")";
+    }
+
+    private static String capitalizeWords(String value) {
+        String[] words = value.trim().split("\\s+");
+        StringBuilder result = new StringBuilder();
+        for (String word : words) {
+            if (word.isBlank()) {
+                continue;
+            }
+            if (result.length() > 0) {
+                result.append(' ');
+            }
+            result.append(Character.toUpperCase(word.charAt(0)));
+            if (word.length() > 1) {
+                result.append(word.substring(1).toLowerCase(java.util.Locale.ROOT));
+            }
+        }
+        return result.length() == 0 ? value : result.toString();
+    }
+
     private static boolean isBasicMiningBlock(Block block) {
         return block == Blocks.STONE
                 || block == Blocks.DEEPSLATE

@@ -4,6 +4,7 @@ import com.murilloskills.network.AreaPlantingToggleC2SPayload;
 import com.murilloskills.network.AreaPlantingSyncS2CPayload;
 import com.murilloskills.network.HollowFillToggleC2SPayload;
 import com.murilloskills.network.MinerScanResultPayload;
+import com.murilloskills.network.MeltingTouchToggleC2SPayload;
 import com.murilloskills.network.NightVisionToggleC2SPayload;
 import com.murilloskills.network.UltPlacePreviewRequestC2SPayload;
 import com.murilloskills.network.UltPlacePreviewS2CPayload;
@@ -24,6 +25,7 @@ import com.murilloskills.network.VeinMinerToggleC2SPayload;
 import com.murilloskills.network.XpDirectToggleC2SPayload;
 import com.murilloskills.network.XpGainS2CPayload;
 import com.murilloskills.client.config.UltmineClientConfig;
+import com.murilloskills.client.config.OreFilterConfig;
 import com.murilloskills.data.ClientSkillData;
 import com.murilloskills.data.UltPlaceClientState;
 import com.murilloskills.data.UltmineClientState;
@@ -31,6 +33,7 @@ import com.murilloskills.gui.ParagonAbilityScreen;
 import com.murilloskills.gui.UltPlaceConfigScreen;
 import com.murilloskills.render.AreaPlantingHud;
 import com.murilloskills.render.AutoTorchHud;
+import com.murilloskills.render.MeltingTouchHud;
 import com.murilloskills.render.OreHighlighter;
 import com.murilloskills.render.PathfinderHud;
 import com.murilloskills.render.RainDanceEffect;
@@ -87,6 +90,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
     private static KeyBinding veinMinerToggleKey;
     private static KeyBinding veinMinerDropsToggleKey;
     private static KeyBinding autoTorchToggleKey;
+    private static KeyBinding meltingTouchToggleKey;
     private static KeyBinding ultmineRadialMenuKey;
     private static KeyBinding ultPlaceToggleKey;
     private static KeyBinding ultPlaceConfigKey;
@@ -146,6 +150,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
         // 2. Scan Result (Habilidade Miner)
         ClientPlayNetworking.registerGlobalReceiver(MinerScanResultPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
+                OreFilterConfig.rememberScannedOres(payload.ores());
                 OreHighlighter.setHighlights(payload.ores(), payload.remainingDurationTicks());
             });
         });
@@ -224,6 +229,13 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 com.murilloskills.network.AutoTorchSyncS2CPayload.ID, (payload, context) -> {
                     context.client().execute(() -> {
                         AutoTorchHud.setEnabled(payload.enabled());
+                    });
+                });
+
+        ClientPlayNetworking.registerGlobalReceiver(
+                com.murilloskills.network.MeltingTouchSyncS2CPayload.ID, (payload, context) -> {
+                    context.client().execute(() -> {
+                        MeltingTouchHud.setEnabled(payload.enabled());
                     });
                 });
 
@@ -353,6 +365,12 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_T,
                 KEYBIND_CATEGORY));
 
+        meltingTouchToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.murilloskills.melting_touch_toggle",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_M,
+                KEYBIND_CATEGORY));
+
         ultmineRadialMenuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.murilloskills.ultmine_menu",
                 InputUtil.Type.KEYSYM,
@@ -420,6 +438,9 @@ public class MurilloSkillsClient implements ClientModInitializer {
             while (autoTorchToggleKey.wasPressed()) {
                 // Envia pacote para toggle de auto-torch (Miner)
                 ClientPlayNetworking.send(new com.murilloskills.network.AutoTorchToggleC2SPayload());
+            }
+            while (meltingTouchToggleKey.wasPressed()) {
+                ClientPlayNetworking.send(new MeltingTouchToggleC2SPayload());
             }
             while (fillModeCycleKey.wasPressed()) {
                 // Envia pacote para ciclar entre modos de preenchimento (Builder)
@@ -536,6 +557,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
         HudRenderCallback.EVENT.register(AreaPlantingHud::render);
         HudRenderCallback.EVENT.register(PathfinderHud::render);
         HudRenderCallback.EVENT.register(AutoTorchHud::render);
+        HudRenderCallback.EVENT.register(MeltingTouchHud::render);
         HudRenderCallback.EVENT.register(UltPlaceHud::render);
         HudRenderCallback.EVENT.register(com.murilloskills.render.FarmerCropHud::render);
         HudRenderCallback.EVENT.register((context, tickDelta) -> XpToastRenderer.render(context));

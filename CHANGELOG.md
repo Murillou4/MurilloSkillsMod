@@ -4,6 +4,27 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.45] - 2026-05-04
+
+### Miner + Blacksmith - Toque Fundente
+
+- **Nova habilidade toggleável**: jogadores com `Miner` e `Blacksmith` selecionados, ambos no nível `99+`, podem ativar o Toque Fundente.
+- **Drops já fundidos**: minérios derretíveis viram automaticamente o resultado de forno/blast furnace ao minerar.
+- **Fortuna total aplicada**: o cálculo usa o drop com Fortuna da ferramenta e o bônus de Fortuna do Miner, incluindo minérios de outros mods com loot/receitas compatíveis.
+- **HUD e tecla própria**: novo indicador de HUD e keybind para ligar/desligar o Toque Fundente.
+
+### Miner - Ore Filter Modded Individual
+
+- **Sem bucket `Outros`**: minérios de mods agora aparecem individualmente no filtro pelo nome real do bloco/mod.
+- **Filtro dinâmico persistente**: o cliente aprende minérios detectados pelo scan, salva toggles por chave como `techreborn:bauxite_ore` e renderiza cada um com cor/ícone próprio.
+- **UI rolável**: a tela do Ore Filter ganhou scroll para suportar muitos minérios modded.
+
+### Release
+
+- **Prompt de release documentado**: adicionado um system prompt reutilizável para changelog, build, troca de jar, commit e push.
+
+---
+
 ## [1.2.44] - 2026-05-03
 
 ### Miner - Ore Scan e Filtro

@@ -98,7 +98,7 @@ public class OreHighlighter {
 
         // Filter ores based on user preferences and sort by distance
         List<MinerScanResultPayload.OreEntry> toRender = highlightedOres.stream()
-                .filter(e -> OreFilterConfig.isOreEnabled(e.type()))
+                .filter(OreFilterConfig::isOreEnabled)
                 .sorted(Comparator.comparingDouble(e -> e.pos().getSquaredDistance(playerBlockPos)))
                 .limit(maxOres)
                 .collect(Collectors.toList());
@@ -128,9 +128,10 @@ public class OreHighlighter {
             float beaconHeight = calculateBeaconHeight(distance, index);
 
             float finalAlpha = baseAlpha * distanceAlpha;
-            float r = entry.type().r;
-            float g = entry.type().g;
-            float b = entry.type().b;
+            int color = OreFilterConfig.getOreColor(entry.filterKey(), entry.color());
+            float r = ((color >> 16) & 0xFF) / 255.0f;
+            float g = ((color >> 8) & 0xFF) / 255.0f;
+            float b = (color & 0xFF) / 255.0f;
 
             // Draw diamond marker at ore position
             drawDiamond(matrices, consumer, dx, dy, dz, diamondSize, r, g, b, finalAlpha);
