@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.54] - 2026-05-04
+
+### Prestígio - Cooldown Menor
+
+- **Cooldown escala com prestígio**: cada nível de prestígio reduz em 5% o cooldown da Habilidade Mestre, com limite padrão de 50% no P10.
+- **Servidor e telas sincronizados**: as oito habilidades, a tela de skills e a tela de habilidades Paragon usam o mesmo cálculo de cooldown por prestígio.
+- **Guia atualizado**: tooltips, mensagens de prestígio e guia do sistema mostram o novo bônus e o limite real de P10.
+
+---
+
 ## [1.2.53] - 2026-05-04
 
 ### Miner - Fortuna em Ultmine e Folhas Modded

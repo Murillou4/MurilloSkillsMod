@@ -357,6 +357,8 @@ public class ModConfig {
     public static class PrestigeConfig {
         public float xpBonus = 0.05f;
         public float passiveBonus = 0.02f;
+        public float cooldownReductionPerLevel = 0.05f;
+        public float maxCooldownReduction = 0.50f;
         public int maxPrestigeLevel = 10;
         public String[] prestigeSymbols = {
                 "⚔", "⚔⚔", "★", "★★", "✦", "✦✦", "✦✦✦", "♦", "♦♦", "👑"

@@ -4,6 +4,7 @@ import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.gui.renderer.RenderingHelper;
 import com.murilloskills.gui.data.SkillUiData;
 import com.murilloskills.data.ClientSkillData;
+import com.murilloskills.utils.SkillConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
@@ -442,12 +443,13 @@ public class ModInfoScreen extends Screen {
                 y += 8;
 
                 // Table rows
-                int[] levels = { 1, 2, 3, 5, 10, 25, 50, 100 };
+                int maxPrestige = SkillConfig.getMaxPrestigeLevel();
+                int[] levels = { 1, 2, 3, 5, maxPrestige };
                 for (int level : levels) {
-                        int xpBonus = level * 5;
-                        int passiveBonus = level * 2;
+                        int xpBonus = Math.round(level * SkillConfig.getPrestigeXpBonus() * 100.0f);
+                        int passiveBonus = Math.round(level * SkillConfig.getPrestigePassiveBonus() * 100.0f);
 
-                        int rowColor = (level == 100) ? PALETTE.textGold() : PALETTE.textLight();
+                        int rowColor = (level == maxPrestige) ? PALETTE.textGold() : PALETTE.textLight();
                         context.drawText(textRenderer, Text.literal("P" + level), col1, y, rowColor, false);
                         context.drawText(textRenderer, Text.literal("+" + xpBonus + "%"), col2, y, PALETTE.textGreen(),
                                         false);

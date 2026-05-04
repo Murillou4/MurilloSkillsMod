@@ -177,7 +177,7 @@ public class BuilderSkill extends AbstractSkill {
             long worldTime = player.getEntityWorld().getTime();
             long timeSinceUse = worldTime - stats.lastAbilityUse;
 
-            long cooldownTicks = SkillConfig.toTicksLong(SkillConfig.BUILDER_ABILITY_COOLDOWN_SECONDS);
+            long cooldownTicks = SkillConfig.getAbilityCooldownTicks(getSkillType(), stats.prestige);
             if (stats.lastAbilityUse >= 0 && timeSinceUse < cooldownTicks) {
                 long minutesLeft = (cooldownTicks - timeSinceUse) / 20 / 60;
                 player.sendMessage(Text.translatable("murilloskills.error.cooldown_minutes", minutesLeft)

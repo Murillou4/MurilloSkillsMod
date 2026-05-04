@@ -1,6 +1,7 @@
 package com.murilloskills.utils;
 
 import com.murilloskills.config.ModConfig;
+import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.skills.UltPlaceShape;
 import com.murilloskills.skills.UltmineShape;
 
@@ -1198,6 +1199,34 @@ public class SkillConfig {
         return toTicksLong(getDynamicCooldown(baseCooldownSeconds, level));
     }
 
+    public static int getPrestigeAdjustedCooldown(int baseCooldownSeconds, int prestigeLevel) {
+        int base = Math.max(0, baseCooldownSeconds);
+        int prestige = Math.max(0, prestigeLevel);
+        float reduction = Math.min(prestige * getPrestigeCooldownReductionPerLevel(), getMaxPrestigeCooldownReduction());
+        return (int) (base * (1.0f - reduction));
+    }
+
+    public static long getPrestigeAdjustedCooldownTicks(int baseCooldownSeconds, int prestigeLevel) {
+        return toTicksLong(getPrestigeAdjustedCooldown(baseCooldownSeconds, prestigeLevel));
+    }
+
+    public static int getAbilityCooldownSeconds(MurilloSkillsList skill) {
+        return switch (skill) {
+            case MINER -> getMinerAbilityCooldownSeconds();
+            case WARRIOR -> getWarriorAbilityCooldownSeconds();
+            case ARCHER -> getArcherAbilityCooldownSeconds();
+            case FARMER -> getFarmerAbilityCooldownSeconds();
+            case FISHER -> getFisherAbilityCooldownSeconds();
+            case BLACKSMITH -> getBlacksmithAbilityCooldownSeconds();
+            case BUILDER -> getBuilderAbilityCooldownSeconds();
+            case EXPLORER -> getExplorerAbilityCooldownSeconds();
+        };
+    }
+
+    public static long getAbilityCooldownTicks(MurilloSkillsList skill, int prestigeLevel) {
+        return getPrestigeAdjustedCooldownTicks(getAbilityCooldownSeconds(skill), prestigeLevel);
+    }
+
     // --- PRESTIGE ---
     public static float getPrestigeXpBonus() {
         return ModConfig.get().prestige.xpBonus;
@@ -1205,6 +1234,14 @@ public class SkillConfig {
 
     public static float getPrestigePassiveBonus() {
         return ModConfig.get().prestige.passiveBonus;
+    }
+
+    public static float getPrestigeCooldownReductionPerLevel() {
+        return Math.max(0.0f, ModConfig.get().prestige.cooldownReductionPerLevel);
+    }
+
+    public static float getMaxPrestigeCooldownReduction() {
+        return Math.max(0.0f, Math.min(ModConfig.get().prestige.maxCooldownReduction, 0.95f));
     }
 
     public static int getMaxPrestigeLevel() {

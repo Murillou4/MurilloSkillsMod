@@ -141,8 +141,11 @@ public class PrestigeManager {
         // Bônus info
         int xpBonus = (int) (newPrestige * SkillConfig.getPrestigeXpBonus() * 100);
         int passiveBonus = (int) (newPrestige * SkillConfig.getPrestigePassiveBonus() * 100);
+        int cooldownBonus = Math.round(Math.min(
+                newPrestige * SkillConfig.getPrestigeCooldownReductionPerLevel(),
+                SkillConfig.getMaxPrestigeCooldownReduction()) * 100.0f);
 
-        Text bonusText = Text.translatable("murilloskills.prestige.bonus", xpBonus, passiveBonus)
+        Text bonusText = Text.translatable("murilloskills.prestige.bonus", xpBonus, passiveBonus, cooldownBonus)
                 .formatted(Formatting.GRAY);
         player.sendMessage(bonusText, false);
     }

@@ -85,7 +85,7 @@ public class ExplorerSkill extends AbstractSkill {
             com.murilloskills.data.PlayerSkillData.SkillStats stats) {
         UUID uuid = player.getUuid();
         long worldTime = player.getEntityWorld().getTime();
-        long cooldownTicks = SkillConfig.toTicksLong(SkillConfig.getExplorerAbilityCooldownSeconds());
+        long cooldownTicks = SkillConfig.getAbilityCooldownTicks(getSkillType(), stats.prestige);
 
         // Check cooldown using persistent stats (survives server restart)
         if (stats.lastAbilityUse >= 0) {

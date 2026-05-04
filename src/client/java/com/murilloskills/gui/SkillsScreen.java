@@ -306,7 +306,7 @@ public class SkillsScreen extends Screen {
 
                 // Prestige button for Paragon skill at level 100+ with prestige < 10
                 boolean isParagon = ClientSkillData.isParagonSkill(skill);
-                if (isParagon && stats.level >= 100 && stats.prestige < 10) {
+                if (isParagon && stats.level >= 100 && stats.prestige < SkillConfig.getMaxPrestigeLevel()) {
                     int col = i % columns;
                     int row = i / columns;
                     int x = startX + (col * (cardWidth + padding));
@@ -322,6 +322,9 @@ public class SkillsScreen extends Screen {
                     int nextPrestige = stats.prestige + 1;
                     int nextXpBonus = Math.round(nextPrestige * SkillConfig.getPrestigeXpBonus() * 100.0f);
                     int nextPassiveBonus = Math.round(nextPrestige * SkillConfig.getPrestigePassiveBonus() * 100.0f);
+                    int nextCooldownBonus = Math.round(Math.min(
+                            nextPrestige * SkillConfig.getPrestigeCooldownReductionPerLevel(),
+                            SkillConfig.getMaxPrestigeCooldownReduction()) * 100.0f);
 
                     // Build rich multiline tooltip
                     Text prestigeTooltip = Text.empty()
@@ -338,6 +341,11 @@ public class SkillsScreen extends Screen {
                             .append(Text
                                     .translatable("murilloskills.gui.prestige_tooltip.passive_bonus", nextPassiveBonus)
                                     .formatted(Formatting.AQUA))
+                            .append(Text.literal("\n"))
+                            .append(Text.literal("⏱ ").formatted(Formatting.LIGHT_PURPLE))
+                            .append(Text
+                                    .translatable("murilloskills.gui.prestige_tooltip.cooldown_bonus", nextCooldownBonus)
+                                    .formatted(Formatting.LIGHT_PURPLE))
                             .append(Text.literal("\n"))
                             .append(Text.literal("\n"))
                             .append(Text.literal("✓ ").formatted(Formatting.YELLOW))
@@ -577,7 +585,7 @@ public class SkillsScreen extends Screen {
                 context.drawText(this.textRenderer, Text.literal("NOT ACTIVE"), x + 28, y + 40,
                         PALETTE.statusInactive(), false);
             } else if (isParagon) {
-                long cooldownTicks = getSkillCooldown(skill);
+                long cooldownTicks = getSkillCooldown(skill, stats.prestige);
                 long timeSinceUse = worldTime - stats.lastAbilityUse;
 
                 // Se lastAbilityUse == -1, significa que nunca foi usada (pronto para usar)
@@ -650,18 +658,8 @@ public class SkillsScreen extends Screen {
         }
     }
 
-    private long getSkillCooldown(MurilloSkillsList skill) {
-        return switch (skill) {
-            case MINER -> SkillConfig.toTicksLong(SkillConfig.MINER_ABILITY_COOLDOWN_SECONDS);
-            case WARRIOR -> SkillConfig.toTicksLong(SkillConfig.WARRIOR_ABILITY_COOLDOWN_SECONDS);
-            case ARCHER -> SkillConfig.toTicksLong(SkillConfig.ARCHER_ABILITY_COOLDOWN_SECONDS);
-            case FARMER -> SkillConfig.toTicksLong(SkillConfig.FARMER_ABILITY_COOLDOWN_SECONDS);
-            case FISHER -> SkillConfig.toTicksLong(SkillConfig.FISHER_ABILITY_COOLDOWN_SECONDS);
-            case BLACKSMITH -> SkillConfig.toTicksLong(SkillConfig.BLACKSMITH_ABILITY_COOLDOWN_SECONDS);
-            case BUILDER -> SkillConfig.toTicksLong(SkillConfig.BUILDER_ABILITY_COOLDOWN_SECONDS);
-            case EXPLORER -> SkillConfig.toTicksLong(SkillConfig.EXPLORER_ABILITY_COOLDOWN_SECONDS);
-            default -> 6000L;
-        };
+    private long getSkillCooldown(MurilloSkillsList skill, int prestige) {
+        return SkillConfig.getAbilityCooldownTicks(skill, prestige);
     }
 
     private Text getSpecialAbilityDescription(MurilloSkillsList skill) {

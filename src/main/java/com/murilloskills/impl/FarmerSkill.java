@@ -85,7 +85,7 @@ public class FarmerSkill extends AbstractSkill {
             long worldTime = player.getEntityWorld().getTime();
             long timeSinceUse = worldTime - stats.lastAbilityUse;
 
-            long cooldownTicks = SkillConfig.toTicksLong(SkillConfig.FARMER_ABILITY_COOLDOWN_SECONDS);
+            long cooldownTicks = SkillConfig.getAbilityCooldownTicks(getSkillType(), stats.prestige);
             if (stats.lastAbilityUse >= 0 && timeSinceUse < cooldownTicks) {
                 long secondsLeft = (cooldownTicks - timeSinceUse) / 20;
                 player.sendMessage(Text.translatable("murilloskills.error.cooldown_seconds", secondsLeft)

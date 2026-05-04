@@ -269,7 +269,7 @@ public class ParagonAbilityScreen extends Screen {
 
     private CooldownInfo getCooldownInfo(MurilloSkillsList skill, long worldTime) {
         PlayerSkillData.SkillStats stats = ClientSkillData.get(skill);
-        long cooldownTicks = getSkillCooldown(skill);
+        long cooldownTicks = getSkillCooldown(skill, stats.prestige);
         if (stats.lastAbilityUse < 0 || cooldownTicks <= 0) {
             return new CooldownInfo(0, 1.0f);
         }
@@ -283,17 +283,8 @@ public class ParagonAbilityScreen extends Screen {
         return MinecraftClient.getInstance().world != null ? MinecraftClient.getInstance().world.getTime() : 0L;
     }
 
-    private long getSkillCooldown(MurilloSkillsList skill) {
-        return switch (skill) {
-            case MINER -> SkillConfig.toTicksLong(SkillConfig.getMinerAbilityCooldownSeconds());
-            case WARRIOR -> SkillConfig.toTicksLong(SkillConfig.getWarriorAbilityCooldownSeconds());
-            case ARCHER -> SkillConfig.toTicksLong(SkillConfig.getArcherAbilityCooldownSeconds());
-            case FARMER -> SkillConfig.toTicksLong(SkillConfig.getFarmerAbilityCooldownSeconds());
-            case FISHER -> SkillConfig.toTicksLong(SkillConfig.getFisherAbilityCooldownSeconds());
-            case BLACKSMITH -> SkillConfig.toTicksLong(SkillConfig.getBlacksmithAbilityCooldownSeconds());
-            case BUILDER -> SkillConfig.toTicksLong(SkillConfig.getBuilderAbilityCooldownSeconds());
-            case EXPLORER -> SkillConfig.toTicksLong(SkillConfig.getExplorerAbilityCooldownSeconds());
-        };
+    private long getSkillCooldown(MurilloSkillsList skill, int prestige) {
+        return SkillConfig.getAbilityCooldownTicks(skill, prestige);
     }
 
     private String formatTime(long seconds) {
