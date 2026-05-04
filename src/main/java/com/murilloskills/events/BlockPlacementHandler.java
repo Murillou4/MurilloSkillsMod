@@ -3,6 +3,7 @@ package com.murilloskills.events;
 import com.murilloskills.impl.BuilderSkill;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.skills.UltPlaceHandler;
+import com.murilloskills.skills.UltmineUseHandler;
 import com.murilloskills.utils.BuilderXpGetter;
 import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillNotifier;
@@ -36,11 +37,15 @@ public final class BlockPlacementHandler {
     public static void onBlockPlaced(ServerPlayerEntity serverPlayer, ServerWorld world, BlockPos placementPos, Block block,
             Direction face, Hand hand, net.minecraft.item.ItemStack sourceStack, Vec3d hitPos,
             Map<BlockPos, BlockState> previousStates) {
+        boolean ultminePlacedExtraBlocks = UltmineUseHandler.handleBlockPlacement(serverPlayer, world, placementPos,
+                face, hand, sourceStack, hitPos);
+
         var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
         if (!playerData.isSkillSelected(MurilloSkillsList.BUILDER)) {
             return;
         }
-        if (UltPlaceHandler.isSyntheticPlacementActive(serverPlayer)) {
+        if (UltPlaceHandler.isSyntheticPlacementActive(serverPlayer)
+                || UltmineUseHandler.isSyntheticPlacementActive(serverPlayer)) {
             return;
         }
 
@@ -59,7 +64,10 @@ public final class BlockPlacementHandler {
                 }
             }
 
-            UltPlaceHandler.handle(serverPlayer, world, placementPos, face, hand, sourceStack, hitPos, previousStates);
+            if (!ultminePlacedExtraBlocks) {
+                UltPlaceHandler.handle(serverPlayer, world, placementPos, face, hand, sourceStack, hitPos,
+                        previousStates);
+            }
         } catch (Exception e) {
             LOGGER.error("Error processing Builder XP for block placement", e);
         }

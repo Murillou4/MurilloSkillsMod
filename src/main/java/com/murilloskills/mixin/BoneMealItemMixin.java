@@ -3,6 +3,7 @@ package com.murilloskills.mixin;
 import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.impl.FarmerSkill;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.skills.UltmineUseHandler;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.item.BoneMealItem;
 import net.minecraft.item.ItemStack;
@@ -28,6 +29,11 @@ public class BoneMealItemMixin {
     private void onUseOnBlock(ItemUsageContext context, CallbackInfoReturnable<ActionResult> cir) {
         World world = context.getWorld();
         if (world.isClient() || !(context.getPlayer() instanceof ServerPlayerEntity serverPlayer)) {
+            return;
+        }
+
+        if (UltmineUseHandler.handleBoneMealUse(context)) {
+            cir.setReturnValue(ActionResult.SUCCESS);
             return;
         }
 

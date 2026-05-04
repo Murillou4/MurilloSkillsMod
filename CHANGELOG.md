@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.47] - 2026-05-04
+
+### Ultmine - Ações com Clique Direito
+
+- **Bone meal em shape do Ultmine**: ao segurar a tecla do Ultmine/Vein Miner e clicar com bone meal, o fertilizante é aplicado nos blocos válidos do shape selecionado.
+- **Blocos colocados em shape**: ao segurar a tecla do Ultmine/Vein Miner e colocar um bloco, o mod tenta preencher os outros pontos do shape selecionado com blocos iguais do inventário.
+- **Fluxos existentes preservados**: sem a tecla do Ultmine pressionada, os modos atuais de Farmer e Builder/UltPlace continuam seguindo o comportamento normal.
+
+---
+
 ## [1.2.46] - 2026-05-04
 
 ### Miner - Toque Fundente Corrigido
