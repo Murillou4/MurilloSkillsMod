@@ -4,8 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.murilloskills.network.MinerScanResultPayload;
 import com.murilloskills.network.MinerScanResultPayload.OreType;
+import com.murilloskills.utils.MinerXpGetter;
 import com.murilloskills.utils.OreFilterLimits;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.registry.Registries;
+import net.minecraft.util.Identifier;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -203,6 +206,48 @@ public class OreFilterConfig {
         for (MinerScanResultPayload.OreEntry ore : ores) {
             rememberOre(ore);
         }
+    }
+
+    /**
+     * Walks the block registry once on world join and registers any modded ore (block id ending in
+     * {@code _ore} or equal to {@code ancient_debris}) so it shows up in the filter screen even before
+     * the player triggers a Miner scan in range of it.
+     */
+    public static void discoverModdedOres() {
+        OreFilterData current = get();
+        boolean changed = false;
+        for (Identifier id : Registries.BLOCK.getIds()) {
+            if (id == null) {
+                continue;
+            }
+            String key = id.toString();
+            if (isVanillaKey(key) || isVanillaOreId(id) || !MinerXpGetter.isLikelyOreId(key)) {
+                continue;
+            }
+            if (!current.oreSettings.containsKey(key)) {
+                current.oreSettings.put(key,
+                        new OreSettings(current.moddedOresEnabledByDefault, generateModdedOreColor(key)));
+                changed = true;
+            }
+            current.oreDisplayNames.putIfAbsent(key, MinerXpGetter.humanizeModdedOreName(key));
+        }
+        if (changed) {
+            save();
+        }
+    }
+
+    private static boolean isVanillaOreId(Identifier id) {
+        return "minecraft".equals(id.getNamespace());
+    }
+
+    private static int generateModdedOreColor(String blockId) {
+        int[] colors = {
+                0xFF00D1FF, 0xFFFF6B6B, 0xFFFFD166, 0xFF8BFF7A,
+                0xFFB088FF, 0xFFFF8AD8, 0xFF78E08F, 0xFFFF9F43,
+                0xFF70A1FF, 0xFF7BED9F, 0xFFECCC68, 0xFFEA8685
+        };
+        int index = Math.floorMod(blockId == null ? 0 : blockId.hashCode(), colors.length);
+        return colors[index];
     }
 
     public static List<OreFilterOption> getFilterOptions() {

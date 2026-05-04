@@ -8,12 +8,10 @@ import com.murilloskills.utils.PrestigeManager;
 import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.AbstractCookingRecipe;
 import net.minecraft.recipe.RecipeEntry;
@@ -23,9 +21,6 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.stat.Stats;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,77 +65,59 @@ public final class MeltingTouchHandler {
         ServerPlayNetworking.send(player, new MeltingTouchSyncS2CPayload(isEnabled(player)));
     }
 
-    public static boolean tryDropMelted(Block block, World world, PlayerEntity player, BlockPos pos, BlockState state,
-            BlockEntity blockEntity, ItemStack tool) {
-        if (!(world instanceof ServerWorld serverWorld) || !(player instanceof ServerPlayerEntity serverPlayer)) {
-            return false;
+    /**
+     * Hooked into {@code Block.getDroppedStacks(...)} so vanilla still handles XP orb drops,
+     * stat tracking, and exhaustion via the normal flow. We only swap the items.
+     *
+     * Returns {@code null} when the original drop list should be used unchanged.
+     */
+    public static List<ItemStack> tryMeltDrops(Block block, ServerWorld world, Entity entity, ItemStack tool,
+            List<ItemStack> drops) {
+        if (!(entity instanceof ServerPlayerEntity player)) {
+            return null;
         }
-        if (!isEnabled(serverPlayer)) {
-            return false;
+        if (!isEnabled(player)) {
+            return null;
         }
         if (!MinerXpGetter.isDetectableOreBlock(block)) {
-            return false;
+            return null;
         }
-        if (BlockBreakHandler.hasSilkTouch(tool.getEnchantments())) {
-            return false;
+        if (tool != null && BlockBreakHandler.hasSilkTouch(tool.getEnchantments())) {
+            return null;
         }
-
-        List<ItemStack> vanillaDrops = Block.getDroppedStacks(state, serverWorld, pos, blockEntity, player, tool);
-        Optional<ItemStack> blockCooked = getCookedOutput(serverWorld, new ItemStack(block.asItem()));
-        List<ItemStack> meltedDrops = meltDrops(serverWorld, vanillaDrops, blockCooked, tool, serverPlayer);
-        if (meltedDrops.isEmpty()) {
-            return false;
+        if (drops == null || drops.isEmpty()) {
+            return null;
         }
 
-        player.incrementStat(Stats.MINED.getOrCreateStat(block));
-        player.addExhaustion(0.005F);
-        for (ItemStack drop : meltedDrops) {
-            Block.dropStack(serverWorld, pos, drop);
-        }
-        state.onStacksDropped(serverWorld, pos, tool, true);
-        return true;
-    }
+        Optional<ItemStack> blockCooked = getCookedOutput(world, new ItemStack(block.asItem()));
+        boolean anyMelted = false;
+        List<ItemStack> result = new ArrayList<>(drops.size());
 
-    private static List<ItemStack> meltDrops(ServerWorld world, List<ItemStack> vanillaDrops,
-            Optional<ItemStack> blockCooked, ItemStack tool, ServerPlayerEntity player) {
-        List<ItemStack> melted = new ArrayList<>();
-        if (vanillaDrops.isEmpty()) {
-            if (blockCooked.isEmpty()) {
-                return melted;
-            }
-            ItemStack stack = blockCooked.get().copy();
-            stack.setCount(blockCooked.get().getCount());
-            melted.add(stack);
-            return melted;
-        }
-
-        for (ItemStack drop : vanillaDrops) {
+        for (ItemStack drop : drops) {
             if (drop.isEmpty()) {
+                result.add(drop);
                 continue;
             }
 
             Optional<ItemStack> cookedDrop = getCookedOutput(world, drop);
-            Optional<ItemStack> cookedSource = cookedDrop.isPresent() ? cookedDrop : blockCooked;
-            if (cookedSource.isEmpty()) {
+            Optional<ItemStack> source = cookedDrop.isPresent() ? cookedDrop : blockCooked;
+            if (source.isEmpty()) {
+                // No recipe for this drop and no fallback for the block: keep the original
+                result.add(drop);
                 continue;
             }
 
-            ItemStack cooked = cookedSource.get().copy();
-            int fallbackCount = Math.max(drop.getCount(), getFortuneAdjustedBlockCount(tool, player, world));
-            int count = cooked.getCount() * (cookedDrop.isPresent() ? drop.getCount() : fallbackCount);
-            cooked.setCount(Math.max(1, count));
-            melted.add(cooked);
+            ItemStack out = source.get().copy();
+            int count = Math.max(1, out.getCount() * drop.getCount());
+            out.setCount(count);
+            result.add(out);
+            anyMelted = true;
         }
 
-        return melted;
-    }
-
-    private static int getFortuneAdjustedBlockCount(ItemStack tool, ServerPlayerEntity player, ServerWorld world) {
-        int fortune = getTotalFortuneLevel(tool, player, world);
-        if (fortune <= 0) {
-            return 1;
+        if (!anyMelted) {
+            return null;
         }
-        return 1 + world.getRandom().nextInt(fortune + 1);
+        return result;
     }
 
     public static int getTotalFortuneLevel(ItemStack tool, ServerPlayerEntity player, ServerWorld world) {

@@ -259,6 +259,9 @@ public class MurilloSkillsClient implements ClientModInitializer {
             UltmineClientState.applySavedSelection();
             UltPlaceClientState.clearPreview();
             resetUltPlacePreviewTracking();
+            // Populate modded ores in the filter from this world's block registry so they
+            // appear in the Ore Filter screen without first having to be scanned.
+            com.murilloskills.client.config.OreFilterConfig.discoverModdedOres();
             ClientPlayNetworking.send(new UltmineShapeSelectC2SPayload(
                     UltmineClientState.getSelectedShape(),
                     UltmineClientState.getDepth(),

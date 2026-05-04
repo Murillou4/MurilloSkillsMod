@@ -4,6 +4,21 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.46] - 2026-05-04
+
+### Miner - Toque Fundente Corrigido
+
+- **XP dos minérios volta a cair**: o hook agora intercepta apenas a lista de drops via `getDroppedStacks`, deixando o vanilla cuidar de orbes de XP, stat de blocos minerados e exhaustion.
+- **Funde o que dá pra fundir, preserva o resto**: drops sem receita de forno (ex.: `coal`, `diamond`) agora caem como vanilla em vez de sumir; multi-drops modados não perdem itens não fundíveis.
+- **Sem fortuna duplicada**: o cálculo deixou de aplicar um segundo roll de fortune sobre drops que já vinham do loot table, eliminando contagem inflada para coal/lapis/redstone/emerald.
+
+### Miner - Ore Filter Auto-Descobre Modded Ores
+
+- **Modded ores aparecem sem precisar minerar**: ao entrar no mundo, o cliente varre `Registries.BLOCK` e adiciona blocos com id terminando em `_ore` (e `ancient_debris`) ao filtro com cor/nome amigável.
+- **Persistência preservada**: descoberta só insere chaves novas; toggles e cores já salvas pelo player não são sobrescritas.
+
+---
+
 ## [1.2.45] - 2026-05-04
 
 ### Miner + Blacksmith - Toque Fundente
