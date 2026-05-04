@@ -29,10 +29,8 @@ class MinerFortuneHandlerTest {
     }
 
     @Test
-    void glowstoneStartsReceivingMinerFortuneAtLevelSeventyFive() {
-        assertFalse(MinerFortuneHandler.shouldApplySkillFortune("minecraft:glowstone", 74, 0));
-        assertEquals(0, MinerFortuneHandler.getSkillFortuneBonus(74, 0, "minecraft:glowstone"));
-
+    void glowstoneAlwaysReceivesMinerFortune() {
+        assertTrue(MinerFortuneHandler.shouldApplySkillFortune("minecraft:glowstone", 1, 0));
         assertTrue(MinerFortuneHandler.shouldApplySkillFortune("minecraft:glowstone", 75, 0));
         assertEquals(2, MinerFortuneHandler.getSkillFortuneBonus(75, 0, "minecraft:glowstone"));
     }
@@ -41,6 +39,12 @@ class MinerFortuneHandlerTest {
     void prestigeKeepsResourceFortuneUnlockedAfterReset() {
         assertTrue(MinerFortuneHandler.shouldApplySkillFortune("minecraft:glowstone", 1, 2));
         assertEquals(1, MinerFortuneHandler.getSkillFortuneBonus(1, 2, "minecraft:glowstone"));
+    }
+
+    @Test
+    void leavesDoNotReceiveMinerFortuneWithoutAxe() {
+        assertFalse(MinerFortuneHandler.shouldApplySkillFortune("minecraft:oak_leaves", 50, 0, null));
+        assertEquals(0, MinerFortuneHandler.getSkillFortuneBonus(50, 0, "minecraft:oak_leaves", null));
     }
 
     @Test

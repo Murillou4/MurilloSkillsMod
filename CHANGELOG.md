@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.51] - 2026-05-04
+
+### Miner - Fortuna em Glowstone e Folhas
+
+- **Glowstone sempre com Fortuna**: a Fortuna do Minerador (nível + prestígio) agora é aplicada ao quebrar `minecraft:glowstone` em qualquer nível, somando-se à Fortuna do encantamento.
+- **Folhas com machado**: ao quebrar folhas com machado, a Fortuna do Minerador é somada à Fortuna do encantamento e ao bônus de prestígio, aumentando drops de saplings, galhos e maçãs.
+- **Cobertura mantida em loot tables**: o bônus continua entrando em `apply_bonus` (drops por contagem) e em `table_bonus` (chances por tabela).
+
+---
+
 ## [1.2.50] - 2026-05-04
 
 ### Miner - Fortuna em Blocos Ricos
