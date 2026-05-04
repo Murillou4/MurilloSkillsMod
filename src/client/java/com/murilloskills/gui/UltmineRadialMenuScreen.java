@@ -512,6 +512,7 @@ public class UltmineRadialMenuScreen extends Screen {
         UltmineShape shape = shapes[index];
         UltmineClientState.applyShapeDefaults(shape);
         shapeVariants[index] = UltmineClientState.getVariant();
+        UltmineClientConfig.save();
         ClientPlayNetworking.send(new UltmineShapeSelectC2SPayload(
                 shape, UltmineClientState.getDepth(), UltmineClientState.getLength(), shapeVariants[index]));
     }

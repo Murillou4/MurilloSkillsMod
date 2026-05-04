@@ -2,8 +2,12 @@ package com.murilloskills.impl;
 
 import com.murilloskills.api.AbstractSkill;
 
+import com.murilloskills.data.ModAttachments;
+import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.utils.SkillConfig;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.item.ItemStack;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -104,14 +108,15 @@ public class BlacksmithSkill extends AbstractSkill {
                         StatusEffects.FIRE_RESISTANCE, 40, 0, true, false, true));
             }
 
-            // Level 60: Repair Aura - slowly repairs held item
-            if (level >= SkillConfig.BLACKSMITH_REPAIR_AURA_LEVEL) {
-                int intervalTicks = SkillConfig.BLACKSMITH_REPAIR_AURA_INTERVAL_SECONDS * 20;
+            // Level 60: Repair Aura - repairs the player's equipped gear over time.
+            if (level >= SkillConfig.getBlacksmithRepairAuraLevel()) {
+                int intervalTicks = SkillConfig.getBlacksmithRepairAuraIntervalSeconds() * 20;
                 if (player.age % intervalTicks == 0) {
-                    net.minecraft.item.ItemStack mainHand = player.getMainHandStack();
-                    if (mainHand.isDamageable() && mainHand.isDamaged()) {
-                        mainHand.setDamage(mainHand.getDamage() - 1);
-                    }
+                    PlayerSkillData.SkillStats stats = player
+                            .getAttachedOrCreate(ModAttachments.PLAYER_SKILLS)
+                            .getSkill(getSkillType());
+                    int repairAmount = SkillConfig.getBlacksmithRepairAuraAmount(level, stats.prestige);
+                    repairEquippedGear(player, repairAmount);
                 }
             }
 
@@ -240,6 +245,28 @@ public class BlacksmithSkill extends AbstractSkill {
                 true);
 
         LOGGER.debug("Player {} saiu do modo Titanium Aura", player.getName().getString());
+    }
+
+    private void repairEquippedGear(ServerPlayerEntity player, int repairAmount) {
+        repairItem(player.getMainHandStack(), repairAmount);
+
+        if (!SkillConfig.isBlacksmithRepairAuraEquipmentEnabled()) {
+            return;
+        }
+
+        repairItem(player.getOffHandStack(), repairAmount);
+        repairItem(player.getEquippedStack(EquipmentSlot.HEAD), repairAmount);
+        repairItem(player.getEquippedStack(EquipmentSlot.CHEST), repairAmount);
+        repairItem(player.getEquippedStack(EquipmentSlot.LEGS), repairAmount);
+        repairItem(player.getEquippedStack(EquipmentSlot.FEET), repairAmount);
+    }
+
+    private void repairItem(ItemStack stack, int repairAmount) {
+        if (!stack.isDamageable() || !stack.isDamaged()) {
+            return;
+        }
+
+        stack.setDamage(Math.max(0, stack.getDamage() - repairAmount));
     }
 
     /**

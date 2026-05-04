@@ -3,6 +3,7 @@ package com.murilloskills.client.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.murilloskills.network.MinerScanResultPayload.OreType;
+import com.murilloskills.utils.OreFilterLimits;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
@@ -12,7 +13,7 @@ import java.util.Map;
 
 /**
  * Client-side configuration for ore filter preferences.
- * Stores which ores to show, display mode, and custom colors.
+ * Stores which ores to show and custom colors.
  */
 public class OreFilterConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -21,17 +22,16 @@ public class OreFilterConfig {
     private static OreFilterData data;
 
     public enum DisplayMode {
-        XRAY, // Show through walls (current behavior)
-        VISIBLE_ONLY, // Only show ores in line of sight
-        NEAREST_ONLY // Only show the single nearest ore of each type
+        XRAY // Show through walls
     }
 
     public static class OreFilterData {
         public Map<String, OreSettings> oreSettings = new java.util.HashMap<>();
 
         public DisplayMode displayMode = DisplayMode.XRAY;
-        public int maxOres = 5000; // Max ores to display
+        public int maxOres = OreFilterLimits.DEFAULT_ORES; // Max ores to display
         public boolean prioritizeRare = true; // Show diamond/emerald/debris first
+        public boolean moddedOresEnabledByDefault = true;
 
         public OreFilterData() {
             // Initialize with defaults
@@ -46,7 +46,7 @@ public class OreFilterConfig {
             oreSettings.put("ANCIENT_DEBRIS", new OreSettings(true, 0x7B4F3A));
             oreSettings.put("NETHER_QUARTZ", new OreSettings(true, 0xE8E4D8));
             oreSettings.put("NETHER_GOLD", new OreSettings(true, 0xFFD700));
-            oreSettings.put("OTHER", new OreSettings(false, 0x888888));
+            oreSettings.put("OTHER", new OreSettings(true, 0x888888));
         }
     }
 
@@ -71,18 +71,48 @@ public class OreFilterConfig {
         if (Files.exists(configPath)) {
             try {
                 String json = Files.readString(configPath);
+                boolean needsModdedOreMigration = !json.contains("\"moddedOresEnabledByDefault\"");
                 data = GSON.fromJson(json, OreFilterData.class);
                 if (data == null) {
-                    data = new OreFilterData();
+                    data = createDefaultData();
+                }
+                normalizeLoadedData(needsModdedOreMigration);
+                if (needsModdedOreMigration) {
+                    save();
                 }
             } catch (IOException e) {
-                data = new OreFilterData();
+                data = createDefaultData();
                 save();
             }
         } else {
-            data = new OreFilterData();
+            data = createDefaultData();
             save();
         }
+    }
+
+    private static OreFilterData createDefaultData() {
+        OreFilterData defaults = new OreFilterData();
+        defaults.displayMode = DisplayMode.XRAY;
+        defaults.maxOres = OreFilterLimits.DEFAULT_ORES;
+        return defaults;
+    }
+
+    private static void normalizeLoadedData(boolean enableOtherOres) {
+        if (data.oreSettings == null) {
+            data.oreSettings = new java.util.HashMap<>();
+        }
+
+        OreFilterData defaults = new OreFilterData();
+        for (Map.Entry<String, OreSettings> entry : defaults.oreSettings.entrySet()) {
+            data.oreSettings.putIfAbsent(entry.getKey(), entry.getValue());
+        }
+
+        if (enableOtherOres) {
+            data.oreSettings.put("OTHER", new OreSettings(true, 0x888888));
+            data.moddedOresEnabledByDefault = true;
+        }
+        data.displayMode = DisplayMode.XRAY;
+        data.maxOres = OreFilterLimits.clampMaxOres(data.maxOres);
     }
 
     public static void save() {
@@ -119,19 +149,19 @@ public class OreFilterConfig {
     }
 
     public static DisplayMode getDisplayMode() {
-        return get().displayMode;
+        return DisplayMode.XRAY;
     }
 
     public static void setDisplayMode(DisplayMode mode) {
-        get().displayMode = mode;
+        get().displayMode = DisplayMode.XRAY;
     }
 
     public static int getMaxOres() {
-        return get().maxOres;
+        return OreFilterLimits.clampMaxOres(get().maxOres);
     }
 
     public static void setMaxOres(int max) {
-        get().maxOres = Math.max(5, Math.min(50, max));
+        get().maxOres = OreFilterLimits.clampMaxOres(max);
     }
 
     private static Path getConfigPath() {

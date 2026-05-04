@@ -40,6 +40,7 @@ public final class UltmineClientState {
 
     public static void setSelection(UltmineShape shape, int newDepth, int newLength) {
         selectedShape = shape == null ? UltmineShape.S_3x3 : shape;
+        UltmineClientConfig.setSelectedShape(selectedShape);
         depth = Math.max(1, Math.min(newDepth, SkillConfig.getUltmineShapeMaxDepth(selectedShape)));
         length = Math.max(1, Math.min(newLength, SkillConfig.getUltmineShapeMaxLength(selectedShape)));
     }
@@ -50,6 +51,7 @@ public final class UltmineClientState {
     }
 
     public static void applyShapeDefaults(UltmineShape shape) {
+        shape = shape == null ? UltmineShape.S_3x3 : shape;
         // Use per-shape config if the user customized depth/length, otherwise server defaults
         int configDepth = UltmineClientConfig.getShapeDepth(shape);
         int configLength = UltmineClientConfig.getShapeLength(shape);
@@ -58,6 +60,10 @@ public final class UltmineClientState {
         setSelection(shape, newDepth, newLength);
         // Read variant from persistent client config instead of hardcoding to 0
         variant = UltmineClientConfig.getShapeVariant(shape);
+    }
+
+    public static void applySavedSelection() {
+        applyShapeDefaults(UltmineClientConfig.getSelectedShape());
     }
 
     public static void updatePreview(List<BlockPos> positions) {

@@ -21,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Mixin for CropBlock to implement Fertile Ground perk scaling.
- * Crops grow faster for nearby Farmer players at milestone thresholds.
+ * Crops grow faster for nearby Farmer players with level-scaled extra growth.
  */
 @Mixin(CropBlock.class)
 public class CropBlockMixin {
@@ -31,7 +31,7 @@ public class CropBlockMixin {
 
     /**
      * Injects at the end of randomTick to potentially add extra growth.
-     * The bonus growth chance scales with the Farmer level milestones.
+     * The bonus growth boost scales up to multiple extra growth stages.
      */
     @Inject(method = "randomTick", at = @At("TAIL"))
     private void accelerateCropGrowth(BlockState state, ServerWorld world, BlockPos pos, Random random,
@@ -55,29 +55,42 @@ public class CropBlockMixin {
 
         int farmerLevel = playerData.getSkill(MurilloSkillsList.FARMER).level;
 
-        float growthChance = FarmerSkill.getFertileGroundGrowthChance(farmerLevel);
-        if (growthChance > 0.0f && random.nextFloat() < growthChance) {
-            CropBlock cropBlock = (CropBlock) (Object) this;
+        float growthBoost = FarmerSkill.getFertileGroundGrowthBoost(farmerLevel);
+        if (growthBoost <= 0.0f) {
+            return;
+        }
 
-            // Only grow if not already mature
-            if (!cropBlock.isMature(state)) {
-                int currentAge = cropBlock.getAge(state);
-                int maxAge = cropBlock.getMaxAge();
+        int extraGrowth = (int) growthBoost;
+        float fractionalGrowth = growthBoost - extraGrowth;
+        if (fractionalGrowth > 0.0f && random.nextFloat() < fractionalGrowth) {
+            extraGrowth++;
+        }
+        if (extraGrowth <= 0) {
+            return;
+        }
 
-                if (currentAge < maxAge) {
-                    BlockState grownState = cropBlock.withAge(currentAge + 1);
-                    world.setBlockState(pos, grownState, 2);
+        CropBlock cropBlock = (CropBlock) (Object) this;
+        BlockState currentState = world.getBlockState(pos);
+        if (currentState.getBlock() != cropBlock || cropBlock.isMature(currentState)) {
+            return;
+        }
 
-                    // Spawn green particles to show the boost visually
-                    world.spawnParticles(
-                            net.minecraft.particle.ParticleTypes.HAPPY_VILLAGER,
-                            pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-                            3, // count
-                            0.3, 0.2, 0.3, // spread
-                            0.0 // speed
-                    );
-                }
-            }
+        int currentAge = cropBlock.getAge(currentState);
+        int maxAge = cropBlock.getMaxAge();
+        int newAge = Math.min(maxAge, currentAge + extraGrowth);
+
+        if (newAge > currentAge) {
+            BlockState grownState = cropBlock.withAge(newAge);
+            world.setBlockState(pos, grownState, 2);
+
+            // Spawn green particles to show the boost visually
+            world.spawnParticles(
+                    net.minecraft.particle.ParticleTypes.HAPPY_VILLAGER,
+                    pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                    Math.min(8, 2 + extraGrowth * 2),
+                    0.3, 0.2, 0.3,
+                    0.0
+            );
         }
     }
 

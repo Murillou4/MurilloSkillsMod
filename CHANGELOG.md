@@ -4,6 +4,28 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.44] - 2026-05-03
+
+### Miner - Ore Scan e Filtro
+
+- **Minérios de mods detectados**: o scan do Miner agora reconhece blocos com nomes de minério (`*_ore`) e mantém highlights válidos para ores de outros mods.
+- **Filtro simplificado em X-Ray**: a tela de filtro remove modos alternativos, inclui `OTHER` por padrão e aumenta o limite configurável para até `500` minérios.
+- **Migração de config antiga**: configs existentes passam a receber os novos defaults de ores modded e limites seguros automaticamente.
+
+### Ultmine - Seleção Persistente
+
+- **Forma ativa salva**: a seleção de forma do Ultmine fica gravada no client config e volta ao entrar no mundo.
+- **Sync ao conectar**: o cliente reaplica a forma salva e sincroniza depth, length e variant com o servidor ao entrar.
+
+### Skills - Balanceamento e Correções
+
+- **Farmer Fertile Ground buffado**: o crescimento extra agora escala progressivamente até `300%` e pode avançar múltiplos estágios de crop.
+- **Blacksmith Repair Aura reforçada**: a aura repara equipamento equipado, escala com level/prestige e usa fallbacks seguros para configs antigas.
+- **Prestige em loot passivo**: bônus de looting de Warrior e Archer agora consideram o multiplicador de prestige.
+- **Milestones de XP vanilla corrigidos**: recompensas usam níveis reais de XP e detectam milestones cruzados após reset ou prestige.
+
+---
+
 ## [1.2.43] - 2026-04-26
 
 ### Builder - UltPlace Wall/Preview

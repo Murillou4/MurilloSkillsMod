@@ -27,6 +27,7 @@ public class UltmineClientConfig {
         public boolean xpDirectToPlayer = false;
         public boolean magnetEnabled = false;
         public int magnetRange = 8;
+        public String selectedShape = UltmineShape.S_3x3.name();
         public java.util.List<String> trashItems = new java.util.ArrayList<>();
         public java.util.List<String> legacyBlockedBlocks = new java.util.ArrayList<>();
         public Map<String, ShapePrefs> shapePrefs = new java.util.HashMap<>();
@@ -56,6 +57,7 @@ public class UltmineClientConfig {
                 if (data.trashItems == null) data.trashItems = new java.util.ArrayList<>();
                 if (data.legacyBlockedBlocks == null) data.legacyBlockedBlocks = new java.util.ArrayList<>();
                 if (data.shapePrefs == null) data.shapePrefs = new java.util.HashMap<>();
+                data.selectedShape = normalizeShapeName(data.selectedShape).name();
                 java.util.List<String> normalizedBlockedBlocks = new java.util.ArrayList<>();
                 for (String blockId : data.legacyBlockedBlocks) {
                     String normalized = normalizeResourceId(blockId);
@@ -213,6 +215,24 @@ public class UltmineClientConfig {
     }
 
     // --- Per-shape prefs ---
+
+    public static UltmineShape getSelectedShape() {
+        return normalizeShapeName(get().selectedShape);
+    }
+
+    public static void setSelectedShape(UltmineShape shape) {
+        get().selectedShape = (shape == null ? UltmineShape.S_3x3 : shape).name();
+    }
+
+    private static UltmineShape normalizeShapeName(String shapeName) {
+        if (shapeName != null) {
+            try {
+                return UltmineShape.valueOf(shapeName);
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        return UltmineShape.S_3x3;
+    }
 
     private static ShapePrefs getPrefs(UltmineShape shape) {
         return get().shapePrefs.computeIfAbsent(shape.name(), k -> new ShapePrefs());

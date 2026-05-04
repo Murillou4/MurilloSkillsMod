@@ -457,6 +457,11 @@ public class SkillConfig {
         return ModConfig.get().farmer.fertileGroundSpeed;
     }
 
+    public static float getFarmerFertileGroundMaxBoost() {
+        float configured = ModConfig.get().farmer.fertileGroundMaxBoost;
+        return configured > 0.0f ? configured : FARMER_FERTILE_GROUND_MAX_BOOST;
+    }
+
     public static float getFarmerNutrientSeedChance() {
         return ModConfig.get().farmer.nutrientSeedChance;
     }
@@ -515,6 +520,7 @@ public class SkillConfig {
     public static final float FARMER_GREEN_THUMB_EXTRA = 0.05f;
     public static final float FARMER_GREEN_THUMB_SEED_SAVE = 0.10f;
     public static final float FARMER_FERTILE_GROUND_SPEED = 0.25f;
+    public static final float FARMER_FERTILE_GROUND_MAX_BOOST = 3.0f;
     public static final float FARMER_NUTRIENT_SEED_CHANCE = 0.05f;
     public static final float FARMER_ABUNDANT_EXTRA = 0.15f;
     public static final float FARMER_ABUNDANT_ADJACENT = 0.10f;

@@ -2,6 +2,7 @@ package com.murilloskills.mixin;
 
 import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.PrestigeManager;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -33,14 +34,20 @@ public class EnchantmentHelperMixin {
 
                 // Warrior looting bonus
                 if (playerData.isSkillSelected(MurilloSkillsList.WARRIOR)) {
-                    int warriorLevel = playerData.getSkill(MurilloSkillsList.WARRIOR).level;
-                    totalBonus += (int) (warriorLevel * SkillConfig.getWarriorLootingPerLevel());
+                    var warriorStats = playerData.getSkill(MurilloSkillsList.WARRIOR);
+                    float warriorPrestigeMultiplier = PrestigeManager.getPassiveMultiplier(warriorStats.prestige);
+                    totalBonus += (int) (warriorStats.level
+                            * SkillConfig.getWarriorLootingPerLevel()
+                            * warriorPrestigeMultiplier);
                 }
 
                 // Archer looting bonus
                 if (playerData.isSkillSelected(MurilloSkillsList.ARCHER)) {
-                    int archerLevel = playerData.getSkill(MurilloSkillsList.ARCHER).level;
-                    totalBonus += (int) (archerLevel * SkillConfig.getArcherLootingPerLevel());
+                    var archerStats = playerData.getSkill(MurilloSkillsList.ARCHER);
+                    float archerPrestigeMultiplier = PrestigeManager.getPassiveMultiplier(archerStats.prestige);
+                    totalBonus += (int) (archerStats.level
+                            * SkillConfig.getArcherLootingPerLevel()
+                            * archerPrestigeMultiplier);
                 }
 
                 if (totalBonus > 0) {

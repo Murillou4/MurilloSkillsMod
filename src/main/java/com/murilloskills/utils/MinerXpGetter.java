@@ -3,6 +3,7 @@ package com.murilloskills.utils;
 import com.murilloskills.models.SkillReceptorResult;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.registry.Registries;
 
 public class MinerXpGetter {
 
@@ -52,6 +53,27 @@ public class MinerXpGetter {
             // NULL OR NOT ORE BLOCK
             return new SkillReceptorResult(false, 0);
         }
+    }
+
+    public static boolean isDetectableOreBlock(Block block) {
+        if (isMinerXpBlock(block, false, true).didGainXp()) {
+            return true;
+        }
+        return isLikelyOreId(Registries.BLOCK.getId(block).toString());
+    }
+
+    public static boolean isLikelyOreId(String blockId) {
+        if (blockId == null || blockId.isBlank()) {
+            return false;
+        }
+
+        String path = blockId;
+        int namespaceSeparator = path.indexOf(':');
+        if (namespaceSeparator >= 0 && namespaceSeparator < path.length() - 1) {
+            path = path.substring(namespaceSeparator + 1);
+        }
+
+        return path.endsWith("_ore") || path.equals("ancient_debris");
     }
 
     private static boolean isBasicMiningBlock(Block block) {

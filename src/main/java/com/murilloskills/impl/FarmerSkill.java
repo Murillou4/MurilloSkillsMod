@@ -247,27 +247,32 @@ public class FarmerSkill extends AbstractSkill {
     }
 
     /**
-     * Returns the Fertile Ground growth chance for the player's current level.
-     * Progression is milestone-based to keep the perk readable and predictable.
+     * Returns the Fertile Ground growth boost for the player's current level.
+     * A boost of 1.0 means one extra crop age, 3.0 means three extra ages.
+     */
+    public static float getFertileGroundGrowthBoost(int level) {
+        int unlockLevel = SkillConfig.FARMER_FERTILE_GROUND_LEVEL;
+        if (level < unlockLevel) {
+            return 0.0f;
+        }
+
+        int maxLevel = Math.max(unlockLevel + 1, SkillConfig.getMaxLevel());
+        float maxBoost = Math.max(SkillConfig.FARMER_FERTILE_GROUND_SPEED,
+                SkillConfig.getFarmerFertileGroundMaxBoost());
+        float progress = Math.max(0.0f, Math.min(1.0f, (float) (level - unlockLevel) / (maxLevel - unlockLevel)));
+        return SkillConfig.FARMER_FERTILE_GROUND_SPEED
+                + ((maxBoost - SkillConfig.FARMER_FERTILE_GROUND_SPEED) * progress);
+    }
+
+    /**
+     * Backward-compatible name used by older tests/callers.
      */
     public static float getFertileGroundGrowthChance(int level) {
-        if (level >= FARMER_AREA_9X9_LEVEL) {
-            return 0.99f;
-        }
-        if (level >= SkillConfig.FARMER_ABUNDANT_HARVEST_LEVEL) {
-            return 0.75f;
-        }
-        if (level >= SkillConfig.FARMER_NUTRIENT_CYCLE_LEVEL) {
-            return 0.50f;
-        }
-        if (level >= SkillConfig.FARMER_FERTILE_GROUND_LEVEL) {
-            return 0.25f;
-        }
-        return 0.0f;
+        return getFertileGroundGrowthBoost(level);
     }
 
     public static int getFertileGroundGrowthPercent(int level) {
-        return Math.round(getFertileGroundGrowthChance(level) * 100.0f);
+        return Math.round(getFertileGroundGrowthBoost(level) * 100.0f);
     }
 
     /**

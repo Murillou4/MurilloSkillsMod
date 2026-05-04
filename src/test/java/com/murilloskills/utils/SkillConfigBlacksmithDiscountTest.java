@@ -59,4 +59,29 @@ class SkillConfigBlacksmithDiscountTest {
         assertEquals(SkillConfig.BLACKSMITH_OVERENCHANT_STEP_COST, SkillConfig.getBlacksmithOverEnchantStepCost());
         assertEquals(SkillConfig.BLACKSMITH_SUPER_ENCHANT_CHANCE, SkillConfig.getBlacksmithSuperEnchantChance());
     }
+
+    @Test
+    void repairAuraUsesStrongerDefaultsAndScalesWithLevelAndPrestige() {
+        resetConfig();
+
+        assertEquals(1, SkillConfig.getBlacksmithRepairAuraIntervalSeconds());
+        assertEquals(20, SkillConfig.getBlacksmithRepairAuraAmount());
+        assertEquals(5, SkillConfig.getBlacksmithRepairAuraAmount(60, 0));
+        assertEquals(20, SkillConfig.getBlacksmithRepairAuraAmount(99, 0));
+        assertEquals(20, SkillConfig.getBlacksmithRepairAuraAmount(100, 0));
+        assertEquals(24, SkillConfig.getBlacksmithRepairAuraAmount(99, 10));
+    }
+
+    @Test
+    void repairAuraFallsBackWhenLegacyConfigFieldsAreMissing() {
+        resetConfig();
+        ModConfig.ConfigData config = ModConfig.get();
+
+        config.blacksmith.repairAuraIntervalSeconds = 0;
+        config.blacksmith.repairAuraAmount = 0;
+
+        assertEquals(SkillConfig.BLACKSMITH_REPAIR_AURA_INTERVAL_SECONDS,
+                SkillConfig.getBlacksmithRepairAuraIntervalSeconds());
+        assertEquals(SkillConfig.BLACKSMITH_REPAIR_AURA_AMOUNT, SkillConfig.getBlacksmithRepairAuraAmount());
+    }
 }

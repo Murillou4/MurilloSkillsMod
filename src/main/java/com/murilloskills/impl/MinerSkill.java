@@ -204,11 +204,14 @@ public class MinerSkill extends AbstractSkill {
         // Escaneia área pequena
         for (BlockPos pos : BlockPos.iterate(playerPos.add(-radius, -radius, -radius),
                 playerPos.add(radius, radius, radius))) {
-            var result = MinerXpGetter.isMinerXpBlock(player.getEntityWorld().getBlockState(pos).getBlock(), false,
-                    true);
+            net.minecraft.block.Block block = player.getEntityWorld().getBlockState(pos).getBlock();
+            var result = MinerXpGetter.isMinerXpBlock(block, false, true);
 
-            // Só apita para minérios valiosos (XP > 5)
-            if (result.didGainXp() && result.getXpAmount() > 5) {
+            boolean knownValuableOre = result.didGainXp() && result.getXpAmount() > 5;
+            boolean moddedOre = !result.didGainXp() && MinerXpGetter.isDetectableOreBlock(block);
+
+            // Só apita para minérios vanilla valiosos ou minérios de outros mods.
+            if (knownValuableOre || moddedOre) {
                 foundRareOre = true;
                 break;
             }
@@ -236,8 +239,7 @@ public class MinerSkill extends AbstractSkill {
                 for (int dz = -radius; dz <= radius; dz++) {
                     BlockPos pos = center.add(dx, dy, dz);
                     net.minecraft.block.Block block = player.getEntityWorld().getBlockState(pos).getBlock();
-                    var result = MinerXpGetter.isMinerXpBlock(block, false, true);
-                    if (result.didGainXp()) {
+                    if (MinerXpGetter.isDetectableOreBlock(block)) {
                         MinerScanResultPayload.OreType oreType = getOreType(block);
                         ores.add(new MinerScanResultPayload.OreEntry(pos.toImmutable(), oreType));
                     }

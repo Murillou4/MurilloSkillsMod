@@ -71,6 +71,7 @@ public class UltmineConfigScreen extends Screen {
 
     @Override
     protected void init() {
+        selectedShape = UltmineClientConfig.getSelectedShape();
         super.init();
         calculateLayout();
 
@@ -117,7 +118,7 @@ public class UltmineConfigScreen extends Screen {
             final UltmineShape shape = shapes[i];
             int x = shapeStartX + i * (shapeBtnW + 4);
             ButtonWidget shapeBtn = ButtonWidget.builder(Text.empty(), (b) -> {
-                selectedShape = shape;
+                selectActiveShape(shape);
                 refreshScreen();
             }).dimensions(x, shapeSelectorY + 16 + oY, shapeBtnW, 18).build();
             this.addDrawableChild(shapeBtn);
@@ -499,6 +500,17 @@ public class UltmineConfigScreen extends Screen {
             UltmineClientConfig.setShapeLength(shape, -1);
             UltmineClientConfig.setShapeVariant(shape, 0);
         }
+        selectedShape = UltmineShape.S_3x3;
+        UltmineClientConfig.setSelectedShape(selectedShape);
+        UltmineClientState.applyShapeDefaults(selectedShape);
+        UltmineClientConfig.save();
+    }
+
+    private void selectActiveShape(UltmineShape shape) {
+        selectedShape = shape == null ? UltmineShape.S_3x3 : shape;
+        UltmineClientState.applyShapeDefaults(selectedShape);
+        UltmineClientConfig.save();
+        syncActiveShapeToServer();
     }
 
     private int getEffectiveDepth(UltmineShape shape) {
@@ -961,7 +973,7 @@ public class UltmineConfigScreen extends Screen {
     }
 
     private void syncActiveShapeToServer() {
-        UltmineShape activeShape = UltmineClientState.getSelectedShape();
+        UltmineShape activeShape = UltmineClientConfig.getSelectedShape();
         int depth = getEffectiveDepth(activeShape);
         int length = getEffectiveLength(activeShape);
         int variant = UltmineClientConfig.getShapeVariant(activeShape);

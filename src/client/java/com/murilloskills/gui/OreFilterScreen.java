@@ -1,7 +1,6 @@
 package com.murilloskills.gui;
 
 import com.murilloskills.client.config.OreFilterConfig;
-import com.murilloskills.client.config.OreFilterConfig.DisplayMode;
 import com.murilloskills.gui.renderer.RenderingHelper;
 import com.murilloskills.network.MinerScanResultPayload.OreType;
 import net.minecraft.client.MinecraftClient;
@@ -33,7 +32,6 @@ public class OreFilterScreen extends Screen {
     private int cardW, cardH;
     private int cardGap;
     private int oreGridY;
-    private int modeSectionY;
     private int maxOresSectionY;
     private int bottomY;
 
@@ -86,24 +84,6 @@ public class OreFilterScreen extends Screen {
             this.addDrawableChild(btn);
         }
 
-        // === MODE BUTTONS ===
-        int modeW = Math.min(120, (panelW - PANEL_PADDING * 4) / 3);
-        int modeGap = 8;
-        int totalModeW = 3 * modeW + 2 * modeGap;
-        int modeStartX = centerX - totalModeW / 2;
-        int modeBtnY = modeSectionY + 18;
-
-        DisplayMode current = OreFilterConfig.getDisplayMode();
-
-        for (DisplayMode mode : DisplayMode.values()) {
-            int idx = mode.ordinal();
-            ButtonWidget modeBtn = ButtonWidget.builder(Text.empty(), (b) -> {
-                OreFilterConfig.setDisplayMode(mode);
-                refreshScreen();
-            }).dimensions(modeStartX + idx * (modeW + modeGap), modeBtnY, modeW, 20).build();
-            this.addDrawableChild(modeBtn);
-        }
-
         // === MAX ORES CONTROLS ===
         int ctrlBtnW = 24;
         int ctrlGap = 8;
@@ -113,12 +93,12 @@ public class OreFilterScreen extends Screen {
         int ctrlY = maxOresSectionY + 18;
 
         ButtonWidget minusBtn = ButtonWidget.builder(Text.literal("−").formatted(Formatting.RED), (b) -> {
-            OreFilterConfig.setMaxOres(OreFilterConfig.getMaxOres() - 5);
+            OreFilterConfig.setMaxOres(OreFilterConfig.getMaxOres() - 25);
         }).dimensions(ctrlStartX, ctrlY, ctrlBtnW, 20).build();
         this.addDrawableChild(minusBtn);
 
         ButtonWidget plusBtn = ButtonWidget.builder(Text.literal("+").formatted(Formatting.GREEN), (b) -> {
-            OreFilterConfig.setMaxOres(OreFilterConfig.getMaxOres() + 5);
+            OreFilterConfig.setMaxOres(OreFilterConfig.getMaxOres() + 25);
         }).dimensions(ctrlStartX + ctrlBtnW + ctrlGap + valueBoxW + ctrlGap, ctrlY, ctrlBtnW, 20).build();
         this.addDrawableChild(plusBtn);
     }
@@ -150,8 +130,7 @@ public class OreFilterScreen extends Screen {
         int oreRows = (int) Math.ceil((double) ores.length / cols);
         int oreGridH = oreRows * (cardH + cardGap) - cardGap;
 
-        modeSectionY = oreGridY + oreGridH + SECTION_GAP;
-        maxOresSectionY = modeSectionY + 62;
+        maxOresSectionY = oreGridY + oreGridH + SECTION_GAP;
         bottomY = maxOresSectionY + 52;
 
         panelH = bottomY + 28 - panelY;
@@ -170,10 +149,9 @@ public class OreFilterScreen extends Screen {
 
     private void resetDefaults() {
         for (OreType ore : OreType.values()) {
-            OreFilterConfig.setOreEnabled(ore, ore != OreType.OTHER);
+            OreFilterConfig.setOreEnabled(ore, true);
         }
-        OreFilterConfig.setDisplayMode(DisplayMode.XRAY);
-        OreFilterConfig.setMaxOres(20);
+        OreFilterConfig.setMaxOres(500);
     }
 
     @Override
@@ -192,9 +170,6 @@ public class OreFilterScreen extends Screen {
         // === ORE SECTION (labels over buttons) ===
         renderOreSectionLabels(context);
 
-        // === MODE SECTION ===
-        renderModeSection(context);
-
         // === MAX ORES SECTION ===
         renderMaxOresSection(context);
 
@@ -204,8 +179,6 @@ public class OreFilterScreen extends Screen {
         // === ORE CONTENT (over buttons for layering) ===
         renderOreCardContent(context);
 
-        // === MODE BUTTON CONTENT (over buttons) ===
-        renderModeButtonContent(context);
     }
 
     private void renderGradientBackground(DrawContext context) {
@@ -247,36 +220,6 @@ public class OreFilterScreen extends Screen {
         // No extra label needed - header makes it clear
     }
 
-    private void renderModeSection(DrawContext context) {
-        int centerX = this.width / 2;
-
-        // Section divider with title
-        String title = Text.translatable("murilloskills.ore_filter.section.mode").getString();
-        int titleW = textRenderer.getWidth(title);
-        int lineW = (panelW - PANEL_PADDING * 2 - titleW - 20) / 2;
-
-        context.fill(panelX + PANEL_PADDING, modeSectionY + 3,
-                panelX + PANEL_PADDING + lineW, modeSectionY + 4, palette.dividerColor());
-        context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal(title).formatted(Formatting.GOLD),
-                centerX, modeSectionY - 1, palette.textGold());
-        context.fill(centerX + titleW / 2 + 10, modeSectionY + 3,
-                panelX + panelW - PANEL_PADDING, modeSectionY + 4, palette.dividerColor());
-
-        // Mode description box
-        DisplayMode current = OreFilterConfig.getDisplayMode();
-        Text desc = Text.translatable("murilloskills.ore_filter.mode." + current.name().toLowerCase() + ".desc");
-        int descBoxW = panelW - PANEL_PADDING * 4;
-        int descBoxX = centerX - descBoxW / 2;
-        int descBoxY = modeSectionY + 42;
-
-        context.fill(descBoxX, descBoxY, descBoxX + descBoxW, descBoxY + 16, palette.infoBg());
-        context.fill(descBoxX, descBoxY, descBoxX + 2, descBoxY + 16, palette.textAqua());
-        context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("ℹ ").formatted(Formatting.AQUA).append(desc.copy().formatted(Formatting.WHITE)),
-                centerX, descBoxY + 4, palette.textWhite());
-    }
-
     private void renderMaxOresSection(DrawContext context) {
         int centerX = this.width / 2;
 
@@ -309,7 +252,7 @@ public class OreFilterScreen extends Screen {
 
         // Range hint
         context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("5 - 50").formatted(Formatting.DARK_GRAY),
+                Text.literal("5 - 500").formatted(Formatting.DARK_GRAY),
                 centerX, boxY + boxH + 4, palette.textMuted());
     }
 
@@ -370,41 +313,12 @@ public class OreFilterScreen extends Screen {
         }
     }
 
-    private void renderModeButtonContent(DrawContext context) {
-        DisplayMode current = OreFilterConfig.getDisplayMode();
-        int modeW = Math.min(120, (panelW - PANEL_PADDING * 4) / 3);
-        int modeGap = 8;
-        int totalModeW = 3 * modeW + 2 * modeGap;
-        int modeStartX = this.width / 2 - totalModeW / 2;
-        int modeBtnY = modeSectionY + 18;
-
-        for (DisplayMode mode : DisplayMode.values()) {
-            int idx = mode.ordinal();
-            int bx = modeStartX + idx * (modeW + modeGap);
-            boolean active = mode == current;
-
-            // Background overlay
-            int bg = active ? palette.sectionBgActive() : palette.sectionBg();
-            context.fill(bx + 1, modeBtnY + 1, bx + modeW - 1, modeBtnY + 19, bg);
-
-            // Bottom accent when active
-            if (active) {
-                context.fill(bx + 1, modeBtnY + 18, bx + modeW - 1, modeBtnY + 20, palette.textAqua());
-            }
-
-            // Label
-            String label = Text.translatable("murilloskills.ore_filter.mode." + mode.name().toLowerCase()).getString();
-            String prefix = active ? "● " : "○ ";
-            int color = active ? palette.textAqua() : palette.textGray();
-            context.drawCenteredTextWithShadow(textRenderer, prefix + label, bx + modeW / 2, modeBtnY + 6, color);
-        }
-    }
-
     private OreType[] getFilterableOres() {
         return new OreType[]{
                 OreType.COAL, OreType.COPPER, OreType.IRON, OreType.GOLD,
                 OreType.LAPIS, OreType.REDSTONE, OreType.DIAMOND, OreType.EMERALD,
-                OreType.ANCIENT_DEBRIS, OreType.NETHER_QUARTZ, OreType.NETHER_GOLD
+                OreType.ANCIENT_DEBRIS, OreType.NETHER_QUARTZ, OreType.NETHER_GOLD,
+                OreType.OTHER
         };
     }
 

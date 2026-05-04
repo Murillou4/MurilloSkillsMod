@@ -12,6 +12,7 @@ import com.murilloskills.network.UltminePreviewS2CPayload;
 import com.murilloskills.network.UltmineRequestC2SPayload;
 import com.murilloskills.network.UltmineResultS2CPayload;
 import com.murilloskills.network.UltmineClassicBlockListSyncC2SPayload;
+import com.murilloskills.network.UltmineShapeSelectC2SPayload;
 import com.murilloskills.network.StepAssistToggleC2SPayload;
 import com.murilloskills.network.RainDanceS2CPayload;
 import com.murilloskills.network.SkillAbilityC2SPayload;
@@ -243,8 +244,14 @@ public class MurilloSkillsClient implements ClientModInitializer {
         // --- SYNC CLIENT CONFIG ON JOIN ---
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             UltmineClientConfig.load();
+            UltmineClientState.applySavedSelection();
             UltPlaceClientState.clearPreview();
             resetUltPlacePreviewTracking();
+            ClientPlayNetworking.send(new UltmineShapeSelectC2SPayload(
+                    UltmineClientState.getSelectedShape(),
+                    UltmineClientState.getDepth(),
+                    UltmineClientState.getLength(),
+                    UltmineClientState.getVariant()));
             // Always sync XP direct-to-player preference to server (respects client choice over server default)
             ClientPlayNetworking.send(new XpDirectToggleC2SPayload(UltmineClientConfig.isXpDirectToPlayer()));
             // Sync magnet config to server

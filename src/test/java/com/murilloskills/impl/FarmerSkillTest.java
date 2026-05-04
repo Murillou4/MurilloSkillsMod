@@ -1,19 +1,47 @@
 package com.murilloskills.impl;
 
+import com.murilloskills.config.ModConfig;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FarmerSkillTest {
 
+    private static void resetConfig() {
+        try {
+            Field configField = ModConfig.class.getDeclaredField("config");
+            configField.setAccessible(true);
+            configField.set(null, new ModConfig.ConfigData());
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to initialize ModConfig for test", e);
+        }
+    }
+
     @Test
-    void fertileGroundGrowthChanceScalesAtMilestones() {
-        assertEquals(0.0f, FarmerSkill.getFertileGroundGrowthChance(24));
-        assertEquals(0.25f, FarmerSkill.getFertileGroundGrowthChance(25));
-        assertEquals(0.50f, FarmerSkill.getFertileGroundGrowthChance(50));
-        assertEquals(0.75f, FarmerSkill.getFertileGroundGrowthChance(75));
-        assertEquals(0.99f, FarmerSkill.getFertileGroundGrowthChance(99));
-        assertEquals(0.99f, FarmerSkill.getFertileGroundGrowthChance(100));
+    void fertileGroundGrowthBoostScalesProgressivelyToThreeHundredPercent() {
+        resetConfig();
+
+        assertEquals(0.0f, FarmerSkill.getFertileGroundGrowthBoost(24), 0.0001f);
+        assertEquals(0.25f, FarmerSkill.getFertileGroundGrowthBoost(25), 0.0001f);
+        assertEquals(3.0f, FarmerSkill.getFertileGroundGrowthBoost(100), 0.0001f);
+        assertEquals(300, FarmerSkill.getFertileGroundGrowthPercent(100));
+    }
+
+    @Test
+    void fertileGroundGrowthBoostIncreasesBetweenUnlockAndMaxLevel() {
+        resetConfig();
+
+        float level25 = FarmerSkill.getFertileGroundGrowthBoost(25);
+        float level50 = FarmerSkill.getFertileGroundGrowthBoost(50);
+        float level75 = FarmerSkill.getFertileGroundGrowthBoost(75);
+        float level100 = FarmerSkill.getFertileGroundGrowthBoost(100);
+
+        assertTrue(level50 > level25);
+        assertTrue(level75 > level50);
+        assertTrue(level100 > level75);
     }
 
     @Test

@@ -139,6 +139,7 @@ public class ModConfig {
         public float greenThumbExtra = 0.05f;
         public float greenThumbSeedSave = 0.10f;
         public float fertileGroundSpeed = 0.25f;
+        public float fertileGroundMaxBoost = 3.0f;
         public float nutrientSeedChance = 0.05f;
         public float abundantExtra = 0.15f;
         public float abundantAdjacent = 0.10f;

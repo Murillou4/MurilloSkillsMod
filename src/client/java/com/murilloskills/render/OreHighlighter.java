@@ -95,44 +95,20 @@ public class OreHighlighter {
 
         // Get settings from config
         int maxOres = OreFilterConfig.getMaxOres();
-        OreFilterConfig.DisplayMode displayMode = OreFilterConfig.getDisplayMode();
 
         // Filter ores based on user preferences and sort by distance
-        List<MinerScanResultPayload.OreEntry> filtered = highlightedOres.stream()
+        List<MinerScanResultPayload.OreEntry> toRender = highlightedOres.stream()
                 .filter(e -> OreFilterConfig.isOreEnabled(e.type()))
                 .sorted(Comparator.comparingDouble(e -> e.pos().getSquaredDistance(playerBlockPos)))
+                .limit(maxOres)
                 .collect(Collectors.toList());
-
-        // Apply display mode logic
-        List<MinerScanResultPayload.OreEntry> toRender;
-        switch (displayMode) {
-            case NEAREST_ONLY:
-                // Only show the nearest ore of each type
-                toRender = filterNearestOnly(filtered);
-                break;
-            case VISIBLE_ONLY:
-                // Only show ores that are exposed (have at least one air block adjacent)
-                toRender = filterVisibleOnly(filtered, client);
-                break;
-            case XRAY:
-            default:
-                // Show all ores (through walls)
-                toRender = filtered.stream().limit(maxOres).collect(Collectors.toList());
-                break;
-        }
 
         if (toRender.isEmpty())
             return;
 
-        // Configure rendering based on display mode
+        // Always render as X-Ray.
         GL11.glEnable(GL11.GL_DEPTH_TEST);
-        // VISIBLE_ONLY uses depth testing to hide ores behind blocks
-        if (displayMode == OreFilterConfig.DisplayMode.VISIBLE_ONLY) {
-            GL11.glDepthFunc(GL11.GL_LEQUAL);
-        } else {
-            // XRAY and NEAREST_ONLY show through walls
-            GL11.glDepthFunc(GL11.GL_ALWAYS);
-        }
+        GL11.glDepthFunc(GL11.GL_ALWAYS);
         GL11.glLineWidth(1.5f);
 
         VertexConsumer consumer = client.getBufferBuilders().getEntityVertexConsumers()
@@ -299,75 +275,6 @@ public class OreHighlighter {
         consumer.vertex(entry.getPositionMatrix(), x2, y2, z2).color(r, g, b, a).normal(entry, 0, 1, 0);
     }
 
-    /**
-     * Filter to keep only the nearest ore of each type.
-     * Useful for focused mining - shows one of each ore type.
-     */
-    private static List<MinerScanResultPayload.OreEntry> filterNearestOnly(
-            List<MinerScanResultPayload.OreEntry> sortedOres) {
-        java.util.Map<MinerScanResultPayload.OreType, MinerScanResultPayload.OreEntry> nearestByType = new java.util.LinkedHashMap<>();
-
-        for (MinerScanResultPayload.OreEntry entry : sortedOres) {
-            // putIfAbsent ensures we keep only the first (nearest, since list is sorted)
-            nearestByType.putIfAbsent(entry.type(), entry);
-        }
-
-        return new java.util.ArrayList<>(nearestByType.values());
-    }
-
-    /**
-     * Filter to keep only ores that are "visible" (exposed to air).
-     * An ore is considered visible if at least one adjacent block is
-     * air/transparent.
-     * This creates a more realistic mining experience.
-     */
-    private static List<MinerScanResultPayload.OreEntry> filterVisibleOnly(
-            List<MinerScanResultPayload.OreEntry> sortedOres, MinecraftClient client) {
-        if (client.world == null) {
-            return sortedOres;
-        }
-
-        int maxOres = OreFilterConfig.getMaxOres();
-        List<MinerScanResultPayload.OreEntry> visible = new java.util.ArrayList<>();
-
-        for (MinerScanResultPayload.OreEntry entry : sortedOres) {
-            if (visible.size() >= maxOres)
-                break;
-
-            if (isOreExposed(entry.pos(), client)) {
-                visible.add(entry);
-            }
-        }
-
-        return visible;
-    }
-
-    /**
-     * Check if an ore block is exposed (has at least one air/transparent neighbor).
-     * This means the player could potentially see the ore without X-ray.
-     */
-    private static boolean isOreExposed(BlockPos pos, MinecraftClient client) {
-        if (client.world == null)
-            return true;
-
-        // Check all 6 adjacent positions
-        BlockPos[] neighbors = {
-                pos.up(), pos.down(),
-                pos.north(), pos.south(),
-                pos.east(), pos.west()
-        };
-
-        for (BlockPos neighbor : neighbors) {
-            net.minecraft.block.BlockState state = client.world.getBlockState(neighbor);
-            // Consider exposed if neighbor is air, transparent, or non-solid
-            if (state.isAir() || !state.isOpaque() || !state.isSolidBlock(client.world, neighbor)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private static void pruneInvalidHighlights(MinecraftClient client) {
         if (highlightedOres == null || client.world == null) {
             return;
@@ -384,6 +291,6 @@ public class OreHighlighter {
             return false;
         }
 
-        return MinerXpGetter.isMinerXpBlock(client.world.getBlockState(pos).getBlock(), false, true).didGainXp();
+        return MinerXpGetter.isDetectableOreBlock(client.world.getBlockState(pos).getBlock());
     }
 }
