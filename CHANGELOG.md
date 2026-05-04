@@ -4,6 +4,17 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.53] - 2026-05-04
+
+### Miner - Fortuna em Ultmine e Folhas Modded
+
+- **Ultmine aplica bloco por bloco**: glowstone e folhas quebradas por qualquer shape do Ultmine/Vein Miner agora recebem os drops bônus do Minerador em cada bloco extra quebrado, não só no bloco clicado.
+- **Folhas usam loot table real**: os bônus extras de folhas rerolam a loot table do próprio bloco, permitindo saplings, sticks, frutas e drops customizados de leaves de outros mods.
+- **Drops no inventário respeitados**: quando o Ultmine/Vein Miner está configurado para mandar drops ao inventário, os drops bônus seguem a mesma regra.
+- **Folhas exigem machado**: folhas não entram mais pela regra genérica de Fortuna de recursos sem machado em níveis altos/prestígio.
+
+---
+
 ## [1.2.52] - 2026-05-04
 
 ### Miner - Drops Reais em Glowstone e Folhas

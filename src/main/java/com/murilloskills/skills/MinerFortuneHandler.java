@@ -66,8 +66,8 @@ public final class MinerFortuneHandler {
         if (isGlowstoneId(blockId)) {
             return true;
         }
-        if (isLeavesBlockId(blockId) && isAxeTool(tool)) {
-            return true;
+        if (isLeavesBlockId(blockId)) {
+            return isAxeTool(tool);
         }
         return minerLevel >= SkillConfig.getMinerResourceFortuneLevel() || prestige > 0;
     }
@@ -76,7 +76,7 @@ public final class MinerFortuneHandler {
         return "minecraft:glowstone".equals(blockId);
     }
 
-    private static boolean isLeavesBlockId(String blockId) {
+    static boolean isLeavesBlockId(String blockId) {
         if (blockId == null) {
             return false;
         }

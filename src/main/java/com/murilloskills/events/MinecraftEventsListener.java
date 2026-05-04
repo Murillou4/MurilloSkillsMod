@@ -41,7 +41,10 @@ public class MinecraftEventsListener {
             // Handler do Minerador
             BlockBreakHandler.handle(player, world, pos, state);
             // Drops bônus do Minerador (glowstone / folhas com machado) — contorna caps vanilla
-            MinerBonusDropHandler.onBlockBreak(player, world, pos, state);
+            boolean veinMinerInventoryDrops = serverPlayer != null
+                    && VeinMinerHandler.isVeinMinerActive(serverPlayer)
+                    && VeinMinerHandler.isDropsToInventory(serverPlayer);
+            MinerBonusDropHandler.onBlockBreak(player, world, pos, state, veinMinerInventoryDrops);
             // Handler do Agricultor (Farmer)
             CropHarvestHandler.handle(player, world, pos, state);
         });

@@ -339,6 +339,7 @@ public final class VeinMinerHandler {
             } else {
                 world.breakBlock(pos, true, player);
             }
+            applyPerBlockSkillHandlers(player, world, pos, state, inventoryDrops);
 
             // Apply tool durability damage
             if (SkillConfig.getVeinMinerDamageToolPerBlock() && !player.isCreative() && !tool.isEmpty()) {
@@ -507,7 +508,7 @@ public final class VeinMinerHandler {
                 world.breakBlock(pos, true, player);
             }
             minedBlocks++;
-            applyPerBlockSkillHandlers(player, world, pos, state);
+            applyPerBlockSkillHandlers(player, world, pos, state, inventoryDrops);
 
             // Apply tool durability damage
             if (SkillConfig.getVeinMinerDamageToolPerBlock() && !player.isCreative() && !tool.isEmpty()) {
@@ -803,11 +804,13 @@ public final class VeinMinerHandler {
 
     /**
      * Reuses the same per-block skill flow as a normal manual break so ultmine
-     * applies farmer passives, miner XP, streaks, and other side-effects
+     * applies farmer passives, miner XP, capped-loot bonus drops, streaks, and other side-effects
      * consistently for every extra block it breaks.
      */
-    private static void applyPerBlockSkillHandlers(ServerPlayerEntity player, World world, BlockPos pos, BlockState state) {
+    private static void applyPerBlockSkillHandlers(ServerPlayerEntity player, World world, BlockPos pos,
+            BlockState state, boolean dropsToInventory) {
         BlockBreakHandler.handle(player, world, pos, state);
+        MinerBonusDropHandler.onBlockBreak(player, world, pos, state, dropsToInventory);
         CropHarvestHandler.handle(player, world, pos, state);
     }
 

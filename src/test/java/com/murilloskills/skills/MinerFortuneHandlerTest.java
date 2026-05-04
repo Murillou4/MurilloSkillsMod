@@ -45,6 +45,15 @@ class MinerFortuneHandlerTest {
     void leavesDoNotReceiveMinerFortuneWithoutAxe() {
         assertFalse(MinerFortuneHandler.shouldApplySkillFortune("minecraft:oak_leaves", 50, 0, null));
         assertEquals(0, MinerFortuneHandler.getSkillFortuneBonus(50, 0, "minecraft:oak_leaves", null));
+        assertFalse(MinerFortuneHandler.shouldApplySkillFortune("minecraft:oak_leaves", 100, 8, null));
+        assertEquals(0, MinerFortuneHandler.getSkillFortuneBonus(100, 8, "minecraft:oak_leaves", null));
+    }
+
+    @Test
+    void moddedLeavesIdsAreRecognized() {
+        assertTrue(MinerFortuneHandler.isLeavesBlockId("biomesoplenty:fir_leaves"));
+        assertTrue(MinerFortuneHandler.isLeavesBlockId("twilightforest:dark_leaves"));
+        assertFalse(MinerFortuneHandler.isLeavesBlockId("minecraft:glowstone"));
     }
 
     @Test
