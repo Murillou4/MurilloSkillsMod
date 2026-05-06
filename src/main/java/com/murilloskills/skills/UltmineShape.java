@@ -53,6 +53,7 @@ public enum UltmineShape {
             case STAIRS -> 2;            // 0=UP, 1=DOWN
             case SQUARE_20x20_D1 -> 3;   // 0=Horizontal, 1=Vertical N/S, 2=Vertical E/W
             case R_2x1 -> 2;             // 0=default (wide), 1=rotated (tall)
+            case LEGACY -> 2;            // 0=Same Block, 1=Connected Ores
             default -> 1;
         };
     }
@@ -73,6 +74,9 @@ public enum UltmineShape {
             case R_2x1 -> variant == 0
                     ? "murilloskills.ultmine.variant.2x1.wide"
                     : "murilloskills.ultmine.variant.2x1.tall";
+            case LEGACY -> variant == 0
+                    ? "murilloskills.ultmine.variant.legacy.same_block"
+                    : "murilloskills.ultmine.variant.legacy.connected_ores";
             default -> "murilloskills.ultmine.variant.default";
         };
     }

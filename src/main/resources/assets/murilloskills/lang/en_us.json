@@ -58,6 +58,8 @@
   "murilloskills.ultmine.variant.square.vertical_ew": "Vertical E/W",
   "murilloskills.ultmine.variant.2x1.wide": "Wide (2x1)",
   "murilloskills.ultmine.variant.2x1.tall": "Tall (1x2)",
+  "murilloskills.ultmine.variant.legacy.same_block": "Same Block",
+  "murilloskills.ultmine.variant.legacy.connected_ores": "Connected Ores",
   "murilloskills.ultmine.result.success": "Ultmine complete: %s/%s blocks.",
   "murilloskills.ultmine.result.not_allowed": "Ultmine denied: requirements not met.",
   "murilloskills.ultmine.result.cooldown": "Ultmine cooldown: %s ticks left.",

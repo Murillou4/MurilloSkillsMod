@@ -673,11 +673,15 @@ public final class VeinMinerHandler {
             BlockState originState, UltmineShape shape, int depth, int length, Direction dir) {
         UltmineSelection selection = normalizeSelection(shape, depth, length);
         if (selection.shape() == UltmineShape.LEGACY) {
-            if (isClassicModeBlockLocked(player, originState.getBlock())) {
+            Set<String> blockedBlockIds = getClassicBlockedBlockIds(player);
+            String originBlockId = getBlockId(originState.getBlock());
+            if (ClassicUltmineTargetRules.isOriginBlocked(originBlockId, blockedBlockIds)) {
                 return List.of();
             }
             int maxLegacyBlocks = getLegacyUltmineLimit();
             Set<BlockPos> connected = collectConnectedBlocks(world, origin, originState, maxLegacyBlocks);
+            addClassicConnectedOres(world, origin, originBlockId, getUltmineVariant(player), blockedBlockIds, connected,
+                    maxLegacyBlocks);
             connected.add(origin.toImmutable());
             return new ArrayList<>(connected);
         }
@@ -896,7 +900,7 @@ public final class VeinMinerHandler {
     private static Set<BlockPos> collectConnectedBlocks(World world, BlockPos origin, BlockState originState,
             int maxBlocks) {
         Block originBlock = originState.getBlock();
-        Set<BlockPos> visited = new HashSet<>();
+        Set<BlockPos> visited = new LinkedHashSet<>();
         ArrayDeque<BlockPos> queue = new ArrayDeque<>();
 
         queue.add(origin);
@@ -929,6 +933,68 @@ public final class VeinMinerHandler {
         }
 
         return stripOrigin(visited, origin);
+    }
+
+    private static void addClassicConnectedOres(World world, BlockPos origin, String originBlockId, int variant,
+            Set<String> blockedBlockIds, Set<BlockPos> targets, int maxBlocks) {
+        if (!ClassicUltmineTargetRules.shouldExpandIntoConnectedOres(originBlockId, variant, blockedBlockIds)) {
+            return;
+        }
+
+        int maxTargetsWithoutOrigin = Math.max(0, maxBlocks - 1);
+        if (targets.size() >= maxTargetsWithoutOrigin) {
+            return;
+        }
+
+        List<BlockPos> anchors = new ArrayList<>(targets.size() + 1);
+        anchors.add(origin.toImmutable());
+        anchors.addAll(targets);
+
+        Set<BlockPos> visited = new HashSet<>(anchors);
+        ArrayDeque<BlockPos> queue = new ArrayDeque<>();
+        for (BlockPos anchor : anchors) {
+            enqueueClassicOreNeighbors(world, anchor, originBlockId, variant, blockedBlockIds, targets, visited, queue,
+                    maxTargetsWithoutOrigin);
+            if (targets.size() >= maxTargetsWithoutOrigin) {
+                return;
+            }
+        }
+
+        while (!queue.isEmpty() && targets.size() < maxTargetsWithoutOrigin) {
+            BlockPos current = queue.poll();
+            enqueueClassicOreNeighbors(world, current, originBlockId, variant, blockedBlockIds, targets, visited, queue,
+                    maxTargetsWithoutOrigin);
+        }
+    }
+
+    private static void enqueueClassicOreNeighbors(World world, BlockPos current, String originBlockId, int variant,
+            Set<String> blockedBlockIds, Set<BlockPos> targets, Set<BlockPos> visited, ArrayDeque<BlockPos> queue,
+            int maxTargetsWithoutOrigin) {
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    if (dx == 0 && dy == 0 && dz == 0) {
+                        continue;
+                    }
+                    if (targets.size() >= maxTargetsWithoutOrigin) {
+                        return;
+                    }
+
+                    BlockPos neighbor = current.add(dx, dy, dz).toImmutable();
+                    if (!visited.add(neighbor)) {
+                        continue;
+                    }
+
+                    BlockState neighborState = world.getBlockState(neighbor);
+                    String neighborBlockId = getBlockId(neighborState.getBlock());
+                    if (ClassicUltmineTargetRules.isConnectedOreCandidate(originBlockId, neighborBlockId, variant,
+                            blockedBlockIds)) {
+                        targets.add(neighbor);
+                        queue.add(neighbor);
+                    }
+                }
+            }
+        }
     }
 
     private static Set<BlockPos> stripOrigin(Set<BlockPos> visited, BlockPos origin) {
@@ -1132,12 +1198,16 @@ public final class VeinMinerHandler {
     }
 
     private static boolean isClassicModeBlockLocked(ServerPlayerEntity player, Block block) {
+        return ClassicUltmineTargetRules.isOriginBlocked(getBlockId(block), getClassicBlockedBlockIds(player));
+    }
+
+    private static Set<String> getClassicBlockedBlockIds(ServerPlayerEntity player) {
         Set<String> blocked = CLASSIC_BLOCK_LOCK_LISTS.get(player.getUuid());
-        if (blocked == null || blocked.isEmpty()) {
-            return false;
-        }
-        String blockId = Registries.BLOCK.getId(block).toString();
-        return blocked.contains(blockId);
+        return blocked == null ? Set.of() : blocked;
+    }
+
+    private static String getBlockId(Block block) {
+        return Registries.BLOCK.getId(block).toString();
     }
 
     /**

@@ -435,7 +435,7 @@ public class UltmineConfigScreen extends Screen {
         int maxLength = SkillConfig.getUltmineShapeMaxLength(selectedShape);
         int variantCount = UltmineShape.getVariantCount(selectedShape);
         if (selectedShape == UltmineShape.LEGACY) {
-            configRows = 3;
+            configRows = 3 + (variantCount > 1 ? 1 : 0);
         } else {
             if (maxDepth > 1) configRows++;
             if (maxLength > 1) configRows++;
@@ -770,10 +770,11 @@ public class UltmineConfigScreen extends Screen {
             context.drawCenteredTextWithShadow(textRenderer,
                     Text.literal(varName).formatted(Formatting.AQUA),
                     valueCenterX, rowY + 5, palette.textAqua());
+            currentRow++;
         }
 
         if (selectedShape == UltmineShape.LEGACY) {
-            int infoY = shapeConfigY + 32 + oY;
+            int infoY = shapeConfigY + 32 + currentRow * 24 + oY;
             int infoLabelX = panelX + PANEL_PADDING * 2;
             int infoValueX = centerX + 20;
 

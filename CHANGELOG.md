@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.58] - 2026-05-06
+
+### Miner - Classic + Ores
+
+- **Variante Classic + Ores**: o Classic Mode ganhou a opcao Connected Ores para minerar blocos classicos conectados junto de minerios detectaveis.
+- **Minerios modded incluidos**: IDs terminados em `_ore` e `ancient_debris` entram na selecao conectada, incluindo variantes de deepslate de outros mods.
+- **Regras preservadas**: bloqueios do Classic, limite maximo, validacoes do Ultmine, trash, fortuna, skill, melting, XP e durabilidade continuam passando pelo pipeline existente.
+
+---
+
 ## [1.2.57] - 2026-05-06
 
 ### Miner - Ultmine em Lotes
