@@ -430,18 +430,24 @@ public class UltmineConfigScreen extends Screen {
         shapeConfigY = shapeSelectorY + 42;
 
         // Calculate shape config section height
-        int configRows = 0;
         int maxDepth = SkillConfig.getUltmineShapeMaxDepth(selectedShape);
         int maxLength = SkillConfig.getUltmineShapeMaxLength(selectedShape);
         int variantCount = UltmineShape.getVariantCount(selectedShape);
+        int shapeConfigH;
         if (selectedShape == UltmineShape.LEGACY) {
-            configRows = 3 + (variantCount > 1 ? 1 : 0);
+            int variantH = (variantCount > 1) ? 24 : 0;
+            // 3 info rows of 14px each + 10px card padding
+            int infoCardH = 3 * 14 + 10;
+            shapeConfigH = 30 + variantH + infoCardH + 8;
         } else {
+            int configRows = 0;
             if (maxDepth > 1) configRows++;
             if (maxLength > 1) configRows++;
             if (variantCount > 1) configRows++;
+            int rowsH = configRows * 24;
+            if (configRows == 0) rowsH = 18; // "no options" hint
+            shapeConfigH = 30 + rowsH + 10;
         }
-        int shapeConfigH = 30 + configRows * 24 + 10;
 
         // Magnet section
         magnetSectionY = shapeConfigY + shapeConfigH + SECTION_GAP;
@@ -774,31 +780,45 @@ public class UltmineConfigScreen extends Screen {
         }
 
         if (selectedShape == UltmineShape.LEGACY) {
-            int infoY = shapeConfigY + 32 + currentRow * 24 + oY;
-            int infoLabelX = panelX + PANEL_PADDING * 2;
-            int infoValueX = centerX + 20;
+            int cardX = panelX + PANEL_PADDING + 4;
+            int cardW = panelW - (PANEL_PADDING + 4) * 2;
+            int cardY = shapeConfigY + 30 + currentRow * 24 + oY;
+            int cardH = 3 * 14 + 8;
+
+            // Subtle info-card background + border
+            context.fill(cardX, cardY, cardX + cardW, cardY + cardH, palette.cardBgSubtle());
+            RenderingHelper.drawPanelBorder(context, cardX, cardY, cardW, cardH, palette.infoBoxBorder());
+
+            int infoLabelX = cardX + 8;
+            int infoValueX = cardX + cardW - 8;
+            int rowY = cardY + 5;
 
             String maxBlocksLabel = Text.translatable("murilloskills.ultmine_config.legacy.max_blocks").getString();
-            context.drawTextWithShadow(textRenderer, maxBlocksLabel, infoLabelX, infoY, palette.textLight());
+            String maxBlocksValue = String.valueOf(SkillConfig.getVeinMinerMaxBlocks());
+            context.drawTextWithShadow(textRenderer, maxBlocksLabel, infoLabelX, rowY, palette.textLight());
             context.drawTextWithShadow(textRenderer,
-                    Text.literal(String.valueOf(SkillConfig.getVeinMinerMaxBlocks())).formatted(Formatting.AQUA),
-                    infoValueX, infoY, palette.textAqua());
+                    Text.literal(maxBlocksValue).formatted(Formatting.AQUA),
+                    infoValueX - textRenderer.getWidth(maxBlocksValue), rowY, palette.textAqua());
 
-            infoY += 14;
+            rowY += 14;
             String deepslateLabel = Text.translatable("murilloskills.ultmine_config.legacy.deepslate").getString();
-            context.drawTextWithShadow(textRenderer, deepslateLabel, infoLabelX, infoY, palette.textLight());
             boolean deepslate = SkillConfig.getVeinMinerMatchDeepslateVariants();
+            String deepslateValue = deepslate ? "ON" : "OFF";
+            context.drawTextWithShadow(textRenderer, deepslateLabel, infoLabelX, rowY, palette.textLight());
             context.drawTextWithShadow(textRenderer,
-                    Text.literal(deepslate ? "ON" : "OFF").formatted(deepslate ? Formatting.GREEN : Formatting.RED),
-                    infoValueX, infoY, deepslate ? palette.textGreen() : palette.statusCooldown());
+                    Text.literal(deepslateValue).formatted(deepslate ? Formatting.GREEN : Formatting.RED),
+                    infoValueX - textRenderer.getWidth(deepslateValue), rowY,
+                    deepslate ? palette.textGreen() : palette.statusCooldown());
 
-            infoY += 14;
+            rowY += 14;
             String toolDmgLabel = Text.translatable("murilloskills.ultmine_config.legacy.tool_damage").getString();
-            context.drawTextWithShadow(textRenderer, toolDmgLabel, infoLabelX, infoY, palette.textLight());
             boolean toolDmg = SkillConfig.getVeinMinerDamageToolPerBlock();
+            String toolDmgValue = toolDmg ? "ON" : "OFF";
+            context.drawTextWithShadow(textRenderer, toolDmgLabel, infoLabelX, rowY, palette.textLight());
             context.drawTextWithShadow(textRenderer,
-                    Text.literal(toolDmg ? "ON" : "OFF").formatted(toolDmg ? Formatting.GREEN : Formatting.RED),
-                    infoValueX, infoY, toolDmg ? palette.textGreen() : palette.statusCooldown());
+                    Text.literal(toolDmgValue).formatted(toolDmg ? Formatting.GREEN : Formatting.RED),
+                    infoValueX - textRenderer.getWidth(toolDmgValue), rowY,
+                    toolDmg ? palette.textGreen() : palette.statusCooldown());
         } else if (maxDepth <= 1 && maxLength <= 1 && variantCount <= 1) {
             int noConfigY = shapeConfigY + 32 + oY;
             context.drawCenteredTextWithShadow(textRenderer,
@@ -854,10 +874,17 @@ public class UltmineConfigScreen extends Screen {
                     labelX, trashSectionY + 40 + oY, palette.textMuted());
         } else {
             int visibleCount = Math.min(MAX_VISIBLE_TRASH, trashItems.size() - trashScrollOffset);
+            int rowX = panelX + PANEL_PADDING + 4;
+            int rowW = panelW - (PANEL_PADDING + 4) * 2;
             for (int i = 0; i < visibleCount; i++) {
                 int idx = i + trashScrollOffset;
                 if (idx >= trashItems.size()) break;
                 int itemY = trashSectionY + 38 + i * 16 + oY;
+
+                // Zebra stripe (every other row gets subtle bg)
+                if (i % 2 == 1) {
+                    context.fill(rowX, itemY - 1, rowX + rowW, itemY + 14, palette.alternatingRowBg());
+                }
 
                 String itemId = trashItems.get(idx);
                 // Shorten display: remove "minecraft:" prefix for vanilla items
@@ -905,12 +932,18 @@ public class UltmineConfigScreen extends Screen {
                     labelX, classicBlockSectionY + 40 + oY, palette.textMuted());
         } else {
             int visibleCount = Math.min(MAX_VISIBLE_CLASSIC_BLOCKS, blockedBlocks.size() - classicBlockScrollOffset);
+            int rowX = panelX + PANEL_PADDING + 4;
+            int rowW = panelW - (PANEL_PADDING + 4) * 2;
             for (int i = 0; i < visibleCount; i++) {
                 int idx = i + classicBlockScrollOffset;
                 if (idx >= blockedBlocks.size()) {
                     break;
                 }
                 int itemY = classicBlockSectionY + 38 + i * 16 + oY;
+
+                if (i % 2 == 1) {
+                    context.fill(rowX, itemY - 1, rowX + rowW, itemY + 14, palette.alternatingRowBg());
+                }
 
                 String blockId = blockedBlocks.get(idx);
                 String display = blockId.startsWith("minecraft:") ? blockId.substring(10) : blockId;
