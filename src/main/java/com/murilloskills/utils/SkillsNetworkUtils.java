@@ -11,6 +11,13 @@ import java.util.List;
 public class SkillsNetworkUtils {
 
     public static void syncSkills(ServerPlayerEntity player) {
+        if (BatchSkillUpdateContext.queueSkillSync(player)) {
+            return;
+        }
+        syncSkillsNow(player);
+    }
+
+    public static void syncSkillsNow(ServerPlayerEntity player) {
         com.murilloskills.data.PlayerSkillData data = player
                 .getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
         data.normalizeParagonState();

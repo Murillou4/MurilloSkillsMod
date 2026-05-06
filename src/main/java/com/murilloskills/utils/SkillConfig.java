@@ -119,6 +119,18 @@ public class SkillConfig {
         return Math.max(1, ModConfig.get().ultmine.maxBlocksPerUse);
     }
 
+    public static int getUltmineInstantBreakThreshold() {
+        return Math.max(1, ModConfig.get().ultmine.instantBreakThreshold);
+    }
+
+    public static int getUltmineBlocksPerTick() {
+        return Math.max(1, ModConfig.get().ultmine.blocksPerTick);
+    }
+
+    public static boolean shouldSuppressBulkBreakParticles() {
+        return ModConfig.get().ultmine.suppressBulkBreakParticles;
+    }
+
     public static int getUltminePermissionLevel() {
         return Math.max(0, ModConfig.get().ultmine.permissionLevel);
     }

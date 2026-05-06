@@ -2,6 +2,7 @@ package com.murilloskills.skills;
 
 import com.murilloskills.data.ModAttachments;
 import com.murilloskills.network.UltmineResultS2CPayload;
+import com.murilloskills.utils.BatchSkillUpdateContext;
 import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.Block;
@@ -51,15 +52,16 @@ public final class VeinMinerHandler {
     private static final Map<UUID, Direction> ULTMINE_LAST_TARGET_FACE = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> ULTMINE_LAST_TARGET_TICK = new ConcurrentHashMap<>();
     private static final Map<UUID, List<PendingOriginCollection>> PENDING_ORIGIN_COLLECTIONS = new ConcurrentHashMap<>();
+    private static final Map<UUID, UltmineBreakJob> ULTMINE_JOBS = new ConcurrentHashMap<>();
 
     // Magnet per-player state
     private static final Map<UUID, Boolean> MAGNET_ENABLED = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> MAGNET_RANGE = new ConcurrentHashMap<>();
 
     // Trash per-player item list
-    private static final Map<UUID, List<String>> TRASH_LISTS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Set<String>> TRASH_LISTS = new ConcurrentHashMap<>();
     // Ultmine legacy per-player blocked blocks (classic mode)
-    private static final Map<UUID, List<String>> CLASSIC_BLOCK_LOCK_LISTS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Set<String>> CLASSIC_BLOCK_LOCK_LISTS = new ConcurrentHashMap<>();
 
     /**
      * Map of blocks that should be considered equivalent for vein mining.
@@ -230,6 +232,7 @@ public final class VeinMinerHandler {
         ULTMINE_LAST_TARGET_FACE.remove(playerUuid);
         ULTMINE_LAST_TARGET_TICK.remove(playerUuid);
         PENDING_ORIGIN_COLLECTIONS.remove(playerUuid);
+        ULTMINE_JOBS.remove(playerUuid);
         MAGNET_ENABLED.remove(playerUuid);
         MAGNET_RANGE.remove(playerUuid);
         TRASH_LISTS.remove(playerUuid);
@@ -259,6 +262,61 @@ public final class VeinMinerHandler {
 
         if (pending.isEmpty()) {
             PENDING_ORIGIN_COLLECTIONS.remove(uuid);
+        }
+    }
+
+    /**
+     * Processes one budgeted slice of a queued large Ultmine job.
+     * Called from the global server tick loop.
+     */
+    public static void tickUltmineJob(ServerPlayerEntity player) {
+        if (player == null) {
+            return;
+        }
+
+        UUID uuid = player.getUuid();
+        UltmineBreakJob job = ULTMINE_JOBS.get(uuid);
+        if (job == null) {
+            return;
+        }
+
+        if (player.isSpectator() || player.isDead()
+                || !(player.getEntityWorld() instanceof ServerWorld currentWorld)
+                || currentWorld != job.world()) {
+            ULTMINE_JOBS.remove(uuid);
+            sendUltmineResult(player, false, job.minedBlocks(), job.requestedBlocks(),
+                    "murilloskills.ultmine.result.cancelled", job.sendResultPacket());
+            return;
+        }
+
+        int budget = SkillConfig.getUltmineBlocksPerTick();
+        int processed = 0;
+        BulkDropBuffer dropBuffer = new BulkDropBuffer(job.inventoryDrops(), job.xpDirect(),
+                getTrashSet(player), job.origin());
+
+        BatchSkillUpdateContext.begin(player, "Ultmine");
+        try {
+            while (processed < budget && job.hasNext()) {
+                BlockPos pos = job.next();
+                if (breakUltmineTarget(player, currentWorld, pos, dropBuffer, job.suppressBreakParticles())) {
+                    job.incrementMinedBlocks();
+                }
+                processed++;
+            }
+        } finally {
+            BatchSkillUpdateContext.end(player);
+            dropBuffer.flush(player, currentWorld);
+        }
+
+        if (!job.hasNext()) {
+            ULTMINE_JOBS.remove(uuid);
+            if (job.minedBlocks() <= 0) {
+                sendUltmineResult(player, false, 0, job.requestedBlocks(),
+                        "murilloskills.ultmine.result.no_valid_blocks", job.sendResultPacket());
+                return;
+            }
+            finishUltmine(player, currentWorld, job.minedBlocks(), job.requestedBlocks(), job.xpCost(),
+                    job.sendResultPacket());
         }
     }
 
@@ -425,6 +483,10 @@ public final class VeinMinerHandler {
         if (world.isClient()) {
             return;
         }
+        if (ULTMINE_JOBS.containsKey(player.getUuid())) {
+            sendUltmineResult(player, false, 0, 0, "murilloskills.ultmine.result.busy", sendResultPacket);
+            return;
+        }
         if (!shouldUseUltmine(player)) {
             sendUltmineResult(player, false, 0, 0, "murilloskills.ultmine.result.not_allowed", sendResultPacket);
             return;
@@ -464,7 +526,6 @@ public final class VeinMinerHandler {
         }
 
         ItemStack tool = player.getMainHandStack();
-        int minedBlocks = 0;
         boolean inventoryDrops = isDropsToInventory(player) && world instanceof ServerWorld;
         boolean xpDirect = isXpDirectToPlayer(player) && world instanceof ServerWorld;
         if (inventoryDrops) {
@@ -475,61 +536,136 @@ public final class VeinMinerHandler {
             collectNearbyXp(player, (ServerWorld) world, origin);
         }
 
-        for (BlockPos pos : new LinkedHashSet<>(rawTargets)) {
-            if (minedBlocks >= maxBlocks) {
-                break;
-            }
-            BlockState state = world.getBlockState(pos);
-            if (state.isAir()) {
-                continue;
-            }
-            if (!state.getFluidState().isEmpty()) {
-                continue;
-            }
-            if (state.getHardness(world, pos) < 0.0f) {
-                continue;
-            }
-            if (!isUltmineBlockAllowed(state.getBlock())) {
-                continue;
-            }
-            tool = player.getMainHandStack();
-            if (!canBreakWith(tool, state, player)) {
-                continue;
-            }
-            if (!canPlayerModify(world, player, pos)) {
-                continue;
-            }
-
-            if (inventoryDrops) {
-                breakWithInventoryDrops(player, world, pos, state, tool, xpDirect);
-            } else if (xpDirect && world instanceof ServerWorld serverWorld) {
-                breakWithGroundDropsAndDirectXp(player, serverWorld, pos, state, tool);
-            } else {
-                world.breakBlock(pos, true, player);
-            }
-            minedBlocks++;
-            applyPerBlockSkillHandlers(player, world, pos, state, inventoryDrops);
-
-            // Apply tool durability damage
-            if (SkillConfig.getVeinMinerDamageToolPerBlock() && !player.isCreative() && !tool.isEmpty()) {
-                tool.damage(1, player, EquipmentSlot.MAINHAND);
-            }
-        }
-
-        if (inventoryDrops) {
-            collectOriginDrops(player, (ServerWorld) world, origin);
-            scheduleOriginCollection(player, world, origin);
-        }
-
-        if (minedBlocks <= 0) {
+        if (!(world instanceof ServerWorld serverWorld)) {
             return;
         }
 
+        List<BlockPos> validTargets = collectValidUltmineTargets(player, serverWorld, rawTargets, maxBlocks, tool);
+        if (validTargets.isEmpty()) {
+            sendUltmineResult(player, false, 0, requested,
+                    "murilloskills.ultmine.result.no_valid_blocks", sendResultPacket);
+            return;
+        }
+
+        if (validTargets.size() <= SkillConfig.getUltmineInstantBreakThreshold()) {
+            int minedBlocks = executeInstantUltmine(player, serverWorld, origin, validTargets, inventoryDrops, xpDirect);
+            if (minedBlocks <= 0) {
+                sendUltmineResult(player, false, 0, requested,
+                        "murilloskills.ultmine.result.no_valid_blocks", sendResultPacket);
+                return;
+            }
+            finishUltmine(player, serverWorld, minedBlocks, requested, xpCost, sendResultPacket);
+            return;
+        }
+
+        UltmineBreakJob job = new UltmineBreakJob(serverWorld, origin.toImmutable(), validTargets, requested, xpCost,
+                sendResultPacket, inventoryDrops, xpDirect, SkillConfig.shouldSuppressBulkBreakParticles());
+        if (ULTMINE_JOBS.putIfAbsent(player.getUuid(), job) != null) {
+            sendUltmineResult(player, false, 0, 0, "murilloskills.ultmine.result.busy", sendResultPacket);
+            return;
+        }
+        sendUltmineResult(player, true, validTargets.size(), SkillConfig.getUltmineBlocksPerTick(),
+                "murilloskills.ultmine.result.queued", sendResultPacket);
+    }
+
+    private static List<BlockPos> collectValidUltmineTargets(ServerPlayerEntity player, World world,
+            List<BlockPos> rawTargets, int maxBlocks, ItemStack tool) {
+        List<BlockPos> valid = new ArrayList<>(Math.min(rawTargets.size(), maxBlocks));
+        for (BlockPos pos : new LinkedHashSet<>(rawTargets)) {
+            if (valid.size() >= maxBlocks) {
+                break;
+            }
+            BlockState state = world.getBlockState(pos);
+            if (!isBreakableUltmineTarget(player, world, pos, state, tool)) {
+                continue;
+            }
+            valid.add(pos.toImmutable());
+        }
+        return valid;
+    }
+
+    private static int executeInstantUltmine(ServerPlayerEntity player, ServerWorld world, BlockPos origin,
+            List<BlockPos> targets, boolean inventoryDrops, boolean xpDirect) {
+        int minedBlocks = 0;
+        BulkDropBuffer dropBuffer = new BulkDropBuffer(inventoryDrops, xpDirect, getTrashSet(player), origin);
+
+        BatchSkillUpdateContext.begin(player, "Ultmine");
+        try {
+            for (BlockPos pos : targets) {
+                if (breakUltmineTarget(player, world, pos, dropBuffer, false)) {
+                    minedBlocks++;
+                }
+            }
+        } finally {
+            BatchSkillUpdateContext.end(player);
+            dropBuffer.flush(player, world);
+        }
+
+        if (inventoryDrops) {
+            collectOriginDrops(player, world, origin);
+            scheduleOriginCollection(player, world, origin);
+        }
+        return minedBlocks;
+    }
+
+    private static boolean breakUltmineTarget(ServerPlayerEntity player, ServerWorld world, BlockPos pos,
+            BulkDropBuffer dropBuffer, boolean suppressBreakParticles) {
+        BlockState state = world.getBlockState(pos);
+        ItemStack tool = player.getMainHandStack();
+        if (!isBreakableUltmineTarget(player, world, pos, state, tool)) {
+            return false;
+        }
+
+        List<ItemStack> drops = Block.getDroppedStacks(state, world, pos, world.getBlockEntity(pos), player, tool);
+        dropBuffer.addDrops(drops);
+
+        boolean removed = suppressBreakParticles
+                ? world.removeBlock(pos, false)
+                : world.breakBlock(pos, false, player);
+        if (!removed) {
+            return false;
+        }
+
+        state.onStacksDropped(world, pos, tool, false);
+        int vanillaXp = getVanillaBlockXpDrop(world, state, tool);
+        if (vanillaXp > 0) {
+            dropBuffer.addXp(vanillaXp);
+        }
+
+        applyPerBlockSkillHandlers(player, world, pos, state, dropBuffer);
+
+        if (SkillConfig.getVeinMinerDamageToolPerBlock() && !player.isCreative() && !tool.isEmpty()) {
+            tool.damage(1, player, EquipmentSlot.MAINHAND);
+        }
+        return true;
+    }
+
+    private static boolean isBreakableUltmineTarget(ServerPlayerEntity player, World world, BlockPos pos,
+            BlockState state, ItemStack tool) {
+        if (state.isAir()) {
+            return false;
+        }
+        if (!state.getFluidState().isEmpty()) {
+            return false;
+        }
+        if (state.getHardness(world, pos) < 0.0f) {
+            return false;
+        }
+        if (!isUltmineBlockAllowed(state.getBlock())) {
+            return false;
+        }
+        if (!canBreakWith(tool, state, player)) {
+            return false;
+        }
+        return canPlayerModify(world, player, pos);
+    }
+
+    private static void finishUltmine(ServerPlayerEntity player, World world, int minedBlocks, int requested,
+            int xpCost, boolean sendResultPacket) {
         if (!player.isCreative() && xpCost > 0) {
             player.addExperienceLevels(-xpCost);
         }
-
-        ULTMINE_LAST_USE_TICK.put(player.getUuid(), worldTime);
+        ULTMINE_LAST_USE_TICK.put(player.getUuid(), world.getTime());
         sendUltmineResult(player, true, minedBlocks, requested, "murilloskills.ultmine.result.success", sendResultPacket);
     }
 
@@ -650,14 +786,8 @@ public final class VeinMinerHandler {
         }
 
         List<ItemStack> drops = Block.getDroppedStacks(state, serverWorld, pos, world.getBlockEntity(pos), player, tool);
-        for (ItemStack drop : drops) {
-            ItemStack remaining = drop.copy();
-            if (!player.getInventory().insertStack(remaining) && !remaining.isEmpty()) {
-                ItemEntity itemEntity = new ItemEntity(serverWorld,
-                        pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, remaining);
-                serverWorld.spawnEntity(itemEntity);
-            }
-        }
+        List<ItemStack> mergedDrops = UltmineDropCollector.mergeDrops(drops, getTrashSet(player));
+        UltmineDropCollector.insertOrSpawn(player, serverWorld, pos, mergedDrops);
 
         world.breakBlock(pos, false, player);
         if (directXp) {
@@ -742,6 +872,10 @@ public final class VeinMinerHandler {
             if (stack.isEmpty()) {
                 continue;
             }
+            if (isTrashItem(player, stack)) {
+                itemEntity.discard();
+                continue;
+            }
             ItemStack remaining = stack.copy();
             if (player.getInventory().insertStack(remaining) && remaining.isEmpty()) {
                 itemEntity.discard();
@@ -814,6 +948,13 @@ public final class VeinMinerHandler {
         CropHarvestHandler.handle(player, world, pos, state);
     }
 
+    private static void applyPerBlockSkillHandlers(ServerPlayerEntity player, World world, BlockPos pos,
+            BlockState state, BulkDropBuffer dropBuffer) {
+        BlockBreakHandler.handle(player, world, pos, state);
+        MinerBonusDropHandler.onBlockBreak(player, world, pos, state, dropBuffer.inventoryDrops(), dropBuffer::addDrop);
+        CropHarvestHandler.handle(player, world, pos, state);
+    }
+
     /**
      * Check if two blocks should be considered the same for vein mining.
      * Handles: same block identity, deepslate/regular ore equivalents.
@@ -832,7 +973,7 @@ public final class VeinMinerHandler {
     }
 
     public static boolean isProcessing(ServerPlayerEntity player) {
-        return ACTIVE_PLAYERS.contains(player.getUuid());
+        return ACTIVE_PLAYERS.contains(player.getUuid()) || ULTMINE_JOBS.containsKey(player.getUuid());
     }
 
     private static UltmineSelection getCurrentSelection(ServerPlayerEntity player) {
@@ -935,21 +1076,45 @@ public final class VeinMinerHandler {
     // ===== TRASH =====
 
     public static void setTrashList(ServerPlayerEntity player, List<String> trashItems) {
-        TRASH_LISTS.put(player.getUuid(), new ArrayList<>(trashItems));
+        Set<String> normalized = normalizeIds(trashItems);
+        if (normalized.isEmpty()) {
+            TRASH_LISTS.remove(player.getUuid());
+        } else {
+            TRASH_LISTS.put(player.getUuid(), normalized);
+        }
     }
 
     public static List<String> getTrashList(ServerPlayerEntity player) {
-        return TRASH_LISTS.getOrDefault(player.getUuid(), List.of());
+        Set<String> trash = TRASH_LISTS.get(player.getUuid());
+        return trash == null || trash.isEmpty() ? List.of() : new ArrayList<>(trash);
+    }
+
+    public static boolean isTrashItem(ServerPlayerEntity player, ItemStack stack) {
+        return UltmineDropCollector.isTrash(stack, getTrashSet(player));
     }
 
     public static void setClassicBlockedBlockList(ServerPlayerEntity player, List<String> blockedBlocks) {
-        if (blockedBlocks == null || blockedBlocks.isEmpty()) {
+        Set<String> normalized = normalizeIds(blockedBlocks);
+        if (normalized.isEmpty()) {
             CLASSIC_BLOCK_LOCK_LISTS.remove(player.getUuid());
             return;
         }
 
-        List<String> normalized = new ArrayList<>(blockedBlocks.size());
-        for (String rawId : blockedBlocks) {
+        CLASSIC_BLOCK_LOCK_LISTS.put(player.getUuid(), normalized);
+    }
+
+    public static List<String> getClassicBlockedBlockList(ServerPlayerEntity player) {
+        Set<String> blocked = CLASSIC_BLOCK_LOCK_LISTS.get(player.getUuid());
+        return blocked == null || blocked.isEmpty() ? List.of() : new ArrayList<>(blocked);
+    }
+
+    private static Set<String> normalizeIds(List<String> rawIds) {
+        if (rawIds == null || rawIds.isEmpty()) {
+            return Set.of();
+        }
+
+        Set<String> normalized = new LinkedHashSet<>();
+        for (String rawId : rawIds) {
             if (rawId == null) {
                 continue;
             }
@@ -960,24 +1125,14 @@ public final class VeinMinerHandler {
             if (!blockId.contains(":")) {
                 blockId = "minecraft:" + blockId;
             }
-            if (!normalized.contains(blockId)) {
-                normalized.add(blockId);
-            }
+            normalized.add(blockId);
         }
 
-        if (normalized.isEmpty()) {
-            CLASSIC_BLOCK_LOCK_LISTS.remove(player.getUuid());
-        } else {
-            CLASSIC_BLOCK_LOCK_LISTS.put(player.getUuid(), normalized);
-        }
-    }
-
-    public static List<String> getClassicBlockedBlockList(ServerPlayerEntity player) {
-        return CLASSIC_BLOCK_LOCK_LISTS.getOrDefault(player.getUuid(), List.of());
+        return normalized;
     }
 
     private static boolean isClassicModeBlockLocked(ServerPlayerEntity player, Block block) {
-        List<String> blocked = CLASSIC_BLOCK_LOCK_LISTS.get(player.getUuid());
+        Set<String> blocked = CLASSIC_BLOCK_LOCK_LISTS.get(player.getUuid());
         if (blocked == null || blocked.isEmpty()) {
             return false;
         }
@@ -990,7 +1145,7 @@ public final class VeinMinerHandler {
      * Called every 10 ticks to avoid excessive scanning.
      */
     public static void tickTrash(ServerPlayerEntity player) {
-        List<String> trashList = TRASH_LISTS.get(player.getUuid());
+        Set<String> trashList = TRASH_LISTS.get(player.getUuid());
         if (trashList == null || trashList.isEmpty()) {
             return;
         }
@@ -1012,6 +1167,135 @@ public final class VeinMinerHandler {
             if (trashList.contains(itemId)) {
                 inventory.setStack(i, ItemStack.EMPTY);
             }
+        }
+    }
+
+    private static Set<String> getTrashSet(ServerPlayerEntity player) {
+        Set<String> trash = TRASH_LISTS.get(player.getUuid());
+        return trash == null ? Set.of() : trash;
+    }
+
+    private static final class BulkDropBuffer {
+        private final boolean inventoryDrops;
+        private final boolean xpDirect;
+        private final Set<String> trashItemIds;
+        private final BlockPos dropPos;
+        private final List<ItemStack> drops = new ArrayList<>();
+        private int xp;
+
+        private BulkDropBuffer(boolean inventoryDrops, boolean xpDirect, Set<String> trashItemIds, BlockPos dropPos) {
+            this.inventoryDrops = inventoryDrops;
+            this.xpDirect = xpDirect;
+            this.trashItemIds = trashItemIds == null ? Set.of() : trashItemIds;
+            this.dropPos = dropPos.toImmutable();
+        }
+
+        private boolean inventoryDrops() {
+            return inventoryDrops;
+        }
+
+        private void addDrops(List<ItemStack> newDrops) {
+            UltmineDropCollector.addMerged(drops, newDrops, trashItemIds);
+        }
+
+        private void addDrop(ItemStack newDrop) {
+            UltmineDropCollector.addMerged(drops, newDrop, trashItemIds);
+        }
+
+        private void addXp(int amount) {
+            xp += Math.max(0, amount);
+        }
+
+        private void flush(ServerPlayerEntity player, ServerWorld world) {
+            if (inventoryDrops) {
+                UltmineDropCollector.insertOrSpawn(player, world, dropPos, drops);
+            } else {
+                UltmineDropCollector.spawn(world, dropPos, drops);
+            }
+            if (xp > 0) {
+                if (xpDirect) {
+                    player.addExperience(xp);
+                } else {
+                    ExperienceOrbEntity.spawn(world, dropPos.toCenterPos(), xp);
+                }
+                xp = 0;
+            }
+        }
+    }
+
+    private static final class UltmineBreakJob {
+        private final ServerWorld world;
+        private final BlockPos origin;
+        private final List<BlockPos> targets;
+        private final int requestedBlocks;
+        private final int xpCost;
+        private final boolean sendResultPacket;
+        private final boolean inventoryDrops;
+        private final boolean xpDirect;
+        private final boolean suppressBreakParticles;
+        private int nextIndex;
+        private int minedBlocks;
+
+        private UltmineBreakJob(ServerWorld world, BlockPos origin, List<BlockPos> targets, int requestedBlocks,
+                int xpCost, boolean sendResultPacket, boolean inventoryDrops, boolean xpDirect,
+                boolean suppressBreakParticles) {
+            this.world = world;
+            this.origin = origin;
+            this.targets = new ArrayList<>(targets);
+            this.requestedBlocks = requestedBlocks;
+            this.xpCost = xpCost;
+            this.sendResultPacket = sendResultPacket;
+            this.inventoryDrops = inventoryDrops;
+            this.xpDirect = xpDirect;
+            this.suppressBreakParticles = suppressBreakParticles;
+        }
+
+        private ServerWorld world() {
+            return world;
+        }
+
+        private BlockPos origin() {
+            return origin;
+        }
+
+        private int requestedBlocks() {
+            return requestedBlocks;
+        }
+
+        private int xpCost() {
+            return xpCost;
+        }
+
+        private boolean sendResultPacket() {
+            return sendResultPacket;
+        }
+
+        private boolean inventoryDrops() {
+            return inventoryDrops;
+        }
+
+        private boolean xpDirect() {
+            return xpDirect;
+        }
+
+        private boolean suppressBreakParticles() {
+            return suppressBreakParticles;
+        }
+
+        private boolean hasNext() {
+            return nextIndex < targets.size();
+        }
+
+        private BlockPos next() {
+            return targets.get(nextIndex++);
+        }
+
+        private void incrementMinedBlocks() {
+            minedBlocks++;
+        }
+
+        private int minedBlocks() {
+            return minedBlocks;
         }
     }
 

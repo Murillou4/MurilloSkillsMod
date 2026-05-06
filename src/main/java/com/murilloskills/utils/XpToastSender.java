@@ -20,6 +20,13 @@ public class XpToastSender {
      *                 parentheses
      */
     public static void send(ServerPlayerEntity player, MurilloSkillsList skill, int xpAmount, String source) {
+        if (BatchSkillUpdateContext.queueToast(player, skill, xpAmount)) {
+            return;
+        }
+        sendNow(player, skill, xpAmount, source);
+    }
+
+    public static void sendNow(ServerPlayerEntity player, MurilloSkillsList skill, int xpAmount, String source) {
         if (player == null || skill == null || xpAmount <= 0)
             return;
 

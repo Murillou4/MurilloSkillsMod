@@ -4,6 +4,17 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.57] - 2026-05-06
+
+### Miner - Ultmine em Lotes
+
+- **Ultmine hibrido**: quebras pequenas seguem instantaneas, enquanto quebras grandes entram em fila server-side processada por lote.
+- **Menos lag em massa**: blocos de Ultmine grande sao removidos silenciosamente, evitando chuva de particulas e sons por bloco.
+- **Drops otimizados**: drops sao filtrados pela trash list antes de inventario/spawn e sobras sao mescladas para reduzir item entities.
+- **Syncs agregados**: XP, toasts, desafios e sync de skills sao agrupados durante lotes grandes para evitar spam de pacotes.
+
+---
+
 ## [1.2.55] - 2026-05-04
 
 ### Blacksmith - Velocidade em Maquinas Tech Reborn

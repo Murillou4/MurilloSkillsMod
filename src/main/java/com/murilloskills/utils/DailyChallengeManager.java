@@ -292,6 +292,13 @@ public class DailyChallengeManager {
      * Call on login and after challenge updates.
      */
     public static void syncChallenges(ServerPlayerEntity player) {
+        if (BatchSkillUpdateContext.queueChallengeSync(player)) {
+            return;
+        }
+        syncChallengesNow(player);
+    }
+
+    public static void syncChallengesNow(ServerPlayerEntity player) {
         List<DailyChallenge> challenges = getDailyChallenges(player);
         int remainingTicks = getRemainingTicks(player);
 

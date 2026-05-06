@@ -194,6 +194,9 @@ public class MinecraftEventsListener {
             // Sweep delayed Vein Miner/Ultmine origin drops into inventory.
             VeinMinerHandler.tickPendingDropCollection(player);
 
+            // Ultmine: drain large queued breaks in bounded server-side batches.
+            VeinMinerHandler.tickUltmineJob(player);
+
             // Magnet: pull nearby items and XP orbs toward the player.
             VeinMinerHandler.tickMagnet(player);
 

@@ -21,6 +21,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Drops extra items after a vanilla block break to bypass loot table caps
@@ -45,6 +46,11 @@ public final class MinerBonusDropHandler {
 
     public static void onBlockBreak(PlayerEntity player, World world, BlockPos pos, BlockState state,
             boolean dropsToInventory) {
+        onBlockBreak(player, world, pos, state, dropsToInventory, null);
+    }
+
+    public static void onBlockBreak(PlayerEntity player, World world, BlockPos pos, BlockState state,
+            boolean dropsToInventory, Consumer<ItemStack> dropSink) {
         if (world.isClient()) {
             return;
         }
@@ -75,30 +81,30 @@ public final class MinerBonusDropHandler {
         int totalBonus = skillBonus + enchantFortune;
 
         if (block == Blocks.GLOWSTONE) {
-            applyGlowstoneBonus(serverPlayer, serverWorld, pos, totalBonus, dropsToInventory);
+            applyGlowstoneBonus(serverPlayer, serverWorld, pos, totalBonus, dropsToInventory, dropSink);
             return;
         }
 
         if (isLeavesBlock(state, blockId) && tool.getItem() instanceof AxeItem) {
-            applyLeavesBonus(serverPlayer, serverWorld, pos, state, tool, totalBonus, dropsToInventory);
+            applyLeavesBonus(serverPlayer, serverWorld, pos, state, tool, totalBonus, dropsToInventory, dropSink);
         }
     }
 
     private static void applyGlowstoneBonus(ServerPlayerEntity player, ServerWorld world, BlockPos pos,
-            int totalFortune, boolean dropsToInventory) {
+            int totalFortune, boolean dropsToInventory, Consumer<ItemStack> dropSink) {
         // Mirrors vanilla uniform_bonus_count(bonusMultiplier=1) but bypasses limit_count(4).
         int extra = world.getRandom().nextInt(totalFortune + 1);
         if (extra > 0) {
-            dropOrInsert(player, world, pos, new ItemStack(Items.GLOWSTONE_DUST, extra), dropsToInventory);
+            dropOrInsert(player, world, pos, new ItemStack(Items.GLOWSTONE_DUST, extra), dropsToInventory, dropSink);
         }
     }
 
     private static void applyLeavesBonus(ServerPlayerEntity player, ServerWorld world, BlockPos pos, BlockState state,
-            ItemStack tool, int totalFortune, boolean dropsToInventory) {
+            ItemStack tool, int totalFortune, boolean dropsToInventory, Consumer<ItemStack> dropSink) {
         for (int i = 0; i < totalFortune; i++) {
             List<ItemStack> drops = Block.getDroppedStacks(state, world, pos, null, player, tool);
             for (ItemStack drop : drops) {
-                dropOrInsert(player, world, pos, drop, dropsToInventory);
+                dropOrInsert(player, world, pos, drop, dropsToInventory, dropSink);
             }
         }
     }
@@ -121,8 +127,16 @@ public final class MinerBonusDropHandler {
     }
 
     private static void dropOrInsert(ServerPlayerEntity player, ServerWorld world, BlockPos pos, ItemStack stack,
-            boolean dropsToInventory) {
+            boolean dropsToInventory, Consumer<ItemStack> dropSink) {
         if (stack == null || stack.isEmpty()) {
+            return;
+        }
+
+        if (dropSink != null) {
+            dropSink.accept(stack.copy());
+            return;
+        }
+        if (dropsToInventory && VeinMinerHandler.isTrashItem(player, stack)) {
             return;
         }
 

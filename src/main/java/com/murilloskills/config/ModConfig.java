@@ -267,10 +267,13 @@ public class ModConfig {
 
     public static class UltmineConfig {
         public boolean enabled = true;
-        public int maxBlocksPerUse = 500;
+        public int maxBlocksPerUse = 4096;
         public int permissionLevel = 0;
         public boolean requireMinerMaster = false;
         public int cooldownTicks = 0;
+        public int instantBreakThreshold = 160;
+        public int blocksPerTick = 192;
+        public boolean suppressBulkBreakParticles = true;
         public int lineLengthDefault = 12;
         public int stairsDepthDefault = 16;
         public int previewRequestIntervalTicks = 4;
