@@ -4,6 +4,17 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.59] - 2026-05-06
+
+### UI - Telas Ultmine Config e Ore Filter Polidas
+
+- **Ultmine Config sem scroll**: layout duas-colunas agora dispara em telas mais comuns (~460px de largura) e header/gaps foram compactados para caber tudo na viewport sem scroll na maioria dos casos.
+- **Scrollbar com drag funcional**: a barra de rolagem das telas Ultmine Config e Ore Filter ficou mais larga, com hitbox generosa, suporta click no thumb e no track, e arraste do mouse atualiza o scroll em tempo real.
+- **Ore Filter redesenhado**: cards maiores com swatch da cor de destaque, ícone do item, indicador ON/OFF claro e melhor distribuição do nome. Layout responsivo cresce até 3 colunas em telas mais largas.
+- **Ações rápidas no Ore Filter**: barra de ferramentas no topo da grade com botões "✓ Todos" / "✗ Nenhum" e contador "X / Y" mostrando quantos minérios estão ativos.
+
+---
+
 ## [1.2.58] - 2026-05-06
 
 ### Miner - Classic + Ores

@@ -649,6 +649,8 @@
     "murilloskills.ore_filter.title": "⚙ Filtro de Minerales",
     "murilloskills.ore_filter.subtitle": "Configura qué minerales aparecen en el radar",
     "murilloskills.ore_filter.section.ores": "Minerales",
+    "murilloskills.ore_filter.toggle_all": "✓ Todos",
+    "murilloskills.ore_filter.toggle_none": "✗ Ninguno",
     "murilloskills.ore_filter.section.mode": "Modo de Visualización",
     "murilloskills.ore_filter.mode_label": "Modo de Visualización:",
     "murilloskills.ore_filter.mode.xray": "X-Ray",

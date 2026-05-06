@@ -754,6 +754,8 @@
   "murilloskills.ore_filter.title": "⚙ Ore Filter",
   "murilloskills.ore_filter.subtitle": "Configure which ores appear in the radar",
   "murilloskills.ore_filter.section.ores": "Ores",
+  "murilloskills.ore_filter.toggle_all": "✓ All",
+  "murilloskills.ore_filter.toggle_none": "✗ None",
   "murilloskills.ore_filter.section.mode": "Display Mode",
   "murilloskills.ore_filter.mode_label": "Display Mode:",
   "murilloskills.ore_filter.mode.xray": "X-Ray",

@@ -3,9 +3,11 @@ package com.murilloskills.gui;
 import com.murilloskills.client.config.OreFilterConfig;
 import com.murilloskills.gui.renderer.RenderingHelper;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -18,7 +20,8 @@ import java.util.List;
 
 /**
  * Premium ore filter configuration screen with adaptive layout.
- * Uses the mod's ColorPalette for consistent dark-theme styling.
+ * Cards show item icon, color swatch, name, and ON/OFF state with proper breathing room.
+ * Includes a toolbar (Toggle All/None) and a draggable scrollbar.
  */
 public class OreFilterScreen extends Screen {
 
@@ -26,22 +29,36 @@ public class OreFilterScreen extends Screen {
     private final ColorPalette palette = ColorPalette.premium();
 
     // Layout constants
-    private static final int HEADER_HEIGHT = 50;
-    private static final int SECTION_GAP = 16;
-    private static final int PANEL_PADDING = 10;
+    private static final int HEADER_HEIGHT = 38;
+    private static final int SECTION_GAP = 12;
+    private static final int PANEL_PADDING = 12;
+    private static final int CARD_HEIGHT = 28;
+    private static final int CARD_GAP = 6;
+    private static final int SCROLLBAR_WIDTH = 7;
 
     // Calculated layout
     private int panelX, panelY, panelW, panelH;
     private int cols;
-    private int cardW, cardH;
-    private int cardGap;
-    private int oreGridY;
+    private int cardW;
+    private int gridX;
+    private int gridY;
+    private int gridW;
     private int oreViewportH;
     private int visibleRows;
     private int scrollRow;
     private int maxScrollRow;
+    private int toolbarY;
     private int maxOresSectionY;
     private int bottomY;
+    private TextFieldWidget maxOresField;
+
+    // Scrollbar state
+    private int scrollbarTrackY;
+    private int scrollbarTrackH;
+    private int scrollbarThumbY;
+    private int scrollbarThumbH;
+    private boolean draggingScrollbar = false;
+    private double scrollbarDragGrabOffset = 0;
 
 
     public OreFilterScreen(Screen parent) {
@@ -56,7 +73,34 @@ public class OreFilterScreen extends Screen {
 
         int centerX = this.width / 2;
 
-        // === BOTTOM BUTTONS (always visible) ===
+        // === TOOLBAR (toggle all / none) ===
+        int toolBtnH = 16;
+        int toolBtnW = 78;
+        int toolGap = 6;
+        int toolbarTotalW = toolBtnW * 2 + toolGap;
+        int toolbarStartX = panelX + panelW - PANEL_PADDING - toolbarTotalW;
+
+        ButtonWidget allBtn = ButtonWidget.builder(
+                Text.translatable("murilloskills.ore_filter.toggle_all").formatted(Formatting.GREEN),
+                (b) -> {
+                    for (OreFilterConfig.OreFilterOption ore : OreFilterConfig.getFilterOptions()) {
+                        OreFilterConfig.setOreEnabled(ore.key(), true);
+                    }
+                    refreshScreen();
+                }).dimensions(toolbarStartX, toolbarY, toolBtnW, toolBtnH).build();
+        this.addDrawableChild(allBtn);
+
+        ButtonWidget noneBtn = ButtonWidget.builder(
+                Text.translatable("murilloskills.ore_filter.toggle_none").formatted(Formatting.RED),
+                (b) -> {
+                    for (OreFilterConfig.OreFilterOption ore : OreFilterConfig.getFilterOptions()) {
+                        OreFilterConfig.setOreEnabled(ore.key(), false);
+                    }
+                    refreshScreen();
+                }).dimensions(toolbarStartX + toolBtnW + toolGap, toolbarY, toolBtnW, toolBtnH).build();
+        this.addDrawableChild(noneBtn);
+
+        // === BOTTOM BUTTONS ===
         int btnW = 90;
         int btnGap = 12;
 
@@ -76,8 +120,6 @@ public class OreFilterScreen extends Screen {
 
         // === ORE TOGGLE BUTTONS ===
         List<OreFilterConfig.OreFilterOption> ores = getFilterableOres();
-        int gridW = cols * cardW + (cols - 1) * cardGap;
-        int startX = centerX - gridW / 2;
         int firstIndex = scrollRow * cols;
         int lastIndex = Math.min(ores.size(), firstIndex + visibleRows * cols);
 
@@ -86,12 +128,12 @@ public class OreFilterScreen extends Screen {
             int visibleIndex = i - firstIndex;
             int col = visibleIndex % cols;
             int row = visibleIndex / cols;
-            int x = startX + col * (cardW + cardGap);
-            int y = oreGridY + row * (cardH + cardGap);
+            int x = gridX + col * (cardW + CARD_GAP);
+            int y = gridY + row * (CARD_HEIGHT + CARD_GAP);
 
             ButtonWidget btn = ButtonWidget.builder(Text.empty(), (b) -> {
                 OreFilterConfig.toggleOre(ore.key());
-            }).dimensions(x, y, cardW, cardH).build();
+            }).dimensions(x, y, cardW, CARD_HEIGHT).build();
             this.addDrawableChild(btn);
         }
 
@@ -101,61 +143,87 @@ public class OreFilterScreen extends Screen {
         int valueBoxW = 50;
         int totalCtrlW = ctrlBtnW + ctrlGap + valueBoxW + ctrlGap + ctrlBtnW;
         int ctrlStartX = centerX - totalCtrlW / 2;
-        int ctrlY = maxOresSectionY + 18;
+        int ctrlY = maxOresSectionY + 16;
 
         ButtonWidget minusBtn = ButtonWidget.builder(Text.literal("−").formatted(Formatting.RED), (b) -> {
             OreFilterConfig.setMaxOres(OreFilterConfig.getMaxOres() - 25);
+            refreshScreen();
         }).dimensions(ctrlStartX, ctrlY, ctrlBtnW, 20).build();
         this.addDrawableChild(minusBtn);
 
+        maxOresField = new TextFieldWidget(textRenderer, ctrlStartX + ctrlBtnW + ctrlGap, ctrlY, valueBoxW, 20,
+                Text.empty());
+        maxOresField.setMaxLength(3);
+        maxOresField.setTextPredicate(text -> text.isEmpty() || text.matches("[0-9]{0,3}"));
+        maxOresField.setText(String.valueOf(OreFilterConfig.getMaxOres()));
+        boolean[] updatingMaxOresField = new boolean[] { false };
+        maxOresField.setChangedListener(text -> {
+            if (updatingMaxOresField[0] || text == null || text.isBlank()) {
+                return;
+            }
+            try {
+                int typedValue = Integer.parseInt(text.trim());
+                OreFilterConfig.setMaxOres(typedValue);
+                int normalizedValue = OreFilterConfig.getMaxOres();
+                if (normalizedValue != typedValue) {
+                    updatingMaxOresField[0] = true;
+                    maxOresField.setText(String.valueOf(normalizedValue));
+                    updatingMaxOresField[0] = false;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        });
+        this.addDrawableChild(maxOresField);
+
         ButtonWidget plusBtn = ButtonWidget.builder(Text.literal("+").formatted(Formatting.GREEN), (b) -> {
             OreFilterConfig.setMaxOres(OreFilterConfig.getMaxOres() + 25);
+            refreshScreen();
         }).dimensions(ctrlStartX + ctrlBtnW + ctrlGap + valueBoxW + ctrlGap, ctrlY, ctrlBtnW, 20).build();
         this.addDrawableChild(plusBtn);
     }
 
     private void calculateLayout() {
-        // Panel sizing (responsive)
-        panelW = Math.min(380, this.width - 20);
+        // Choose panel width: prefer wider for 2-col grid; cap by available space
+        int desiredW = (this.width >= 520) ? 500 : 380;
+        panelW = Math.min(desiredW, this.width - 16);
         panelX = (this.width - panelW) / 2;
-        panelY = 10;
+        panelY = 8;
 
-        // Columns based on panel width
-        if (panelW < 280) {
-            cols = 2;
-            cardW = (panelW - PANEL_PADDING * 2 - 6) / 2;
-        } else if (panelW < 360) {
+        // Card columns based on panel inner width — bigger cards so content breathes
+        int innerW = panelW - PANEL_PADDING * 2 - SCROLLBAR_WIDTH - 4;
+        if (innerW >= 380) {
             cols = 3;
-            cardW = (panelW - PANEL_PADDING * 2 - 12) / 3;
+        } else if (innerW >= 240) {
+            cols = 2;
         } else {
-            cols = 4;
-            cardW = (panelW - PANEL_PADDING * 2 - 18) / 4;
+            cols = 1;
         }
-        cardH = 24;
-        cardGap = 6;
+        cardW = (innerW - (cols - 1) * CARD_GAP) / cols;
+        gridW = cols * cardW + (cols - 1) * CARD_GAP;
+        gridX = panelX + PANEL_PADDING;
 
-        // Vertical layout
-        oreGridY = panelY + HEADER_HEIGHT + 8;
+        // Toolbar sits between header and grid
+        toolbarY = panelY + HEADER_HEIGHT + 6;
+        gridY = toolbarY + 16 + 8;
 
         List<OreFilterConfig.OreFilterOption> ores = getFilterableOres();
         int oreRows = (int) Math.ceil((double) ores.size() / cols);
-        int oreGridH = oreRows * (cardH + cardGap) - cardGap;
-
-        int naturalMaxOresSectionY = oreGridY + oreGridH + SECTION_GAP;
-        int maxPanelBottom = Math.min(this.height - 4, panelY + Math.max(238, this.height - 20));
-        maxOresSectionY = Math.min(naturalMaxOresSectionY, maxPanelBottom - 80);
-        oreViewportH = Math.max(cardH, maxOresSectionY - SECTION_GAP - oreGridY);
-        visibleRows = Math.max(1, (oreViewportH + cardGap) / (cardH + cardGap));
+        int maxOreRowsByHeight = Math.max(1,
+                (this.height - gridY - 90 + CARD_GAP) / (CARD_HEIGHT + CARD_GAP));
+        visibleRows = Math.min(oreRows, maxOreRowsByHeight);
+        oreViewportH = visibleRows * (CARD_HEIGHT + CARD_GAP) - CARD_GAP;
         maxScrollRow = Math.max(0, oreRows - visibleRows);
         scrollRow = Math.max(0, Math.min(scrollRow, maxScrollRow));
-        bottomY = maxOresSectionY + 52;
 
-        panelH = bottomY + 28 - panelY;
+        // Max ores section sits below the grid viewport
+        maxOresSectionY = gridY + oreViewportH + SECTION_GAP;
+        bottomY = maxOresSectionY + 46;
+
+        panelH = bottomY + 26 - panelY;
 
         // Clamp if too tall
         if (panelY + panelH > this.height - 4) {
             panelH = this.height - 4 - panelY;
-            bottomY = panelY + panelH - 28;
         }
     }
 
@@ -173,31 +241,23 @@ public class OreFilterScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // === BACKGROUND ===
         renderGradientBackground(context);
 
-        // === MAIN PANEL ===
+        // Main panel
         context.fill(panelX, panelY, panelX + panelW, panelY + panelH, palette.panelBg());
         RenderingHelper.drawPanelBorder(context, panelX, panelY, panelW, panelH, palette.sectionBorder());
         RenderingHelper.renderCornerAccents(context, panelX, panelY, panelW, panelH, 6, palette.accentGold());
 
-        // === HEADER ===
         renderHeader(context);
-
-        // === ORE SECTION (labels over buttons) ===
-        renderOreSectionLabels(context);
-
-        // === MAX ORES SECTION ===
+        renderToolbarLabels(context);
         renderMaxOresSection(context);
 
-        // === WIDGETS (buttons) ===
         super.render(context, mouseX, mouseY, delta);
 
-        // === ORE CONTENT (over buttons for layering) ===
-        renderOreCardContent(context);
+        // Card content drawn on top of buttons
+        renderOreCards(context, mouseX, mouseY);
 
-        renderOreScrollBar(context);
-
+        renderScrollBar(context);
     }
 
     private void renderGradientBackground(DrawContext context) {
@@ -214,29 +274,39 @@ public class OreFilterScreen extends Screen {
         int centerX = this.width / 2;
         int headerBottom = panelY + HEADER_HEIGHT;
 
-        // Header bg
         context.fill(panelX + 1, panelY + 1, panelX + panelW - 1, headerBottom, palette.panelBgHeader());
 
-        // Divider line
         int lineW = panelW - PANEL_PADDING * 4;
         context.fill(centerX - lineW / 2, headerBottom - 1, centerX + lineW / 2, headerBottom, palette.accentGold());
 
-        // Title
         context.drawCenteredTextWithShadow(textRenderer,
                 Text.literal("⛏ ").formatted(Formatting.GOLD)
                         .append(this.title.copy().formatted(Formatting.GOLD, Formatting.BOLD)),
-                centerX, panelY + 10, palette.textGold());
+                centerX, panelY + 5, palette.textGold());
 
-        // Subtitle
         context.drawCenteredTextWithShadow(textRenderer,
                 Text.translatable("murilloskills.ore_filter.subtitle").copy().formatted(Formatting.GRAY),
-                centerX, panelY + 26, palette.textMuted());
+                centerX, panelY + 19, palette.textMuted());
     }
 
-    private void renderOreSectionLabels(DrawContext context) {
-        // Section title above the ore grid
-        int labelY = oreGridY - 2;
-        // No extra label needed - header makes it clear
+    private void renderToolbarLabels(DrawContext context) {
+        // Section label on the left
+        String label = Text.translatable("murilloskills.ore_filter.section.ores").getString();
+        context.drawTextWithShadow(textRenderer,
+                Text.literal(label).formatted(Formatting.GOLD, Formatting.BOLD),
+                panelX + PANEL_PADDING, toolbarY + 4, palette.textGold());
+
+        // Counter "X / Y enabled"
+        List<OreFilterConfig.OreFilterOption> ores = getFilterableOres();
+        int enabled = 0;
+        for (OreFilterConfig.OreFilterOption ore : ores) {
+            if (OreFilterConfig.isOreEnabled(ore.key())) enabled++;
+        }
+        String count = enabled + " / " + ores.size();
+        int labelW = textRenderer.getWidth(label);
+        context.drawTextWithShadow(textRenderer,
+                Text.literal(count).formatted(Formatting.GRAY),
+                panelX + PANEL_PADDING + labelW + 8, toolbarY + 4, palette.textMuted());
     }
 
     private void renderMaxOresSection(DrawContext context) {
@@ -245,40 +315,36 @@ public class OreFilterScreen extends Screen {
         // Section divider with title
         String title = Text.translatable("murilloskills.ore_filter.section.max_ores").getString();
         int titleW = textRenderer.getWidth(title);
-        int lineW = (panelW - PANEL_PADDING * 2 - titleW - 20) / 2;
+        int sideMargin = PANEL_PADDING + 4;
+        int lineLeftStart = panelX + sideMargin;
+        int lineLeftEnd = centerX - titleW / 2 - 8;
+        int lineRightStart = centerX + titleW / 2 + 8;
+        int lineRightEnd = panelX + panelW - sideMargin;
 
-        context.fill(panelX + PANEL_PADDING, maxOresSectionY + 3,
-                panelX + PANEL_PADDING + lineW, maxOresSectionY + 4, palette.dividerColor());
+        if (lineLeftEnd > lineLeftStart) {
+            context.fill(lineLeftStart, maxOresSectionY + 3, lineLeftEnd, maxOresSectionY + 4,
+                    palette.dividerColor());
+        }
         context.drawCenteredTextWithShadow(textRenderer,
                 Text.literal(title).formatted(Formatting.GOLD),
                 centerX, maxOresSectionY - 1, palette.textGold());
-        context.fill(centerX + titleW / 2 + 10, maxOresSectionY + 3,
-                panelX + panelW - PANEL_PADDING, maxOresSectionY + 4, palette.dividerColor());
+        if (lineRightEnd > lineRightStart) {
+            context.fill(lineRightStart, maxOresSectionY + 3, lineRightEnd, maxOresSectionY + 4,
+                    palette.dividerColor());
+        }
 
-        // Value display (centered between +/- buttons)
-        int boxW = 50;
-        int boxH = 20;
-        int boxX = centerX - boxW / 2;
-        int boxY = maxOresSectionY + 18;
-
-        context.fill(boxX, boxY, boxX + boxW, boxY + boxH, palette.sectionBg());
-        RenderingHelper.drawPanelBorder(context, boxX, boxY, boxW, boxH, palette.sectionBorder());
-
-        int maxOres = OreFilterConfig.getMaxOres();
-        context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal(String.valueOf(maxOres)).formatted(Formatting.WHITE, Formatting.BOLD),
-                centerX, boxY + 6, palette.textWhite());
-
-        // Range hint
+        // Range hint below the controls
+        int hintY = maxOresSectionY + 16 + 22;
         context.drawCenteredTextWithShadow(textRenderer,
                 Text.literal("5 - 500").formatted(Formatting.DARK_GRAY),
-                centerX, boxY + boxH + 4, palette.textMuted());
+                centerX, hintY, palette.textMuted());
     }
 
-    private void renderOreCardContent(DrawContext context) {
+    private void renderOreCards(DrawContext context, int mouseX, int mouseY) {
+        // Clip cards to viewport so partial bottom rows don't bleed
+        context.enableScissor(panelX, gridY, panelX + panelW, gridY + oreViewportH);
+
         List<OreFilterConfig.OreFilterOption> ores = getFilterableOres();
-        int gridW = cols * cardW + (cols - 1) * cardGap;
-        int startX = this.width / 2 - gridW / 2;
         int firstIndex = scrollRow * cols;
         int lastIndex = Math.min(ores.size(), firstIndex + visibleRows * cols);
 
@@ -289,43 +355,63 @@ public class OreFilterScreen extends Screen {
             int visibleIndex = i - firstIndex;
             int col = visibleIndex % cols;
             int row = visibleIndex / cols;
-            int x = startX + col * (cardW + cardGap);
-            int y = oreGridY + row * (cardH + cardGap);
+            int x = gridX + col * (cardW + CARD_GAP);
+            int y = gridY + row * (CARD_HEIGHT + CARD_GAP);
             int oreColor = OreFilterConfig.getOreColor(ore.key(), ore.color());
 
-            // Card background overlay (on top of button)
-            int bgColor = enabled ? palette.sectionBgActive() : palette.sectionBg();
-            context.fill(x + 1, y + 1, x + cardW - 1, y + cardH - 1, bgColor);
+            boolean hovered = mouseX >= x && mouseX < x + cardW && mouseY >= y && mouseY < y + CARD_HEIGHT;
 
-            // Left accent bar (ore color)
-            int accentAlpha = enabled ? 0xFF : 0x60;
+            // Card background (over button)
+            int bgColor = enabled ? palette.sectionBgActive() : palette.sectionBg();
+            context.fill(x + 1, y + 1, x + cardW - 1, y + CARD_HEIGHT - 1, bgColor);
+
+            // Border
+            int borderColor = enabled
+                    ? (hovered ? palette.sectionBorderActive() : palette.sectionBorder())
+                    : (hovered ? palette.sectionBorderActive() : palette.sectionBorder());
+            RenderingHelper.drawPanelBorder(context, x, y, cardW, CARD_HEIGHT, borderColor);
+
+            // Left accent bar (always shows ore color, dimmed when disabled)
+            int accentAlpha = enabled ? 0xFF : 0x66;
             int accentColor = (accentAlpha << 24) | (oreColor & 0x00FFFFFF);
-            context.fill(x + 1, y + 1, x + 3, y + cardH - 1, accentColor);
+            context.fill(x + 1, y + 1, x + 4, y + CARD_HEIGHT - 1, accentColor);
 
             // Top highlight when enabled
             if (enabled) {
-                context.fill(x + 1, y + 1, x + cardW - 1, y + 2, 0x20FFFFFF);
+                context.fill(x + 4, y + 1, x + cardW - 1, y + 2, 0x30FFFFFF);
             }
 
             // Item icon
-            int iconX = x + 5;
-            int iconY = y + (cardH - 16) / 2;
+            int iconX = x + 8;
+            int iconY = y + (CARD_HEIGHT - 16) / 2;
             ItemStack icon = getIcon(ore);
             context.drawItem(icon, iconX, iconY);
 
-            // Status dot
-            int dotX = iconX + 18;
-            int textY = y + (cardH - 8) / 2;
-            String dot = enabled ? "●" : "○";
-            int dotColor = enabled ? palette.statusReady() : palette.textMuted();
-            context.drawTextWithShadow(textRenderer, dot, dotX, textY, dotColor);
+            // Color swatch (small filled square showing highlight color)
+            int swatchSize = 8;
+            int swatchX = x + cardW - swatchSize - 22;
+            int swatchY = y + (CARD_HEIGHT - swatchSize) / 2;
+            int swatchColor = enabled ? (0xFF000000 | (oreColor & 0x00FFFFFF))
+                    : ((0x60 << 24) | (oreColor & 0x00FFFFFF));
+            context.fill(swatchX, swatchY, swatchX + swatchSize, swatchY + swatchSize, swatchColor);
+            RenderingHelper.drawPanelBorder(context, swatchX - 1, swatchY - 1, swatchSize + 2, swatchSize + 2,
+                    palette.sectionBorder());
 
-            // Ore name
-            int nameX = dotX + 10;
+            // ON/OFF indicator on the right
+            String state = enabled ? "ON" : "OFF";
+            int stateColor = enabled ? palette.statusReady() : palette.statusCooldown();
+            int stateW = textRenderer.getWidth(state);
+            int stateX = x + cardW - stateW - 6;
+            int textY = y + (CARD_HEIGHT - 8) / 2;
+            context.drawTextWithShadow(textRenderer, state, stateX, textY, stateColor);
+
+            // Ore name (between icon and swatch)
+            int nameX = iconX + 20;
+            int nameMaxX = swatchX - 4;
             String name = ore.vanilla()
                     ? Text.translatable("murilloskills.ore." + ore.key().toLowerCase()).getString()
                     : ore.displayName();
-            int maxNameW = cardW - (nameX - x) - 4;
+            int maxNameW = nameMaxX - nameX;
             if (textRenderer.getWidth(name) > maxNameW) {
                 while (textRenderer.getWidth(name + "..") > maxNameW && name.length() > 1) {
                     name = name.substring(0, name.length() - 1);
@@ -335,21 +421,32 @@ public class OreFilterScreen extends Screen {
             int nameColor = enabled ? palette.textWhite() : palette.textMuted();
             context.drawTextWithShadow(textRenderer, name, nameX, textY, nameColor);
         }
+
+        context.disableScissor();
     }
 
-    private void renderOreScrollBar(DrawContext context) {
+    private void renderScrollBar(DrawContext context) {
         if (maxScrollRow <= 0) {
+            scrollbarTrackH = 0;
             return;
         }
 
-        int barX = panelX + panelW - PANEL_PADDING + 2;
-        int barY = oreGridY;
-        int barH = oreViewportH;
-        int thumbH = Math.max(16, barH * visibleRows / (visibleRows + maxScrollRow));
-        int thumbY = barY + (barH - thumbH) * scrollRow / maxScrollRow;
+        scrollbarTrackY = gridY;
+        scrollbarTrackH = oreViewportH;
+        scrollbarThumbH = Math.max(20, oreViewportH * visibleRows / (visibleRows + maxScrollRow));
+        scrollbarThumbY = scrollbarTrackY
+                + (oreViewportH - scrollbarThumbH) * scrollRow / maxScrollRow;
 
-        context.fill(barX, barY, barX + 3, barY + barH, palette.scrollbarBg());
-        context.fill(barX, thumbY, barX + 3, thumbY + thumbH, palette.scrollbarFg());
+        int barX = panelX + panelW - PANEL_PADDING + 2;
+
+        context.fill(barX, scrollbarTrackY, barX + SCROLLBAR_WIDTH, scrollbarTrackY + scrollbarTrackH,
+                palette.scrollbarBg());
+        int thumbColor = draggingScrollbar ? palette.scrollbarActive() : palette.scrollbarFg();
+        context.fill(barX, scrollbarThumbY, barX + SCROLLBAR_WIDTH, scrollbarThumbY + scrollbarThumbH,
+                thumbColor);
+        // Inner highlight on thumb
+        context.fill(barX + 1, scrollbarThumbY + 1, barX + SCROLLBAR_WIDTH - 1, scrollbarThumbY + 2,
+                0x40FFFFFF);
     }
 
     private List<OreFilterConfig.OreFilterOption> getFilterableOres() {
@@ -387,7 +484,7 @@ public class OreFilterScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        if (mouseY >= oreGridY && mouseY <= oreGridY + oreViewportH && maxScrollRow > 0) {
+        if (mouseY >= gridY && mouseY <= gridY + oreViewportH && maxScrollRow > 0) {
             int direction = verticalAmount > 0 ? -1 : 1;
             int nextRow = Math.max(0, Math.min(maxScrollRow, scrollRow + direction));
             if (nextRow != scrollRow) {
@@ -397,6 +494,62 @@ public class OreFilterScreen extends Screen {
             }
         }
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+    }
+
+    @Override
+    public boolean mouseClicked(Click click, boolean doubled) {
+        double mouseX = click.x();
+        double mouseY = click.y();
+        if (click.button() == 0 && scrollbarTrackH > 0) {
+            int barX = panelX + panelW - PANEL_PADDING + 2;
+            // Generous hit test
+            if (mouseX >= barX - 2 && mouseX <= barX + SCROLLBAR_WIDTH + 2
+                    && mouseY >= scrollbarTrackY && mouseY <= scrollbarTrackY + scrollbarTrackH) {
+                if (mouseY >= scrollbarThumbY && mouseY <= scrollbarThumbY + scrollbarThumbH) {
+                    draggingScrollbar = true;
+                    scrollbarDragGrabOffset = mouseY - scrollbarThumbY;
+                } else {
+                    draggingScrollbar = true;
+                    scrollbarDragGrabOffset = scrollbarThumbH / 2.0;
+                    updateScrollFromMouse(mouseY);
+                }
+                return true;
+            }
+        }
+        return super.mouseClicked(click, doubled);
+    }
+
+    @Override
+    public boolean mouseDragged(Click click, double offsetX, double offsetY) {
+        if (draggingScrollbar && click.button() == 0) {
+            updateScrollFromMouse(click.y());
+            return true;
+        }
+        return super.mouseDragged(click, offsetX, offsetY);
+    }
+
+    @Override
+    public boolean mouseReleased(Click click) {
+        if (draggingScrollbar && click.button() == 0) {
+            draggingScrollbar = false;
+            return true;
+        }
+        return super.mouseReleased(click);
+    }
+
+    private void updateScrollFromMouse(double mouseY) {
+        if (maxScrollRow <= 0 || scrollbarTrackH <= scrollbarThumbH) {
+            return;
+        }
+        double newThumbTop = mouseY - scrollbarDragGrabOffset;
+        double trackRange = scrollbarTrackH - scrollbarThumbH;
+        double rel = (newThumbTop - scrollbarTrackY) / trackRange;
+        rel = Math.max(0.0, Math.min(1.0, rel));
+        int newRow = (int) Math.round(rel * maxScrollRow);
+        if (newRow != scrollRow) {
+            scrollRow = newRow;
+            refreshScreen();
+        }
     }
 
     @Override
