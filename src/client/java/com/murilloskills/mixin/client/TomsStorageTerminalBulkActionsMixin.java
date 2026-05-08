@@ -7,8 +7,6 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -243,16 +241,6 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
         }
         BlockPos targetPos = TerminalMachineTargetClientState.getTargetPos();
         Direction targetFace = TerminalMachineTargetClientState.getTargetFace();
-        if (targetPos == null || targetFace == null) {
-            HitResult target = client.crosshairTarget;
-            if (!(target instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK) {
-                target = client.player.raycast(12.0D, 0.0F, false);
-            }
-            if (target instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK) {
-                targetPos = hit.getBlockPos();
-                targetFace = hit.getSide();
-            }
-        }
         if (targetPos == null || targetFace == null) {
             client.player.sendMessage(Text.translatable("murilloskills.terminal_transfer.no_target"), true);
             return true;

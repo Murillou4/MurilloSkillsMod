@@ -905,7 +905,7 @@
     "murilloskills.terminal_transfer.send": "Enviar",
     "murilloskills.terminal_transfer.target": "Alvo: %s %s %s",
     "murilloskills.terminal_transfer.invalid_amount": "Quantidade invalida.",
-    "murilloskills.terminal_transfer.no_target": "Mire em uma maquina e aperte Ctrl+Alt+M para marcar o alvo.",
+    "murilloskills.terminal_transfer.no_target": "Segure Shift e clique direito com o wireless terminal numa maquina para marcar o alvo.",
     "murilloskills.terminal_transfer.marked": "Maquina alvo marcada: %s %s %s.",
     "murilloskills.terminal_transfer.target_too_far": "A maquina alvo esta longe demais.",
     "murilloskills.terminal_transfer.no_storage": "Nao encontrei %s no storage do terminal wireless.",

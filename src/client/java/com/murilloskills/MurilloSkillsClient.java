@@ -35,6 +35,7 @@ import com.murilloskills.data.UltPlaceClientState;
 import com.murilloskills.data.UltmineClientState;
 import com.murilloskills.gui.ParagonAbilityScreen;
 import com.murilloskills.gui.UltPlaceConfigScreen;
+import com.murilloskills.integration.TomsStorageBridge;
 import com.murilloskills.render.AreaPlantingHud;
 import com.murilloskills.render.AutoTorchHud;
 import com.murilloskills.render.MeltingTouchHud;
@@ -399,6 +400,23 @@ public class MurilloSkillsClient implements ClientModInitializer {
         // --- EVENTS ---
 
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+            if (world.isClient() && player == MinecraftClient.getInstance().player
+                    && player.isSneaking()
+                    && TomsStorageBridge.isHoldingBoundWirelessTerminal(player)) {
+                MinecraftClient client = MinecraftClient.getInstance();
+                if (client.world != null && client.player != null
+                        && client.world.getBlockEntity(hitResult.getBlockPos()) != null) {
+                    TerminalMachineTargetClientState.set(hitResult.getBlockPos(), hitResult.getSide());
+                    client.player.sendMessage(Text.translatable("murilloskills.terminal_transfer.marked",
+                            hitResult.getBlockPos().getX(), hitResult.getBlockPos().getY(),
+                            hitResult.getBlockPos().getZ()).formatted(Formatting.AQUA), true);
+                } else if (client.player != null) {
+                    client.player.sendMessage(Text.translatable("murilloskills.terminal_transfer.no_target")
+                            .formatted(Formatting.RED), true);
+                }
+                return ActionResult.SUCCESS;
+            }
+
             if (!world.isClient() || !SkillConfig.isUltmineEnabled()) {
                 return ActionResult.PASS;
             }

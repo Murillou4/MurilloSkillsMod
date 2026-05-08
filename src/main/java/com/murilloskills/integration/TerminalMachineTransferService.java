@@ -8,6 +8,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SidedInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -44,12 +45,15 @@ public final class TerminalMachineTransferService {
             return;
         }
         if (targetPos == null || !world.isChunkLoaded(targetPos) || isTooFar(player, targetPos)) {
-            player.sendMessage(Text.translatable("murilloskills.terminal_transfer.target_too_far"), true);
+            player.sendMessage(Text.translatable("murilloskills.terminal_transfer.target_too_far"), false);
+            LOGGER.info("Terminal transfer rejected: target is missing, unloaded, or too far");
             return;
         }
         BlockEntity target = world.getBlockEntity(targetPos);
         if (target == null) {
-            player.sendMessage(Text.translatable("murilloskills.terminal_transfer.no_target"), true);
+            player.sendMessage(Text.translatable("murilloskills.terminal_transfer.no_target"), false);
+            LOGGER.info("Terminal transfer rejected: target {} has no block entity ({})", targetPos,
+                    Registries.BLOCK.getId(world.getBlockState(targetPos).getBlock()));
             return;
         }
 

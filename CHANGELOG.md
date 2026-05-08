@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.70] - 2026-05-08
+
+### Tom's Storage para Maquinas
+
+- **Marcacao confiavel da maquina**: segurando um wireless terminal vinculado, `Shift + clique direito` em uma maquina marca o alvo e cancela a abertura da interface dela.
+- **Sem alvo falso no terminal**: `Ctrl+Alt+T` agora exige uma maquina marcada; se nao houver alvo, mostra a instrucao em vez de usar o bloco sob o crosshair.
+- **Diagnostico melhor no servidor**: alvo sem block entity e alvo distante agora tambem geram mensagem/log, facilitando descobrir qualquer falha restante.
+
+---
+
 ## [1.2.69] - 2026-05-08
 
 ### Tom's Storage para Maquinas
