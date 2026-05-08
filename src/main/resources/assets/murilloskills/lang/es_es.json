@@ -796,6 +796,18 @@
     "murilloskills.ultplace.rotation.face_locked": "Fijada a la Cara",
     "murilloskills.ultplace.rotation.player_facing": "Direccion del Jugador",
     "murilloskills.ultplace.fallback.complex_item": "Este bloque tiene reglas de colocacion complejas, asi que UltPlace mantiene solo la colocacion principal.",
+    "murilloskills.terminal_transfer.title": "Enviar a Maquina",
+    "murilloskills.terminal_transfer.amount": "Cantidad",
+    "murilloskills.terminal_transfer.all_short": "Todo",
+    "murilloskills.terminal_transfer.send": "Enviar",
+    "murilloskills.terminal_transfer.target": "Objetivo: %s %s %s",
+    "murilloskills.terminal_transfer.invalid_amount": "Cantidad invalida.",
+    "murilloskills.terminal_transfer.no_target": "Mira una maquina para recibir los items.",
+    "murilloskills.terminal_transfer.target_too_far": "La maquina objetivo esta demasiado lejos.",
+    "murilloskills.terminal_transfer.no_storage": "No encontre %s en el storage del terminal wireless.",
+    "murilloskills.terminal_transfer.no_input": "%s no cabe en esa maquina.",
+    "murilloskills.terminal_transfer.success": "Enviado %s x %s a %s.",
+    "murilloskills.terminal_transfer.partial": "Enviado %s x %s a %s; el resto volvio al storage.",
     "murilloskills.hud.ultplace": "UltPlace %s • %s • %s • %s"
 }
 

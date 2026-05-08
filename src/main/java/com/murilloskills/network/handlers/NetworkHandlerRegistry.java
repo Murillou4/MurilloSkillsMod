@@ -78,8 +78,10 @@ public final class NetworkHandlerRegistry {
             registerHandler("TrashListSync", TrashListSyncC2SPayload.ID, TrashListSyncNetworkHandler.create());
             registerHandler("UltmineClassicBlockListSync", UltmineClassicBlockListSyncC2SPayload.ID,
                     UltmineClassicBlockListSyncNetworkHandler.create());
+            registerHandler("TerminalMachineTransfer", TerminalMachineTransferC2SPayload.ID,
+                    TerminalMachineTransferNetworkHandler.create());
 
-            LOGGER.info("Successfully registered 26 network handlers");
+            LOGGER.info("Successfully registered network handlers");
 
         } catch (Exception e) {
             LOGGER.error("CRITICAL: Failed to register network handlers!", e);

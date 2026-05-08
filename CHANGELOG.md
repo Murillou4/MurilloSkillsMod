@@ -4,6 +4,15 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.67] - 2026-05-08
+
+### Tom's Storage para Maquinas
+
+- **Terminal wireless envia itens para maquinas**: no terminal do Tom's Storage, `Ctrl+Alt+T` sobre um item abre uma tela de quantidade e envia o stack do storage vinculado para a maquina mirada, como Recycler e outras maquinas do Tech Reborn.
+- **Transferencia com devolucao segura**: o servidor valida distancia/alvo, puxa do storage vinculado pelo terminal wireless e devolve qualquer sobra ao storage, inventario ou dropa perto do jogador se a maquina nao aceitar tudo.
+
+---
+
 ## [1.2.66] - 2026-05-08
 
 ### Ultmine, Tom's Storage e Tech Reborn

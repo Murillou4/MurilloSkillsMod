@@ -28,6 +28,7 @@ public class UltmineClientConfig {
         public boolean xpDirectToPlayer = false;
         public boolean magnetEnabled = false;
         public int magnetRange = 8;
+        public int terminalMachineTransferAmount = 64;
         public String selectedShape = UltmineShape.S_3x3.name();
         public java.util.List<String> trashItems = new java.util.ArrayList<>();
         public java.util.List<String> storageWhitelist = new java.util.ArrayList<>();
@@ -170,6 +171,20 @@ public class UltmineClientConfig {
 
     public static void setMagnetRange(int range) {
         get().magnetRange = Math.max(1, Math.min(range, 32));
+    }
+
+    // --- Tom's terminal machine transfer ---
+
+    public static int getTerminalMachineTransferAmount() {
+        return clampTerminalMachineTransferAmount(get().terminalMachineTransferAmount);
+    }
+
+    public static void setTerminalMachineTransferAmount(int amount) {
+        get().terminalMachineTransferAmount = clampTerminalMachineTransferAmount(amount);
+    }
+
+    private static int clampTerminalMachineTransferAmount(int amount) {
+        return Math.max(1, Math.min(amount, 4096));
     }
 
     // --- Trash ---

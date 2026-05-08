@@ -11,6 +11,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -27,6 +28,7 @@ public final class TomsStorageBridge {
     private static final String CONTENT_CLASS = "com.tom.storagemod.Content";
     private static final String GAME_OBJECT_CLASS = "com.tom.storagemod.platform.GameObject";
     private static final String WORLD_POS_CLASS = "com.tom.storagemod.components.WorldPos";
+    private static final String STORED_ITEM_STACK_CLASS = "com.tom.storagemod.inventory.StoredItemStack";
     private static final String STORAGE_TERMINAL_BE_CLASS = "com.tom.storagemod.block.entity.StorageTerminalBlockEntity";
     private static final String INVENTORY_CONNECTOR_CLASS = "com.tom.storagemod.block.entity.IInventoryConnector";
     private static final String INVENTORY_ACCESS_CLASS = "com.tom.storagemod.inventory.IInventoryAccess";
@@ -35,14 +37,19 @@ public final class TomsStorageBridge {
     private static volatile Class<?> wirelessTerminalItemClass;
     private static volatile ComponentType<?> boundPosComponentType;
     private static volatile Class<?> worldPosClass;
+    private static volatile Class<?> storedItemStackClass;
     private static volatile Class<?> storageTerminalBeClass;
     private static volatile Class<?> inventoryConnectorClass;
     private static volatile Class<?> inventoryAccessClass;
+    private static volatile Constructor<?> storedItemStackConstructor;
     private static volatile Method worldPosPosMethod;
     private static volatile Method worldPosDimMethod;
     private static volatile Method storageTerminalPushStackMethod;
+    private static volatile Method storageTerminalPullStackMethod;
+    private static volatile Method storedItemStackGetActualStackMethod;
     private static volatile Method connectorGetMergedHandlerMethod;
     private static volatile Method inventoryAccessPushStackMethod;
+    private static volatile Method inventoryAccessPullMatchingStackMethod;
 
     private TomsStorageBridge() {
     }
@@ -72,37 +79,8 @@ public final class TomsStorageBridge {
         if (disabled || player == null || stack == null || stack.isEmpty()) {
             return stack;
         }
-        MinecraftServer server = player.getEntityWorld().getServer();
-        if (server == null) {
-            return stack;
-        }
         try {
-            Class<?> itemClass = resolveWirelessTerminalItemClass();
-            if (itemClass == null) {
-                return stack;
-            }
-            ItemStack terminalStack = findBoundTerminalStack(player, itemClass);
-            if (terminalStack == null) {
-                return stack;
-            }
-            ComponentType<?> componentType = resolveBoundPosComponentType();
-            if (componentType == null) {
-                return stack;
-            }
-            Object worldPos = terminalStack.get(componentType);
-            if (worldPos == null) {
-                return stack;
-            }
-            BlockPos pos = invokeWorldPosPos(worldPos);
-            RegistryKey<World> dim = invokeWorldPosDim(worldPos);
-            if (pos == null || dim == null) {
-                return stack;
-            }
-            ServerWorld targetWorld = server.getWorld(dim);
-            if (targetWorld == null || !targetWorld.isChunkLoaded(pos)) {
-                return stack;
-            }
-            BlockEntity blockEntity = targetWorld.getBlockEntity(pos);
+            BlockEntity blockEntity = resolveBoundStorageBlockEntity(player);
             if (blockEntity == null) {
                 return stack;
             }
@@ -119,6 +97,67 @@ public final class TomsStorageBridge {
             // Don't permanently disable on a single push failure — it might just be a chunk unload.
             return stack;
         }
+    }
+
+    /**
+     * Pulls up to {@code amount} matching items from the storage network bound to the
+     * player's Advanced Wireless Terminal. Returns the stack actually extracted.
+     */
+    public static ItemStack pullFromBoundStorage(ServerPlayerEntity player, ItemStack itemKey, int amount) {
+        if (disabled || player == null || itemKey == null || itemKey.isEmpty() || amount <= 0) {
+            return ItemStack.EMPTY;
+        }
+        try {
+            BlockEntity blockEntity = resolveBoundStorageBlockEntity(player);
+            if (blockEntity == null) {
+                return ItemStack.EMPTY;
+            }
+            ItemStack terminalPulled = pullFromStorageTerminal(blockEntity, itemKey, amount);
+            if (terminalPulled != null) {
+                return terminalPulled;
+            }
+            ItemStack connectorPulled = pullFromInventoryConnector(blockEntity, itemKey, amount);
+            if (connectorPulled != null) {
+                return connectorPulled;
+            }
+        } catch (Throwable ignored) {
+            // Chunk loads and optional mod internals can legitimately change underneath us.
+        }
+        return ItemStack.EMPTY;
+    }
+
+    private static BlockEntity resolveBoundStorageBlockEntity(ServerPlayerEntity player)
+            throws ReflectiveOperationException {
+        MinecraftServer server = player.getEntityWorld().getServer();
+        if (server == null) {
+            return null;
+        }
+        Class<?> itemClass = resolveWirelessTerminalItemClass();
+        if (itemClass == null) {
+            return null;
+        }
+        ItemStack terminalStack = findBoundTerminalStack(player, itemClass);
+        if (terminalStack == null) {
+            return null;
+        }
+        ComponentType<?> componentType = resolveBoundPosComponentType();
+        if (componentType == null) {
+            return null;
+        }
+        Object worldPos = terminalStack.get(componentType);
+        if (worldPos == null) {
+            return null;
+        }
+        BlockPos pos = invokeWorldPosPos(worldPos);
+        RegistryKey<World> dim = invokeWorldPosDim(worldPos);
+        if (pos == null || dim == null) {
+            return null;
+        }
+        ServerWorld targetWorld = server.getWorld(dim);
+        if (targetWorld == null || !targetWorld.isChunkLoaded(pos)) {
+            return null;
+        }
+        return targetWorld.getBlockEntity(pos);
     }
 
     private static ItemStack findBoundTerminalStack(PlayerEntity player, Class<?> itemClass) {
@@ -161,6 +200,20 @@ public final class TomsStorageBridge {
         try {
             cached = Class.forName(STORAGE_TERMINAL_BE_CLASS);
             storageTerminalBeClass = cached;
+            return cached;
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    private static Class<?> resolveStoredItemStackClass() {
+        Class<?> cached = storedItemStackClass;
+        if (cached != null) {
+            return cached;
+        }
+        try {
+            cached = Class.forName(STORED_ITEM_STACK_CLASS);
+            storedItemStackClass = cached;
             return cached;
         } catch (ClassNotFoundException e) {
             return null;
@@ -278,6 +331,24 @@ public final class TomsStorageBridge {
         return result instanceof ItemStack leftover ? leftover : stack;
     }
 
+    private static ItemStack pullFromStorageTerminal(BlockEntity blockEntity, ItemStack itemKey, int amount)
+            throws ReflectiveOperationException {
+        Class<?> beClass = resolveStorageTerminalBeClass();
+        if (beClass == null || !beClass.isInstance(blockEntity)) {
+            return null;
+        }
+        Method pull = resolveStorageTerminalPullStackMethod(beClass);
+        if (pull == null) {
+            return ItemStack.EMPTY;
+        }
+        Object storedItem = newStoredItemStack(itemKey);
+        if (storedItem == null) {
+            return ItemStack.EMPTY;
+        }
+        Object result = pull.invoke(blockEntity, storedItem, (long) amount);
+        return storedItemStackToItemStack(result);
+    }
+
     private static ItemStack pushToInventoryConnector(BlockEntity blockEntity, ItemStack stack)
             throws ReflectiveOperationException {
         Class<?> connectorClass = resolveInventoryConnectorClass();
@@ -304,6 +375,34 @@ public final class TomsStorageBridge {
         return result instanceof ItemStack leftover ? leftover : stack;
     }
 
+    private static ItemStack pullFromInventoryConnector(BlockEntity blockEntity, ItemStack itemKey, int amount)
+            throws ReflectiveOperationException {
+        Class<?> connectorClass = resolveInventoryConnectorClass();
+        if (connectorClass == null || !connectorClass.isInstance(blockEntity)) {
+            return null;
+        }
+        Method getMergedHandler = resolveConnectorGetMergedHandlerMethod(connectorClass);
+        if (getMergedHandler == null) {
+            return ItemStack.EMPTY;
+        }
+        Object handler = getMergedHandler.invoke(blockEntity);
+        if (handler == null) {
+            return ItemStack.EMPTY;
+        }
+        Class<?> inventoryAccessClass = resolveInventoryAccessClass();
+        if (inventoryAccessClass == null || !inventoryAccessClass.isInstance(handler)) {
+            return ItemStack.EMPTY;
+        }
+        Method pull = resolveInventoryAccessPullMatchingStackMethod(inventoryAccessClass);
+        if (pull == null) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack filter = itemKey.copy();
+        filter.setCount(1);
+        Object result = pull.invoke(handler, filter, (long) amount);
+        return result instanceof ItemStack pulled ? pulled : ItemStack.EMPTY;
+    }
+
     private static Method resolveStorageTerminalPushStackMethod(Class<?> beClass) {
         Method cached = storageTerminalPushStackMethod;
         if (cached != null) {
@@ -319,6 +418,63 @@ public final class TomsStorageBridge {
         } catch (NoSuchMethodException e) {
             return null;
         }
+    }
+
+    private static Method resolveStorageTerminalPullStackMethod(Class<?> beClass) {
+        Method cached = storageTerminalPullStackMethod;
+        if (cached != null) {
+            return cached;
+        }
+        Class<?> storedClass = resolveStoredItemStackClass();
+        if (storedClass == null) {
+            return null;
+        }
+        try {
+            cached = beClass.getMethod("pullStack", storedClass, long.class);
+            cached.setAccessible(true);
+            storageTerminalPullStackMethod = cached;
+            return cached;
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
+    }
+
+    private static Object newStoredItemStack(ItemStack itemKey) throws ReflectiveOperationException {
+        Constructor<?> constructor = storedItemStackConstructor;
+        if (constructor == null) {
+            Class<?> storedClass = resolveStoredItemStackClass();
+            if (storedClass == null) {
+                return null;
+            }
+            try {
+                constructor = storedClass.getConstructor(ItemStack.class);
+            } catch (NoSuchMethodException e) {
+                constructor = storedClass.getDeclaredConstructor(ItemStack.class);
+            }
+            constructor.setAccessible(true);
+            storedItemStackConstructor = constructor;
+        }
+        ItemStack filter = itemKey.copy();
+        filter.setCount(1);
+        return constructor.newInstance(filter);
+    }
+
+    private static ItemStack storedItemStackToItemStack(Object storedItemStack) throws ReflectiveOperationException {
+        if (storedItemStack == null) {
+            return ItemStack.EMPTY;
+        }
+        Method method = storedItemStackGetActualStackMethod;
+        if (method == null) {
+            Class<?> storedClass = resolveStoredItemStackClass();
+            if (storedClass == null) {
+                return ItemStack.EMPTY;
+            }
+            method = storedClass.getMethod("getActualStack");
+            method.setAccessible(true);
+            storedItemStackGetActualStackMethod = method;
+        }
+        Object result = method.invoke(storedItemStack);
+        return result instanceof ItemStack stack ? stack : ItemStack.EMPTY;
     }
 
     private static Method resolveConnectorGetMergedHandlerMethod(Class<?> connectorClass) {
@@ -345,6 +501,21 @@ public final class TomsStorageBridge {
             cached = inventoryAccessClass.getMethod("pushStack", ItemStack.class);
             cached.setAccessible(true);
             inventoryAccessPushStackMethod = cached;
+            return cached;
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
+    }
+
+    private static Method resolveInventoryAccessPullMatchingStackMethod(Class<?> inventoryAccessClass) {
+        Method cached = inventoryAccessPullMatchingStackMethod;
+        if (cached != null) {
+            return cached;
+        }
+        try {
+            cached = inventoryAccessClass.getMethod("pullMatchingStack", ItemStack.class, long.class);
+            cached.setAccessible(true);
+            inventoryAccessPullMatchingStackMethod = cached;
             return cached;
         } catch (NoSuchMethodException e) {
             return null;

@@ -900,6 +900,18 @@
   "murilloskills.ultplace.rotation.face_locked": "Face Locked",
   "murilloskills.ultplace.rotation.player_facing": "Player Facing",
   "murilloskills.ultplace.fallback.complex_item": "This block has complex placement rules, so UltPlace keeps only the main placement.",
+  "murilloskills.terminal_transfer.title": "Send to Machine",
+  "murilloskills.terminal_transfer.amount": "Amount",
+  "murilloskills.terminal_transfer.all_short": "All",
+  "murilloskills.terminal_transfer.send": "Send",
+  "murilloskills.terminal_transfer.target": "Target: %s %s %s",
+  "murilloskills.terminal_transfer.invalid_amount": "Invalid amount.",
+  "murilloskills.terminal_transfer.no_target": "Look at a machine to receive the items.",
+  "murilloskills.terminal_transfer.target_too_far": "The target machine is too far away.",
+  "murilloskills.terminal_transfer.no_storage": "Could not find %s in the wireless terminal storage.",
+  "murilloskills.terminal_transfer.no_input": "%s does not fit in that machine.",
+  "murilloskills.terminal_transfer.success": "Sent %s x %s to %s.",
+  "murilloskills.terminal_transfer.partial": "Sent %s x %s to %s; the rest went back to storage.",
   "murilloskills.hud.ultplace": "UltPlace %s • %s • %s • %s"
 }
 

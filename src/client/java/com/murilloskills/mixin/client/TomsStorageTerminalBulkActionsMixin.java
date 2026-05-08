@@ -1,6 +1,11 @@
 package com.murilloskills.mixin.client;
 
+import com.murilloskills.gui.TerminalMachineTransferAmountScreen;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.text.Text;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -66,8 +71,15 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
 
     @Inject(method = "method_25404", at = @At("HEAD"), cancellable = true, remap = false)
     private void murilloskills$startBulkDrop(@Coerce Object keyInput, CallbackInfoReturnable<Boolean> cir) {
-        if (!murilloskills$isControlDown()
-                || !murilloskills$isDropKey(murilloskills$getKeyCode(keyInput))) {
+        int keyCode = murilloskills$getKeyCode(keyInput);
+        if (murilloskills$isControlDown() && murilloskills$isAltDown() && keyCode == GLFW.GLFW_KEY_T) {
+            if (murilloskills$openMachineTransferScreen()) {
+                cir.setReturnValue(true);
+            }
+            return;
+        }
+
+        if (!murilloskills$isControlDown() || !murilloskills$isDropKey(keyCode)) {
             return;
         }
 
@@ -182,6 +194,17 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
     }
 
     @Unique
+    private boolean murilloskills$isAltDown() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null || client.getWindow() == null) {
+            return false;
+        }
+        long handle = client.getWindow().getHandle();
+        return GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_ALT) == GLFW.GLFW_PRESS
+                || GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_RIGHT_ALT) == GLFW.GLFW_PRESS;
+    }
+
+    @Unique
     private boolean murilloskills$isControlDown(long handle) {
         return GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS
                 || GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS;
@@ -199,6 +222,39 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
             return;
         }
         murilloskills$sendTomStorageAction("SHIFT_PULL", storedStack);
+    }
+
+    @Unique
+    private boolean murilloskills$openMachineTransferScreen() {
+        Object storedStack = murilloskills$resolveHoveredStoredStack();
+        if (storedStack == null) {
+            return false;
+        }
+        net.minecraft.item.ItemStack itemKey = murilloskills$readItemStackField(storedStack);
+        if (itemKey == null || itemKey.isEmpty()) {
+            return false;
+        }
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null || client.player == null) {
+            return false;
+        }
+        HitResult target = client.crosshairTarget;
+        if (!(target instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK) {
+            target = client.player.raycast(12.0D, 0.0F, false);
+        }
+        if (!(target instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK) {
+            client.player.sendMessage(Text.translatable("murilloskills.terminal_transfer.no_target"), true);
+            return true;
+        }
+        long available;
+        try {
+            available = murilloskills$getQuantity(storedStack);
+        } catch (ReflectiveOperationException e) {
+            available = 1L;
+        }
+        client.setScreen(new TerminalMachineTransferAmountScreen((Screen) (Object) this, itemKey.copy(), available,
+                hit.getBlockPos(), hit.getSide()));
+        return true;
     }
 
     @Unique
