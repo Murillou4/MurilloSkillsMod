@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.72] - 2026-05-08
+
+### Tom's Storage para Maquinas
+
+- **Tela maior e estavel**: a UI de envio para maquinas agora usa painel maior com lista fixa e rolavel, evitando quebrar quando ha muitas maquinas marcadas.
+- **Selecao multipla de maquinas**: cada maquina marcada pode ser marcada/desmarcada com checkbox, com botoes rapidos para `Todas`, `Nenhuma` e `So atual`.
+- **Envio em lote por maquina**: a quantidade digitada agora pode ser enviada para varias maquinas selecionadas de uma vez, usando o valor como quantidade por maquina.
+
+---
+
 ## [1.2.71] - 2026-05-08
 
 ### Tom's Storage para Maquinas
