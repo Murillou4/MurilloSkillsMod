@@ -4,6 +4,15 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.68] - 2026-05-08
+
+### Tom's Storage para Maquinas
+
+- **Alvo de maquina agora e marcado antes do terminal**: `Ctrl+Alt+M` olhando para uma maquina salva o alvo, evitando abrir a interface da maquina ao tentar usar o wireless terminal.
+- **Transferencia usa o alvo marcado**: dentro do terminal do Tom's Storage, `Ctrl+Alt+T` no item hoverado abre a quantidade e envia para a maquina marcada.
+
+---
+
 ## [1.2.67] - 2026-05-08
 
 ### Tom's Storage para Maquinas

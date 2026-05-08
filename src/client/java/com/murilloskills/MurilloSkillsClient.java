@@ -30,6 +30,7 @@ import com.murilloskills.network.XpGainS2CPayload;
 import com.murilloskills.client.config.UltmineClientConfig;
 import com.murilloskills.client.config.OreFilterConfig;
 import com.murilloskills.data.ClientSkillData;
+import com.murilloskills.data.TerminalMachineTargetClientState;
 import com.murilloskills.data.UltPlaceClientState;
 import com.murilloskills.data.UltmineClientState;
 import com.murilloskills.gui.ParagonAbilityScreen;
@@ -105,6 +106,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
     // Vein Miner hold state tracking
     private static boolean veinMinerKeyHeld = false;
     private static boolean ultmineMenuKeyHeld = false;
+    private static boolean terminalMachineTargetChordHeld = false;
     private static long lastUltPlacePreviewSignature = Long.MIN_VALUE;
     private static long lastUltPlaceSentSignature = Long.MIN_VALUE;
     private static long nextUltPlaceRequestKey = 1L;
@@ -264,6 +266,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
             UltmineClientConfig.load();
             UltmineClientState.applySavedSelection();
             UltPlaceClientState.clearPreview();
+            TerminalMachineTargetClientState.clear();
             resetUltPlacePreviewTracking();
             // Populate modded ores in the filter from this world's block registry so they
             // appear in the Ore Filter screen without first having to be scanned.
@@ -476,7 +479,9 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 ClientPlayNetworking.send(new com.murilloskills.network.AutoTorchToggleC2SPayload());
             }
             while (meltingTouchToggleKey.wasPressed()) {
-                ClientPlayNetworking.send(new MeltingTouchToggleC2SPayload());
+                if (!isTerminalMachineTargetChord(client)) {
+                    ClientPlayNetworking.send(new MeltingTouchToggleC2SPayload());
+                }
             }
             while (fillModeCycleKey.wasPressed()) {
                 // Envia pacote para ciclar entre modos de preenchimento (Builder)
@@ -497,6 +502,14 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 if (client.currentScreen instanceof com.murilloskills.gui.UltmineRadialMenuScreen radialScreen) {
                     radialScreen.releaseAndClose();
                 }
+            }
+
+            boolean targetChordPressed = isTerminalMachineTargetChord(client);
+            if (targetChordPressed && !terminalMachineTargetChordHeld) {
+                terminalMachineTargetChordHeld = true;
+                captureTerminalMachineTarget(client);
+            } else if (!targetChordPressed) {
+                terminalMachineTargetChordHeld = false;
             }
 
             // Vein Miner - detect key press and release (hold to activate)
@@ -607,6 +620,36 @@ public class MurilloSkillsClient implements ClientModInitializer {
             return GLFW.glfwGetMouseButton(windowHandle, boundKey.getCode()) == GLFW.GLFW_PRESS;
         }
         return InputUtil.isKeyPressed(client.getWindow(), boundKey.getCode());
+    }
+
+    private static boolean isTerminalMachineTargetChord(MinecraftClient client) {
+        if (client == null || client.getWindow() == null) {
+            return false;
+        }
+        long handle = client.getWindow().getHandle();
+        boolean control = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS
+                || GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS;
+        boolean alt = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_ALT) == GLFW.GLFW_PRESS
+                || GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_RIGHT_ALT) == GLFW.GLFW_PRESS;
+        return control && alt && GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_M) == GLFW.GLFW_PRESS;
+    }
+
+    private static void captureTerminalMachineTarget(MinecraftClient client) {
+        if (client.player == null || client.world == null || client.currentScreen != null) {
+            return;
+        }
+        HitResult hitResult = client.player.raycast(12.0D, 1.0F, false);
+        if (!(hitResult instanceof BlockHitResult blockHit)
+                || hitResult.getType() != HitResult.Type.BLOCK
+                || client.world.getBlockState(blockHit.getBlockPos()).isAir()) {
+            client.player.sendMessage(Text.translatable("murilloskills.terminal_transfer.no_target")
+                    .formatted(Formatting.RED), true);
+            return;
+        }
+        TerminalMachineTargetClientState.set(blockHit.getBlockPos(), blockHit.getSide());
+        client.player.sendMessage(Text.translatable("murilloskills.terminal_transfer.marked",
+                blockHit.getBlockPos().getX(), blockHit.getBlockPos().getY(), blockHit.getBlockPos().getZ())
+                .formatted(Formatting.AQUA), true);
     }
 
     private static void showUltPlaceToggleFeedback(MinecraftClient client) {

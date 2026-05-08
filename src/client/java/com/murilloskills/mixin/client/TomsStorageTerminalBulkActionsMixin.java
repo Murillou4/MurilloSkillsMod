@@ -1,9 +1,12 @@
 package com.murilloskills.mixin.client;
 
+import com.murilloskills.data.TerminalMachineTargetClientState;
 import com.murilloskills.gui.TerminalMachineTransferAmountScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import org.lwjgl.glfw.GLFW;
@@ -238,11 +241,19 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
         if (client == null || client.player == null) {
             return false;
         }
-        HitResult target = client.crosshairTarget;
-        if (!(target instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK) {
-            target = client.player.raycast(12.0D, 0.0F, false);
+        BlockPos targetPos = TerminalMachineTargetClientState.getTargetPos();
+        Direction targetFace = TerminalMachineTargetClientState.getTargetFace();
+        if (targetPos == null || targetFace == null) {
+            HitResult target = client.crosshairTarget;
+            if (!(target instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK) {
+                target = client.player.raycast(12.0D, 0.0F, false);
+            }
+            if (target instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK) {
+                targetPos = hit.getBlockPos();
+                targetFace = hit.getSide();
+            }
         }
-        if (!(target instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK) {
+        if (targetPos == null || targetFace == null) {
             client.player.sendMessage(Text.translatable("murilloskills.terminal_transfer.no_target"), true);
             return true;
         }
@@ -253,7 +264,7 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
             available = 1L;
         }
         client.setScreen(new TerminalMachineTransferAmountScreen((Screen) (Object) this, itemKey.copy(), available,
-                hit.getBlockPos(), hit.getSide()));
+                targetPos, targetFace));
         return true;
     }
 
