@@ -56,5 +56,6 @@ public class ModNetwork {
         PayloadTypeRegistry.playC2S().register(TrashListSyncC2SPayload.ID, TrashListSyncC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(UltmineClassicBlockListSyncC2SPayload.ID,
                 UltmineClassicBlockListSyncC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(TomsStorageDropC2SPayload.ID, TomsStorageDropC2SPayload.CODEC);
     }
 }

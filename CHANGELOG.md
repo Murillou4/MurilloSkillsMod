@@ -4,6 +4,15 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.61] - 2026-05-08
+
+### Compat - Tom's Simple Storage
+
+- **Shift + segurar clique esquerdo**: no terminal do Tom's Simple Storage, stacks agora sao puxadas para o inventario em loop enquanto o atalho fica pressionado.
+- **Ctrl + Q segurado**: o terminal agora consegue dropar stacks direto do storage no mundo, validando no servidor se o terminal esta aberto e se o slot ainda tem item.
+
+---
+
 ## [1.2.60] - 2026-05-08
 
 ### Builder, Farmer, Miner e Compat

@@ -5,6 +5,7 @@
 	"client": [
 		"ExampleClientMixin",
 		"ExplorerFovMixin",
+		"TomsStorageTerminalBulkActionsMixin",
 		"AnvilScreenHandlerClientMixin",
 		"EnchantmentScreenHandlerClientMixin",
 		"AnvilScreenMixin",
