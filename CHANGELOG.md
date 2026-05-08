@@ -4,6 +4,23 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.64] - 2026-05-08
+
+### Compat e Ultmine - Tom's Simple Storage
+
+- **Ctrl + Q segurando trava no item original**: o drop em massa no terminal agora captura o stack alvo no momento em que o atalho e acionado e continua mirando ele mesmo enquanto outros itens da lista sao reordenados conforme estoque diminui. O loop tambem para sozinho quando o item alvo zera no storage.
+- **Drops do Ultmine direto pro storage**: novo toggle "Pro Storage" na tela Ultmine Config. Quando ligado e o jogador esta segurando um Advanced Wireless Terminal vinculado, os drops do ultmine sao empurrados pra rede de storage do terminal antes de cair no chao ou no inventario. Sobra (storage cheio ou item nao aceito) volta pro fluxo normal.
+
+---
+
+## [1.2.63] - 2026-05-08
+
+### Compat - Tom's Simple Storage
+
+- **Ctrl + Q mira o item correto no terminal**: o drop em massa agora usa o pacote interno do Tom's Storage para resolver exatamente o stack visivel sob o mouse, removendo o fallback que podia escolher outro item do storage.
+
+---
+
 ## [1.2.62] - 2026-05-08
 
 ### Compat - Tom's Simple Storage

@@ -8,6 +8,7 @@ import com.murilloskills.network.TrashListSyncC2SPayload;
 import com.murilloskills.network.UltmineClassicBlockListSyncC2SPayload;
 import com.murilloskills.network.UltmineShapeSelectC2SPayload;
 import com.murilloskills.network.VeinMinerDropsToggleC2SPayload;
+import com.murilloskills.network.VeinMinerStorageDropToggleC2SPayload;
 import com.murilloskills.network.XpDirectToggleC2SPayload;
 import com.murilloskills.skills.UltmineShape;
 import com.murilloskills.utils.SkillConfig;
@@ -108,30 +109,39 @@ public class UltmineConfigScreen extends Screen {
         // === GLOBAL TOGGLES ===
         int toggleW = secW - PANEL_PADDING * 2;
         int toggleGap = 4;
-        int toggleBtnW = (toggleW - toggleGap * 2) / 3;
+        int toggleBtnW = (toggleW - toggleGap * 3) / 4;
         int toggleStartX = secCx - toggleW / 2;
+        int toggleY = toggleSectionY + 16 + oY;
 
         // Drops to Inventory toggle
         ButtonWidget dropsBtn = ButtonWidget.builder(Text.empty(), (b) -> {
             UltmineClientConfig.toggleDropsToInventory();
             ClientPlayNetworking.send(new VeinMinerDropsToggleC2SPayload());
             refreshScreen();
-        }).dimensions(toggleStartX, toggleSectionY + 16 + oY, toggleBtnW, 20).build();
+        }).dimensions(toggleStartX, toggleY, toggleBtnW, 20).build();
         this.addDrawableChild(dropsBtn);
+
+        // Drops to Storage (Tom's Storage Wireless Terminal) toggle
+        ButtonWidget storageDropsBtn = ButtonWidget.builder(Text.empty(), (b) -> {
+            UltmineClientConfig.toggleDropsToStorage();
+            ClientPlayNetworking.send(new VeinMinerStorageDropToggleC2SPayload(UltmineClientConfig.isDropsToStorage()));
+            refreshScreen();
+        }).dimensions(toggleStartX + (toggleBtnW + toggleGap), toggleY, toggleBtnW, 20).build();
+        this.addDrawableChild(storageDropsBtn);
 
         // XP Direct to Player toggle
         ButtonWidget xpDirectBtn = ButtonWidget.builder(Text.empty(), (b) -> {
             UltmineClientConfig.toggleXpDirectToPlayer();
             ClientPlayNetworking.send(new XpDirectToggleC2SPayload(UltmineClientConfig.isXpDirectToPlayer()));
             refreshScreen();
-        }).dimensions(toggleStartX + toggleBtnW + toggleGap, toggleSectionY + 16 + oY, toggleBtnW, 20).build();
+        }).dimensions(toggleStartX + 2 * (toggleBtnW + toggleGap), toggleY, toggleBtnW, 20).build();
         this.addDrawableChild(xpDirectBtn);
 
         // Same block only toggle
         ButtonWidget sameBlockBtn = ButtonWidget.builder(Text.empty(), (b) -> {
             UltmineClientConfig.toggleSameBlockOnly();
             refreshScreen();
-        }).dimensions(toggleStartX + 2 * (toggleBtnW + toggleGap), toggleSectionY + 16 + oY, toggleBtnW, 20).build();
+        }).dimensions(toggleStartX + 3 * (toggleBtnW + toggleGap), toggleY, toggleBtnW, 20).build();
         this.addDrawableChild(sameBlockBtn);
 
         // === SHAPE SELECTOR BUTTONS ===
@@ -650,6 +660,7 @@ public class UltmineConfigScreen extends Screen {
 
     private void resetDefaults() {
         UltmineClientConfig.setDropsToInventory(true);
+        UltmineClientConfig.setDropsToStorage(false);
         UltmineClientConfig.setSameBlockOnly(false);
         UltmineClientConfig.setXpDirectToPlayer(false);
         UltmineClientConfig.setMagnetEnabled(false);
@@ -811,7 +822,7 @@ public class UltmineConfigScreen extends Screen {
     private void renderToggleButtonContent(DrawContext context, int oY) {
         int toggleW = secW - PANEL_PADDING * 2;
         int toggleGap = 4;
-        int toggleBtnW = (toggleW - toggleGap * 2) / 3;
+        int toggleBtnW = (toggleW - toggleGap * 3) / 4;
         int toggleStartX = secCx - toggleW / 2;
         int btnY = toggleSectionY + 16 + oY;
 
@@ -819,11 +830,15 @@ public class UltmineConfigScreen extends Screen {
                 Text.translatable("murilloskills.ultmine_config.drops_to_inventory").getString(),
                 UltmineClientConfig.isDropsToInventory());
 
-        renderToggleCard(context, toggleStartX + toggleBtnW + toggleGap, btnY, toggleBtnW,
+        renderToggleCard(context, toggleStartX + (toggleBtnW + toggleGap), btnY, toggleBtnW,
+                Text.translatable("murilloskills.ultmine_config.drops_to_storage").getString(),
+                UltmineClientConfig.isDropsToStorage());
+
+        renderToggleCard(context, toggleStartX + 2 * (toggleBtnW + toggleGap), btnY, toggleBtnW,
                 Text.translatable("murilloskills.ultmine_config.xp_direct").getString(),
                 UltmineClientConfig.isXpDirectToPlayer());
 
-        renderToggleCard(context, toggleStartX + 2 * (toggleBtnW + toggleGap), btnY, toggleBtnW,
+        renderToggleCard(context, toggleStartX + 3 * (toggleBtnW + toggleGap), btnY, toggleBtnW,
                 Text.translatable("murilloskills.ultmine_config.same_block_only").getString(),
                 UltmineClientConfig.isSameBlockOnly());
     }

@@ -23,6 +23,7 @@ public class UltmineClientConfig {
 
     public static class UltmineData {
         public boolean dropsToInventory = true;
+        public boolean dropsToStorage = false;
         public boolean sameBlockOnly = false;
         public boolean xpDirectToPlayer = false;
         public boolean magnetEnabled = false;
@@ -54,6 +55,8 @@ public class UltmineClientConfig {
                 String json = Files.readString(configPath);
                 data = GSON.fromJson(json, UltmineData.class);
                 if (data == null) data = new UltmineData();
+                // Field added later — preserve old configs.
+                // (boolean default already false; no migration needed beyond null guards.)
                 if (data.trashItems == null) data.trashItems = new java.util.ArrayList<>();
                 if (data.legacyBlockedBlocks == null) data.legacyBlockedBlocks = new java.util.ArrayList<>();
                 if (data.shapePrefs == null) data.shapePrefs = new java.util.HashMap<>();
@@ -107,6 +110,18 @@ public class UltmineClientConfig {
 
     public static void toggleDropsToInventory() {
         get().dropsToInventory = !get().dropsToInventory;
+    }
+
+    public static boolean isDropsToStorage() {
+        return get().dropsToStorage;
+    }
+
+    public static void setDropsToStorage(boolean value) {
+        get().dropsToStorage = value;
+    }
+
+    public static void toggleDropsToStorage() {
+        get().dropsToStorage = !get().dropsToStorage;
     }
 
     public static boolean isSameBlockOnly() {

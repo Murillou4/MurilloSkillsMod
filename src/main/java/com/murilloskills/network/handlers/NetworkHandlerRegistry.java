@@ -58,6 +58,8 @@ public final class NetworkHandlerRegistry {
             registerHandler("StepAssist", StepAssistToggleC2SPayload.ID, StepAssistToggleNetworkHandler.create());
             registerHandler("FillModeCycle", FillModeCycleC2SPayload.ID, FillModeCycleNetworkHandler.create());
             registerHandler("VeinMinerDrops", VeinMinerDropsToggleC2SPayload.ID, VeinMinerDropsToggleNetworkHandler.create());
+            registerHandler("VeinMinerStorageDrops", VeinMinerStorageDropToggleC2SPayload.ID,
+                    VeinMinerStorageDropToggleNetworkHandler.create());
             registerHandler("UltmineShapeSelect", UltmineShapeSelectC2SPayload.ID,
                     UltmineShapeSelectNetworkHandler.create());
             registerHandler("UltminePreviewRequest", UltmineRequestC2SPayload.ID, UltmineRequestNetworkHandler.create());
@@ -74,9 +76,8 @@ public final class NetworkHandlerRegistry {
             registerHandler("TrashListSync", TrashListSyncC2SPayload.ID, TrashListSyncNetworkHandler.create());
             registerHandler("UltmineClassicBlockListSync", UltmineClassicBlockListSyncC2SPayload.ID,
                     UltmineClassicBlockListSyncNetworkHandler.create());
-            registerHandler("TomsStorageDrop", TomsStorageDropC2SPayload.ID, TomsStorageDropNetworkHandler.create());
 
-            LOGGER.info("Successfully registered 27 network handlers");
+            LOGGER.info("Successfully registered 26 network handlers");
 
         } catch (Exception e) {
             LOGGER.error("CRITICAL: Failed to register network handlers!", e);

@@ -1,9 +1,6 @@
 package com.murilloskills.mixin.client;
 
-import com.murilloskills.network.TomsStorageDropC2SPayload;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.item.ItemStack;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -30,7 +27,7 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
     @Unique
     private static final int DROP_INTERVAL_TICKS = 2;
     @Unique
-    private static final String SHIFT_PULL_ACTION_CLASS = "com.tom.storagemod.util.TerminalSyncManager$SlotAction";
+    private static final String TOM_SLOT_ACTION_CLASS = "com.tom.storagemod.util.TerminalSyncManager$SlotAction";
 
     @Unique
     private boolean murilloskills$bulkPullHeld;
@@ -42,6 +39,10 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
     private int murilloskills$bulkDropCooldown;
     @Unique
     private boolean murilloskills$reflectionDisabled;
+    // Locked target captured when CTRL+Q starts. Keeps the drop loop pinned to the original
+    // item even when the storage list reorders as items are pulled out.
+    @Unique
+    private Object murilloskills$bulkDropTarget;
 
     @Inject(method = "method_25402", at = @At("HEAD"), cancellable = true, remap = false)
     private void murilloskills$startBulkPull(@Coerce Object mouseInput, boolean doubleClick,
@@ -62,12 +63,17 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
     @Inject(method = "method_25404", at = @At("HEAD"), cancellable = true, remap = false)
     private void murilloskills$startBulkDrop(@Coerce Object keyInput, CallbackInfoReturnable<Boolean> cir) {
         if (!murilloskills$isControlDown()
-                || !murilloskills$isDropKey(murilloskills$getKeyCode(keyInput))
-                || !murilloskills$hasHoveredStoredStack()) {
+                || !murilloskills$isDropKey(murilloskills$getKeyCode(keyInput))) {
             return;
         }
 
-        murilloskills$sendStorageDrop();
+        Object target = murilloskills$resolveHoveredStoredStack();
+        if (target == null) {
+            return;
+        }
+
+        murilloskills$bulkDropTarget = target;
+        murilloskills$sendStorageDrop(target);
         murilloskills$bulkDropHeld = true;
         murilloskills$bulkDropCooldown = DROP_INTERVAL_TICKS;
         cir.setReturnValue(true);
@@ -92,16 +98,25 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
             }
         }
 
-        boolean controlDropReady = murilloskills$isControlDropHeld(client) && murilloskills$hasHoveredStoredStack();
-        if (!murilloskills$bulkDropHeld && controlDropReady) {
-            murilloskills$sendStorageDrop();
-            murilloskills$bulkDropHeld = true;
-            murilloskills$bulkDropCooldown = DROP_INTERVAL_TICKS;
-        } else if (murilloskills$bulkDropHeld) {
-            if (!controlDropReady) {
+        boolean ctrlDropPressed = murilloskills$isControlDropHeld(client);
+        if (!murilloskills$bulkDropHeld) {
+            if (ctrlDropPressed) {
+                Object target = murilloskills$resolveHoveredStoredStack();
+                if (target != null) {
+                    murilloskills$bulkDropTarget = target;
+                    murilloskills$sendStorageDrop(target);
+                    murilloskills$bulkDropHeld = true;
+                    murilloskills$bulkDropCooldown = DROP_INTERVAL_TICKS;
+                }
+            }
+        } else {
+            if (!ctrlDropPressed
+                    || murilloskills$bulkDropTarget == null
+                    || !murilloskills$isLockedTargetAvailable(murilloskills$bulkDropTarget)) {
                 murilloskills$bulkDropHeld = false;
+                murilloskills$bulkDropTarget = null;
             } else if (--murilloskills$bulkDropCooldown <= 0) {
-                murilloskills$sendStorageDrop();
+                murilloskills$sendStorageDrop(murilloskills$bulkDropTarget);
                 murilloskills$bulkDropCooldown = DROP_INTERVAL_TICKS;
             }
         }
@@ -152,35 +167,32 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
     }
 
     @Unique
-    private void murilloskills$sendStorageDrop() {
-        try {
-            Object storedStack = murilloskills$getHoveredStoredStack();
-            ItemStack sampleStack = murilloskills$getSampleStack(storedStack);
-            if (sampleStack.isEmpty()) {
-                return;
-            }
-            ClientPlayNetworking.send(new TomsStorageDropC2SPayload(sampleStack));
-        } catch (Exception ignored) {
+    private void murilloskills$sendStorageDrop(Object storedStack) {
+        murilloskills$sendTomStorageAction("CRAFT", storedStack);
+    }
+
+    @Unique
+    private void murilloskills$sendTomShiftPull() {
+        Object storedStack = murilloskills$resolveHoveredStoredStack();
+        if (storedStack == null) {
+            return;
         }
+        murilloskills$sendTomStorageAction("SHIFT_PULL", storedStack);
     }
 
     @Unique
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void murilloskills$sendTomShiftPull() {
-        if (murilloskills$reflectionDisabled) {
+    private void murilloskills$sendTomStorageAction(String actionName, Object storedStack) {
+        if (murilloskills$reflectionDisabled || storedStack == null) {
             return;
         }
         try {
-            Object storedStack = murilloskills$getHoveredStoredStack();
-            if (storedStack == null || murilloskills$getQuantity(storedStack) <= 0) {
-                return;
-            }
-            Object shiftPullAction = Enum.valueOf(
-                    Class.forName(SHIFT_PULL_ACTION_CLASS).asSubclass(Enum.class),
-                    "SHIFT_PULL");
+            Object action = Enum.valueOf(
+                    Class.forName(TOM_SLOT_ACTION_CLASS).asSubclass(Enum.class),
+                    actionName);
             Method method = murilloskills$findMethod(getClass(), "storageSlotClick", 3);
             method.setAccessible(true);
-            method.invoke(this, storedStack, shiftPullAction, true);
+            method.invoke(this, storedStack, action, true);
         } catch (Exception e) {
             murilloskills$reflectionDisabled = true;
         }
@@ -188,12 +200,67 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
 
     @Unique
     private boolean murilloskills$hasHoveredStoredStack() {
+        Object stored = murilloskills$resolveHoveredStoredStack();
+        return stored != null;
+    }
+
+    @Unique
+    private Object murilloskills$resolveHoveredStoredStack() {
         try {
-            Object storedStack = murilloskills$getHoveredStoredStack();
-            return storedStack != null && murilloskills$getQuantity(storedStack) > 0;
-        } catch (Exception e) {
-            return false;
+            Object stored = murilloskills$getHoveredStoredStack();
+            if (stored == null || murilloskills$getQuantity(stored) <= 0) {
+                return null;
+            }
+            return stored;
+        } catch (Exception ignored) {
+            return null;
         }
+    }
+
+    @Unique
+    private boolean murilloskills$isLockedTargetAvailable(Object target) {
+        // The captured StoredItemStack reference goes stale as the menu re-syncs from the
+        // server. Re-find the matching entry in the live itemList so we know if the storage
+        // still has any of this item left to drop.
+        try {
+            Object handler = murilloskills$getHandler();
+            if (handler == null) {
+                return false;
+            }
+            Object itemList = murilloskills$readField(handler, "itemList");
+            if (itemList instanceof Iterable<?> entries) {
+                for (Object entry : entries) {
+                    if (entry == null) {
+                        continue;
+                    }
+                    if (murilloskills$matchesStoredStack(entry, target) && murilloskills$getQuantity(entry) > 0) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
+    }
+
+    @Unique
+    private boolean murilloskills$matchesStoredStack(Object a, Object b) {
+        if (a == b) {
+            return true;
+        }
+        try {
+            Object stackA = murilloskills$readField(a, "stack");
+            Object stackB = murilloskills$readField(b, "stack");
+            if (stackA == null || stackB == null) {
+                return false;
+            }
+            if (stackA instanceof net.minecraft.item.ItemStack ia
+                    && stackB instanceof net.minecraft.item.ItemStack ib) {
+                return net.minecraft.item.ItemStack.areItemsAndComponentsEqual(ia, ib);
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
     }
 
     @Unique
@@ -216,23 +283,6 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
     private long murilloskills$getQuantity(Object storedStack) throws ReflectiveOperationException {
         Object result = murilloskills$invoke(storedStack, "getQuantity");
         return result instanceof Number number ? number.longValue() : 0L;
-    }
-
-    @Unique
-    private ItemStack murilloskills$getSampleStack(Object storedStack) throws ReflectiveOperationException {
-        if (storedStack == null || murilloskills$getQuantity(storedStack) <= 0) {
-            return ItemStack.EMPTY;
-        }
-        Object stack = murilloskills$invoke(storedStack, "getStack");
-        if (!(stack instanceof ItemStack itemStack) || itemStack.isEmpty()) {
-            stack = murilloskills$invoke(storedStack, "getActualStack");
-        }
-        if (!(stack instanceof ItemStack itemStack) || itemStack.isEmpty()) {
-            return ItemStack.EMPTY;
-        }
-        ItemStack sample = itemStack.copy();
-        sample.setCount(1);
-        return sample;
     }
 
     @Unique

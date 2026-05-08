@@ -1,6 +1,7 @@
 package com.murilloskills.skills;
 
 import com.murilloskills.data.ModAttachments;
+import com.murilloskills.integration.TomsStorageBridge;
 import com.murilloskills.network.UltmineResultS2CPayload;
 import com.murilloskills.utils.BatchSkillUpdateContext;
 import com.murilloskills.utils.SkillConfig;
@@ -39,6 +40,8 @@ public final class VeinMinerHandler {
     private static final Set<UUID> ACTIVE_PLAYERS = ConcurrentHashMap.newKeySet();
     // Per-player drops-to-inventory preference (overrides global config)
     private static final Map<UUID, Boolean> DROPS_TO_INVENTORY = new ConcurrentHashMap<>();
+    // Per-player drops-to-storage preference (Tom's Storage wireless terminal routing)
+    private static final Map<UUID, Boolean> DROPS_TO_STORAGE = new ConcurrentHashMap<>();
     // Per-player XP direct-to-player preference
     private static final Map<UUID, Boolean> XP_DIRECT_TO_PLAYER = new ConcurrentHashMap<>();
 
@@ -141,6 +144,26 @@ public final class VeinMinerHandler {
     }
 
     /**
+     * Set drops-to-storage flag for a player. When on, ultmine drops are first pushed into
+     * the storage network bound to the Adv Wireless Terminal in the player's hand.
+     */
+    public static void setDropsToStorage(ServerPlayerEntity player, boolean enabled) {
+        DROPS_TO_STORAGE.put(player.getUuid(), enabled);
+    }
+
+    public static boolean isDropsToStorage(ServerPlayerEntity player) {
+        return DROPS_TO_STORAGE.getOrDefault(player.getUuid(), false);
+    }
+
+    /**
+     * True if the player toggled storage routing AND is currently holding a bound terminal
+     * with an active link. Used to decide whether to attempt the push at flush time.
+     */
+    public static boolean shouldRouteDropsToStorage(ServerPlayerEntity player) {
+        return isDropsToStorage(player) && TomsStorageBridge.isHoldingBoundWirelessTerminal(player);
+    }
+
+    /**
      * Toggle XP direct-to-player for a player.
      * Returns the new state (true = XP goes directly to player).
      */
@@ -222,6 +245,7 @@ public final class VeinMinerHandler {
     public static void cleanupPlayerState(UUID playerUuid) {
         HOLDING_KEY.remove(playerUuid);
         DROPS_TO_INVENTORY.remove(playerUuid);
+        DROPS_TO_STORAGE.remove(playerUuid);
         XP_DIRECT_TO_PLAYER.remove(playerUuid);
         ULTMINE_SHAPE.remove(playerUuid);
         ULTMINE_DEPTH.remove(playerUuid);
@@ -291,7 +315,7 @@ public final class VeinMinerHandler {
 
         int budget = SkillConfig.getUltmineBlocksPerTick();
         int processed = 0;
-        BulkDropBuffer dropBuffer = new BulkDropBuffer(job.inventoryDrops(), job.xpDirect(),
+        BulkDropBuffer dropBuffer = new BulkDropBuffer(job.inventoryDrops(), job.xpDirect(), job.storageDrops(),
                 getTrashSet(player), job.origin());
 
         BatchSkillUpdateContext.begin(player, "Ultmine");
@@ -526,6 +550,7 @@ public final class VeinMinerHandler {
         }
 
         ItemStack tool = player.getMainHandStack();
+        boolean storageDrops = shouldRouteDropsToStorage(player) && world instanceof ServerWorld;
         boolean inventoryDrops = isDropsToInventory(player) && world instanceof ServerWorld;
         boolean xpDirect = isXpDirectToPlayer(player) && world instanceof ServerWorld;
         if (inventoryDrops) {
@@ -548,7 +573,8 @@ public final class VeinMinerHandler {
         }
 
         if (validTargets.size() <= SkillConfig.getUltmineInstantBreakThreshold()) {
-            int minedBlocks = executeInstantUltmine(player, serverWorld, origin, validTargets, inventoryDrops, xpDirect);
+            int minedBlocks = executeInstantUltmine(player, serverWorld, origin, validTargets, inventoryDrops, xpDirect,
+                    storageDrops);
             if (minedBlocks <= 0) {
                 sendUltmineResult(player, false, 0, requested,
                         "murilloskills.ultmine.result.no_valid_blocks", sendResultPacket);
@@ -559,7 +585,7 @@ public final class VeinMinerHandler {
         }
 
         UltmineBreakJob job = new UltmineBreakJob(serverWorld, origin.toImmutable(), validTargets, requested, xpCost,
-                sendResultPacket, inventoryDrops, xpDirect, SkillConfig.shouldSuppressBulkBreakParticles());
+                sendResultPacket, inventoryDrops, xpDirect, storageDrops, SkillConfig.shouldSuppressBulkBreakParticles());
         if (ULTMINE_JOBS.putIfAbsent(player.getUuid(), job) != null) {
             sendUltmineResult(player, false, 0, 0, "murilloskills.ultmine.result.busy", sendResultPacket);
             return;
@@ -585,9 +611,10 @@ public final class VeinMinerHandler {
     }
 
     private static int executeInstantUltmine(ServerPlayerEntity player, ServerWorld world, BlockPos origin,
-            List<BlockPos> targets, boolean inventoryDrops, boolean xpDirect) {
+            List<BlockPos> targets, boolean inventoryDrops, boolean xpDirect, boolean storageDrops) {
         int minedBlocks = 0;
-        BulkDropBuffer dropBuffer = new BulkDropBuffer(inventoryDrops, xpDirect, getTrashSet(player), origin);
+        BulkDropBuffer dropBuffer = new BulkDropBuffer(inventoryDrops, xpDirect, storageDrops, getTrashSet(player),
+                origin);
 
         BatchSkillUpdateContext.begin(player, "Ultmine");
         try {
@@ -791,6 +818,17 @@ public final class VeinMinerHandler {
 
         List<ItemStack> drops = Block.getDroppedStacks(state, serverWorld, pos, world.getBlockEntity(pos), player, tool);
         List<ItemStack> mergedDrops = UltmineDropCollector.mergeDrops(drops, getTrashSet(player));
+        if (shouldRouteDropsToStorage(player)) {
+            for (int i = 0; i < mergedDrops.size(); i++) {
+                ItemStack stack = mergedDrops.get(i);
+                if (stack == null || stack.isEmpty()) {
+                    continue;
+                }
+                ItemStack leftover = TomsStorageBridge.pushToBoundStorage(player, stack);
+                mergedDrops.set(i, leftover == null ? ItemStack.EMPTY : leftover);
+            }
+            mergedDrops.removeIf(stack -> stack == null || stack.isEmpty());
+        }
         UltmineDropCollector.insertOrSpawn(player, serverWorld, pos, mergedDrops);
 
         world.breakBlock(pos, false, player);
@@ -1280,14 +1318,17 @@ public final class VeinMinerHandler {
     private static final class BulkDropBuffer {
         private final boolean inventoryDrops;
         private final boolean xpDirect;
+        private final boolean storageDrops;
         private final Set<String> trashItemIds;
         private final BlockPos dropPos;
         private final List<ItemStack> drops = new ArrayList<>();
         private int xp;
 
-        private BulkDropBuffer(boolean inventoryDrops, boolean xpDirect, Set<String> trashItemIds, BlockPos dropPos) {
+        private BulkDropBuffer(boolean inventoryDrops, boolean xpDirect, boolean storageDrops,
+                Set<String> trashItemIds, BlockPos dropPos) {
             this.inventoryDrops = inventoryDrops;
             this.xpDirect = xpDirect;
+            this.storageDrops = storageDrops;
             this.trashItemIds = trashItemIds == null ? Set.of() : trashItemIds;
             this.dropPos = dropPos.toImmutable();
         }
@@ -1309,6 +1350,9 @@ public final class VeinMinerHandler {
         }
 
         private void flush(ServerPlayerEntity player, ServerWorld world) {
+            if (storageDrops) {
+                pushDropsToStorage(player);
+            }
             if (inventoryDrops) {
                 UltmineDropCollector.insertOrSpawn(player, world, dropPos, drops);
             } else {
@@ -1323,6 +1367,21 @@ public final class VeinMinerHandler {
                 xp = 0;
             }
         }
+
+        private void pushDropsToStorage(ServerPlayerEntity player) {
+            if (drops.isEmpty()) {
+                return;
+            }
+            for (int i = 0; i < drops.size(); i++) {
+                ItemStack stack = drops.get(i);
+                if (stack == null || stack.isEmpty()) {
+                    continue;
+                }
+                ItemStack leftover = TomsStorageBridge.pushToBoundStorage(player, stack);
+                drops.set(i, leftover == null ? ItemStack.EMPTY : leftover);
+            }
+            drops.removeIf(stack -> stack == null || stack.isEmpty());
+        }
     }
 
     private static final class UltmineBreakJob {
@@ -1334,13 +1393,14 @@ public final class VeinMinerHandler {
         private final boolean sendResultPacket;
         private final boolean inventoryDrops;
         private final boolean xpDirect;
+        private final boolean storageDrops;
         private final boolean suppressBreakParticles;
         private int nextIndex;
         private int minedBlocks;
 
         private UltmineBreakJob(ServerWorld world, BlockPos origin, List<BlockPos> targets, int requestedBlocks,
                 int xpCost, boolean sendResultPacket, boolean inventoryDrops, boolean xpDirect,
-                boolean suppressBreakParticles) {
+                boolean storageDrops, boolean suppressBreakParticles) {
             this.world = world;
             this.origin = origin;
             this.targets = new ArrayList<>(targets);
@@ -1349,6 +1409,7 @@ public final class VeinMinerHandler {
             this.sendResultPacket = sendResultPacket;
             this.inventoryDrops = inventoryDrops;
             this.xpDirect = xpDirect;
+            this.storageDrops = storageDrops;
             this.suppressBreakParticles = suppressBreakParticles;
         }
 
@@ -1378,6 +1439,10 @@ public final class VeinMinerHandler {
 
         private boolean xpDirect() {
             return xpDirect;
+        }
+
+        private boolean storageDrops() {
+            return storageDrops;
         }
 
         private boolean suppressBreakParticles() {
