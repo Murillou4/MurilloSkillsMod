@@ -23,20 +23,26 @@ import java.lang.reflect.Method;
  * internals shifted between versions.
  */
 public final class TomsStorageBridge {
-    private static final String ADV_WIRELESS_ITEM = "com.tom.storagemod.item.AdvWirelessTerminalItem";
+    private static final String WIRELESS_TERMINAL_ITEM = "com.tom.storagemod.item.WirelessTerminal";
     private static final String CONTENT_CLASS = "com.tom.storagemod.Content";
     private static final String GAME_OBJECT_CLASS = "com.tom.storagemod.platform.GameObject";
     private static final String WORLD_POS_CLASS = "com.tom.storagemod.components.WorldPos";
     private static final String STORAGE_TERMINAL_BE_CLASS = "com.tom.storagemod.block.entity.StorageTerminalBlockEntity";
+    private static final String INVENTORY_CONNECTOR_CLASS = "com.tom.storagemod.block.entity.IInventoryConnector";
+    private static final String INVENTORY_ACCESS_CLASS = "com.tom.storagemod.inventory.IInventoryAccess";
 
     private static volatile boolean disabled = false;
-    private static volatile Class<?> advWirelessItemClass;
+    private static volatile Class<?> wirelessTerminalItemClass;
     private static volatile ComponentType<?> boundPosComponentType;
     private static volatile Class<?> worldPosClass;
     private static volatile Class<?> storageTerminalBeClass;
+    private static volatile Class<?> inventoryConnectorClass;
+    private static volatile Class<?> inventoryAccessClass;
     private static volatile Method worldPosPosMethod;
     private static volatile Method worldPosDimMethod;
-    private static volatile Method pushStackMethod;
+    private static volatile Method storageTerminalPushStackMethod;
+    private static volatile Method connectorGetMergedHandlerMethod;
+    private static volatile Method inventoryAccessPushStackMethod;
 
     private TomsStorageBridge() {
     }
@@ -46,7 +52,7 @@ public final class TomsStorageBridge {
             return false;
         }
         try {
-            Class<?> itemClass = resolveAdvWirelessItemClass();
+            Class<?> itemClass = resolveWirelessTerminalItemClass();
             if (itemClass == null) {
                 return false;
             }
@@ -71,7 +77,7 @@ public final class TomsStorageBridge {
             return stack;
         }
         try {
-            Class<?> itemClass = resolveAdvWirelessItemClass();
+            Class<?> itemClass = resolveWirelessTerminalItemClass();
             if (itemClass == null) {
                 return stack;
             }
@@ -100,17 +106,13 @@ public final class TomsStorageBridge {
             if (blockEntity == null) {
                 return stack;
             }
-            Class<?> beClass = resolveStorageTerminalBeClass();
-            if (beClass == null || !beClass.isInstance(blockEntity)) {
-                return stack;
+            ItemStack terminalLeftover = pushToStorageTerminal(blockEntity, stack);
+            if (terminalLeftover != null) {
+                return terminalLeftover;
             }
-            Method push = resolvePushStackMethod(beClass);
-            if (push == null) {
-                return stack;
-            }
-            Object result = push.invoke(blockEntity, stack);
-            if (result instanceof ItemStack leftover) {
-                return leftover;
+            ItemStack connectorLeftover = pushToInventoryConnector(blockEntity, stack);
+            if (connectorLeftover != null) {
+                return connectorLeftover;
             }
             return stack;
         } catch (Throwable t) {
@@ -136,14 +138,14 @@ public final class TomsStorageBridge {
         return componentType != null && stack.contains(componentType);
     }
 
-    private static Class<?> resolveAdvWirelessItemClass() {
-        Class<?> cached = advWirelessItemClass;
+    private static Class<?> resolveWirelessTerminalItemClass() {
+        Class<?> cached = wirelessTerminalItemClass;
         if (cached != null) {
             return cached;
         }
         try {
-            cached = Class.forName(ADV_WIRELESS_ITEM);
-            advWirelessItemClass = cached;
+            cached = Class.forName(WIRELESS_TERMINAL_ITEM);
+            wirelessTerminalItemClass = cached;
             return cached;
         } catch (ClassNotFoundException e) {
             disabled = true;
@@ -161,7 +163,34 @@ public final class TomsStorageBridge {
             storageTerminalBeClass = cached;
             return cached;
         } catch (ClassNotFoundException e) {
-            disabled = true;
+            return null;
+        }
+    }
+
+    private static Class<?> resolveInventoryConnectorClass() {
+        Class<?> cached = inventoryConnectorClass;
+        if (cached != null) {
+            return cached;
+        }
+        try {
+            cached = Class.forName(INVENTORY_CONNECTOR_CLASS);
+            inventoryConnectorClass = cached;
+            return cached;
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    private static Class<?> resolveInventoryAccessClass() {
+        Class<?> cached = inventoryAccessClass;
+        if (cached != null) {
+            return cached;
+        }
+        try {
+            cached = Class.forName(INVENTORY_ACCESS_CLASS);
+            inventoryAccessClass = cached;
+            return cached;
+        } catch (ClassNotFoundException e) {
             return null;
         }
     }
@@ -235,8 +264,48 @@ public final class TomsStorageBridge {
         }
     }
 
-    private static Method resolvePushStackMethod(Class<?> beClass) {
-        Method cached = pushStackMethod;
+    private static ItemStack pushToStorageTerminal(BlockEntity blockEntity, ItemStack stack)
+            throws ReflectiveOperationException {
+        Class<?> beClass = resolveStorageTerminalBeClass();
+        if (beClass == null || !beClass.isInstance(blockEntity)) {
+            return null;
+        }
+        Method push = resolveStorageTerminalPushStackMethod(beClass);
+        if (push == null) {
+            return stack;
+        }
+        Object result = push.invoke(blockEntity, stack);
+        return result instanceof ItemStack leftover ? leftover : stack;
+    }
+
+    private static ItemStack pushToInventoryConnector(BlockEntity blockEntity, ItemStack stack)
+            throws ReflectiveOperationException {
+        Class<?> connectorClass = resolveInventoryConnectorClass();
+        if (connectorClass == null || !connectorClass.isInstance(blockEntity)) {
+            return null;
+        }
+        Method getMergedHandler = resolveConnectorGetMergedHandlerMethod(connectorClass);
+        if (getMergedHandler == null) {
+            return stack;
+        }
+        Object handler = getMergedHandler.invoke(blockEntity);
+        if (handler == null) {
+            return stack;
+        }
+        Class<?> inventoryAccessClass = resolveInventoryAccessClass();
+        if (inventoryAccessClass == null || !inventoryAccessClass.isInstance(handler)) {
+            return stack;
+        }
+        Method push = resolveInventoryAccessPushStackMethod(inventoryAccessClass);
+        if (push == null) {
+            return stack;
+        }
+        Object result = push.invoke(handler, stack);
+        return result instanceof ItemStack leftover ? leftover : stack;
+    }
+
+    private static Method resolveStorageTerminalPushStackMethod(Class<?> beClass) {
+        Method cached = storageTerminalPushStackMethod;
         if (cached != null) {
             return cached;
         }
@@ -245,7 +314,37 @@ public final class TomsStorageBridge {
             // We want the ItemStack overload — it returns the leftover ItemStack.
             cached = beClass.getMethod("pushStack", ItemStack.class);
             cached.setAccessible(true);
-            pushStackMethod = cached;
+            storageTerminalPushStackMethod = cached;
+            return cached;
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
+    }
+
+    private static Method resolveConnectorGetMergedHandlerMethod(Class<?> connectorClass) {
+        Method cached = connectorGetMergedHandlerMethod;
+        if (cached != null) {
+            return cached;
+        }
+        try {
+            cached = connectorClass.getMethod("getMergedHandler");
+            cached.setAccessible(true);
+            connectorGetMergedHandlerMethod = cached;
+            return cached;
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
+    }
+
+    private static Method resolveInventoryAccessPushStackMethod(Class<?> inventoryAccessClass) {
+        Method cached = inventoryAccessPushStackMethod;
+        if (cached != null) {
+            return cached;
+        }
+        try {
+            cached = inventoryAccessClass.getMethod("pushStack", ItemStack.class);
+            cached.setAccessible(true);
+            inventoryAccessPushStackMethod = cached;
             return cached;
         } catch (NoSuchMethodException e) {
             return null;

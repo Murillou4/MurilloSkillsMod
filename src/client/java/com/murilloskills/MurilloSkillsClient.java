@@ -21,7 +21,9 @@ import com.murilloskills.network.SkillAbilityC2SPayload;
 import com.murilloskills.network.SkillsSyncPayload;
 import com.murilloskills.network.TreasureHunterS2CPayload;
 import com.murilloskills.network.SpeedBoostToggleC2SPayload;
+import com.murilloskills.network.StorageWhitelistSyncC2SPayload;
 import com.murilloskills.network.VeinMinerDropsToggleC2SPayload;
+import com.murilloskills.network.VeinMinerStorageDropToggleC2SPayload;
 import com.murilloskills.network.VeinMinerToggleC2SPayload;
 import com.murilloskills.network.XpDirectToggleC2SPayload;
 import com.murilloskills.network.XpGainS2CPayload;
@@ -280,6 +282,11 @@ public class MurilloSkillsClient implements ClientModInitializer {
             // Sync trash list to server
             ClientPlayNetworking.send(new com.murilloskills.network.TrashListSyncC2SPayload(
                     UltmineClientConfig.getTrashItems()));
+            // Sync storage routing preferences to server; the server-side maps are per-session.
+            ClientPlayNetworking.send(new VeinMinerStorageDropToggleC2SPayload(
+                    UltmineClientConfig.isDropsToStorage()));
+            ClientPlayNetworking.send(new StorageWhitelistSyncC2SPayload(
+                    UltmineClientConfig.getStorageWhitelist()));
             // Sync classic-mode blocked blocks list to server
             ClientPlayNetworking.send(new UltmineClassicBlockListSyncC2SPayload(
                     UltmineClientConfig.getLegacyBlockedBlocks()));

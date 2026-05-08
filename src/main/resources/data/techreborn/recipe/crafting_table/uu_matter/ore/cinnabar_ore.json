@@ -1,0 +1,1 @@
+{"fabric:load_conditions":[{"condition":"fabric:all_mods_loaded","values":["techreborn"]}],"type":"reborncore:padded","pattern":[" U ","UU "," S "],"key":{"S":"minecraft:stone","U":"techreborn:uu_matter"},"result":{"id":"techreborn:cinnabar_ore"}}

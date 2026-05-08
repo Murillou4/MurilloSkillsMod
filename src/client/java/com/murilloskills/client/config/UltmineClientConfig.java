@@ -30,6 +30,7 @@ public class UltmineClientConfig {
         public int magnetRange = 8;
         public String selectedShape = UltmineShape.S_3x3.name();
         public java.util.List<String> trashItems = new java.util.ArrayList<>();
+        public java.util.List<String> storageWhitelist = new java.util.ArrayList<>();
         public java.util.List<String> legacyBlockedBlocks = new java.util.ArrayList<>();
         public Map<String, ShapePrefs> shapePrefs = new java.util.HashMap<>();
 
@@ -58,6 +59,7 @@ public class UltmineClientConfig {
                 // Field added later — preserve old configs.
                 // (boolean default already false; no migration needed beyond null guards.)
                 if (data.trashItems == null) data.trashItems = new java.util.ArrayList<>();
+                if (data.storageWhitelist == null) data.storageWhitelist = new java.util.ArrayList<>();
                 if (data.legacyBlockedBlocks == null) data.legacyBlockedBlocks = new java.util.ArrayList<>();
                 if (data.shapePrefs == null) data.shapePrefs = new java.util.HashMap<>();
                 data.selectedShape = normalizeShapeName(data.selectedShape).name();
@@ -188,6 +190,26 @@ public class UltmineClientConfig {
 
     public static boolean isTrashItem(String itemId) {
         return get().trashItems.contains(itemId);
+    }
+
+    // --- Storage routing whitelist ---
+
+    public static java.util.List<String> getStorageWhitelist() {
+        return get().storageWhitelist;
+    }
+
+    public static void addStorageWhitelistItem(String itemId) {
+        if (!get().storageWhitelist.contains(itemId)) {
+            get().storageWhitelist.add(itemId);
+        }
+    }
+
+    public static void removeStorageWhitelistItem(String itemId) {
+        get().storageWhitelist.remove(itemId);
+    }
+
+    public static boolean isStorageWhitelistItem(String itemId) {
+        return get().storageWhitelist.contains(itemId);
     }
 
     // --- Legacy Classic block lock ---

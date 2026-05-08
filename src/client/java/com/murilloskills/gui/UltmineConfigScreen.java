@@ -144,6 +144,17 @@ public class UltmineConfigScreen extends Screen {
         }).dimensions(toggleStartX + 3 * (toggleBtnW + toggleGap), toggleY, toggleBtnW, 20).build();
         this.addDrawableChild(sameBlockBtn);
 
+        // Storage whitelist picker — open dedicated screen
+        int filterBtnY = toggleY + 22;
+        int storageWhitelistCount = UltmineClientConfig.getStorageWhitelist().size();
+        Text filterLabel = Text.translatable(
+                "murilloskills.ultmine_config.storage_filter.button",
+                storageWhitelistCount).formatted(Formatting.AQUA);
+        ButtonWidget storageFilterBtn = ButtonWidget.builder(filterLabel,
+                (b) -> MinecraftClient.getInstance().setScreen(new StorageWhitelistPickerScreen(this)))
+                .dimensions(toggleStartX, filterBtnY, toggleW, 18).build();
+        this.addDrawableChild(storageFilterBtn);
+
         // === SHAPE SELECTOR BUTTONS ===
         UltmineShape[] shapes = UltmineShape.values();
         int shapeCount = shapes.length;
@@ -501,7 +512,7 @@ public class UltmineConfigScreen extends Screen {
 
         // Decide layout mode: 2-col when there's enough horizontal AND vertical room
         int compactGap = 8;
-        int toggleSectH = 38;
+        int toggleSectH = 62; // 16 header + 20 toggle row + 4 gap + 18 storage filter button + 4 padding
         int shapeSelH = 36;
         int magnetH = 42;
         int leftColContentH = toggleSectH + compactGap + shapeSelH + compactGap + shapeConfigH + compactGap + magnetH;

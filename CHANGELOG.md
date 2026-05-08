@@ -4,6 +4,25 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.66] - 2026-05-08
+
+### Ultmine, Tom's Storage e Tech Reborn
+
+- **Whitelist do Ultmine para storage corrigida**: o servidor agora recebe toggle/whitelist salvos ao entrar no mundo, o drop do bloco original tambem passa pelo roteamento, e a ponte com Tom's Storage aceita terminal wireless vinculado com fallback para conectores.
+- **Ctrl + Q segurado ficou preso no item inicial**: enquanto Ctrl+Q estiver pressionado, o terminal pausa se a lista reordenar ou o item alvo sumir por um tick, em vez de capturar outro item sob o mouse.
+- **UU-Matter expandido para Tech Reborn**: adicionadas receitas para minerios faltantes, variantes de deepslate, borracha/sap/rubber tree e ingots high-tier como iridium, tungsten, titanium, chrome, platinum, tungstensteel e alloys avancados.
+
+---
+
+## [1.2.65] - 2026-05-08
+
+### Compat e Ultmine - Tom's Simple Storage
+
+- **Ctrl + Q segurando agora REALMENTE trava no item alvo**: a versao anterior estava enviando uma referencia de StoredItemStack que ia ficando obsoleta a cada drop; o protocolo do Tom's Storage encoda a acao por id num idMap cujo equals compara count, entao a referencia capturada nao achava mais o id certo apos o primeiro drop e o servidor acabava resolvendo pra outro item da lista. O fix agora guarda o ItemStack original e re-resolve o StoredItemStack ativo do itemList toda hora antes de enviar a acao.
+- **Filtro de itens pro storage (whitelist)**: novo botao "Filtro do Storage" na tela Ultmine Config abre uma tela de picker (estilo Trash) onde voce escolhe os itens que devem ser empurrados pra rede do Wireless Terminal. Se a whitelist estiver vazia, nada e roteado. Itens fora da whitelist seguem o fluxo normal (cair no inventario/chao).
+
+---
+
 ## [1.2.64] - 2026-05-08
 
 ### Compat e Ultmine - Tom's Simple Storage

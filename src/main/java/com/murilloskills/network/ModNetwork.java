@@ -44,6 +44,7 @@ public class ModNetwork {
         PayloadTypeRegistry.playC2S().register(VeinMinerDropsToggleC2SPayload.ID, VeinMinerDropsToggleC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(VeinMinerStorageDropToggleC2SPayload.ID,
                 VeinMinerStorageDropToggleC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(StorageWhitelistSyncC2SPayload.ID, StorageWhitelistSyncC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(UltmineShapeSelectC2SPayload.ID, UltmineShapeSelectC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(UltmineRequestC2SPayload.ID, UltmineRequestC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(UltmineUseC2SPayload.ID, UltmineUseC2SPayload.CODEC);

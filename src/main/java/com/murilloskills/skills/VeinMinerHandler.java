@@ -42,6 +42,9 @@ public final class VeinMinerHandler {
     private static final Map<UUID, Boolean> DROPS_TO_INVENTORY = new ConcurrentHashMap<>();
     // Per-player drops-to-storage preference (Tom's Storage wireless terminal routing)
     private static final Map<UUID, Boolean> DROPS_TO_STORAGE = new ConcurrentHashMap<>();
+    // Per-player whitelist of item ids that should be routed into the storage terminal.
+    // Empty/missing = nothing is routed (whitelist semantics: only listed items go).
+    private static final Map<UUID, Set<String>> STORAGE_WHITELISTS = new ConcurrentHashMap<>();
     // Per-player XP direct-to-player preference
     private static final Map<UUID, Boolean> XP_DIRECT_TO_PLAYER = new ConcurrentHashMap<>();
 
@@ -163,6 +166,32 @@ public final class VeinMinerHandler {
         return isDropsToStorage(player) && TomsStorageBridge.isHoldingBoundWirelessTerminal(player);
     }
 
+    public static void setStorageWhitelist(ServerPlayerEntity player, List<String> items) {
+        Set<String> normalized = normalizeIds(items);
+        if (normalized.isEmpty()) {
+            STORAGE_WHITELISTS.remove(player.getUuid());
+        } else {
+            STORAGE_WHITELISTS.put(player.getUuid(), normalized);
+        }
+    }
+
+    public static List<String> getStorageWhitelist(ServerPlayerEntity player) {
+        Set<String> whitelist = STORAGE_WHITELISTS.get(player.getUuid());
+        return whitelist == null || whitelist.isEmpty() ? List.of() : new ArrayList<>(whitelist);
+    }
+
+    public static boolean isItemRoutedToStorage(ServerPlayerEntity player, ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+        Set<String> whitelist = STORAGE_WHITELISTS.get(player.getUuid());
+        if (whitelist == null || whitelist.isEmpty()) {
+            return false;
+        }
+        String itemId = Registries.ITEM.getId(stack.getItem()).toString();
+        return whitelist.contains(itemId);
+    }
+
     /**
      * Toggle XP direct-to-player for a player.
      * Returns the new state (true = XP goes directly to player).
@@ -246,6 +275,7 @@ public final class VeinMinerHandler {
         HOLDING_KEY.remove(playerUuid);
         DROPS_TO_INVENTORY.remove(playerUuid);
         DROPS_TO_STORAGE.remove(playerUuid);
+        STORAGE_WHITELISTS.remove(playerUuid);
         XP_DIRECT_TO_PLAYER.remove(playerUuid);
         ULTMINE_SHAPE.remove(playerUuid);
         ULTMINE_DEPTH.remove(playerUuid);
@@ -280,7 +310,7 @@ public final class VeinMinerHandler {
 
         long now = serverWorld.getTime();
         pending.removeIf(entry -> {
-            collectOriginDrops(player, serverWorld, entry.pos());
+            collectOriginDrops(player, serverWorld, entry.pos(), entry.inventoryDrops(), entry.storageDrops());
             return now >= entry.expireTick();
         });
 
@@ -389,13 +419,14 @@ public final class VeinMinerHandler {
         int maxBlocks = Math.max(1, SkillConfig.getVeinMinerMaxBlocks());
         Set<BlockPos> targets = collectConnectedBlocks(world, origin, originState, maxBlocks);
         boolean inventoryDrops = isDropsToInventory(player) && world instanceof ServerWorld;
+        boolean storageDrops = shouldRouteDropsToStorage(player) && world instanceof ServerWorld;
         boolean xpDirect = isXpDirectToPlayer(player) && world instanceof ServerWorld;
 
         // The origin block is already broken by the player before this handler runs.
         // Collect its dropped item first, even if there are no extra connected targets.
-        if (inventoryDrops) {
-            collectOriginDrops(player, (ServerWorld) world, origin);
-            scheduleOriginCollection(player, world, origin);
+        if (inventoryDrops || storageDrops) {
+            collectOriginDrops(player, (ServerWorld) world, origin, inventoryDrops, storageDrops);
+            scheduleOriginCollection(player, world, origin, inventoryDrops, storageDrops);
         }
         if (xpDirect) {
             collectNearbyXp(player, (ServerWorld) world, origin);
@@ -414,8 +445,8 @@ public final class VeinMinerHandler {
             if (!canBreakWith(tool, state, player)) {
                 continue;
             }
-            if (inventoryDrops) {
-                breakWithInventoryDrops(player, world, pos, state, tool, xpDirect);
+            if (inventoryDrops || storageDrops) {
+                breakWithInventoryDrops(player, world, pos, state, tool, xpDirect, inventoryDrops, storageDrops);
             } else if (xpDirect && world instanceof ServerWorld serverWorld) {
                 breakWithGroundDropsAndDirectXp(player, serverWorld, pos, state, tool);
             } else {
@@ -430,9 +461,9 @@ public final class VeinMinerHandler {
         }
 
         // Sweep again to catch drops that may spawn slightly later in the same tick.
-        if (inventoryDrops) {
-            collectOriginDrops(player, (ServerWorld) world, origin);
-            scheduleOriginCollection(player, world, origin);
+        if (inventoryDrops || storageDrops) {
+            collectOriginDrops(player, (ServerWorld) world, origin, inventoryDrops, storageDrops);
+            scheduleOriginCollection(player, world, origin, inventoryDrops, storageDrops);
         }
     }
 
@@ -553,9 +584,9 @@ public final class VeinMinerHandler {
         boolean storageDrops = shouldRouteDropsToStorage(player) && world instanceof ServerWorld;
         boolean inventoryDrops = isDropsToInventory(player) && world instanceof ServerWorld;
         boolean xpDirect = isXpDirectToPlayer(player) && world instanceof ServerWorld;
-        if (inventoryDrops) {
-            collectOriginDrops(player, (ServerWorld) world, origin);
-            scheduleOriginCollection(player, world, origin);
+        if (inventoryDrops || storageDrops) {
+            collectOriginDrops(player, (ServerWorld) world, origin, inventoryDrops, storageDrops);
+            scheduleOriginCollection(player, world, origin, inventoryDrops, storageDrops);
         }
         if (xpDirect) {
             collectNearbyXp(player, (ServerWorld) world, origin);
@@ -628,9 +659,9 @@ public final class VeinMinerHandler {
             dropBuffer.flush(player, world);
         }
 
-        if (inventoryDrops) {
-            collectOriginDrops(player, world, origin);
-            scheduleOriginCollection(player, world, origin);
+        if (inventoryDrops || storageDrops) {
+            collectOriginDrops(player, world, origin, inventoryDrops, storageDrops);
+            scheduleOriginCollection(player, world, origin, inventoryDrops, storageDrops);
         }
         return minedBlocks;
     }
@@ -806,11 +837,16 @@ public final class VeinMinerHandler {
 
     private static void breakWithInventoryDrops(ServerPlayerEntity player, World world, BlockPos pos,
             BlockState state, ItemStack tool) {
-        breakWithInventoryDrops(player, world, pos, state, tool, false);
+        breakWithInventoryDrops(player, world, pos, state, tool, false, true, shouldRouteDropsToStorage(player));
     }
 
     private static void breakWithInventoryDrops(ServerPlayerEntity player, World world, BlockPos pos,
             BlockState state, ItemStack tool, boolean directXp) {
+        breakWithInventoryDrops(player, world, pos, state, tool, directXp, true, shouldRouteDropsToStorage(player));
+    }
+
+    private static void breakWithInventoryDrops(ServerPlayerEntity player, World world, BlockPos pos,
+            BlockState state, ItemStack tool, boolean directXp, boolean inventoryDrops, boolean storageDrops) {
         if (!(world instanceof ServerWorld serverWorld)) {
             world.breakBlock(pos, true, player);
             return;
@@ -818,10 +854,13 @@ public final class VeinMinerHandler {
 
         List<ItemStack> drops = Block.getDroppedStacks(state, serverWorld, pos, world.getBlockEntity(pos), player, tool);
         List<ItemStack> mergedDrops = UltmineDropCollector.mergeDrops(drops, getTrashSet(player));
-        if (shouldRouteDropsToStorage(player)) {
+        if (storageDrops) {
             for (int i = 0; i < mergedDrops.size(); i++) {
                 ItemStack stack = mergedDrops.get(i);
                 if (stack == null || stack.isEmpty()) {
+                    continue;
+                }
+                if (!isItemRoutedToStorage(player, stack)) {
                     continue;
                 }
                 ItemStack leftover = TomsStorageBridge.pushToBoundStorage(player, stack);
@@ -829,7 +868,11 @@ public final class VeinMinerHandler {
             }
             mergedDrops.removeIf(stack -> stack == null || stack.isEmpty());
         }
-        UltmineDropCollector.insertOrSpawn(player, serverWorld, pos, mergedDrops);
+        if (inventoryDrops) {
+            UltmineDropCollector.insertOrSpawn(player, serverWorld, pos, mergedDrops);
+        } else {
+            UltmineDropCollector.spawn(serverWorld, pos, mergedDrops);
+        }
 
         world.breakBlock(pos, false, player);
         if (directXp) {
@@ -907,6 +950,11 @@ public final class VeinMinerHandler {
     }
 
     private static void collectOriginDrops(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
+        collectOriginDrops(player, world, pos, true, shouldRouteDropsToStorage(player));
+    }
+
+    private static void collectOriginDrops(ServerPlayerEntity player, ServerWorld world, BlockPos pos,
+            boolean inventoryDrops, boolean storageDrops) {
         Box searchBox = new Box(pos).expand(0.5);
         List<ItemEntity> items = world.getEntitiesByClass(ItemEntity.class, searchBox, entity -> !entity.isRemoved());
         for (ItemEntity itemEntity : items) {
@@ -919,7 +967,13 @@ public final class VeinMinerHandler {
                 continue;
             }
             ItemStack remaining = stack.copy();
-            if (player.getInventory().insertStack(remaining) && remaining.isEmpty()) {
+            if (storageDrops && isItemRoutedToStorage(player, remaining)) {
+                ItemStack leftover = TomsStorageBridge.pushToBoundStorage(player, remaining);
+                remaining = leftover == null ? ItemStack.EMPTY : leftover;
+            }
+            if (remaining.isEmpty()) {
+                itemEntity.discard();
+            } else if (inventoryDrops && player.getInventory().insertStack(remaining) && remaining.isEmpty()) {
                 itemEntity.discard();
             } else {
                 itemEntity.setStack(remaining);
@@ -928,11 +982,16 @@ public final class VeinMinerHandler {
     }
 
     private static void scheduleOriginCollection(ServerPlayerEntity player, World world, BlockPos pos) {
+        scheduleOriginCollection(player, world, pos, true, shouldRouteDropsToStorage(player));
+    }
+
+    private static void scheduleOriginCollection(ServerPlayerEntity player, World world, BlockPos pos,
+            boolean inventoryDrops, boolean storageDrops) {
         long now = world.getTime();
         long expireTick = now + 8; // Keep sweeping for a short period after the break event.
         UUID uuid = player.getUuid();
         List<PendingOriginCollection> pending = PENDING_ORIGIN_COLLECTIONS.computeIfAbsent(uuid, ignored -> new ArrayList<>());
-        pending.add(new PendingOriginCollection(pos.toImmutable(), expireTick));
+        pending.add(new PendingOriginCollection(pos.toImmutable(), expireTick, inventoryDrops, storageDrops));
     }
 
     private static Set<BlockPos> collectConnectedBlocks(World world, BlockPos origin, BlockState originState,
@@ -1377,6 +1436,9 @@ public final class VeinMinerHandler {
                 if (stack == null || stack.isEmpty()) {
                     continue;
                 }
+                if (!isItemRoutedToStorage(player, stack)) {
+                    continue;
+                }
                 ItemStack leftover = TomsStorageBridge.pushToBoundStorage(player, stack);
                 drops.set(i, leftover == null ? ItemStack.EMPTY : leftover);
             }
@@ -1466,7 +1528,7 @@ public final class VeinMinerHandler {
         }
     }
 
-    private record PendingOriginCollection(BlockPos pos, long expireTick) {
+    private record PendingOriginCollection(BlockPos pos, long expireTick, boolean inventoryDrops, boolean storageDrops) {
     }
 
     private record UltmineSelection(UltmineShape shape, int depth, int length, int variant) {

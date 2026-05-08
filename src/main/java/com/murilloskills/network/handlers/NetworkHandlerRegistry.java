@@ -60,6 +60,8 @@ public final class NetworkHandlerRegistry {
             registerHandler("VeinMinerDrops", VeinMinerDropsToggleC2SPayload.ID, VeinMinerDropsToggleNetworkHandler.create());
             registerHandler("VeinMinerStorageDrops", VeinMinerStorageDropToggleC2SPayload.ID,
                     VeinMinerStorageDropToggleNetworkHandler.create());
+            registerHandler("StorageWhitelistSync", StorageWhitelistSyncC2SPayload.ID,
+                    StorageWhitelistSyncNetworkHandler.create());
             registerHandler("UltmineShapeSelect", UltmineShapeSelectC2SPayload.ID,
                     UltmineShapeSelectNetworkHandler.create());
             registerHandler("UltminePreviewRequest", UltmineRequestC2SPayload.ID, UltmineRequestNetworkHandler.create());

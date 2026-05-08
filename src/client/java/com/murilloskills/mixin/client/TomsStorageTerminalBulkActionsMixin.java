@@ -39,10 +39,14 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
     private int murilloskills$bulkDropCooldown;
     @Unique
     private boolean murilloskills$reflectionDisabled;
-    // Locked target captured when CTRL+Q starts. Keeps the drop loop pinned to the original
-    // item even when the storage list reorders as items are pulled out.
+    // ItemStack identity captured when CTRL+Q starts. We don't pin the StoredItemStack
+    // reference itself because Tom's network layer encodes the action by an integer ID
+    // looked up in idMap via .equals(), and StoredItemStack.equals compares the item AND
+    // the count. The count changes every time we drop, so a frozen reference would resolve
+    // to a stale (or wrong) ID after the first drop. Instead, we keep the ItemStack and
+    // re-resolve the live StoredItemStack from itemList on every send.
     @Unique
-    private Object murilloskills$bulkDropTarget;
+    private net.minecraft.item.ItemStack murilloskills$bulkDropItem;
 
     @Inject(method = "method_25402", at = @At("HEAD"), cancellable = true, remap = false)
     private void murilloskills$startBulkPull(@Coerce Object mouseInput, boolean doubleClick,
@@ -67,16 +71,21 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
             return;
         }
 
-        Object target = murilloskills$resolveHoveredStoredStack();
-        if (target == null) {
+        if (murilloskills$bulkDropItem != null) {
+            Object liveTarget = murilloskills$findLiveTargetFor(murilloskills$bulkDropItem);
+            if (liveTarget == null) {
+                return;
+            }
+            murilloskills$sendStorageDrop(liveTarget);
+            murilloskills$bulkDropHeld = true;
+            murilloskills$bulkDropCooldown = DROP_INTERVAL_TICKS;
+            cir.setReturnValue(true);
             return;
         }
 
-        murilloskills$bulkDropTarget = target;
-        murilloskills$sendStorageDrop(target);
-        murilloskills$bulkDropHeld = true;
-        murilloskills$bulkDropCooldown = DROP_INTERVAL_TICKS;
-        cir.setReturnValue(true);
+        if (murilloskills$captureBulkDropTarget()) {
+            cir.setReturnValue(true);
+        }
     }
 
     @Inject(method = "method_37432", at = @At("TAIL"), remap = false, require = 0)
@@ -99,24 +108,17 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
         }
 
         boolean ctrlDropPressed = murilloskills$isControlDropHeld(client);
-        if (!murilloskills$bulkDropHeld) {
-            if (ctrlDropPressed) {
-                Object target = murilloskills$resolveHoveredStoredStack();
-                if (target != null) {
-                    murilloskills$bulkDropTarget = target;
-                    murilloskills$sendStorageDrop(target);
-                    murilloskills$bulkDropHeld = true;
-                    murilloskills$bulkDropCooldown = DROP_INTERVAL_TICKS;
-                }
-            }
+        if (!ctrlDropPressed) {
+            murilloskills$bulkDropHeld = false;
+            murilloskills$bulkDropItem = null;
+            murilloskills$bulkDropCooldown = 0;
+        } else if (murilloskills$bulkDropItem == null) {
+            murilloskills$captureBulkDropTarget();
         } else {
-            if (!ctrlDropPressed
-                    || murilloskills$bulkDropTarget == null
-                    || !murilloskills$isLockedTargetAvailable(murilloskills$bulkDropTarget)) {
-                murilloskills$bulkDropHeld = false;
-                murilloskills$bulkDropTarget = null;
-            } else if (--murilloskills$bulkDropCooldown <= 0) {
-                murilloskills$sendStorageDrop(murilloskills$bulkDropTarget);
+            murilloskills$bulkDropHeld = true;
+            Object liveTarget = murilloskills$findLiveTargetFor(murilloskills$bulkDropItem);
+            if (liveTarget != null && --murilloskills$bulkDropCooldown <= 0) {
+                murilloskills$sendStorageDrop(liveTarget);
                 murilloskills$bulkDropCooldown = DROP_INTERVAL_TICKS;
             }
         }
@@ -126,6 +128,25 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
     private boolean murilloskills$isLeftMouseHeld(MinecraftClient client) {
         long handle = client.getWindow().getHandle();
         return GLFW.glfwGetMouseButton(handle, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+    }
+
+    @Unique
+    private boolean murilloskills$captureBulkDropTarget() {
+        Object target = murilloskills$resolveHoveredStoredStack();
+        if (target == null) {
+            return false;
+        }
+
+        net.minecraft.item.ItemStack itemKey = murilloskills$readItemStackField(target);
+        if (itemKey == null || itemKey.isEmpty()) {
+            return false;
+        }
+
+        murilloskills$bulkDropItem = itemKey.copy();
+        murilloskills$sendStorageDrop(target);
+        murilloskills$bulkDropHeld = true;
+        murilloskills$bulkDropCooldown = DROP_INTERVAL_TICKS;
+        return true;
     }
 
     @Unique
@@ -217,15 +238,22 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
         }
     }
 
+    /**
+     * Re-find the live StoredItemStack from the menu's itemList that matches the captured
+     * ItemStack identity. This must be re-resolved every tick because Tom's network layer
+     * encodes the action through an idMap keyed by StoredItemStack, and StoredItemStack
+     * equality includes the count field — meaning a frozen reference would resolve to a
+     * stale id (or none at all, which encodes as 0 and corresponds to a wrong slot).
+     */
     @Unique
-    private boolean murilloskills$isLockedTargetAvailable(Object target) {
-        // The captured StoredItemStack reference goes stale as the menu re-syncs from the
-        // server. Re-find the matching entry in the live itemList so we know if the storage
-        // still has any of this item left to drop.
+    private Object murilloskills$findLiveTargetFor(net.minecraft.item.ItemStack itemKey) {
+        if (itemKey == null || itemKey.isEmpty()) {
+            return null;
+        }
         try {
             Object handler = murilloskills$getHandler();
             if (handler == null) {
-                return false;
+                return null;
             }
             Object itemList = murilloskills$readField(handler, "itemList");
             if (itemList instanceof Iterable<?> entries) {
@@ -233,34 +261,34 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
                     if (entry == null) {
                         continue;
                     }
-                    if (murilloskills$matchesStoredStack(entry, target) && murilloskills$getQuantity(entry) > 0) {
-                        return true;
+                    if (murilloskills$getQuantity(entry) <= 0) {
+                        continue;
+                    }
+                    net.minecraft.item.ItemStack candidate = murilloskills$readItemStackField(entry);
+                    if (candidate == null || candidate.isEmpty()) {
+                        continue;
+                    }
+                    if (net.minecraft.item.ItemStack.areItemsAndComponentsEqual(candidate, itemKey)) {
+                        return entry;
                     }
                 }
             }
         } catch (Exception ignored) {
         }
-        return false;
+        return null;
     }
 
     @Unique
-    private boolean murilloskills$matchesStoredStack(Object a, Object b) {
-        if (a == b) {
-            return true;
+    private net.minecraft.item.ItemStack murilloskills$readItemStackField(Object storedStack) {
+        if (storedStack == null) {
+            return null;
         }
         try {
-            Object stackA = murilloskills$readField(a, "stack");
-            Object stackB = murilloskills$readField(b, "stack");
-            if (stackA == null || stackB == null) {
-                return false;
-            }
-            if (stackA instanceof net.minecraft.item.ItemStack ia
-                    && stackB instanceof net.minecraft.item.ItemStack ib) {
-                return net.minecraft.item.ItemStack.areItemsAndComponentsEqual(ia, ib);
-            }
+            Object value = murilloskills$readField(storedStack, "stack");
+            return value instanceof net.minecraft.item.ItemStack stack ? stack : null;
         } catch (Exception ignored) {
+            return null;
         }
-        return false;
     }
 
     @Unique
