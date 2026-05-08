@@ -8,6 +8,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -31,23 +32,19 @@ public final class TomsStorageDropNetworkHandler {
         return (payload, context) -> context.server().execute(() -> {
             try {
                 ServerPlayerEntity player = context.player();
-                if (!canProcessDrop(player, payload.slotId())) {
+                ItemStack sampleStack = payload.sampleStack();
+                if (!canProcessDrop(player, sampleStack)) {
                     return;
                 }
 
                 Object menu = player.currentScreenHandler;
-                Object slot = invoke(menu, "getSlotByID", payload.slotId());
-                if (slot == null) {
-                    return;
-                }
-
-                Object storedStack = readField(slot, "stack");
-                if (storedStack == null || getQuantity(storedStack) <= 0) {
-                    return;
-                }
-
-                Object terminal = readField(slot, "inventory");
+                Object terminal = readField(menu, "te");
                 if (terminal == null || !canInteractWithTerminal(terminal, player)) {
+                    return;
+                }
+
+                Object storedStack = findStoredStack(terminal, sampleStack);
+                if (storedStack == null || getQuantity(storedStack) <= 0) {
                     return;
                 }
 
@@ -70,8 +67,8 @@ public final class TomsStorageDropNetworkHandler {
         });
     }
 
-    private static boolean canProcessDrop(ServerPlayerEntity player, int slotId) {
-        if (slotId < 0 || !isStorageTerminalMenu(player.currentScreenHandler)) {
+    private static boolean canProcessDrop(ServerPlayerEntity player, ItemStack sampleStack) {
+        if (sampleStack == null || sampleStack.isEmpty() || !isStorageTerminalMenu(player.currentScreenHandler)) {
             return false;
         }
         long worldTime = player.getEntityWorld().getTime();
@@ -113,6 +110,52 @@ public final class TomsStorageDropNetworkHandler {
     private static int getMaxStackSize(Object storedStack) throws ReflectiveOperationException {
         Object result = invoke(storedStack, "getMaxStackSize");
         return result instanceof Number number ? number.intValue() : 64;
+    }
+
+    private static Object findStoredStack(Object terminal, ItemStack sampleStack) throws ReflectiveOperationException {
+        Object stacks = invoke(terminal, "getStacks");
+        if (!(stacks instanceof Map<?, ?> map) || map.isEmpty()) {
+            return null;
+        }
+
+        Object sampleStoredStack = createStoredItemStack(sampleStack);
+        Object fallback = null;
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            Object candidate = entry.getValue() != null ? entry.getValue() : entry.getKey();
+            if (candidate == null || getQuantity(candidate) <= 0) {
+                continue;
+            }
+            if (matchesStoredStack(candidate, sampleStoredStack, sampleStack)) {
+                return candidate;
+            }
+            if (fallback == null && matchesItemOnly(candidate, sampleStack)) {
+                fallback = candidate;
+            }
+        }
+        return fallback;
+    }
+
+    private static Object createStoredItemStack(ItemStack sampleStack) throws ReflectiveOperationException {
+        Class<?> storedStackClass = Class.forName("com.tom.storagemod.inventory.StoredItemStack");
+        Constructor<?> constructor = storedStackClass.getConstructor(ItemStack.class);
+        ItemStack sample = sampleStack.copy();
+        sample.setCount(1);
+        return constructor.newInstance(sample);
+    }
+
+    private static boolean matchesStoredStack(Object candidate, Object sampleStoredStack, ItemStack sampleStack)
+            throws ReflectiveOperationException {
+        Object equalDetails = invoke(candidate, "equalDetails", sampleStoredStack);
+        if (Boolean.TRUE.equals(equalDetails)) {
+            return true;
+        }
+        Object candidateStack = invoke(candidate, "getStack");
+        return candidateStack instanceof ItemStack itemStack && ItemStack.areItemsAndComponentsEqual(itemStack, sampleStack);
+    }
+
+    private static boolean matchesItemOnly(Object candidate, ItemStack sampleStack) throws ReflectiveOperationException {
+        Object candidateStack = invoke(candidate, "getStack");
+        return candidateStack instanceof ItemStack itemStack && itemStack.isOf(sampleStack.getItem());
     }
 
     private static Object readField(Object owner, String fieldName) throws ReflectiveOperationException {

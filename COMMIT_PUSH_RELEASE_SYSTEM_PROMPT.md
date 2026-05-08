@@ -23,7 +23,7 @@ Regras de seguranca:
 - Antes de apagar/substituir jar no CurseForge, valide que o caminho resolvido esta dentro de:
   `C:\Users\muril\curseforge\minecraft\Instances\Meu mundo\mods`
 - Substitua apenas jars do MurilloSkills, normalmente `murilloskills-*.jar`. Nao mexa em jars de outros mods.
-- Se Minecraft/CurseForge estiver aberto e travar a substituicao do jar, informe o bloqueio e pare.
+- Se o Minecraft dessa instancia travar a substituicao do jar, localize apenas processos `java.exe`/`javaw.exe` cuja linha de comando aponte para `C:\Users\muril\curseforge\minecraft\Instances\Meu mundo`, feche esses processos do jogo, e tente substituir novamente. Se nao conseguir identificar o processo com seguranca, informe o bloqueio e pare.
 
 Fluxo obrigatorio:
 1. Inspecione o estado do repo:
@@ -53,6 +53,7 @@ Fluxo obrigatorio:
    - Confirme que a pasta existe.
    - Localize o jar novo em `build\libs`, excluindo `*-sources.jar`.
    - Remova ou mova para backup apenas jars antigos `murilloskills-*.jar` dentro da pasta `mods`.
+   - Se a remocao falhar por arquivo em uso, feche somente o processo do Minecraft desta instancia e repita a remocao.
    - Copie o jar novo para a pasta `mods`.
    - Confirme com `Get-ChildItem` que somente o jar novo do MurilloSkills ficou la.
 
@@ -111,8 +112,37 @@ if (-not $newJar) {
     throw "Nenhum jar novo encontrado em build\libs"
 }
 
-Get-ChildItem -Path $resolvedMods -Filter "murilloskills-*.jar" |
-    Remove-Item -Force
+function Stop-InstanceMinecraftProcesses {
+    $escapedInstance = [WildcardPattern]::Escape($instance)
+    $gameProcesses = Get-CimInstance Win32_Process |
+        Where-Object {
+            ($_.Name -eq "java.exe" -or $_.Name -eq "javaw.exe") -and
+            $_.CommandLine -like "*$escapedInstance*"
+        }
+
+    foreach ($procInfo in $gameProcesses) {
+        $proc = Get-Process -Id $procInfo.ProcessId -ErrorAction SilentlyContinue
+        if (-not $proc) { continue }
+        if ($proc.MainWindowHandle -ne 0) {
+            $null = $proc.CloseMainWindow()
+            Start-Sleep -Seconds 3
+            $proc.Refresh()
+        }
+        if (-not $proc.HasExited) {
+            Stop-Process -Id $proc.Id -Force
+        }
+    }
+}
+
+try {
+    Get-ChildItem -Path $resolvedMods -Filter "murilloskills-*.jar" |
+        Remove-Item -Force -ErrorAction Stop
+} catch {
+    Stop-InstanceMinecraftProcesses
+    Start-Sleep -Seconds 2
+    Get-ChildItem -Path $resolvedMods -Filter "murilloskills-*.jar" |
+        Remove-Item -Force -ErrorAction Stop
+}
 
 Copy-Item -LiteralPath $newJar.FullName -Destination (Join-Path $resolvedMods $newJar.Name) -Force
 Get-ChildItem -Path $resolvedMods -Filter "murilloskills-*.jar" | Select-Object Name,Length,LastWriteTime

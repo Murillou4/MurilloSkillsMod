@@ -4,6 +4,15 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.62] - 2026-05-08
+
+### Compat - Tom's Simple Storage
+
+- **Ctrl + Q corrigido no terminal**: o drop em massa agora envia o item hoverado em vez do slot visual do client, e o servidor encontra o stack correspondente no storage real antes de dropar.
+- **Atalho mais confiavel**: a tela tambem detecta `Ctrl + Q` segurado no tick do terminal, entao o drop continua funcionando mesmo se o campo de busca consumir o evento de tecla.
+
+---
+
 ## [1.2.61] - 2026-05-08
 
 ### Compat - Tom's Simple Storage

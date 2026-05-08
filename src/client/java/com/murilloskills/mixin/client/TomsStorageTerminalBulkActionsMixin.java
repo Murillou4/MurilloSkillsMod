@@ -3,6 +3,7 @@ package com.murilloskills.mixin.client;
 import com.murilloskills.network.TomsStorageDropC2SPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.item.ItemStack;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -91,8 +92,13 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
             }
         }
 
-        if (murilloskills$bulkDropHeld) {
-            if (!murilloskills$isControlDropHeld(client) || !murilloskills$hasHoveredStoredStack()) {
+        boolean controlDropReady = murilloskills$isControlDropHeld(client) && murilloskills$hasHoveredStoredStack();
+        if (!murilloskills$bulkDropHeld && controlDropReady) {
+            murilloskills$sendStorageDrop();
+            murilloskills$bulkDropHeld = true;
+            murilloskills$bulkDropCooldown = DROP_INTERVAL_TICKS;
+        } else if (murilloskills$bulkDropHeld) {
+            if (!controlDropReady) {
                 murilloskills$bulkDropHeld = false;
             } else if (--murilloskills$bulkDropCooldown <= 0) {
                 murilloskills$sendStorageDrop();
@@ -147,10 +153,15 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
 
     @Unique
     private void murilloskills$sendStorageDrop() {
-        if (this.slotIDUnderMouse < 0 || !murilloskills$hasHoveredStoredStack()) {
-            return;
+        try {
+            Object storedStack = murilloskills$getHoveredStoredStack();
+            ItemStack sampleStack = murilloskills$getSampleStack(storedStack);
+            if (sampleStack.isEmpty()) {
+                return;
+            }
+            ClientPlayNetworking.send(new TomsStorageDropC2SPayload(sampleStack));
+        } catch (Exception ignored) {
         }
-        ClientPlayNetworking.send(new TomsStorageDropC2SPayload(this.slotIDUnderMouse));
     }
 
     @Unique
@@ -205,6 +216,23 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
     private long murilloskills$getQuantity(Object storedStack) throws ReflectiveOperationException {
         Object result = murilloskills$invoke(storedStack, "getQuantity");
         return result instanceof Number number ? number.longValue() : 0L;
+    }
+
+    @Unique
+    private ItemStack murilloskills$getSampleStack(Object storedStack) throws ReflectiveOperationException {
+        if (storedStack == null || murilloskills$getQuantity(storedStack) <= 0) {
+            return ItemStack.EMPTY;
+        }
+        Object stack = murilloskills$invoke(storedStack, "getStack");
+        if (!(stack instanceof ItemStack itemStack) || itemStack.isEmpty()) {
+            stack = murilloskills$invoke(storedStack, "getActualStack");
+        }
+        if (!(stack instanceof ItemStack itemStack) || itemStack.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack sample = itemStack.copy();
+        sample.setCount(1);
+        return sample;
     }
 
     @Unique
