@@ -13,13 +13,21 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
 public final class TerminalMachineTransferService {
+    private static final Logger LOGGER = LoggerFactory.getLogger("MurilloSkills-TerminalTransfer");
     private static final int MAX_AMOUNT = 4096;
     private static final double MAX_DISTANCE_SQUARED = 144.0D;
+    private static final String TECH_REBORN_STORAGE_UNIT_BE =
+            "techreborn.blockentity.storage.item.StorageUnitBaseBlockEntity";
+    private static volatile Class<?> techRebornStorageUnitClass;
+    private static volatile Method techRebornProcessInputMethod;
 
     private TerminalMachineTransferService() {
     }
@@ -30,6 +38,8 @@ public final class TerminalMachineTransferService {
             return;
         }
         int amount = Math.max(1, Math.min(requestedAmount, MAX_AMOUNT));
+        LOGGER.info("Terminal transfer requested: player={}, item={}, amount={}, target={}, face={}",
+                player.getName().getString(), itemKey.getName().getString(), amount, targetPos, face);
         if (!(player.getEntityWorld() instanceof ServerWorld world)) {
             return;
         }
@@ -46,15 +56,18 @@ public final class TerminalMachineTransferService {
         ItemStack pulled = TomsStorageBridge.pullFromBoundStorage(player, itemKey, amount);
         if (pulled.isEmpty()) {
             player.sendMessage(Text.translatable("murilloskills.terminal_transfer.no_storage", itemKey.getName()),
-                    true);
+                    false);
+            LOGGER.info("Terminal transfer could not pull {} x {}", amount, itemKey.getName().getString());
             return;
         }
+        LOGGER.info("Terminal transfer pulled {} x {}", pulled.getCount(), pulled.getName().getString());
 
         ItemStack toInsert = pulled.copy();
         int inserted = insertIntoTarget(world, targetPos, target, face, toInsert);
         if (inserted <= 0) {
             returnLeftover(player, pulled);
-            player.sendMessage(Text.translatable("murilloskills.terminal_transfer.no_input", pulled.getName()), true);
+            player.sendMessage(Text.translatable("murilloskills.terminal_transfer.no_input", pulled.getName()), false);
+            LOGGER.info("Terminal transfer inserted nothing into {}", target.getCachedState().getBlock().getName().getString());
             return;
         }
 
@@ -65,11 +78,13 @@ public final class TerminalMachineTransferService {
         Text targetName = target.getCachedState().getBlock().getName();
         if (inserted < pulled.getCount()) {
             player.sendMessage(Text.translatable("murilloskills.terminal_transfer.partial", inserted, pulled.getName(),
-                    targetName), true);
+                    targetName), false);
         } else {
             player.sendMessage(Text.translatable("murilloskills.terminal_transfer.success", inserted, pulled.getName(),
-                    targetName), true);
+                    targetName), false);
         }
+        LOGGER.info("Terminal transfer inserted {} into {}; leftover={}", inserted, targetName.getString(),
+                toInsert.getCount());
     }
 
     private static boolean isTooFar(ServerPlayerEntity player, BlockPos pos) {
@@ -81,12 +96,69 @@ public final class TerminalMachineTransferService {
 
     private static int insertIntoTarget(ServerWorld world, BlockPos pos, BlockEntity target, Direction face,
             ItemStack stack) {
+        int storageUnitInserted = insertIntoTechRebornStorageUnit(target, stack);
+        if (stack.isEmpty()) {
+            return storageUnitInserted;
+        }
         int inserted = insertWithTransferApi(world, pos, face, stack);
         if (stack.isEmpty()) {
-            return inserted;
+            return storageUnitInserted + inserted;
         }
         int fallbackInserted = insertWithVanillaInventory(target, face, stack);
-        return inserted + fallbackInserted;
+        return storageUnitInserted + inserted + fallbackInserted;
+    }
+
+    private static int insertIntoTechRebornStorageUnit(BlockEntity target, ItemStack stack) {
+        Class<?> storageUnitClass = resolveTechRebornStorageUnitClass();
+        if (storageUnitClass == null || !storageUnitClass.isInstance(target) || stack.isEmpty()) {
+            return 0;
+        }
+        try {
+            Method processInput = resolveTechRebornProcessInputMethod(storageUnitClass);
+            if (processInput == null) {
+                return 0;
+            }
+            int before = stack.getCount();
+            ItemStack leftover = (ItemStack) processInput.invoke(target, stack.copy());
+            if (leftover == null) {
+                leftover = ItemStack.EMPTY;
+            }
+            stack.setCount(leftover.getCount());
+            target.markDirty();
+            return before - stack.getCount();
+        } catch (ReflectiveOperationException | ClassCastException e) {
+            LOGGER.warn("Failed to insert through Tech Reborn Storage Unit reflection", e);
+            return 0;
+        }
+    }
+
+    private static Class<?> resolveTechRebornStorageUnitClass() {
+        Class<?> cached = techRebornStorageUnitClass;
+        if (cached != null) {
+            return cached;
+        }
+        try {
+            cached = Class.forName(TECH_REBORN_STORAGE_UNIT_BE);
+            techRebornStorageUnitClass = cached;
+            return cached;
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    private static Method resolveTechRebornProcessInputMethod(Class<?> storageUnitClass) {
+        Method cached = techRebornProcessInputMethod;
+        if (cached != null) {
+            return cached;
+        }
+        try {
+            cached = storageUnitClass.getMethod("processInput", ItemStack.class);
+            cached.setAccessible(true);
+            techRebornProcessInputMethod = cached;
+            return cached;
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
     }
 
     private static int insertWithTransferApi(ServerWorld world, BlockPos pos, Direction face, ItemStack stack) {

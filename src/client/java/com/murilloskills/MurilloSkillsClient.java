@@ -41,6 +41,8 @@ import com.murilloskills.render.MeltingTouchHud;
 import com.murilloskills.render.OreHighlighter;
 import com.murilloskills.render.PathfinderHud;
 import com.murilloskills.render.RainDanceEffect;
+import com.murilloskills.render.TerminalMachineTargetHud;
+import com.murilloskills.render.TerminalMachineTargetRenderer;
 import com.murilloskills.render.TreasureHighlighter;
 import com.murilloskills.render.UltPlaceHud;
 import com.murilloskills.render.UltPlacePreview;
@@ -601,6 +603,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
         WorldRenderEvents.END_MAIN.register(VeinMinerPreview::render);
         WorldRenderEvents.END_MAIN.register(UltminePreview::render);
         WorldRenderEvents.END_MAIN.register(UltPlacePreview::render);
+        WorldRenderEvents.END_MAIN.register(TerminalMachineTargetRenderer::render);
 
         // HUD rendering for indicators
         HudRenderCallback.EVENT.register(AreaPlantingHud::render);
@@ -608,6 +611,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
         HudRenderCallback.EVENT.register(AutoTorchHud::render);
         HudRenderCallback.EVENT.register(MeltingTouchHud::render);
         HudRenderCallback.EVENT.register(UltPlaceHud::render);
+        HudRenderCallback.EVENT.register(TerminalMachineTargetHud::render);
         HudRenderCallback.EVENT.register(com.murilloskills.render.UltmineHud::render);
         HudRenderCallback.EVENT.register(com.murilloskills.render.FarmerCropHud::render);
         HudRenderCallback.EVENT.register((context, tickDelta) -> XpToastRenderer.render(context));

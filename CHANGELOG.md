@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.69] - 2026-05-08
+
+### Tom's Storage para Maquinas
+
+- **Maquina marcada ficou visivel**: o alvo salvo com `Ctrl+Alt+M` agora ganha contorno ciano no mundo e indicador no HUD.
+- **Transferencia com fallback para Storage Unit**: Advanced Storage Unit e outros Storage Units do Tech Reborn recebem itens via fallback direto para o `processInput` interno quando a rota generica nao inserir.
+- **Falhas deixam de ser silenciosas**: a transferencia agora informa no chat/log quando nao consegue puxar do Tom's Storage, quando a maquina nao aceita o item ou quando ocorre uma excecao.
+
+---
+
 ## [1.2.68] - 2026-05-08
 
 ### Tom's Storage para Maquinas

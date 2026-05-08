@@ -910,8 +910,10 @@
     "murilloskills.terminal_transfer.target_too_far": "A maquina alvo esta longe demais.",
     "murilloskills.terminal_transfer.no_storage": "Nao encontrei %s no storage do terminal wireless.",
     "murilloskills.terminal_transfer.no_input": "%s nao cabe nessa maquina.",
+    "murilloskills.terminal_transfer.failed": "A transferencia falhou; veja latest.log para detalhes.",
     "murilloskills.terminal_transfer.success": "Enviado %s x %s para %s.",
     "murilloskills.terminal_transfer.partial": "Enviado %s x %s para %s; o resto voltou ao storage.",
+    "murilloskills.hud.terminal_machine_target": "Maquina marcada %s %s %s",
     "murilloskills.hud.ultplace": "UltPlace %s • %s • %s • %s"
 }
 
