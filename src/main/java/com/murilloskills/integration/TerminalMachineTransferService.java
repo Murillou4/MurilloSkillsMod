@@ -23,8 +23,7 @@ import java.util.List;
 
 public final class TerminalMachineTransferService {
     private static final Logger LOGGER = LoggerFactory.getLogger("MurilloSkills-TerminalTransfer");
-    private static final int MAX_AMOUNT = 4096;
-    private static final double MAX_DISTANCE_SQUARED = 144.0D;
+    private static final int MAX_AMOUNT = 1_000_000;
     private static final String TECH_REBORN_STORAGE_UNIT_BE =
             "techreborn.blockentity.storage.item.StorageUnitBaseBlockEntity";
     private static volatile Class<?> techRebornStorageUnitClass;
@@ -44,9 +43,9 @@ public final class TerminalMachineTransferService {
         if (!(player.getEntityWorld() instanceof ServerWorld world)) {
             return;
         }
-        if (targetPos == null || !world.isChunkLoaded(targetPos) || isTooFar(player, targetPos)) {
-            player.sendMessage(Text.translatable("murilloskills.terminal_transfer.target_too_far"), false);
-            LOGGER.info("Terminal transfer rejected: target is missing, unloaded, or too far");
+        if (targetPos == null || !world.isChunkLoaded(targetPos)) {
+            player.sendMessage(Text.translatable("murilloskills.terminal_transfer.target_unloaded"), false);
+            LOGGER.info("Terminal transfer rejected: target is missing or unloaded");
             return;
         }
         BlockEntity target = world.getBlockEntity(targetPos);
@@ -89,13 +88,6 @@ public final class TerminalMachineTransferService {
         }
         LOGGER.info("Terminal transfer inserted {} into {}; leftover={}", inserted, targetName.getString(),
                 toInsert.getCount());
-    }
-
-    private static boolean isTooFar(ServerPlayerEntity player, BlockPos pos) {
-        double dx = player.getX() - (pos.getX() + 0.5D);
-        double dy = player.getY() - (pos.getY() + 0.5D);
-        double dz = player.getZ() - (pos.getZ() + 0.5D);
-        return dx * dx + dy * dy + dz * dz > MAX_DISTANCE_SQUARED;
     }
 
     private static int insertIntoTarget(ServerWorld world, BlockPos pos, BlockEntity target, Direction face,

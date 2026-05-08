@@ -406,7 +406,10 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 MinecraftClient client = MinecraftClient.getInstance();
                 if (client.world != null && client.player != null
                         && client.world.getBlockEntity(hitResult.getBlockPos()) != null) {
-                    TerminalMachineTargetClientState.set(hitResult.getBlockPos(), hitResult.getSide());
+                    String targetName = client.world.getBlockState(hitResult.getBlockPos()).getBlock().getName()
+                            .getString();
+                    TerminalMachineTargetClientState.addOrSelect(hitResult.getBlockPos(), hitResult.getSide(),
+                            targetName);
                     client.player.sendMessage(Text.translatable("murilloskills.terminal_transfer.marked",
                             hitResult.getBlockPos().getX(), hitResult.getBlockPos().getY(),
                             hitResult.getBlockPos().getZ()).formatted(Formatting.AQUA), true);
@@ -668,7 +671,8 @@ public class MurilloSkillsClient implements ClientModInitializer {
                     .formatted(Formatting.RED), true);
             return;
         }
-        TerminalMachineTargetClientState.set(blockHit.getBlockPos(), blockHit.getSide());
+        TerminalMachineTargetClientState.addOrSelect(blockHit.getBlockPos(), blockHit.getSide(),
+                client.world.getBlockState(blockHit.getBlockPos()).getBlock().getName().getString());
         client.player.sendMessage(Text.translatable("murilloskills.terminal_transfer.marked",
                 blockHit.getBlockPos().getX(), blockHit.getBlockPos().getY(), blockHit.getBlockPos().getZ())
                 .formatted(Formatting.AQUA), true);

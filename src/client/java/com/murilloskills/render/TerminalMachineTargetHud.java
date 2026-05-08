@@ -34,7 +34,9 @@ public final class TerminalMachineTargetHud {
 
         Text fullText = Text.literal("* ").formatted(Formatting.AQUA)
                 .append(Text.translatable("murilloskills.hud.terminal_machine_target",
-                        target.getX(), target.getY(), target.getZ())
+                        target.getX(), target.getY(), target.getZ(),
+                        TerminalMachineTargetClientState.getSelectedIndex() + 1,
+                        TerminalMachineTargetClientState.getTargetCount())
                         .formatted(Formatting.AQUA, Formatting.BOLD));
 
         int textWidth = client.textRenderer.getWidth(fullText);

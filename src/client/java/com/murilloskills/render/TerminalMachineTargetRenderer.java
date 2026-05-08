@@ -5,7 +5,8 @@ import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 public final class TerminalMachineTargetRenderer {
     private TerminalMachineTargetRenderer() {
@@ -19,11 +20,21 @@ public final class TerminalMachineTargetRenderer {
         if (client.world == null || client.player == null) {
             return;
         }
-        BlockPos target = TerminalMachineTargetClientState.getTargetPos();
-        if (target == null || client.world.getBlockState(target).isAir()) {
+        List<TerminalMachineTargetClientState.Target> targets = TerminalMachineTargetClientState.getTargetsSnapshot();
+        if (targets.isEmpty()) {
+            return;
+        }
+        LinkedHashSet<BlockPos> positions = new LinkedHashSet<>();
+        for (TerminalMachineTargetClientState.Target target : targets) {
+            if (!client.world.getBlockState(target.pos()).isAir()) {
+                positions.add(target.pos());
+            }
+        }
+        if (positions.isEmpty()) {
             TerminalMachineTargetClientState.clear();
             return;
         }
-        VeinMinerPreview.renderOutlines(context, Collections.singleton(target), target, 0.05f, 0.82f, 1.0f, 0.95f);
+        VeinMinerPreview.renderOutlines(context, positions, TerminalMachineTargetClientState.getTargetPos(), 0.05f,
+                0.82f, 1.0f, 0.95f);
     }
 }

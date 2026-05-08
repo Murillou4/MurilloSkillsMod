@@ -5,8 +5,6 @@ import com.murilloskills.gui.TerminalMachineTransferAmountScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -239,9 +237,7 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
         if (client == null || client.player == null) {
             return false;
         }
-        BlockPos targetPos = TerminalMachineTargetClientState.getTargetPos();
-        Direction targetFace = TerminalMachineTargetClientState.getTargetFace();
-        if (targetPos == null || targetFace == null) {
+        if (!TerminalMachineTargetClientState.hasTarget()) {
             client.player.sendMessage(Text.translatable("murilloskills.terminal_transfer.no_target"), true);
             return true;
         }
@@ -251,8 +247,7 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
         } catch (ReflectiveOperationException e) {
             available = 1L;
         }
-        client.setScreen(new TerminalMachineTransferAmountScreen((Screen) (Object) this, itemKey.copy(), available,
-                targetPos, targetFace));
+        client.setScreen(new TerminalMachineTransferAmountScreen((Screen) (Object) this, itemKey.copy(), available));
         return true;
     }
 

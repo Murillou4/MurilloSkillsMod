@@ -184,7 +184,7 @@ public class UltmineClientConfig {
     }
 
     private static int clampTerminalMachineTransferAmount(int amount) {
-        return Math.max(1, Math.min(amount, 4096));
+        return Math.max(1, Math.min(amount, 1_000_000));
     }
 
     // --- Trash ---

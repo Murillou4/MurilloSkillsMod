@@ -4,6 +4,17 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.71] - 2026-05-08
+
+### Tom's Storage para Maquinas
+
+- **Limite de envio aumentado**: a transferencia do wireless terminal para maquinas agora aceita ate 1.000.000 itens por envio, permitindo mandar 20k blocos para Storage Units.
+- **Atalho rapido de 20k**: a tela de quantidade ganhou botao `20k`, mantendo `4096` e `Tudo` para lotes grandes.
+- **Lista expansivel de maquinas marcadas**: varias Storage Units/maquinas podem ficar marcadas; a tela de envio permite escolher uma delas e mandar o lote uma por vez.
+- **Envio remoto para alvo marcado**: a transferencia nao exige mais estar perto da maquina, desde que o chunk dela esteja carregado.
+
+---
+
 ## [1.2.70] - 2026-05-08
 
 ### Tom's Storage para Maquinas
