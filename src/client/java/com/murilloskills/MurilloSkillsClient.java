@@ -588,6 +588,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
         HudRenderCallback.EVENT.register(AutoTorchHud::render);
         HudRenderCallback.EVENT.register(MeltingTouchHud::render);
         HudRenderCallback.EVENT.register(UltPlaceHud::render);
+        HudRenderCallback.EVENT.register(com.murilloskills.render.UltmineHud::render);
         HudRenderCallback.EVENT.register(com.murilloskills.render.FarmerCropHud::render);
         HudRenderCallback.EVENT.register((context, tickDelta) -> XpToastRenderer.render(context));
     }

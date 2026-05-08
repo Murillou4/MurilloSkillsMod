@@ -9,11 +9,13 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CropBlock;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -244,6 +246,24 @@ public class FarmerSkill extends AbstractSkill {
         if (seedItem == Items.NETHER_WART)
             return Blocks.NETHER_WART;
         return null;
+    }
+
+    /**
+     * Gets the plant block supported by Farmer area planting for a held item.
+     */
+    public static Block getAreaPlantableBlockForItem(Item item) {
+        Block crop = getCropForSeed(item);
+        if (crop != null) {
+            return crop;
+        }
+        if (item instanceof BlockItem blockItem && isSaplingBlock(blockItem.getBlock())) {
+            return blockItem.getBlock();
+        }
+        return null;
+    }
+
+    public static boolean isSaplingBlock(Block block) {
+        return block != null && block.getDefaultState().isIn(BlockTags.SAPLINGS);
     }
 
     /**

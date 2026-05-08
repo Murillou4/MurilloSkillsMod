@@ -152,7 +152,7 @@ public final class UltmineUseHandler {
                         continue;
                     }
 
-                    ItemStack liveStack = InventoryBlockFinder.findMatchingBlock(player, sourceStack, hand);
+                    ItemStack liveStack = InventoryBlockFinder.pullMatchingBlockIntoHand(player, sourceStack, hand);
                     if (liveStack == null || liveStack.isEmpty()) {
                         break;
                     }
@@ -188,7 +188,7 @@ public final class UltmineUseHandler {
                         continue;
                     }
 
-                    ItemStack liveStack = InventoryBlockFinder.findMatchingBlock(player, sourceStack, hand);
+                    ItemStack liveStack = InventoryBlockFinder.pullMatchingBlockIntoHand(player, sourceStack, hand);
                     if (liveStack == null || liveStack.isEmpty()) {
                         break;
                     }

@@ -106,6 +106,7 @@ public final class UltPlacePlanner {
                 layout = List.of();
             }
         }
+        layout = prioritizePlacementOrder(layout, origin);
 
         List<PlannedPlacement> placements = new ArrayList<>();
         Map<BlockPos, PreviewBlock> previewBlocks = new LinkedHashMap<>();
@@ -200,6 +201,31 @@ public final class UltPlacePlanner {
         }
 
         return List.copyOf(footprint);
+    }
+
+    private static List<BlockPos> prioritizePlacementOrder(List<BlockPos> layout, BlockPos origin) {
+        if (layout.size() <= 1 || origin == null) {
+            return layout;
+        }
+
+        List<BlockPos> ordered = new ArrayList<>(layout);
+        ordered.sort((left, right) -> {
+            boolean leftIsOrigin = left.equals(origin);
+            boolean rightIsOrigin = right.equals(origin);
+            if (leftIsOrigin != rightIsOrigin) {
+                return leftIsOrigin ? -1 : 1;
+            }
+
+            return Long.compare(squaredDistance(left, origin), squaredDistance(right, origin));
+        });
+        return ordered;
+    }
+
+    private static long squaredDistance(BlockPos pos, BlockPos origin) {
+        long dx = pos.getX() - origin.getX();
+        long dy = pos.getY() - origin.getY();
+        long dz = pos.getZ() - origin.getZ();
+        return dx * dx + dy * dy + dz * dz;
     }
 
     private static boolean supportsMassPlacement(BlockItem blockItem) {

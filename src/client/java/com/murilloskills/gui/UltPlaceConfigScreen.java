@@ -12,11 +12,14 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
 
 /**
  * Builder UltPlace configuration screen.
@@ -163,47 +166,20 @@ public class UltPlaceConfigScreen extends Screen {
         int row = 0;
 
         if (SkillConfig.getUltPlaceShapeMaxSize(current) > 1) {
-            addStepperRow(centerX, rowY + row * ROW_HEIGHT,
-                    () -> {
-                        UltPlaceClientState.adjustSize(-1);
-                        syncToServer();
-                        refresh();
-                    },
-                    () -> {
-                        UltPlaceClientState.adjustSize(1);
-                        syncToServer();
-                        refresh();
-                    });
+            addNumericStepperRow(centerX, rowY + row * ROW_HEIGHT, UltPlaceClientState.getSize(),
+                    UltPlaceClientState::getSize, UltPlaceClientState::setSize);
             row++;
         }
 
         if (current.supportsHeight()) {
-            addStepperRow(centerX, rowY + row * ROW_HEIGHT,
-                    () -> {
-                        UltPlaceClientState.adjustHeight(-1);
-                        syncToServer();
-                        refresh();
-                    },
-                    () -> {
-                        UltPlaceClientState.adjustHeight(1);
-                        syncToServer();
-                        refresh();
-                    });
+            addNumericStepperRow(centerX, rowY + row * ROW_HEIGHT, UltPlaceClientState.getHeight(),
+                    UltPlaceClientState::getHeight, UltPlaceClientState::setHeight);
             row++;
         }
 
         if (SkillConfig.getUltPlaceShapeMaxLength(current) > 1) {
-            addStepperRow(centerX, rowY + row * ROW_HEIGHT,
-                    () -> {
-                        UltPlaceClientState.adjustLength(-1);
-                        syncToServer();
-                        refresh();
-                    },
-                    () -> {
-                        UltPlaceClientState.adjustLength(1);
-                        syncToServer();
-                        refresh();
-                    });
+            addNumericStepperRow(centerX, rowY + row * ROW_HEIGHT, UltPlaceClientState.getLength(),
+                    UltPlaceClientState::getLength, UltPlaceClientState::setLength);
             row++;
         }
 
@@ -253,18 +229,53 @@ public class UltPlaceConfigScreen extends Screen {
         }
 
         if (current.supportsSpacing()) {
-            addStepperRow(centerX, rowY + row * ROW_HEIGHT,
-                    () -> {
-                        UltPlaceClientState.adjustSpacing(-1);
-                        syncToServer();
-                        refresh();
-                    },
-                    () -> {
-                        UltPlaceClientState.adjustSpacing(1);
-                        syncToServer();
-                        refresh();
-                    });
+            addNumericStepperRow(centerX, rowY + row * ROW_HEIGHT, UltPlaceClientState.getSpacing(),
+                    UltPlaceClientState::getSpacing, UltPlaceClientState::setSpacing);
         }
+    }
+
+    private void addNumericStepperRow(int centerX, int y, int value, IntSupplier getter, IntConsumer setter) {
+        int totalW = STEPPER_W + STEPPER_GAP + VALUE_BOX_W + STEPPER_GAP + STEPPER_W;
+        int rowStartX = centerX - totalW / 2 + 30;
+        int fieldX = rowStartX + STEPPER_W + STEPPER_GAP;
+
+        ButtonWidget minus = ButtonWidget.builder(Text.literal("-"), b -> {
+            setter.accept(value - 1);
+            syncToServer();
+            refresh();
+        }).dimensions(rowStartX, y, STEPPER_W, 18).build();
+        this.addDrawableChild(minus);
+
+        TextFieldWidget field = new TextFieldWidget(textRenderer, fieldX, y, VALUE_BOX_W, 18, Text.empty());
+        field.setMaxLength(4);
+        field.setTextPredicate(text -> text.isEmpty() || text.matches("[0-9]{0,4}"));
+        field.setText(String.valueOf(value));
+        boolean[] updating = new boolean[] { false };
+        field.setChangedListener(text -> {
+            if (updating[0] || text == null || text.isBlank()) {
+                return;
+            }
+            try {
+                int typedValue = Integer.parseInt(text.trim());
+                setter.accept(typedValue);
+                int normalizedValue = getter.getAsInt();
+                if (normalizedValue != typedValue) {
+                    updating[0] = true;
+                    field.setText(String.valueOf(normalizedValue));
+                    updating[0] = false;
+                }
+                syncToServer();
+            } catch (NumberFormatException ignored) {
+            }
+        });
+        this.addDrawableChild(field);
+
+        ButtonWidget plus = ButtonWidget.builder(Text.literal("+"), b -> {
+            setter.accept(value + 1);
+            syncToServer();
+            refresh();
+        }).dimensions(rowStartX + STEPPER_W + STEPPER_GAP + VALUE_BOX_W + STEPPER_GAP, y, STEPPER_W, 18).build();
+        this.addDrawableChild(plus);
     }
 
     private void addStepperRow(int centerX, int y, Runnable onMinus, Runnable onPlus) {
@@ -472,7 +483,6 @@ public class UltPlaceConfigScreen extends Screen {
             context.drawTextWithShadow(textRenderer,
                     Text.translatable(labelKey).getString(),
                     labelX, y + 5, palette.textLight());
-            renderValueBox(context, centerX, y, String.valueOf(UltPlaceClientState.getSize()));
             renderMaxHint(context, centerX, y, SkillConfig.getUltPlaceShapeMaxSize(current));
             row++;
         }
@@ -482,7 +492,6 @@ public class UltPlaceConfigScreen extends Screen {
             context.drawTextWithShadow(textRenderer,
                     Text.translatable("murilloskills.ultplace.height").getString(),
                     labelX, y + 5, palette.textLight());
-            renderValueBox(context, centerX, y, String.valueOf(UltPlaceClientState.getHeight()));
             renderMaxHint(context, centerX, y, SkillConfig.getUltPlaceShapeMaxHeight(current));
             row++;
         }
@@ -492,7 +501,6 @@ public class UltPlaceConfigScreen extends Screen {
             context.drawTextWithShadow(textRenderer,
                     Text.translatable("murilloskills.ultplace.length").getString(),
                     labelX, y + 5, palette.textLight());
-            renderValueBox(context, centerX, y, String.valueOf(UltPlaceClientState.getLength()));
             renderMaxHint(context, centerX, y, SkillConfig.getUltPlaceShapeMaxLength(current));
             row++;
         }
@@ -534,11 +542,6 @@ public class UltPlaceConfigScreen extends Screen {
             context.drawTextWithShadow(textRenderer,
                     Text.translatable("murilloskills.ultplace.spacing").getString(),
                     labelX, y + 5, palette.textLight());
-            int spacing = UltPlaceClientState.getSpacing();
-            String spacingText = spacing <= 1
-                    ? Text.translatable("murilloskills.ultplace.spacing.contiguous").getString()
-                    : Text.translatable("murilloskills.ultplace.spacing.skip", spacing - 1).getString();
-            renderValueBox(context, centerX, y, spacingText);
             renderMaxHint(context, centerX, y, SkillConfig.getUltPlaceShapeMaxSpacing(current));
         }
 

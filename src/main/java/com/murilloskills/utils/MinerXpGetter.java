@@ -59,7 +59,14 @@ public class MinerXpGetter {
         if (isMinerXpBlock(block, false, true).didGainXp()) {
             return true;
         }
+        if (isRawResourceBlock(block)) {
+            return true;
+        }
         return isLikelyOreId(Registries.BLOCK.getId(block).toString());
+    }
+
+    public static boolean isOreResourceId(String blockId) {
+        return isLikelyOreId(blockId) || isRawResourceBlockId(blockId);
     }
 
     public static boolean isLikelyOreId(String blockId) {
@@ -74,6 +81,30 @@ public class MinerXpGetter {
         }
 
         return path.endsWith("_ore") || path.equals("ancient_debris");
+    }
+
+    public static boolean isRawResourceBlock(Block block) {
+        return block == Blocks.RAW_IRON_BLOCK
+                || block == Blocks.RAW_COPPER_BLOCK
+                || block == Blocks.RAW_GOLD_BLOCK
+                || isRawResourceBlockId(Registries.BLOCK.getId(block).toString());
+    }
+
+    public static boolean isRawResourceBlockId(String blockId) {
+        if (blockId == null || blockId.isBlank()) {
+            return false;
+        }
+
+        String path = blockId;
+        int namespaceSeparator = path.indexOf(':');
+        if (namespaceSeparator >= 0 && namespaceSeparator < path.length() - 1) {
+            path = path.substring(namespaceSeparator + 1);
+        }
+
+        return path.equals("raw_iron_block")
+                || path.equals("raw_copper_block")
+                || path.equals("raw_gold_block")
+                || (path.startsWith("raw_") && path.endsWith("_block"));
     }
 
     public static String humanizeModdedOreName(String blockId) {

@@ -222,7 +222,7 @@ public final class UltPlaceHandler {
                         continue;
                     }
 
-                    ItemStack liveStack = InventoryBlockFinder.findMatchingBlock(player, sourceStack, hand);
+                    ItemStack liveStack = InventoryBlockFinder.pullMatchingBlockIntoHand(player, sourceStack, hand);
                     if (liveStack == null || liveStack.isEmpty()) {
                         break;
                     }

@@ -8,11 +8,13 @@ import com.murilloskills.utils.PrestigeManager;
 import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.recipe.AbstractCookingRecipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
@@ -89,7 +91,8 @@ public final class MeltingTouchHandler {
             return null;
         }
 
-        Optional<ItemStack> blockCooked = getCookedOutput(world, new ItemStack(block.asItem()));
+        Optional<ItemStack> blockCooked = getRawResourceBlockMeltOutput(block)
+                .or(() -> getCookedOutput(world, new ItemStack(block.asItem())));
         boolean anyMelted = false;
         List<ItemStack> result = new ArrayList<>(drops.size());
 
@@ -118,6 +121,19 @@ public final class MeltingTouchHandler {
             return null;
         }
         return result;
+    }
+
+    public static Optional<ItemStack> getRawResourceBlockMeltOutput(Block block) {
+        if (block == Blocks.RAW_IRON_BLOCK) {
+            return Optional.of(new ItemStack(Items.IRON_INGOT, 9));
+        }
+        if (block == Blocks.RAW_COPPER_BLOCK) {
+            return Optional.of(new ItemStack(Items.COPPER_INGOT, 9));
+        }
+        if (block == Blocks.RAW_GOLD_BLOCK) {
+            return Optional.of(new ItemStack(Items.GOLD_INGOT, 9));
+        }
+        return Optional.empty();
     }
 
     public static int getTotalFortuneLevel(ItemStack tool, ServerPlayerEntity player, ServerWorld world) {

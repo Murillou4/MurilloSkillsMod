@@ -7,6 +7,7 @@ import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillNotifier;
 import com.murilloskills.utils.SkillsNetworkUtils;
 import com.murilloskills.utils.XpStreakManager;
+import com.murilloskills.utils.FarmerTreeTracker;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.CropBlock;
@@ -43,6 +44,12 @@ public class CropHarvestHandler {
             return;
 
         Block block = state.getBlock();
+        ServerWorld serverWorld = (ServerWorld) world;
+
+        if (FarmerTreeTracker.consumeGeneratedLog(serverWorld, pos, state)) {
+            applyGeneratedLogBonus(player, serverWorld, pos, state);
+            return;
+        }
 
         // Check if it's a crop block
         if (!FarmerXpGetter.isCropBlock(block)) {
@@ -179,6 +186,26 @@ public class CropHarvestHandler {
         if (random.nextFloat() < goldenChance) {
             applyGoldenCropBonus(player, block);
         }
+    }
+
+    private static void applyGeneratedLogBonus(PlayerEntity player, ServerWorld world, BlockPos pos, BlockState state) {
+        if (!(player instanceof ServerPlayerEntity serverPlayer)) {
+            return;
+        }
+
+        var playerData = serverPlayer.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+        if (!playerData.isSkillSelected(MurilloSkillsList.FARMER)) {
+            return;
+        }
+
+        var stats = playerData.getSkill(MurilloSkillsList.FARMER);
+        float doubleChance = FarmerSkill.getDoubleHarvestChance(stats.level, stats.prestige);
+        if (random.nextFloat() >= doubleChance) {
+            return;
+        }
+
+        dropExtraCrop(world, pos, state, serverPlayer);
+        LOGGER.debug("Player {} got double harvest for generated log at {}", serverPlayer.getName().getString(), pos);
     }
 
     /**

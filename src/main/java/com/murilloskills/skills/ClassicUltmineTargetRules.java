@@ -14,14 +14,13 @@ final class ClassicUltmineTargetRules {
 
     static boolean shouldExpandIntoConnectedOres(String originBlockId, int variant, Set<String> blockedBlockIds) {
         return variant == 1
-                && !isOriginBlocked(originBlockId, blockedBlockIds)
-                && !MinerXpGetter.isLikelyOreId(originBlockId);
+                && !isOriginBlocked(originBlockId, blockedBlockIds);
     }
 
     static boolean isConnectedOreCandidate(String originBlockId, String candidateBlockId, int variant,
             Set<String> blockedBlockIds) {
         return shouldExpandIntoConnectedOres(originBlockId, variant, blockedBlockIds)
                 && !isOriginBlocked(candidateBlockId, blockedBlockIds)
-                && MinerXpGetter.isLikelyOreId(candidateBlockId);
+                && MinerXpGetter.isOreResourceId(candidateBlockId);
     }
 }

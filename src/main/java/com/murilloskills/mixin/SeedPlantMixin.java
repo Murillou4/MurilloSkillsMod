@@ -1,6 +1,7 @@
 package com.murilloskills.mixin;
 
 import com.murilloskills.events.ChallengeEventsHandler;
+import com.murilloskills.impl.FarmerSkill;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.CropBlock;
 import net.minecraft.entity.player.PlayerEntity;
@@ -43,8 +44,8 @@ public abstract class SeedPlantMixin {
             return;
         }
 
-        // Check if the placed block is a crop
-        if (state.getBlock() instanceof CropBlock) {
+        // Check if the placed block is a crop or sapling
+        if (state.getBlock() instanceof CropBlock || FarmerSkill.isSaplingBlock(state.getBlock())) {
             ChallengeEventsHandler.onSeedsPlanted(serverPlayer);
         }
     }

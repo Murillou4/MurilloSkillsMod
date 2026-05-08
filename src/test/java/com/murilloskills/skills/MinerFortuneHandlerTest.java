@@ -29,6 +29,12 @@ class MinerFortuneHandlerTest {
     }
 
     @Test
+    void rawResourceBlocksKeepMinerFortuneBeforeResourceUnlock() {
+        assertTrue(MinerFortuneHandler.shouldApplySkillFortune("minecraft:raw_iron_block", 34, 0));
+        assertEquals(1, MinerFortuneHandler.getSkillFortuneBonus(34, 0, "minecraft:raw_iron_block"));
+    }
+
+    @Test
     void glowstoneAlwaysReceivesMinerFortune() {
         assertTrue(MinerFortuneHandler.shouldApplySkillFortune("minecraft:glowstone", 1, 0));
         assertTrue(MinerFortuneHandler.shouldApplySkillFortune("minecraft:glowstone", 75, 0));

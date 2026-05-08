@@ -60,7 +60,7 @@ public final class MinerFortuneHandler {
         if (blockId == null || blockId.isBlank()) {
             return false;
         }
-        if (MinerXpGetter.isLikelyOreId(blockId)) {
+        if (MinerXpGetter.isOreResourceId(blockId)) {
             return true;
         }
         if (isGlowstoneId(blockId)) {

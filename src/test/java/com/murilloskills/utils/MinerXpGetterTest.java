@@ -18,6 +18,17 @@ class MinerXpGetterTest {
     }
 
     @Test
+    void rawResourceBlocksAreMinerResourcesButNotGenericOres() {
+        assertTrue(MinerXpGetter.isRawResourceBlockId("minecraft:raw_iron_block"));
+        assertTrue(MinerXpGetter.isRawResourceBlockId("minecraft:raw_copper_block"));
+        assertTrue(MinerXpGetter.isRawResourceBlockId("minecraft:raw_gold_block"));
+        assertTrue(MinerXpGetter.isOreResourceId("minecraft:raw_iron_block"));
+
+        assertFalse(MinerXpGetter.isLikelyOreId("minecraft:raw_iron_block"));
+        assertFalse(MinerXpGetter.isRawResourceBlockId("minecraft:iron_block"));
+    }
+
+    @Test
     void moddedOreDisplayNamesKeepModNamespaceVisible() {
         assertEquals("Bauxite (Techreborn)", MinerXpGetter.humanizeModdedOreName("techreborn:bauxite_ore"));
         assertEquals("Iridium (Advanced Reborn)", MinerXpGetter.humanizeModdedOreName("advanced_reborn:deepslate_iridium_ore"));

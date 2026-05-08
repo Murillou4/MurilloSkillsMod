@@ -2,6 +2,7 @@ package com.murilloskills.skills;
 
 import com.murilloskills.data.ModAttachments;
 import com.murilloskills.data.PlayerSkillData;
+import com.murilloskills.utils.MinerXpGetter;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -21,6 +22,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -85,6 +87,11 @@ public final class MinerBonusDropHandler {
             return;
         }
 
+        if (MinerXpGetter.isRawResourceBlock(block)) {
+            applyRawResourceBlockBonus(serverPlayer, serverWorld, pos, block, totalBonus, dropsToInventory, dropSink);
+            return;
+        }
+
         if (isLeavesBlock(state, blockId) && tool.getItem() instanceof AxeItem) {
             applyLeavesBonus(serverPlayer, serverWorld, pos, state, tool, totalBonus, dropsToInventory, dropSink);
         }
@@ -97,6 +104,25 @@ public final class MinerBonusDropHandler {
         if (extra > 0) {
             dropOrInsert(player, world, pos, new ItemStack(Items.GLOWSTONE_DUST, extra), dropsToInventory, dropSink);
         }
+    }
+
+    private static void applyRawResourceBlockBonus(ServerPlayerEntity player, ServerWorld world, BlockPos pos,
+            Block block, int totalFortune, boolean dropsToInventory, Consumer<ItemStack> dropSink) {
+        int extra = world.getRandom().nextInt(totalFortune + 1);
+        if (extra <= 0) {
+            return;
+        }
+
+        ItemStack extraDrop = new ItemStack(block.asItem(), extra);
+        if (MeltingTouchHandler.isEnabled(player)) {
+            Optional<ItemStack> melted = MeltingTouchHandler.getRawResourceBlockMeltOutput(block);
+            if (melted.isPresent()) {
+                extraDrop = melted.get().copy();
+                extraDrop.setCount(extraDrop.getCount() * extra);
+            }
+        }
+
+        dropOrInsert(player, world, pos, extraDrop, dropsToInventory, dropSink);
     }
 
     private static void applyLeavesBonus(ServerPlayerEntity player, ServerWorld world, BlockPos pos, BlockState state,

@@ -9,7 +9,10 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class BlacksmithMachineSpeedHelper {
     private static final double REBORN_CORE_SPEED_CAP = 0.99D;
@@ -69,6 +72,215 @@ public final class BlacksmithMachineSpeedHelper {
 
         double speedReduction = 1.0D - (1.0D / directMultiplier);
         return Math.min(REBORN_CORE_SPEED_CAP, Math.max(0.0D, speedReduction));
+    }
+
+    private static final ConcurrentHashMap<String, Field> FIELD_CACHE = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Method> METHOD_CACHE = new ConcurrentHashMap<>();
+    private static final Field MISSING_FIELD;
+    private static final Method MISSING_METHOD;
+
+    static {
+        Field missingField = null;
+        try {
+            missingField = BlacksmithMachineSpeedHelper.class.getDeclaredField("MISSING_FIELD");
+        } catch (NoSuchFieldException ignored) {
+        }
+        MISSING_FIELD = missingField;
+
+        Method missingMethod = null;
+        try {
+            missingMethod = BlacksmithMachineSpeedHelper.class.getDeclaredMethod("getRebornCoreSpeedBonus", int.class);
+        } catch (NoSuchMethodException ignored) {
+        }
+        MISSING_METHOD = missingMethod;
+    }
+
+    private static Field findField(Class<?> root, String name) {
+        String key = root.getName() + "#" + name;
+        Field cached = FIELD_CACHE.get(key);
+        if (cached != null) {
+            return cached == MISSING_FIELD ? null : cached;
+        }
+        for (Class<?> c = root; c != null && c != Object.class; c = c.getSuperclass()) {
+            try {
+                Field f = c.getDeclaredField(name);
+                f.setAccessible(true);
+                FIELD_CACHE.put(key, f);
+                return f;
+            } catch (NoSuchFieldException ignored) {
+            }
+        }
+        if (MISSING_FIELD != null) {
+            FIELD_CACHE.put(key, MISSING_FIELD);
+        }
+        return null;
+    }
+
+    private static Method findMethod(Class<?> root, String name) {
+        String key = root.getName() + "#" + name;
+        Method cached = METHOD_CACHE.get(key);
+        if (cached != null) {
+            return cached == MISSING_METHOD ? null : cached;
+        }
+        for (Class<?> c = root; c != null && c != Object.class; c = c.getSuperclass()) {
+            for (Method m : c.getDeclaredMethods()) {
+                if (m.getName().equals(name) && m.getParameterCount() == 0) {
+                    m.setAccessible(true);
+                    METHOD_CACHE.put(key, m);
+                    return m;
+                }
+            }
+        }
+        if (MISSING_METHOD != null) {
+            METHOD_CACHE.put(key, MISSING_METHOD);
+        }
+        return null;
+    }
+
+    public static void tryBoostEnergizedPowerWorker(Object blockEntity, ServerWorld world, BlockPos pos) {
+        try {
+            Class<?> cls = blockEntity.getClass();
+            Field progressField = findField(cls, "progress");
+            Field maxProgressField = findField(cls, "maxProgress");
+            if (progressField == null || maxProgressField == null) {
+                return;
+            }
+            int progress = progressField.getInt(blockEntity);
+            int maxProgress = maxProgressField.getInt(blockEntity);
+            if (progress <= 0 || maxProgress <= 0 || progress >= maxProgress) {
+                return;
+            }
+
+            int bestLevel = getBestNearbyBlacksmithLevel(world, pos);
+            int extraTicks = getExtraProgressTicks(world, bestLevel);
+            if (extraTicks <= 0) {
+                return;
+            }
+
+            progressField.setInt(blockEntity, Math.min(progress + extraTicks, maxProgress - 1));
+            spawnSpeedParticles(world, pos);
+        } catch (ReflectiveOperationException ignored) {
+        }
+    }
+
+    public static void tryApplyRebornCoreSpeed(Object blockEntity, ServerWorld world, BlockPos pos) {
+        try {
+            int bestLevel = getBestNearbyBlacksmithLevel(world, pos);
+            double speedBonus = getRebornCoreSpeedBonus(bestLevel);
+            if (speedBonus <= 0.0D) {
+                return;
+            }
+
+            Class<?> cls = blockEntity.getClass();
+            Method addSpeedMultiplier = null;
+            for (Class<?> c = cls; c != null && c != Object.class; c = c.getSuperclass()) {
+                for (Method m : c.getDeclaredMethods()) {
+                    if (m.getName().equals("addSpeedMultiplier") && m.getParameterCount() == 1
+                            && m.getParameterTypes()[0] == double.class) {
+                        m.setAccessible(true);
+                        addSpeedMultiplier = m;
+                        break;
+                    }
+                }
+                if (addSpeedMultiplier != null) break;
+            }
+            if (addSpeedMultiplier == null) {
+                return;
+            }
+
+            addSpeedMultiplier.invoke(blockEntity, speedBonus);
+            spawnSpeedParticles(world, pos);
+        } catch (ReflectiveOperationException ignored) {
+        }
+    }
+
+    public static void tryBoostTechRebornElectricFurnace(Object blockEntity, ServerWorld world, BlockPos pos) {
+        try {
+            Class<?> cls = blockEntity.getClass();
+
+            Field currentRecipeField = findField(cls, "currentRecipe");
+            if (currentRecipeField == null || currentRecipeField.get(blockEntity) == null) {
+                return;
+            }
+
+            Field cookTimeField = findField(cls, "cookTime");
+            Field cookTimeTotalField = findField(cls, "cookTimeTotal");
+            if (cookTimeField == null || cookTimeTotalField == null) {
+                return;
+            }
+
+            int cookTime = cookTimeField.getInt(blockEntity);
+            int cookTimeTotal = cookTimeTotalField.getInt(blockEntity);
+            if (cookTime <= 0 || cookTimeTotal <= 0 || cookTime >= cookTimeTotal) {
+                return;
+            }
+
+            Method getStored = findMethod(cls, "getStored");
+            Method getEuPerTick = null;
+            for (Class<?> c = cls; c != null && c != Object.class; c = c.getSuperclass()) {
+                for (Method m : c.getDeclaredMethods()) {
+                    if (m.getName().equals("getEuPerTick") && m.getParameterCount() == 1
+                            && m.getParameterTypes()[0] == long.class) {
+                        m.setAccessible(true);
+                        getEuPerTick = m;
+                        break;
+                    }
+                }
+                if (getEuPerTick != null) break;
+            }
+            if (getStored == null || getEuPerTick == null) {
+                return;
+            }
+            long stored = ((Number) getStored.invoke(blockEntity)).longValue();
+            long euPerTick = ((Number) getEuPerTick.invoke(blockEntity, 1L)).longValue();
+            if (stored <= euPerTick) {
+                return;
+            }
+
+            int bestLevel = getBestNearbyBlacksmithLevel(world, pos);
+            int extraTicks = getExtraProgressTicks(world, bestLevel);
+            if (extraTicks <= 0) {
+                return;
+            }
+
+            cookTimeField.setInt(blockEntity, Math.min(cookTime + extraTicks, cookTimeTotal - 1));
+            spawnSpeedParticles(world, pos);
+        } catch (ReflectiveOperationException ignored) {
+        }
+    }
+
+    public static void tryBoostTechRebornIronMachine(Object blockEntity, ServerWorld world, BlockPos pos) {
+        try {
+            Class<?> cls = blockEntity.getClass();
+
+            Field progressField = findField(cls, "progress");
+            if (progressField == null) {
+                return;
+            }
+
+            Method cookingTime = findMethod(cls, "cookingTime");
+            Method isBurning = findMethod(cls, "isBurning");
+            if (cookingTime == null || isBurning == null) {
+                return;
+            }
+
+            int progress = progressField.getInt(blockEntity);
+            int totalTime = ((Number) cookingTime.invoke(blockEntity)).intValue();
+            boolean burning = (Boolean) isBurning.invoke(blockEntity);
+            if (!burning || progress <= 0 || totalTime <= 0 || progress >= totalTime) {
+                return;
+            }
+
+            int bestLevel = getBestNearbyBlacksmithLevel(world, pos);
+            int extraTicks = getExtraProgressTicks(world, bestLevel);
+            if (extraTicks <= 0) {
+                return;
+            }
+
+            progressField.setInt(blockEntity, Math.min(progress + extraTicks, totalTime - 1));
+            spawnSpeedParticles(world, pos);
+        } catch (ReflectiveOperationException ignored) {
+        }
     }
 
     public static void spawnSpeedParticles(ServerWorld world, BlockPos pos) {

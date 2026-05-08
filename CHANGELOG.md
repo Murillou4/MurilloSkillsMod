@@ -4,6 +4,20 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.60] - 2026-05-08
+
+### Builder, Farmer, Miner e Compat
+
+- **UltPlace/Ultmine puxam blocos do inventario**: quando a stack da mao nao for suficiente, blocos iguais no inventario completam a mao antes da colocacao em massa continuar.
+- **Farmer cobre saplings**: plantio em area, Fertile Ground e progresso de desafios agora tambem funcionam em saplings.
+- **Madeiras geradas por saplings**: troncos criados por crescimento acelerado podem receber colheita dupla do Farmer somente na primeira quebra.
+- **Connected Ores corrigido**: o Classic Mode + Connected Ores agora expande a partir de minerios e prioriza alvos de ore mesmo quando o limite ja foi preenchido por blocos comuns.
+- **Raw resource blocks no Miner**: blocos como `raw_iron_block`, `raw_copper_block` e `raw_gold_block` entram na Fortuna e no Melting Touch, incluindo conversao para ingots.
+- **Builder/Ultmine polish pendente**: UltPlace ganhou campos numericos digitaveis, ordem de colocacao mais proxima do alvo e HUD do Ultmine com bloco, quantidade e modo ativo.
+- **Blacksmith mais resiliente**: boosts em Tech Reborn/RebornCore/Energized Power usam hooks por reflection/cache para reduzir crashes por mudancas de API.
+
+---
+
 ## [1.2.59] - 2026-05-06
 
 ### UI - Telas Ultmine Config e Ore Filter Polidas
@@ -36,14 +50,25 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.56] - 2026-05-05
+
+### Builder - UltPlace e Configs Digitaveis
+
+- **UltPlace mais previsivel**: a fila de blocos prioriza o ponto clicado e as posicoes mais proximas antes de gastar blocos em areas distantes do shape.
+- **Configuracao digitavel**: largura/tamanho, altura, comprimento e espacamento do UltPlace agora aceitam digitacao direta alem dos botoes de ajuste.
+- **Filtro de minerios digitavel**: o limite maximo de minerios no radar tambem pode ser digitado e e normalizado dentro do intervalo permitido.
+
+---
+
 ## [1.2.55] - 2026-05-04
 
-### Blacksmith - Velocidade em Maquinas Tech Reborn
+### Blacksmith - Velocidade em Maquinas Modded
 
 - **Maquinas RebornCore aceleradas**: o bonus de velocidade do Blacksmith agora tambem aplica em maquinas com `RecipeCrafter`, como Alloy Smelter e outras maquinas do Tech Reborn.
 - **Fornalhas Tech Reborn cobertas**: Electric Furnace, Iron Furnace e Iron Alloy Furnace recebem progresso extra pela aura de Blacksmith proxima.
+- **Energized Power coberto**: Crusher, Pulverizer, Compressor, Assembling Machine, Induction Smelter, Powered Furnace, Auto Stonecutter, Alloy Furnace e Auto Crafter (incluindo variantes Advanced) ganham o mesmo boost.
 - **Curva compartilhada**: fornalhas vanilla e maquinas modded usam a mesma escala configurada de velocidade e o mesmo indicador de particulas.
-- **Fix carregamento**: mixins Tech Reborn/RebornCore agora usam `@Coerce` no parametro do block entity, evitando crash de mixin apply quando RebornCore esta presente.
+- **Mixins resilientes**: ganchos em Tech Reborn/RebornCore/Energized Power usam `@Coerce` e reflection com cache, evitando crashes de mixin apply e tolerando mudancas de API dos mods compatibilizados.
 
 ---
 

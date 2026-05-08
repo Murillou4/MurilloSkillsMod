@@ -53,6 +53,38 @@ public final class InventoryBlockFinder {
         return ItemStack.EMPTY;
     }
 
+    public static ItemStack pullMatchingBlockIntoHand(ServerPlayerEntity player, ItemStack reference, Hand preferredHand) {
+        if (player == null || reference == null || reference.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+
+        ItemStack preferredStack = getPreferredStack(player, preferredHand);
+        if (matches(preferredStack, reference)) {
+            fillStackFromInventory(player, preferredStack, reference);
+            return preferredStack;
+        }
+
+        if (preferredStack != null && !preferredStack.isEmpty()) {
+            return findMatchingBlock(player, reference, preferredHand);
+        }
+
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.size(); i++) {
+            ItemStack stack = inventory.getStack(i);
+            if (!matches(stack, reference)) {
+                continue;
+            }
+
+            ItemStack movedStack = stack.copy();
+            inventory.setStack(i, ItemStack.EMPTY);
+            player.setStackInHand(preferredHand, movedStack);
+            fillStackFromInventory(player, movedStack, reference);
+            return movedStack;
+        }
+
+        return ItemStack.EMPTY;
+    }
+
     public static boolean consumeOneMatchingBlock(ServerPlayerEntity player, ItemStack reference, Hand preferredHand) {
         ItemStack stack = findMatchingBlock(player, reference, preferredHand);
         if (stack == null || stack.isEmpty()) {
@@ -83,6 +115,31 @@ public final class InventoryBlockFinder {
             return player.getOffHandStack();
         }
         return player.getMainHandStack();
+    }
+
+    private static void fillStackFromInventory(ServerPlayerEntity player, ItemStack target, ItemStack reference) {
+        if (target == null || target.isEmpty() || target.getCount() >= target.getMaxCount()) {
+            return;
+        }
+
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.size() && target.getCount() < target.getMaxCount(); i++) {
+            ItemStack candidate = inventory.getStack(i);
+            if (candidate == target || !matches(candidate, reference)) {
+                continue;
+            }
+
+            int transfer = Math.min(target.getMaxCount() - target.getCount(), candidate.getCount());
+            if (transfer <= 0) {
+                continue;
+            }
+
+            target.increment(transfer);
+            candidate.decrement(transfer);
+            if (candidate.isEmpty()) {
+                inventory.setStack(i, ItemStack.EMPTY);
+            }
+        }
     }
 
     private static boolean matches(ItemStack candidate, ItemStack reference) {

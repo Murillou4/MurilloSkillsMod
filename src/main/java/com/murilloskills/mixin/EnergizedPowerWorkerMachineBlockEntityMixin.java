@@ -13,17 +13,13 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Pseudo
-@Mixin(targets = "reborncore.common.blockentity.MachineBaseBlockEntity", remap = false)
-public abstract class RebornCoreMachineBaseBlockEntityMixin {
+@Mixin(targets = "me.jddev0.ep.block.entity.base.WorkerMachineBlockEntity", remap = false)
+public abstract class EnergizedPowerWorkerMachineBlockEntityMixin {
     @Inject(
-            method = "tick(Lnet/minecraft/class_1937;Lnet/minecraft/class_2338;Lnet/minecraft/class_2680;Lreborncore/common/blockentity/MachineBaseBlockEntity;)V",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lreborncore/common/blockentity/MachineBaseBlockEntity;afterUpgradesApplication()V",
-                    shift = At.Shift.AFTER,
-                    remap = false),
+            method = "tick(Lnet/minecraft/class_1937;Lnet/minecraft/class_2338;Lnet/minecraft/class_2680;Lme/jddev0/ep/block/entity/base/WorkerMachineBlockEntity;)V",
+            at = @At("TAIL"),
             remap = false)
-    private void murilloSkills$applyBlacksmithMachineSpeed(
+    private static void murilloSkills$applyBlacksmithEnergizedPowerWorkerSpeed(
             World world,
             BlockPos pos,
             BlockState state,
@@ -32,6 +28,6 @@ public abstract class RebornCoreMachineBaseBlockEntityMixin {
         if (!(world instanceof ServerWorld serverWorld)) {
             return;
         }
-        BlacksmithMachineSpeedHelper.tryApplyRebornCoreSpeed(blockEntity, serverWorld, pos);
+        BlacksmithMachineSpeedHelper.tryBoostEnergizedPowerWorker(blockEntity, serverWorld, pos);
     }
 }

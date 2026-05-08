@@ -942,7 +942,7 @@ public final class VeinMinerHandler {
         }
 
         int maxTargetsWithoutOrigin = Math.max(0, maxBlocks - 1);
-        if (targets.size() >= maxTargetsWithoutOrigin) {
+        if (maxTargetsWithoutOrigin <= 0) {
             return;
         }
 
@@ -952,23 +952,28 @@ public final class VeinMinerHandler {
 
         Set<BlockPos> visited = new HashSet<>(anchors);
         ArrayDeque<BlockPos> queue = new ArrayDeque<>();
+        LinkedHashSet<BlockPos> foundOres = new LinkedHashSet<>();
         for (BlockPos anchor : anchors) {
-            enqueueClassicOreNeighbors(world, anchor, originBlockId, variant, blockedBlockIds, targets, visited, queue,
-                    maxTargetsWithoutOrigin);
-            if (targets.size() >= maxTargetsWithoutOrigin) {
-                return;
+            enqueueClassicOreNeighbors(world, anchor, originBlockId, variant, blockedBlockIds, foundOres, visited,
+                    queue, maxTargetsWithoutOrigin);
+            if (foundOres.size() >= maxTargetsWithoutOrigin) {
+                break;
             }
         }
 
-        while (!queue.isEmpty() && targets.size() < maxTargetsWithoutOrigin) {
+        while (!queue.isEmpty() && foundOres.size() < maxTargetsWithoutOrigin) {
             BlockPos current = queue.poll();
-            enqueueClassicOreNeighbors(world, current, originBlockId, variant, blockedBlockIds, targets, visited, queue,
-                    maxTargetsWithoutOrigin);
+            enqueueClassicOreNeighbors(world, current, originBlockId, variant, blockedBlockIds, foundOres, visited,
+                    queue, maxTargetsWithoutOrigin);
+        }
+
+        for (BlockPos ore : foundOres) {
+            addClassicConnectedOreTarget(world, targets, ore, maxTargetsWithoutOrigin);
         }
     }
 
     private static void enqueueClassicOreNeighbors(World world, BlockPos current, String originBlockId, int variant,
-            Set<String> blockedBlockIds, Set<BlockPos> targets, Set<BlockPos> visited, ArrayDeque<BlockPos> queue,
+            Set<String> blockedBlockIds, Set<BlockPos> foundOres, Set<BlockPos> visited, ArrayDeque<BlockPos> queue,
             int maxTargetsWithoutOrigin) {
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
@@ -976,7 +981,7 @@ public final class VeinMinerHandler {
                     if (dx == 0 && dy == 0 && dz == 0) {
                         continue;
                     }
-                    if (targets.size() >= maxTargetsWithoutOrigin) {
+                    if (foundOres.size() >= maxTargetsWithoutOrigin) {
                         return;
                     }
 
@@ -989,12 +994,39 @@ public final class VeinMinerHandler {
                     String neighborBlockId = getBlockId(neighborState.getBlock());
                     if (ClassicUltmineTargetRules.isConnectedOreCandidate(originBlockId, neighborBlockId, variant,
                             blockedBlockIds)) {
-                        targets.add(neighbor);
+                        foundOres.add(neighbor);
                         queue.add(neighbor);
                     }
                 }
             }
         }
+    }
+
+    private static void addClassicConnectedOreTarget(World world, Set<BlockPos> targets, BlockPos ore,
+            int maxTargetsWithoutOrigin) {
+        if (targets.contains(ore)) {
+            return;
+        }
+
+        while (targets.size() >= maxTargetsWithoutOrigin && removeLastNonOreTarget(world, targets)) {
+            // Keep room for ore targets when the same-block flood filled the classic limit.
+        }
+
+        if (targets.size() < maxTargetsWithoutOrigin) {
+            targets.add(ore.toImmutable());
+        }
+    }
+
+    private static boolean removeLastNonOreTarget(World world, Set<BlockPos> targets) {
+        BlockPos removable = null;
+        for (BlockPos target : targets) {
+            String targetBlockId = getBlockId(world.getBlockState(target).getBlock());
+            if (!com.murilloskills.utils.MinerXpGetter.isOreResourceId(targetBlockId)) {
+                removable = target;
+            }
+        }
+
+        return removable != null && targets.remove(removable);
     }
 
     private static Set<BlockPos> stripOrigin(Set<BlockPos> visited, BlockPos origin) {

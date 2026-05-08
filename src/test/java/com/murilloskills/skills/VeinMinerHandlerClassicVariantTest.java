@@ -30,6 +30,11 @@ class VeinMinerHandlerClassicVariantTest {
                 "advanced_reborn:deepslate_iridium_ore",
                 1,
                 Set.of()));
+        assertTrue(ClassicUltmineTargetRules.isConnectedOreCandidate(
+                "minecraft:deepslate",
+                "minecraft:raw_iron_block",
+                1,
+                Set.of()));
     }
 
     @Test
@@ -47,13 +52,14 @@ class VeinMinerHandlerClassicVariantTest {
 
     @Test
     void oreOriginsDoNotPullSurroundingStoneOrDeepslate() {
-        assertFalse(ClassicUltmineTargetRules.shouldExpandIntoConnectedOres(
-                "techreborn:bauxite_ore",
-                1,
-                Set.of()));
         assertFalse(ClassicUltmineTargetRules.isConnectedOreCandidate(
                 "advanced_reborn:deepslate_iridium_ore",
                 "minecraft:deepslate",
+                1,
+                Set.of()));
+        assertTrue(ClassicUltmineTargetRules.isConnectedOreCandidate(
+                "techreborn:bauxite_ore",
+                "advanced_reborn:deepslate_iridium_ore",
                 1,
                 Set.of()));
     }

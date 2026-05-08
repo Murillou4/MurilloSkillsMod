@@ -30,7 +30,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Mixin for BlockItem (used by seeds) to implement Farmer area planting.
- * Applies to wheat_seeds, beetroot_seeds, carrot, potato, nether_wart.
+ * Applies to wheat_seeds, beetroot_seeds, carrot, potato, nether_wart, and saplings.
  */
 @Mixin(BlockItem.class)
 public class SeedItemMixin {
@@ -47,10 +47,10 @@ public class SeedItemMixin {
         ItemStack stack = context.getStack();
         Item seedItem = stack.getItem();
 
-        // Check if this is a plantable seed we support
-        Block cropToPlant = FarmerSkill.getCropForSeed(seedItem);
-        if (cropToPlant == null) {
-            return; // Not a seed we handle, let vanilla process it
+        // Check if this is a plantable item we support
+        Block blockToPlant = FarmerSkill.getAreaPlantableBlockForItem(seedItem);
+        if (blockToPlant == null) {
+            return; // Not a plantable item we handle, let vanilla process it
         }
 
         // Check if player has Farmer skill selected and area planting enabled
@@ -85,7 +85,7 @@ public class SeedItemMixin {
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
                 BlockPos basePos = clickedPos.add(dx, 0, dz);
-                if (canPlantAt(world, basePos, cropToPlant, seedItem)) {
+                if (canPlantAt(world, basePos, blockToPlant, seedItem)) {
                     seedsNeeded++;
                 }
             }
@@ -109,13 +109,13 @@ public class SeedItemMixin {
                 BlockPos basePos = clickedPos.add(dx, 0, dz);
                 BlockPos plantPos = basePos.up();
 
-                if (canPlantAt(world, basePos, cropToPlant, seedItem)) {
-                    // Plant the crop
-                    world.setBlockState(plantPos, cropToPlant.getDefaultState());
+                if (canPlantAt(world, basePos, blockToPlant, seedItem)) {
+                    // Plant the crop or sapling
+                    world.setBlockState(plantPos, blockToPlant.getDefaultState());
                     planted++;
 
                     // Give XP for planting
-                    SkillReceptorResult xpResult = FarmerXpGetter.getPlantingXp(cropToPlant);
+                    SkillReceptorResult xpResult = FarmerXpGetter.getPlantingXp(blockToPlant);
                     if (xpResult.didGainXp()) {
                         playerData.addXpToSkill(MurilloSkillsList.FARMER, xpResult.getXpAmount());
                     }
@@ -146,7 +146,7 @@ public class SeedItemMixin {
     /**
      * Check if we can plant at this position
      */
-    private static boolean canPlantAt(World world, BlockPos basePos, Block cropToPlant, Item seedItem) {
+    private static boolean canPlantAt(World world, BlockPos basePos, Block blockToPlant, Item seedItem) {
         BlockPos plantPos = basePos.up();
         BlockState baseState = world.getBlockState(basePos);
         BlockState plantState = world.getBlockState(plantPos);
@@ -160,6 +160,8 @@ public class SeedItemMixin {
         if (seedItem == Items.NETHER_WART) {
             // Nether wart needs soul sand
             return baseState.isOf(Blocks.SOUL_SAND);
+        } else if (FarmerSkill.isSaplingBlock(blockToPlant)) {
+            return blockToPlant.getDefaultState().canPlaceAt(world, plantPos);
         } else {
             // Other crops need farmland
             return baseState.getBlock() instanceof FarmlandBlock || baseState.isOf(Blocks.FARMLAND);
