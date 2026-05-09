@@ -80,6 +80,8 @@ public final class NetworkHandlerRegistry {
                     UltmineClassicBlockListSyncNetworkHandler.create());
             registerHandler("TerminalMachineTransfer", TerminalMachineTransferC2SPayload.ID,
                     TerminalMachineTransferNetworkHandler.create());
+            registerHandler("TerminalBulkCraft", TerminalBulkCraftC2SPayload.ID,
+                    TerminalBulkCraftNetworkHandler.create());
 
             LOGGER.info("Successfully registered network handlers");
 

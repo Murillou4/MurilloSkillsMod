@@ -31,6 +31,7 @@ public class UltmineClientConfig {
         public boolean magnetEnabled = false;
         public int magnetRange = 8;
         public int terminalMachineTransferAmount = 64;
+        public int terminalBulkCraftAmount = 64;
         public int legacyMaxBlocks = DEFAULT_LEGACY_MAX_BLOCKS;
         public String selectedShape = UltmineShape.S_3x3.name();
         public java.util.List<String> trashItems = new java.util.ArrayList<>();
@@ -67,6 +68,9 @@ public class UltmineClientConfig {
                 if (data.legacyBlockedBlocks == null) data.legacyBlockedBlocks = new java.util.ArrayList<>();
                 if (data.shapePrefs == null) data.shapePrefs = new java.util.HashMap<>();
                 data.legacyMaxBlocks = normalizeLegacyMaxBlocks(data.legacyMaxBlocks);
+                data.terminalBulkCraftAmount = data.terminalBulkCraftAmount <= 0
+                        ? 64
+                        : clampTerminalBulkCraftAmount(data.terminalBulkCraftAmount);
                 data.selectedShape = normalizeShapeName(data.selectedShape).name();
                 java.util.List<String> normalizedBlockedBlocks = new java.util.ArrayList<>();
                 for (String blockId : data.legacyBlockedBlocks) {
@@ -206,6 +210,20 @@ public class UltmineClientConfig {
 
     private static int clampTerminalMachineTransferAmount(int amount) {
         return Math.max(1, Math.min(amount, 1_000_000));
+    }
+
+    // --- Tom's terminal bulk crafting ---
+
+    public static int getTerminalBulkCraftAmount() {
+        return clampTerminalBulkCraftAmount(get().terminalBulkCraftAmount);
+    }
+
+    public static void setTerminalBulkCraftAmount(int amount) {
+        get().terminalBulkCraftAmount = clampTerminalBulkCraftAmount(amount);
+    }
+
+    private static int clampTerminalBulkCraftAmount(int amount) {
+        return Math.max(1, Math.min(amount, 100_000));
     }
 
     // --- Trash ---

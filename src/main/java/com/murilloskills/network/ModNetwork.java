@@ -61,5 +61,7 @@ public class ModNetwork {
                 UltmineClassicBlockListSyncC2SPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(TerminalMachineTransferC2SPayload.ID,
                 TerminalMachineTransferC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(TerminalBulkCraftC2SPayload.ID,
+                TerminalBulkCraftC2SPayload.CODEC);
     }
 }

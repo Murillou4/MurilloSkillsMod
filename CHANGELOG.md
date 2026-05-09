@@ -4,6 +4,16 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.74] - 2026-05-08
+
+### Tom's Storage - Craft e Drop Seguro
+
+- **Ctrl+Q blindado no resultado de craft**: o atalho de drop em massa agora ignora slots reais do terminal, bloqueia o resultado de craft e o servidor so aceita drops de stacks vivas do `itemList`, com limite seguro de 64 itens por acao.
+- **Craft em massa no terminal**: no Terminal de Craft do Tom's Storage, `Ctrl+Alt+C` sobre o resultado abre uma tela de quantidade e executa o craft em lotes por tick usando a propria logica do Tom's Storage.
+- **Sem chuva de itens no chao**: o craft em massa confere espaco no inventario antes de cada craft e para com mensagem parcial quando faltam materiais, muda o resultado ou o inventario enche.
+
+---
+
 ## [1.2.73] - 2026-05-08
 
 ### Ultmine Classic

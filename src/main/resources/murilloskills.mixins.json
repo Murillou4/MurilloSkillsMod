@@ -36,6 +36,7 @@
     "TechRebornElectricFurnaceBlockEntityMixin",
     "TechRebornIronMachineBlockEntityMixin",
     "TomsStorageTerminalDropMixin",
+    "TomsStorageCraftingResultThrowMixin",
     "EnergizedPowerWorkerMachineBlockEntityMixin",
     "EnergizedPowerAlloyFurnaceBlockEntityMixin",
     "EnergizedPowerAutoCrafterBlockEntityMixin",

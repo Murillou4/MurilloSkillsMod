@@ -93,6 +93,7 @@ public class MinecraftEventsListener {
             com.murilloskills.impl.WarriorSkill.cleanupPlayerState(uuid);
             com.murilloskills.skills.VeinMinerHandler.cleanupPlayerState(uuid);
             com.murilloskills.skills.UltPlaceHandler.cleanupPlayerState(uuid);
+            com.murilloskills.integration.TerminalBulkCraftService.cancel(uuid);
         });
     }
 
@@ -196,6 +197,9 @@ public class MinecraftEventsListener {
 
             // Ultmine: drain large queued breaks in bounded server-side batches.
             VeinMinerHandler.tickUltmineJob(player);
+
+            // Tom's Storage: drain bulk crafting jobs in small batches.
+            com.murilloskills.integration.TerminalBulkCraftService.tick(player);
 
             // Magnet: pull nearby items and XP orbs toward the player.
             VeinMinerHandler.tickMagnet(player);

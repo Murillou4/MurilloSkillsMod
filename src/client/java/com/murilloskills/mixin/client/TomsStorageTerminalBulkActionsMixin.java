@@ -1,9 +1,11 @@
 package com.murilloskills.mixin.client;
 
 import com.murilloskills.data.TerminalMachineTargetClientState;
+import com.murilloskills.gui.TerminalBulkCraftAmountScreen;
 import com.murilloskills.gui.TerminalMachineTransferAmountScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
@@ -71,6 +73,13 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
     @Inject(method = "method_25404", at = @At("HEAD"), cancellable = true, remap = false)
     private void murilloskills$startBulkDrop(@Coerce Object keyInput, CallbackInfoReturnable<Boolean> cir) {
         int keyCode = murilloskills$getKeyCode(keyInput);
+        if (murilloskills$isControlDown() && murilloskills$isAltDown() && keyCode == GLFW.GLFW_KEY_C) {
+            if (murilloskills$openBulkCraftScreen()) {
+                cir.setReturnValue(true);
+            }
+            return;
+        }
+
         if (murilloskills$isControlDown() && murilloskills$isAltDown() && keyCode == GLFW.GLFW_KEY_T) {
             if (murilloskills$openMachineTransferScreen()) {
                 cir.setReturnValue(true);
@@ -82,7 +91,17 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
             return;
         }
 
+        if (murilloskills$isFocusedCraftingResultSlot()) {
+            murilloskills$clearBulkDropState();
+            cir.setReturnValue(true);
+            return;
+        }
+
         if (murilloskills$bulkDropItem != null) {
+            if (murilloskills$hasFocusedRealSlot()) {
+                murilloskills$clearBulkDropState();
+                return;
+            }
             Object liveTarget = murilloskills$findLiveTargetFor(murilloskills$bulkDropItem);
             if (liveTarget == null) {
                 return;
@@ -120,9 +139,11 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
 
         boolean ctrlDropPressed = murilloskills$isControlDropHeld(client);
         if (!ctrlDropPressed) {
-            murilloskills$bulkDropHeld = false;
-            murilloskills$bulkDropItem = null;
-            murilloskills$bulkDropCooldown = 0;
+            murilloskills$clearBulkDropState();
+        } else if (murilloskills$isFocusedCraftingResultSlot()) {
+            murilloskills$clearBulkDropState();
+        } else if (murilloskills$hasFocusedRealSlot()) {
+            murilloskills$clearBulkDropState();
         } else if (murilloskills$bulkDropItem == null) {
             murilloskills$captureBulkDropTarget();
         } else {
@@ -165,6 +186,13 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
         long handle = client.getWindow().getHandle();
         return murilloskills$isControlDown(handle)
                 && GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_Q) == GLFW.GLFW_PRESS;
+    }
+
+    @Unique
+    private void murilloskills$clearBulkDropState() {
+        murilloskills$bulkDropHeld = false;
+        murilloskills$bulkDropItem = null;
+        murilloskills$bulkDropCooldown = 0;
     }
 
     @Unique
@@ -252,6 +280,24 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
     }
 
     @Unique
+    private boolean murilloskills$openBulkCraftScreen() {
+        Slot resultSlot = murilloskills$getCraftingResultSlot();
+        if (resultSlot == null || murilloskills$getFocusedSlot() != resultSlot) {
+            return false;
+        }
+        net.minecraft.item.ItemStack result = resultSlot.getStack();
+        if (result == null || result.isEmpty()) {
+            return false;
+        }
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null || client.player == null) {
+            return false;
+        }
+        client.setScreen(new TerminalBulkCraftAmountScreen((Screen) (Object) this, result.copy()));
+        return true;
+    }
+
+    @Unique
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void murilloskills$sendTomStorageAction(String actionName, Object storedStack) {
         if (murilloskills$reflectionDisabled || storedStack == null) {
@@ -278,6 +324,9 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
     @Unique
     private Object murilloskills$resolveHoveredStoredStack() {
         try {
+            if (murilloskills$hasFocusedRealSlot()) {
+                return null;
+            }
             Object stored = murilloskills$getHoveredStoredStack();
             if (stored == null || murilloskills$getQuantity(stored) <= 0) {
                 return null;
@@ -354,7 +403,56 @@ public abstract class TomsStorageTerminalBulkActionsMixin {
         if (slot == null) {
             return null;
         }
+        if (!murilloskills$isStorageSlot(slot)) {
+            return null;
+        }
         return murilloskills$readField(slot, "stack");
+    }
+
+    @Unique
+    private boolean murilloskills$isStorageSlot(Object slot) {
+        return slot != null && "com.tom.storagemod.menu.StorageTerminalMenu$SlotStorage"
+                .equals(slot.getClass().getName());
+    }
+
+    @Unique
+    private boolean murilloskills$hasFocusedRealSlot() {
+        return murilloskills$getFocusedSlot() != null;
+    }
+
+    @Unique
+    private boolean murilloskills$isFocusedCraftingResultSlot() {
+        Slot resultSlot = murilloskills$getCraftingResultSlot();
+        return resultSlot != null && murilloskills$getFocusedSlot() == resultSlot;
+    }
+
+    @Unique
+    private Slot murilloskills$getFocusedSlot() {
+        try {
+            Object slot = murilloskills$readField(this, "field_2787");
+            return slot instanceof Slot focused ? focused : null;
+        } catch (ReflectiveOperationException ignored) {
+            try {
+                Object slot = murilloskills$readField(this, "focusedSlot");
+                return slot instanceof Slot focused ? focused : null;
+            } catch (ReflectiveOperationException ignoredAgain) {
+                return null;
+            }
+        }
+    }
+
+    @Unique
+    private Slot murilloskills$getCraftingResultSlot() {
+        try {
+            Object handler = murilloskills$getHandler();
+            if (handler == null || !handler.getClass().getName().equals("com.tom.storagemod.menu.CraftingTerminalMenu")) {
+                return null;
+            }
+            Object slot = murilloskills$invoke(handler, "getCraftingResultSlot");
+            return slot instanceof Slot resultSlot ? resultSlot : null;
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     @Unique
