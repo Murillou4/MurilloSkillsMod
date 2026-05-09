@@ -46,6 +46,7 @@ public class UltmineConfigScreen extends Screen {
     // Text fields
     private TextFieldWidget depthField;
     private TextFieldWidget lengthField;
+    private TextFieldWidget classicMaxBlocksField;
     private TextFieldWidget magnetRangeField;
     private TextFieldWidget trashItemField;
     private TextFieldWidget classicBlockField;
@@ -253,6 +254,26 @@ public class UltmineConfigScreen extends Screen {
                 refreshScreen();
             }).dimensions(variantStartX + variantBtnW + ctrlGap + variantValueW + ctrlGap, variantRowY, variantBtnW, 18).build();
             this.addDrawableChild(variantRight);
+        }
+
+        classicMaxBlocksField = null;
+        if (selectedShape == UltmineShape.LEGACY) {
+            int classicMaxRowY = shapeConfigY + 30 + oY;
+            if (maxDepth > 1) classicMaxRowY += 24;
+            if (maxLength > 1) classicMaxRowY += 24;
+            if (variantCount > 1) classicMaxRowY += 24;
+
+            classicMaxBlocksField = new TextFieldWidget(textRenderer, secCx + 20, classicMaxRowY, fieldW, 18,
+                    Text.empty());
+            classicMaxBlocksField.setMaxLength(4);
+            classicMaxBlocksField.setText(String.valueOf(UltmineClientConfig.getLegacyMaxBlocks()));
+            classicMaxBlocksField.setChangedListener(text -> {
+                try {
+                    int val = Integer.parseInt(text.trim());
+                    UltmineClientConfig.setLegacyMaxBlocks(val);
+                } catch (NumberFormatException ignored) {}
+            });
+            this.addDrawableChild(classicMaxBlocksField);
         }
 
         // === MAGNET SECTION ===
@@ -488,8 +509,9 @@ public class UltmineConfigScreen extends Screen {
         int shapeConfigH;
         if (selectedShape == UltmineShape.LEGACY) {
             int variantH = (variantCount > 1) ? 24 : 0;
-            int infoCardH = 3 * 14 + 10;
-            shapeConfigH = 30 + variantH + infoCardH + 8;
+            int maxBlocksH = 24;
+            int infoCardH = 2 * 14 + 10;
+            shapeConfigH = 30 + variantH + maxBlocksH + infoCardH + 8;
         } else {
             int configRows = 0;
             if (maxDepth > 1) configRows++;
@@ -674,6 +696,7 @@ public class UltmineConfigScreen extends Screen {
         UltmineClientConfig.setDropsToStorage(false);
         UltmineClientConfig.setSameBlockOnly(false);
         UltmineClientConfig.setXpDirectToPlayer(false);
+        UltmineClientConfig.setLegacyMaxBlocks(UltmineClientConfig.DEFAULT_LEGACY_MAX_BLOCKS);
         UltmineClientConfig.setMagnetEnabled(false);
         UltmineClientConfig.setMagnetRange(8);
         for (UltmineShape shape : UltmineShape.values()) {
@@ -990,10 +1013,19 @@ public class UltmineConfigScreen extends Screen {
         }
 
         if (selectedShape == UltmineShape.LEGACY) {
+            int maxBlocksRowY = shapeConfigY + 30 + currentRow * 24 + oY;
+            String maxBlocksLabel = Text.translatable("murilloskills.ultmine_config.legacy.max_blocks").getString();
+            context.drawTextWithShadow(textRenderer, maxBlocksLabel, labelX, maxBlocksRowY + 5, palette.textLight());
+            int hintX = secCx + 20 + fieldW + 4;
+            context.drawTextWithShadow(textRenderer,
+                    Text.literal("/ " + UltmineClientConfig.MAX_LEGACY_MAX_BLOCKS).formatted(Formatting.GRAY),
+                    hintX, maxBlocksRowY + 5, palette.textMuted());
+            currentRow++;
+
             int cardX = secX + 4;
             int cardW = secW - 8;
             int cardY = shapeConfigY + 30 + currentRow * 24 + oY;
-            int cardH = 3 * 14 + 8;
+            int cardH = 2 * 14 + 8;
 
             // Subtle info-card background + border
             context.fill(cardX, cardY, cardX + cardW, cardY + cardH, palette.cardBgSubtle());
@@ -1003,14 +1035,6 @@ public class UltmineConfigScreen extends Screen {
             int infoValueX = cardX + cardW - 8;
             int rowY = cardY + 5;
 
-            String maxBlocksLabel = Text.translatable("murilloskills.ultmine_config.legacy.max_blocks").getString();
-            String maxBlocksValue = String.valueOf(SkillConfig.getVeinMinerMaxBlocks());
-            context.drawTextWithShadow(textRenderer, maxBlocksLabel, infoLabelX, rowY, palette.textLight());
-            context.drawTextWithShadow(textRenderer,
-                    Text.literal(maxBlocksValue).formatted(Formatting.AQUA),
-                    infoValueX - textRenderer.getWidth(maxBlocksValue), rowY, palette.textAqua());
-
-            rowY += 14;
             String deepslateLabel = Text.translatable("murilloskills.ultmine_config.legacy.deepslate").getString();
             boolean deepslate = SkillConfig.getVeinMinerMatchDeepslateVariants();
             String deepslateValue = deepslate ? "ON" : "OFF";
@@ -1228,7 +1252,8 @@ public class UltmineConfigScreen extends Screen {
         int length = getEffectiveLength(activeShape);
         int variant = UltmineClientConfig.getShapeVariant(activeShape);
         UltmineClientState.applyShapeDefaults(activeShape);
-        ClientPlayNetworking.send(new UltmineShapeSelectC2SPayload(activeShape, depth, length, variant));
+        ClientPlayNetworking.send(new UltmineShapeSelectC2SPayload(activeShape, depth, length, variant,
+                UltmineClientConfig.getLegacyMaxBlocks()));
     }
 
     @Override

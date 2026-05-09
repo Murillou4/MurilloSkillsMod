@@ -278,7 +278,8 @@ public class MurilloSkillsClient implements ClientModInitializer {
                     UltmineClientState.getSelectedShape(),
                     UltmineClientState.getDepth(),
                     UltmineClientState.getLength(),
-                    UltmineClientState.getVariant()));
+                    UltmineClientState.getVariant(),
+                    UltmineClientConfig.getLegacyMaxBlocks()));
             // Always sync XP direct-to-player preference to server (respects client choice over server default)
             ClientPlayNetworking.send(new XpDirectToggleC2SPayload(UltmineClientConfig.isXpDirectToPlayer()));
             // Sync magnet config to server

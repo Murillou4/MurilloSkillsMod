@@ -4,6 +4,19 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.73] - 2026-05-08
+
+### Ultmine Classic
+
+- **Classic configuravel ate 1500 blocos**: o limite do Classic Mode agora e salvo na config client do Ultmine e sincronizado com o servidor.
+- **Sem corte no cap global de 500**: preview, mineracao, bone meal e colocacao em Classic usam o limite proprio do Classic em vez de `ultmine.maxBlocksPerUse`.
+
+### Tom's Storage para Maquinas
+
+- **Remover maquina marcada**: a tela `Ctrl+Alt+T` ganhou botao `x` por linha para tirar maquinas da lista marcada.
+
+---
+
 ## [1.2.72] - 2026-05-08
 
 ### Tom's Storage para Maquinas

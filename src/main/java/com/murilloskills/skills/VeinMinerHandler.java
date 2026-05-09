@@ -35,6 +35,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class VeinMinerHandler {
+    private static final int DEFAULT_CLASSIC_MAX_BLOCKS = 1500;
+    private static final int MAX_CLASSIC_MAX_BLOCKS = 4096;
+
     // Players currently holding the vein miner key
     private static final Set<UUID> HOLDING_KEY = ConcurrentHashMap.newKeySet();
     private static final Set<UUID> ACTIVE_PLAYERS = ConcurrentHashMap.newKeySet();
@@ -53,6 +56,7 @@ public final class VeinMinerHandler {
     private static final Map<UUID, Integer> ULTMINE_DEPTH = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> ULTMINE_LENGTH = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> ULTMINE_VARIANT = new ConcurrentHashMap<>();
+    private static final Map<UUID, Integer> CLASSIC_MAX_BLOCKS = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> ULTMINE_LAST_USE_TICK = new ConcurrentHashMap<>();
     private static final Map<UUID, BlockPos> ULTMINE_LAST_TARGET_POS = new ConcurrentHashMap<>();
     private static final Map<UUID, Direction> ULTMINE_LAST_TARGET_FACE = new ConcurrentHashMap<>();
@@ -257,6 +261,14 @@ public final class VeinMinerHandler {
         return Math.max(0, Math.min(ULTMINE_VARIANT.getOrDefault(player.getUuid(), 0), maxVariant));
     }
 
+    public static void setClassicMaxBlocks(ServerPlayerEntity player, int maxBlocks) {
+        CLASSIC_MAX_BLOCKS.put(player.getUuid(), clampClassicMaxBlocks(maxBlocks));
+    }
+
+    public static int getClassicMaxBlocks(ServerPlayerEntity player) {
+        return clampClassicMaxBlocks(CLASSIC_MAX_BLOCKS.getOrDefault(player.getUuid(), DEFAULT_CLASSIC_MAX_BLOCKS));
+    }
+
     public static void registerUltmineTarget(ServerPlayerEntity player, BlockPos targetPos, Direction face, long worldTime) {
         if (targetPos == null || face == null) {
             return;
@@ -281,6 +293,7 @@ public final class VeinMinerHandler {
         ULTMINE_DEPTH.remove(playerUuid);
         ULTMINE_LENGTH.remove(playerUuid);
         ULTMINE_VARIANT.remove(playerUuid);
+        CLASSIC_MAX_BLOCKS.remove(playerUuid);
         ULTMINE_LAST_USE_TICK.remove(playerUuid);
         ULTMINE_LAST_TARGET_POS.remove(playerUuid);
         ULTMINE_LAST_TARGET_FACE.remove(playerUuid);
@@ -482,7 +495,7 @@ public final class VeinMinerHandler {
         }
 
         UltmineSelection selection = getCurrentSelection(player);
-        int maxBlocks = SkillConfig.getUltmineMaxBlocksPerUse();
+        int maxBlocks = getMaxBlocksForSelection(player, selection.shape());
 
         List<BlockPos> raw = getRawTargetsForShape(player, world, origin, world.getBlockState(origin), selection.shape(),
                 selection.depth(), selection.length(), direction);
@@ -566,7 +579,7 @@ public final class VeinMinerHandler {
         if (requested <= 0) {
             return;
         }
-        int maxBlocks = SkillConfig.getUltmineMaxBlocksPerUse();
+        int maxBlocks = getMaxBlocksForSelection(player, selection.shape());
         if (requested > maxBlocks) {
             sendUltmineResult(player, false, requested, maxBlocks, "murilloskills.ultmine.result.max_blocks",
                     sendResultPacket);
@@ -736,7 +749,7 @@ public final class VeinMinerHandler {
             if (ClassicUltmineTargetRules.isOriginBlocked(originBlockId, blockedBlockIds)) {
                 return List.of();
             }
-            int maxLegacyBlocks = getLegacyUltmineLimit();
+            int maxLegacyBlocks = getLegacyUltmineLimit(player);
             Set<BlockPos> connected = collectConnectedBlocks(world, origin, originState, maxLegacyBlocks);
             addClassicConnectedOres(world, origin, originBlockId, getUltmineVariant(player), blockedBlockIds, connected,
                     maxLegacyBlocks);
@@ -746,12 +759,18 @@ public final class VeinMinerHandler {
         return getShapeBlocks(player, origin, selection.shape(), selection.depth(), selection.length(), dir);
     }
 
-    private static int getLegacyUltmineLimit() {
-        int baseLegacy = Math.max(1, SkillConfig.getVeinMinerMaxBlocks());
-        float multiplier = SkillConfig.getVeinMinerLegacyUltmineMultiplier();
-        int boostedLegacy = Math.max(1, Math.round(baseLegacy * multiplier));
-        int ultmineCap = Math.max(1, SkillConfig.getUltmineMaxBlocksPerUse());
-        return Math.min(boostedLegacy, ultmineCap);
+    public static int getLegacyUltmineLimit(ServerPlayerEntity player) {
+        return getClassicMaxBlocks(player);
+    }
+
+    private static int getMaxBlocksForSelection(ServerPlayerEntity player, UltmineShape shape) {
+        return shape == UltmineShape.LEGACY
+                ? getLegacyUltmineLimit(player)
+                : SkillConfig.getUltmineMaxBlocksPerUse();
+    }
+
+    private static int clampClassicMaxBlocks(int maxBlocks) {
+        return Math.max(1, Math.min(maxBlocks, MAX_CLASSIC_MAX_BLOCKS));
     }
 
     private static void sendUltmineResult(ServerPlayerEntity player, boolean success, int mined, int requestedOrValue,

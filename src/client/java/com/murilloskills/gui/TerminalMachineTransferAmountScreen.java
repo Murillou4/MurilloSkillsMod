@@ -30,6 +30,7 @@ public class TerminalMachineTransferAmountScreen extends Screen {
     private static final int MAX_PANEL_HEIGHT = 420;
     private static final int BOTTOM_CONTROLS_HEIGHT = 98;
     private static final int SCROLLBAR_WIDTH = 4;
+    private static final int REMOVE_BUTTON_SIZE = 12;
 
     private final Screen parent;
     private final ItemStack itemKey;
@@ -350,6 +351,17 @@ public class TerminalMachineTransferAmountScreen extends Screen {
             int index = scrollOffset + row;
             if (index >= 0 && index < targets.size()) {
                 TerminalMachineTargetClientState.Target target = targets.get(index);
+                int rowY = listY + row * ROW_HEIGHT;
+                if (isRemoveButtonHit(mouseX, mouseY, rowY)) {
+                    selectedTargets.remove(target.pos());
+                    TerminalMachineTargetClientState.remove(target.pos());
+                    refreshTargets();
+                    scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll()));
+                    updateScrollbarGeometry();
+                    error = Text.empty();
+                    updateSendButton();
+                    return true;
+                }
                 if (selectedTargets.contains(target.pos())) {
                     selectedTargets.remove(target.pos());
                 } else {
@@ -481,8 +493,18 @@ public class TerminalMachineTransferAmountScreen extends Screen {
             }
 
             int textColor = checked ? 0xFFE6EDF3 : 0xFF9FB0C3;
-            String label = trimmed(targetLabel(i, target), listW - 54);
+            String label = trimmed(targetLabel(i, target), listW - 78);
             context.drawTextWithShadow(textRenderer, label, listX + 26, rowY + 7, textColor);
+
+            int removeX = removeButtonX();
+            int removeY = rowY + 5;
+            boolean removeHovered = isRemoveButtonHit(mouseX, mouseY, rowY);
+            context.fill(removeX, removeY, removeX + REMOVE_BUTTON_SIZE, removeY + REMOVE_BUTTON_SIZE,
+                    removeHovered ? 0xFF7F1D1D : 0xFF2A1116);
+            drawBorder(context, removeX, removeY, REMOVE_BUTTON_SIZE, REMOVE_BUTTON_SIZE,
+                    removeHovered ? 0xFFFF6B6B : 0xFF7A3340);
+            context.drawTextWithShadow(textRenderer, "x", removeX + 3, removeY + 2,
+                    removeHovered ? 0xFFFFFFFF : 0xFFFFA3A3);
         }
 
         int maxScroll = maxScroll();
@@ -504,6 +526,18 @@ public class TerminalMachineTransferAmountScreen extends Screen {
             result = result.substring(0, result.length() - 1);
         }
         return result + "..";
+    }
+
+    private int removeButtonX() {
+        int scrollbarSpace = maxScroll() > 0 ? SCROLLBAR_WIDTH + 6 : 0;
+        return listX + listW - scrollbarSpace - REMOVE_BUTTON_SIZE - 10;
+    }
+
+    private boolean isRemoveButtonHit(double mouseX, double mouseY, int rowY) {
+        int removeX = removeButtonX();
+        int removeY = rowY + 5;
+        return mouseX >= removeX && mouseX <= removeX + REMOVE_BUTTON_SIZE
+                && mouseY >= removeY && mouseY <= removeY + REMOVE_BUTTON_SIZE;
     }
 
     private void drawBorder(DrawContext context, int x, int y, int width, int height, int color) {

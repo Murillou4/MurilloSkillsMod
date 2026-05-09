@@ -1,7 +1,6 @@
 package com.murilloskills.skills;
 
 import com.murilloskills.utils.InventoryBlockFinder;
-import com.murilloskills.utils.SkillConfig;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.BlockItem;
@@ -238,7 +237,7 @@ public final class UltmineUseHandler {
     private static Set<BlockPos> getBoneMealTargets(ServerPlayerEntity player, World world, BlockPos origin) {
         UltmineShape shape = VeinMinerHandler.getUltmineShape(player);
         if (shape == UltmineShape.LEGACY) {
-            return getLegacyConnectedTargets(world, origin, SkillConfig.getUltmineMaxBlocksPerUse());
+            return getLegacyConnectedTargets(world, origin, VeinMinerHandler.getLegacyUltmineLimit(player));
         }
 
         return getTargets(player, world, origin, resolveBoneMealLayoutFace(player, shape));
@@ -248,7 +247,7 @@ public final class UltmineUseHandler {
             Direction clickedFace) {
         UltmineShape shape = VeinMinerHandler.getUltmineShape(player);
         if (shape == UltmineShape.LEGACY) {
-            return getLegacyConnectedTargets(world, origin, SkillConfig.getUltmineMaxBlocksPerUse());
+            return getLegacyConnectedTargets(world, origin, VeinMinerHandler.getLegacyUltmineLimit(player));
         }
 
         return getTargets(player, world, origin, resolvePlacementLayoutFace(player, shape, clickedFace));

@@ -31,6 +31,7 @@ public final class UltmineShapeSelectNetworkHandler {
 
                 VeinMinerHandler.setUltmineSelection(player, payload.shape(), payload.depth(), payload.length(),
                         payload.variant());
+                VeinMinerHandler.setClassicMaxBlocks(player, payload.legacyMaxBlocks());
                 player.sendMessage(
                         Text.translatable("murilloskills.ultmine.selected", Text.translatable(payload.shape().getTranslationKey()))
                                 .formatted(Formatting.AQUA),

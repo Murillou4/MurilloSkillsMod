@@ -13,11 +13,13 @@ import java.util.Map;
 
 /**
  * Client-side configuration for Ultmine preferences.
- * Stores per-shape depth/length/variant and global toggles.
+ * Stores per-shape depth/length/variant, classic max blocks, and global toggles.
  */
 public class UltmineClientConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final String CONFIG_FILE = "murilloskills_ultmine.json";
+    public static final int DEFAULT_LEGACY_MAX_BLOCKS = 1500;
+    public static final int MAX_LEGACY_MAX_BLOCKS = 4096;
 
     private static UltmineData data;
 
@@ -29,6 +31,7 @@ public class UltmineClientConfig {
         public boolean magnetEnabled = false;
         public int magnetRange = 8;
         public int terminalMachineTransferAmount = 64;
+        public int legacyMaxBlocks = DEFAULT_LEGACY_MAX_BLOCKS;
         public String selectedShape = UltmineShape.S_3x3.name();
         public java.util.List<String> trashItems = new java.util.ArrayList<>();
         public java.util.List<String> storageWhitelist = new java.util.ArrayList<>();
@@ -63,6 +66,7 @@ public class UltmineClientConfig {
                 if (data.storageWhitelist == null) data.storageWhitelist = new java.util.ArrayList<>();
                 if (data.legacyBlockedBlocks == null) data.legacyBlockedBlocks = new java.util.ArrayList<>();
                 if (data.shapePrefs == null) data.shapePrefs = new java.util.HashMap<>();
+                data.legacyMaxBlocks = normalizeLegacyMaxBlocks(data.legacyMaxBlocks);
                 data.selectedShape = normalizeShapeName(data.selectedShape).name();
                 java.util.List<String> normalizedBlockedBlocks = new java.util.ArrayList<>();
                 for (String blockId : data.legacyBlockedBlocks) {
@@ -149,6 +153,23 @@ public class UltmineClientConfig {
 
     public static void toggleXpDirectToPlayer() {
         get().xpDirectToPlayer = !get().xpDirectToPlayer;
+    }
+
+    // --- Legacy Classic ---
+
+    public static int getLegacyMaxBlocks() {
+        return normalizeLegacyMaxBlocks(get().legacyMaxBlocks);
+    }
+
+    public static void setLegacyMaxBlocks(int maxBlocks) {
+        get().legacyMaxBlocks = normalizeLegacyMaxBlocks(maxBlocks);
+    }
+
+    private static int normalizeLegacyMaxBlocks(int maxBlocks) {
+        if (maxBlocks <= 0) {
+            return DEFAULT_LEGACY_MAX_BLOCKS;
+        }
+        return Math.max(1, Math.min(maxBlocks, MAX_LEGACY_MAX_BLOCKS));
     }
 
     // --- Magnet ---

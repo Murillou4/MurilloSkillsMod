@@ -514,7 +514,8 @@ public class UltmineRadialMenuScreen extends Screen {
         shapeVariants[index] = UltmineClientState.getVariant();
         UltmineClientConfig.save();
         ClientPlayNetworking.send(new UltmineShapeSelectC2SPayload(
-                shape, UltmineClientState.getDepth(), UltmineClientState.getLength(), shapeVariants[index]));
+                shape, UltmineClientState.getDepth(), UltmineClientState.getLength(), shapeVariants[index],
+                UltmineClientConfig.getLegacyMaxBlocks()));
     }
 
     private void cycleVariant(int direction) {
@@ -533,7 +534,8 @@ public class UltmineRadialMenuScreen extends Screen {
         UltmineClientConfig.setShapeVariant(shape, newVariant);
         UltmineClientConfig.save();
         ClientPlayNetworking.send(new UltmineShapeSelectC2SPayload(
-                shape, UltmineClientState.getDepth(), UltmineClientState.getLength(), newVariant));
+                shape, UltmineClientState.getDepth(), UltmineClientState.getLength(), newVariant,
+                UltmineClientConfig.getLegacyMaxBlocks()));
     }
 
     private void drawShapeIcon(DrawContext context, int cx, int cy, int shapeIndex, int color) {

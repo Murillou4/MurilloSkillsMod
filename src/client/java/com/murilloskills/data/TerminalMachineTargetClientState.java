@@ -73,6 +73,27 @@ public final class TerminalMachineTargetClientState {
         }
     }
 
+    public static void remove(BlockPos pos) {
+        if (pos == null) {
+            return;
+        }
+        BlockPos immutablePos = pos.toImmutable();
+        for (int i = 0; i < TARGETS.size(); i++) {
+            if (!TARGETS.get(i).pos().equals(immutablePos)) {
+                continue;
+            }
+            TARGETS.remove(i);
+            if (TARGETS.isEmpty()) {
+                selectedIndex = -1;
+            } else if (selectedIndex >= TARGETS.size()) {
+                selectedIndex = TARGETS.size() - 1;
+            } else if (selectedIndex > i) {
+                selectedIndex--;
+            }
+            return;
+        }
+    }
+
     public static List<Target> getTargetsSnapshot() {
         return List.copyOf(TARGETS);
     }
