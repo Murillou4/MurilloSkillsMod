@@ -1,0 +1,551 @@
+ ▐▛███▜▌   Claude Code v2.1.126
+▝▜█████▛▘  Opus 4.7 · Claude Pro
+  ▘▘ ▝▝    E:\Desktop\Development\Projetos pessoais\Minecraft Mods\MurilloS…
+
+> Arruma/Adiciona essa duas coisas:                                             
+                                                                                
+  Fortuna é aplicada ao quebrar glowtone e fortuna é aplicada ao quebrar folhas 
+   com o machado (deve ser aplicada fortune do miner + a fortuna do encatamento 
+   + pretigio) depois @COMMIT_PUSH_RELEASE_SYSTEM_PROMPT.md                     
+  ⎿  Read COMMIT_PUSH_RELEASE_SYSTEM_PROMPT.md (126 lines)
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && git status --short)
+  ⎿  ?? .codex-temp/
+     ?? add.md
+     ?? tools/
+     ?? ultplace_handoff.md
+
+  Searched for 3 patterns, read 6 files (ctrl+o to expand)
+
+  Searched for 2 patterns (ctrl+o to expand)
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && find . -name "LootContextParameters.java" 2>nul
+      | head -3)
+  ⎿  (No output)
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && find . -path "*/loot/context/*" -name "*.java"
+      2>nul)
+  ⎿  (No output)
+
+● PowerShell(Get-ChildItem -Path . -Recurse -Filter "LootContextParameters.java"
+             -ErrorAction SilentlyContinue | Select-Object -First 5 FullName)
+  ⎿  (No output)
+
+● PowerShell(Get-ChildItem -Path "C:\Users\muril\.gradle\caches" -Recurse
+            -Filter "LootContextParameters.java" -ErrorAction SilentlyContinue |
+             Select-Object -First 3 FullNam…)
+  ⎿  (No output)
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && find . -name ".gradle" -type d 2>nul | head -3)
+  ⎿  ./.gradle
+
+  Searched for 4 patterns (ctrl+o to expand)
+
+● Now I'll update the handler to allow glowstone always and leaves when broken
+  with an axe.
+
+● Write(src\main\java\com\murilloskills\skills\MinerFortuneHandler.java)
+  ⎿  Added 39 lines, removed 2 lines
+       7  import com.murilloskills.utils.SkillConfig;
+       8  import net.minecraft.block.BlockState;
+       9  import net.minecraft.entity.Entity;
+      10 +import net.minecraft.item.AxeItem;                             
+      11 +import net.minecraft.item.ItemStack;                           
+      12  import net.minecraft.loot.context.LootContext;
+      13  import net.minecraft.loot.context.LootContextParameters;
+      14  import net.minecraft.registry.Registries;
+     ...
+      30  
+      31          BlockState blockState = context.get(LootContextParamete
+          rs.BLOCK_STATE);
+      32          String blockId = blockState == null ? null : Registries
+          .BLOCK.getId(blockState.getBlock()).toString();
+      33 +        ItemStack tool = context.get(LootContextParameters.TOOL
+         +);                                                             
+      34  
+      35          PlayerSkillData playerData = player.getAttachedOrCreate
+          (ModAttachments.PLAYER_SKILLS);
+      36          var minerStats = playerData.getSkill(MurilloSkillsList.
+          MINER);
+      34 -        int bonusFortune = getSkillFortuneBonus(minerStats.leve
+         -l, minerStats.prestige, blockId);                              
+      37 +        int bonusFortune = getSkillFortuneBonus(minerStats.leve
+         +l, minerStats.prestige, blockId, tool);                        
+      38          return bonusFortune > 0 ? originalLevel + bonusFortune 
+          : originalLevel;
+      39      }
+      40  
+      41      public static int getSkillFortuneBonus(int minerLevel, int 
+          prestige, String blockId) {
+      39 -        if (!shouldApplySkillFortune(blockId, minerLevel, prest
+         -ige)) {                                                        
+      42 +        return getSkillFortuneBonus(minerLevel, prestige, block
+         +Id, null);                                                     
+      43 +    }                                                          
+      44 +                                                               
+      45 +    public static int getSkillFortuneBonus(int minerLevel, int 
+         +prestige, String blockId, ItemStack tool) {                    
+      46 +        if (!shouldApplySkillFortune(blockId, minerLevel, prest
+         +ige, tool)) {                                                  
+      47              return 0;
+      48          }
+      49  
+     ...
+      53      }
+      54  
+      55      public static boolean shouldApplySkillFortune(String blockI
+          d, int minerLevel, int prestige) {
+      56 +        return shouldApplySkillFortune(blockId, minerLevel, pre
+         +stige, null);                                                  
+      57 +    }                                                          
+      58 +                                                               
+      59 +    public static boolean shouldApplySkillFortune(String blockI
+         +d, int minerLevel, int prestige, ItemStack tool) {             
+      60          if (blockId == null || blockId.isBlank()) {
+      61              return false;
+      62          }
+      63          if (MinerXpGetter.isLikelyOreId(blockId)) {
+      64              return true;
+      65          }
+      66 +        if (isGlowstoneId(blockId)) {                          
+      67 +            return true;                                       
+      68 +        }                                                      
+      69 +        if (isLeavesBlockId(blockId) && isAxeTool(tool)) {     
+      70 +            return true;                                       
+      71 +        }                                                      
+      72          return minerLevel >= SkillConfig.getMinerResourceFortun
+          eLevel() || prestige > 0;
+      73      }
+      74 +                                                               
+      75 +    private static boolean isGlowstoneId(String blockId) {     
+      76 +        return "minecraft:glowstone".equals(blockId);          
+      77 +    }                                                          
+      78 +                                                               
+      79 +    private static boolean isLeavesBlockId(String blockId) {   
+      80 +        if (blockId == null) {                                 
+      81 +            return false;                                      
+      82 +        }                                                      
+      83 +        String path = blockId;                                 
+      84 +        int sep = blockId.indexOf(':');                        
+      85 +        if (sep >= 0 && sep < blockId.length() - 1) {          
+      86 +            path = blockId.substring(sep + 1);                 
+      87 +        }                                                      
+      88 +        return path.endsWith("_leaves") || path.equals("leaves"
+         +);                                                             
+      89 +    }                                                          
+      90 +                                                               
+      91 +    private static boolean isAxeTool(ItemStack tool) {         
+      92 +        return tool != null && !tool.isEmpty() && tool.getItem(
+         +) instanceof AxeItem;                                          
+      93 +    }                                                          
+      94  }
+
+● Now I need to update the existing tests that asserted glowstone required level
+   75:
+
+● Update(src\test\java\com\murilloskills\skills\MinerFortuneHandlerTest.java)
+  ⎿  Added 8 lines, removed 4 lines
+      29      }
+      30  
+      31      @Test
+      32 -    void glowstoneStartsReceivingMinerFortuneAtLevelSeventyFive
+         -() {                                                           
+      33 -        assertFalse(MinerFortuneHandler.shouldApplySkillFortune
+         -("minecraft:glowstone", 74, 0));                               
+      34 -        assertEquals(0, MinerFortuneHandler.getSkillFortuneBonu
+         -s(74, 0, "minecraft:glowstone"));                              
+      35 -                                                               
+      32 +    void glowstoneAlwaysReceivesMinerFortune() {               
+      33 +        assertTrue(MinerFortuneHandler.shouldApplySkillFortune(
+         +"minecraft:glowstone", 1, 0));                                 
+      34          assertTrue(MinerFortuneHandler.shouldApplySkillFortune(
+          "minecraft:glowstone", 75, 0));
+      35          assertEquals(2, MinerFortuneHandler.getSkillFortuneBonu
+          s(75, 0, "minecraft:glowstone"));
+      36      }
+     ...
+      42      }
+      43  
+      44      @Test
+      45 +    void leavesDoNotReceiveMinerFortuneWithoutAxe() {          
+      46 +        assertFalse(MinerFortuneHandler.shouldApplySkillFortune
+         +("minecraft:oak_leaves", 50, 0, null));                        
+      47 +        assertEquals(0, MinerFortuneHandler.getSkillFortuneBonu
+         +s(50, 0, "minecraft:oak_leaves", null));                       
+      48 +    }                                                          
+      49 +                                                               
+      50 +    @Test                                                      
+      51      void missingBlockContextDoesNotReceiveMinerFortune() {
+      52          assertFalse(MinerFortuneHandler.shouldApplySkillFortune
+          (null, 100, 0));
+      53          assertEquals(0, MinerFortuneHandler.getSkillFortuneBonu
+          s(100, 0, null));
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && find .gradle -name "LootContextParameters*"
+      2>nul | head -3)
+  ⎿  (No output)
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && find / -path
+      "*/loot/context/LootContextParameters.java" 2>nul | head -3)
+  ⎿  Running in the background (↓ to manage)
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && cat gradle.properties)
+  ⎿  # Done to increase the memory available to gradle.
+     org.gradle.jvmargs=-Xmx1G
+     org.gradle.parallel=true
+     … +19 lines (ctrl+o to expand)
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(gradle.properties)
+  ⎿  File must be read first
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(gradle.properties)
+  ⎿  Added 1 line, removed 1 line
+      13  loom_version=1.13-SNAPSHOT
+      14  
+      15  # Mod Properties
+      16 -mod_version=1.2.50                                             
+      16 +mod_version=1.2.51                                             
+      17  maven_group=com.murilloskills
+      18  archives_base_name=murilloskills
+      19  
+
+● Update(CHANGELOG.md)
+  ⎿  Added 10 lines
+       4  
+       5  ---
+       6  
+       7 +## [1.2.51] - 2026-05-04                                       
+       8 +                                                               
+       9 +### Miner - Fortuna em Glowstone e Folhas                      
+      10 +                                                               
+      11 +- **Glowstone sempre com Fortuna**: a Fortuna do Minerador (nív
+         +el + prestígio) agora é aplicada ao quebrar `minecraft:glowston
+         +e` em qualquer nível, somando-se à Fortuna do encantamento.    
+      12 +- **Folhas com machado**: ao quebrar folhas com machado, a Fort
+         +una do Minerador é somada à Fortuna do encantamento e ao bônus 
+         +de prestígio, aumentando drops de saplings, galhos e maçãs.    
+      13 +- **Cobertura mantida em loot tables**: o bônus continua entran
+         +do em `apply_bonus` (drops por contagem) e em `table_bonus` (ch
+         +ances por tabela).                                             
+      14 +                                                               
+      15 +---                                                            
+      16 +                                                               
+      17  ## [1.2.50] - 2026-05-04
+      18  
+      19  ### Miner - Fortuna em Blocos Ricos
+
+● Now run tests, then build.
+
+● PowerShell(.\gradlew.bat test)
+  ⎿  Starting a Gradle Daemon, 1 incompatible and 1 stopped Daemons could n
+     ot be reused, use --status for details
+     … +16 lines (ctrl+o to expand)
+
+● Tests passed. Now build the jar.
+
+● PowerShell(.\gradlew.bat build)
+  ⎿  > Configure project :
+     Fabric Loom: 1.13.6
+     … +22 lines (ctrl+o to expand)
+
+● Build successful. Now replace the jar in the CurseForge instance.
+
+● PowerShell($repo = "E:\Desktop\Development\Projetos pessoais\Minecraft
+            Mods\MurilloSkillsMod"
+            $expectedMods = "C:\Users\muril\curseforge\minecraft\Instances\Meu
+            mundo\mods…)
+  ⎿  (No output)
+
+● PowerShell(Get-ChildItem -Path
+            "C:\Users\muril\curseforge\minecraft\Instances\Meu mundo\mods"
+            -Filter "murilloskills-*.jar" | Select-Object
+            Name,Length,LastWriteTime)
+  ⎿  (No output)
+
+  Listed 1 directory (ctrl+o to expand)
+
+● Jar replaced successfully. Now stage relevant files, commit, and push.
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && git diff --check && git status --short)
+  ⎿  warning: in the working copy of 'CHANGELOG.md', LF will be replaced by
+      CRLF the next time Git touches it
+     warning: in the working copy of 'src/main/java/com/murilloskills/skill
+     … +13 lines (ctrl+o to expand)
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && git add CHANGELOG.md gradle.properties
+      src/main/java/com/murilloskills/skills/M…)
+  ⎿  warning: in the working copy of 'CHANGELOG.md', LF will be replaced by
+      CRLF the next time Git touches it
+     warning: in the working copy of 'src/main/java/com/murilloskills/skill
+     … +13 lines (ctrl+o to expand)
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && git commit -m "Release MurilloSkills 1.2.51")
+  ⎿  Running in the background (↓ to manage)
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && git log -1 --oneline && git branch
+      --show-current)
+  ⎿  34422b4 Release MurilloSkills 1.2.51
+     master
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && git push 2>&1)
+  ⎿  To https://github.com/Murillou4/MurilloSkillsMod
+        d324a89..34422b4  master -> master
+
+● Release concluída.
+
+  Versão: 1.2.51
+  Jar copiado para: C:\Users\muril\curseforge\minecraft\Instances\Meu 
+  mundo\mods\murilloskills-1.2.51.jar
+  Testes: ✅ passaram (./gradlew test)
+  Build: ✅ passou (./gradlew build)
+  Commit: 34422b4 — Release MurilloSkills 1.2.51
+  Branch enviada: master → origin/master
+
+  Mudanças:
+  - MinerFortuneHandler agora aplica fortuna do Minerador em minecraft:glowstone
+   em qualquer nível (sem gate de level 75).
+  - Folhas (*_leaves) recebem fortuna do Minerador quando quebradas com qualquer
+   AxeItem. O bônus do nível + prestígio se soma à Fortuna do encantamento via
+  os mixins TableBonusLootCondition e ApplyBonusLootFunction que já existiam.
+  - Teste antigo glowstoneStartsReceivingMinerFortuneAtLevelSeventyFive
+  substituído por glowstoneAlwaysReceivesMinerFortune; novo teste cobre folhas
+  sem machado (não recebem fortuna).
+
+  Arquivos sujos preexistentes deixados de fora: .codex-temp/, add.md, tools/,
+  ultplace_handoff.md.
+✻ Crunched for 11m 22s
+
+● Background command "Create release commit" completed (exit code 0)
+
+● Release 1.2.51 concluída e enviada ao remoto. Sem ações pendentes.
+
+✻ Brewed for 2s
+
+> mas sempre dropa só 1 sappling então não foi feito corretamente e a glowstone 
+   também nunca vem mais de 4 pó que já é o padrão do jogo                      
+
+● Você está certo — o problema é mais profundo. Vou investigar.
+
+  Searched for 2 patterns, read 1 file (ctrl+o to expand)
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && find .gradle -name "glowstone.json" 2>nul | head
+       -3)
+  ⎿  (No output)
+
+  Searched for 6 patterns, read 2 files (ctrl+o to expand)
+
+● Vou criar um handler que adiciona drops EXTRA depois da quebra, contornando os
+   caps vanilla (limit_count em glowstone, chances array fixo em folhas):
+
+● Write(src\main\java\com\murilloskills\skills\MinerBonusDropHandler.java)
+  ⎿  Wrote 126 lines to
+     src\main\java\com\murilloskills\skills\MinerBonusDropHandler.java
+       1 package com.murilloskills.skills;
+       2 
+       3 import com.murilloskills.data.ModAttachments;
+       4 import com.murilloskills.data.PlayerSkillData;
+       5 import net.minecraft.block.Block;
+       6 import net.minecraft.block.BlockState;
+       7 import net.minecraft.block.Blocks;
+       8 import net.minecraft.component.type.ItemEnchantmentsComponent;
+       9 import net.minecraft.enchantment.Enchantment;
+      10 import net.minecraft.enchantment.Enchantments;
+     … +141 lines (ctrl+o to expand)
+
+● Now wire it into the block break event:
+
+● Update(src\main\java\com\murilloskills\events\MinecraftEventsListener.java)
+  ⎿  Added 1 line
+       5  
+       6  import com.murilloskills.skills.BlockBreakHandler;
+       7  import com.murilloskills.skills.CropHarvestHandler;
+       8 +import com.murilloskills.skills.MinerBonusDropHandler;         
+       9  import com.murilloskills.skills.MobKillHandler;
+      10  import com.murilloskills.skills.MurilloSkillsList;
+      11  import com.murilloskills.skills.VeinMinerHandler;
+
+● Update(src\main\java\com\murilloskills\events\MinecraftEventsListener.java)
+  ⎿  Added 2 lines
+      40              }
+      41              // Handler do Minerador
+      42              BlockBreakHandler.handle(player, world, pos, state)
+          ;
+      43 +            // Drops bônus do Minerador (glowstone / folhas com
+         + machado) — contorna caps vanilla                              
+      44 +            MinerBonusDropHandler.onBlockBreak(player, world, p
+         +os, state);                                                    
+      45              // Handler do Agricultor (Farmer)
+      46              CropHarvestHandler.handle(player, world, pos, state
+          );
+      47          });
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Update(gradle.properties)
+  ⎿  Added 1 line, removed 1 line
+      13  loom_version=1.13-SNAPSHOT
+      14  
+      15  # Mod Properties
+      16 -mod_version=1.2.51                                             
+      16 +mod_version=1.2.52                                             
+      17  maven_group=com.murilloskills
+      18  archives_base_name=murilloskills
+      19  
+
+● Update(CHANGELOG.md)
+  ⎿  Added 10 lines
+       4  
+       5  ---
+       6  
+       7 +## [1.2.52] - 2026-05-04                                       
+       8 +                                                               
+       9 +### Miner - Drops Reais em Glowstone e Folhas                  
+      10 +                                                               
+      11 +- **Glowstone passa de 4**: o cap vanilla `limit_count(max=4)` 
+         +impedia que a Fortuna do Minerador (e do encantamento) gerasse 
+         +mais pó. Agora drops extras são adicionados diretamente após a 
+         +quebra, escalando com `Fortuna do Minerador + Fortuna do encant
+         +amento`.                                                       
+      12 +- **Folhas dropam mais saplings/galhos**: a `chances[]` array v
+         +anilla cap em fortune 3 anulava níveis maiores. Agora cada níve
+         +l de Fortuna do Minerador (incluindo prestígio) faz uma rolagem
+         + extra para sapling (5%), galho (2%) e maçã (0.5% para oak/dark
+         + oak).                                                         
+      13 +- **Mapeamento por tipo de folha**: oak, birch, spruce, jungle,
+         + acacia, dark oak, cherry e mangrove dropam o sapling/propagule
+         + correspondente.                                               
+      14 +                                                               
+      15 +---                                                            
+      16 +                                                               
+      17  ## [1.2.51] - 2026-05-04
+      18  
+      19  ### Miner - Fortuna em Glowstone e Folhas
+
+● PowerShell(.\gradlew.bat test)
+  ⎿  > Configure project :
+     Fabric Loom: 1.13.6
+     … +13 lines (ctrl+o to expand)
+
+● PowerShell(.\gradlew.bat build)
+  ⎿  > Configure project :
+     Fabric Loom: 1.13.6
+     … +22 lines (ctrl+o to expand)
+
+● Build OK. Substituindo jar e fazendo commit/push.
+
+● PowerShell($repo = "E:\Desktop\Development\Projetos pessoais\Minecraft
+            Mods\MurilloSkillsMod"
+            $expectedMods = "C:\Users\muril\curseforge\minecraft\Instances\Meu
+            mundo\mods…)  ⎿  Remove-Item: 
+     Line |
+        7 |  … Path $resolvedMods -Filter "murilloskills-*.jar" | Remove-It
+     … +11 lines (ctrl+o to expand)
+
+● O Minecraft/CurseForge está aberto e travou o jar antigo 1.2.51.jar. O novo
+  1.2.52.jar foi copiado, mas o antigo precisa ser removido manualmente. Vou
+  commitar e pushar enquanto isso, e te aviso ao final.
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && git status --short)
+  ⎿   M CHANGELOG.md
+      M gradle.properties
+      M src/main/java/com/murilloskills/events/MinecraftEventsListener.java
+     … +5 lines (ctrl+o to expand)
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && git add CHANGELOG.md gradle.properties
+      src/main/java/com/murilloskills/events/M…)
+  ⎿  warning: in the working copy of 'CHANGELOG.md', LF will be replaced by
+      CRLF the next time Git touches it
+     warning: in the working copy of 'src/main/java/com/murilloskills/skill
+     … +10 lines (ctrl+o to expand)
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && git commit -m "Release MurilloSkills 1.2.52" &&
+      git log -1 --oneline)
+  ⎿  Auto packing the repository for optimum performance.
+     See "git help gc" for manual housekeeping.
+     warning: There are too many unreachable loose objects; run 'git prune'
+     … +6 lines (ctrl+o to expand)
+
+● Bash(cd "E:\Desktop\Development\Projetos pessoais\Minecraft
+      Mods\MurilloSkillsMod" && git push 2>&1)
+  ⎿  To https://github.com/Murillou4/MurilloSkillsMod
+        34422b4..5b08920  master -> master
+
+● Release 1.2.52 enviada. Diagnóstico do bug e o que mudou:
+
+  Por que o fix anterior não funcionava:
+  - Glowstone: a loot table vanilla tem limit_count(max=4) que clampa o
+  resultado depois do apply_bonus. Adicionar fortuna do Minerador no nível de
+  fortuna (via mixin) era inútil porque o cap final ignora qualquer valor acima
+  de 4.
+  - Folhas (saplings): a TableBonusLootCondition usa um array fixo
+  chances=[0.05, 0.0625, 0.083, 0.1]. Fortuna acima de 3 é clampada no último
+  valor (10%). Adicionar fortuna do Minerador não passava do cap, e o
+  set_count=1 mantinha 1 sapling.
+
+  Solução nova (MinerBonusDropHandler):
+  - Roda em PlayerBlockBreakEvents.AFTER, depois da loot vanilla.
+  - Glowstone: drop extra de nextInt(skillBonus + enchantFortune + 1) pó de
+  glowstone, contornando o limit_count.
+  - Folhas com machado: para cada nível de fortuna do Minerador (já inclui
+  prestígio), faz uma rolagem extra independente: 5% sapling, 2% galho, 0.5%
+  maçã (oak/dark oak). Mapeamento por tipo: oak/birch/spruce/jungle/acacia/dark
+  oak/cherry/mangrove.
+
+  Status do release:
+  - Versão: 1.2.52
+  - Testes: ✅ passaram
+  - Build: ✅ passou
+  - Commit: 5b08920 em master
+  - Push: ✅ feito
+
+  ⚠️ Atenção — jar: O Minecraft/CurseForge está aberto e travou
+  murilloskills-1.2.51.jar. O novo murilloskills-1.2.52.jar foi copiado, mas o
+  antigo continua na pasta mods. Você precisa fechar o Minecraft e remover 
+  manualmente murilloskills-1.2.51.jar antes de iniciar o jogo, senão vai dar
+  conflito de mod ID duplicado.
+
+✻ Cogitated for 6m 45s
+
+> tenmte de novo fecheiu                                                        
+
+● PowerShell($mods = "C:\Users\muril\curseforge\minecraft\Instances\Meu
+            mundo\mods"
+            Get-ChildItem -Path $mods -Filter "murilloskills-*.jar" |
+            Where-Object { $_.Name -ne "mur…)
+  ⎿  Name                      Length LastWriteTime
+     ----                      ------ -------------
+     murilloskills-1.2.52.jar 1433772 04/05/2026 12:47:39
+
+● Pronto. Pasta mods agora tem só murilloskills-1.2.52.jar. Pode abrir o
+  Minecraft.
+
+✻ Sautéed for 8s
+
+> vai ser aplicado quando eu usar o ultime normalmente né ?                     
+
+  Read 1 file (ctrl+o to expand)
+  ⎿  You're out of extra usage · resets 5:20pm (America/Sao_Paulo)
+     /upgrade to increase your usage limit.
+
+✻ Cooked for 8s

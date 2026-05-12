@@ -1,0 +1,2 @@
+Summary for C:\Users\muril\.gradle\caches\fabric-loom\minecraftMaven\net\minecraft\minecraft-merged\1.21.10-net.fabricmc.yarn.1_21_10.1.21.10+build.3-v2\minecraft-merged-1.21.10-net.fabricmc.yarn.1_21_10.1.21.10+build.3-v2.jar
+Decompiled with CFR 0.2.2 (FabricMC 7c48b8c4)
