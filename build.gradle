@@ -31,6 +31,9 @@ loom {
 }
 
 dependencies {
+	implementation project(":common-core")
+	include project(":common-core")
+
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
@@ -58,6 +61,24 @@ tasks.withType(JavaCompile).configureEach {
 
 test {
 	useJUnitPlatform()
+}
+
+tasks.register("publishCurrentFabricJar", Copy) {
+	group = "distribution"
+	description = "Copies the current Fabric 1.21.10 jars into the normalized dist folder."
+	dependsOn tasks.named("build")
+	from(layout.buildDirectory.dir("libs"))
+	include("${project.archives_base_name}-${project.version}.jar")
+	into(layout.projectDirectory.dir("dist/1.21.10/fabric"))
+}
+
+tasks.register("buildAllTargets") {
+	group = "distribution"
+	description = "Builds the implemented target set and publishes jars under dist/."
+	dependsOn(":common-core:test", "publishCurrentFabricJar")
+	doLast {
+		logger.lifecycle("Built implemented targets. Remaining target ports are tracked in tools/ports-matrix.json.")
+	}
 }
 
 java {

@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 public class MinecraftEventsListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("MurilloSkills-Events");
+    private static final int PLAYER_DATA_AUTOSAVE_INTERVAL_TICKS = 6000;
+    private static int autosaveTicks = 0;
 
     public static void initAllListeners() {
         blockBreakedListen();
@@ -69,9 +71,13 @@ public class MinecraftEventsListener {
                 });
 
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            // IMPORTANT: Migrate legacy data BEFORE processing player join
-            // This ensures old murilloskills.dat data is moved to the new attachment system
-            com.murilloskills.data.LegacyDataMigration.migrateIfNeeded(handler.getPlayer(), server);
+            boolean jsonDataExists = com.murilloskills.data.PlayerSkillJsonStorage.exists(handler.getPlayer(), server);
+            boolean loadedJsonData = com.murilloskills.data.PlayerSkillJsonStorage.loadIfPresent(
+                    handler.getPlayer(), server);
+            if (!loadedJsonData && !jsonDataExists) {
+                com.murilloskills.data.LegacyDataMigration.migrateIfNeeded(handler.getPlayer(), server);
+                com.murilloskills.data.PlayerSkillJsonStorage.save(handler.getPlayer(), server);
+            }
 
             handlePlayerJoin(handler.getPlayer());
             // Sincroniza as skills ao entrar
@@ -84,6 +90,7 @@ public class MinecraftEventsListener {
         // Cleanup on disconnect to prevent memory leaks
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             java.util.UUID uuid = handler.getPlayer().getUuid();
+            com.murilloskills.data.PlayerSkillJsonStorage.save(handler.getPlayer(), server);
             com.murilloskills.impl.FarmerSkill.cleanupPlayerState(uuid);
             com.murilloskills.impl.BlacksmithSkill.cleanupPlayerState(uuid);
             com.murilloskills.impl.BuilderSkill.cleanupPlayerState(uuid);
@@ -124,6 +131,8 @@ public class MinecraftEventsListener {
 
                 // Sincroniza as skills após respawn para garantir UI atualizada
                 SkillsNetworkUtils.syncSkills(newPlayer);
+                com.murilloskills.data.PlayerSkillJsonStorage.save(newPlayer,
+                        (net.minecraft.server.MinecraftServer) newPlayer.getEntityWorld().getServer());
 
                 LOGGER.info("Skill attributes reapplied for {} after respawn", newPlayer.getName().getString());
 
@@ -141,6 +150,13 @@ public class MinecraftEventsListener {
             try {
                 for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                     handlePlayerTick(player);
+                }
+                autosaveTicks++;
+                if (autosaveTicks >= PLAYER_DATA_AUTOSAVE_INTERVAL_TICKS) {
+                    autosaveTicks = 0;
+                    for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+                        com.murilloskills.data.PlayerSkillJsonStorage.save(player, server);
+                    }
                 }
             } catch (Exception e) {
                 LOGGER.error("Erro crítico no loop de Player Tick", e);

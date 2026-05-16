@@ -43,3 +43,4 @@ replay_*.log
 
 .claude/
 logs/
+.codex-temp/

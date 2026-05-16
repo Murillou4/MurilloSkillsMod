@@ -44,6 +44,7 @@ public class MurilloSkills implements ModInitializer {
             com.murilloskills.events.BlockPlacementHandler.register();
             com.murilloskills.events.ChallengeEventsHandler.register();
             com.murilloskills.events.DimensionChangeHandler.register();
+            com.murilloskills.events.MinecraftEventsListener.initAllListeners();
 
             // 2.2. Register Admin Commands
             CommandRegistrationCallback.EVENT.register(SkillAdminCommands::register);
