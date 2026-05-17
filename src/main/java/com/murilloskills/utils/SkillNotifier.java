@@ -17,7 +17,7 @@ public class SkillNotifier {
                         int newLevel) {
                 // Mensagem Minimalista Otimizada
                 Text message = Text.empty()
-                                .append(Text.literal("✦ ").formatted(Formatting.GOLD))
+                                .append(Text.literal("* ").formatted(Formatting.GOLD))
                                 .append(Text.translatable("murilloskills.notify.level_up").formatted(Formatting.GOLD,
                                                 Formatting.BOLD))
                                 .append(Text.literal(" | ").formatted(Formatting.DARK_GRAY))

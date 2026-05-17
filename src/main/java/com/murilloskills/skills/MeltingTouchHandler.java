@@ -4,6 +4,7 @@ import com.murilloskills.data.ModAttachments;
 import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.network.MeltingTouchSyncS2CPayload;
 import com.murilloskills.utils.MinerXpGetter;
+import com.murilloskills.utils.MinecraftVersionCompat;
 import com.murilloskills.utils.PrestigeManager;
 import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -139,10 +140,12 @@ public final class MeltingTouchHandler {
     public static int getTotalFortuneLevel(ItemStack tool, ServerPlayerEntity player, ServerWorld world) {
         int toolFortune = 0;
         try {
-            RegistryEntry<Enchantment> fortuneEntry = world.getRegistryManager()
-                    .getOrThrow(RegistryKeys.ENCHANTMENT)
-                    .getOrThrow(Enchantments.FORTUNE);
-            toolFortune = EnchantmentHelper.getLevel(fortuneEntry, tool);
+            Optional<RegistryEntry.Reference<Enchantment>> fortuneEntry = MinecraftVersionCompat.registryEntry(
+                    MinecraftVersionCompat.enchantmentRegistry(world),
+                    Enchantments.FORTUNE);
+            if (fortuneEntry.isPresent()) {
+                toolFortune = EnchantmentHelper.getLevel(fortuneEntry.get(), tool);
+            }
         } catch (Exception ignored) {
         }
 

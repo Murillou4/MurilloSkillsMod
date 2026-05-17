@@ -3,6 +3,7 @@ package com.murilloskills.data;
 import com.murilloskills.MurilloSkills;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
 @SuppressWarnings("UnstableApiUsage")
@@ -24,5 +25,9 @@ public class ModAttachments {
         // Just referencing the static field to ensure class loading/registration
         // happens
         // but explicit registration method is good practice for clarity in Main class
+    }
+
+    public static PlayerSkillData getOrCreate(ServerPlayerEntity player) {
+        return player.getAttachedOrCreate(PLAYER_SKILLS);
     }
 }

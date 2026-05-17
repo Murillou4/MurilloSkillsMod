@@ -67,13 +67,13 @@ public class FarmerCropHud {
 
         // Line 1: Growth stage
         String stageText = isMature ? "Mature" : (currentAge + "/" + maxAge);
-        Text line1 = Text.literal("\uD83C\uDF3E ")
+        Text line1 = Text.literal("[Crop] ")
                 .append(Text.translatable(state.getBlock().getTranslationKey()))
                 .append(Text.literal(" [" + stageText + "]"))
                 .formatted(Formatting.GREEN);
 
         // Line 2: Boost info
-        Text line2 = Text.literal("  \u2B06 ")
+        Text line2 = Text.literal("[Boost] ")
                 .append(Text.translatable("murilloskills.hud.crop_boost", Integer.toString(growthBoost)))
                 .formatted(Formatting.YELLOW);
 

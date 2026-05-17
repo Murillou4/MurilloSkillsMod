@@ -3,8 +3,10 @@
 	"package": "com.murilloskills.mixin.client",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
+		"BuilderPlayerReachClientMixin",
 		"ExampleClientMixin",
 		"ExplorerFovMixin",
+		"ClientPlayerMiningSpeedMixin",
 		"TomsStorageTerminalBulkActionsMixin",
 		"AnvilScreenHandlerClientMixin",
 		"EnchantmentScreenHandlerClientMixin",

@@ -64,7 +64,7 @@ public class BlockBreakHandler {
 
             if (xpResult.leveledUp()) {
                 MutableText message = Text.empty()
-                        .append(Text.literal("✦ ").formatted(Formatting.GOLD))
+                        .append(Text.literal("* ").formatted(Formatting.GOLD))
                         .append(Text.translatable("murilloskills.notify.level_up").formatted(Formatting.GOLD,
                                 Formatting.BOLD))
                         .append(Text.literal(" | ").formatted(Formatting.DARK_GRAY))

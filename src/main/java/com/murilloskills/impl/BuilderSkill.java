@@ -3,11 +3,11 @@ package com.murilloskills.impl;
 import com.murilloskills.api.AbstractSkill;
 
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.MinecraftVersionCompat;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -251,18 +251,12 @@ public class BuilderSkill extends AbstractSkill {
             LOGGER.info("Applying Builder reach for {} - Level: {}, Prestige: {}, Reach Bonus: {}",
                     player.getName().getString(), level, prestige, reachBonus);
 
-            var reachAttr = player.getAttributeInstance(EntityAttributes.BLOCK_INTERACTION_RANGE);
+            var reachAttr = MinecraftVersionCompat.getAttributeInstance(player, "block_interaction_range");
             if (reachAttr != null) {
                 reachAttr.removeModifier(BUILDER_REACH_ID);
-                if (reachBonus > 0) {
-                    reachAttr.addTemporaryModifier(new EntityAttributeModifier(
-                            BUILDER_REACH_ID, reachBonus,
-                            EntityAttributeModifier.Operation.ADD_VALUE));
-                    LOGGER.info("Added reach modifier - New range: {}", reachAttr.getValue());
-                }
-            } else {
-                LOGGER.warn("BLOCK_INTERACTION_RANGE attribute is null for {}", player.getName().getString());
             }
+            LOGGER.debug("Builder reach is applied by version-specific reach mixins for {} - Bonus: {}",
+                    player.getName().getString(), reachBonus);
 
         } catch (Exception e) {
             LOGGER.error("Erro ao atualizar atributos do Construtor para " + player.getName().getString(), e);

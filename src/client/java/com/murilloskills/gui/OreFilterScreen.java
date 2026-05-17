@@ -280,7 +280,7 @@ public class OreFilterScreen extends Screen {
         context.fill(centerX - lineW / 2, headerBottom - 1, centerX + lineW / 2, headerBottom, palette.accentGold());
 
         context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("⛏ ").formatted(Formatting.GOLD)
+                Text.literal("[Ore] ").formatted(Formatting.GOLD)
                         .append(this.title.copy().formatted(Formatting.GOLD, Formatting.BOLD)),
                 centerX, panelY + 5, palette.textGold());
 

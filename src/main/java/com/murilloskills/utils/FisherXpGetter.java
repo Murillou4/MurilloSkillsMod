@@ -1,8 +1,10 @@
 package com.murilloskills.utils;
 
 import com.murilloskills.models.SkillReceptorResult;
+import com.murilloskills.core.compat.CrossModCompatRules;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
+import net.minecraft.registry.Registries;
 
 /**
  * Utility class to determine XP rewards for Fisher skill actions.
@@ -50,7 +52,8 @@ public class FisherXpGetter {
                 item == Items.BOW ||
                 item == Items.FISHING_ROD ||
                 item == Items.ENCHANTED_BOOK ||
-                item == Items.NAUTILUS_SHELL;
+                item == Items.NAUTILUS_SHELL ||
+                CrossModCompatRules.isFishingTreasureItemId(Registries.ITEM.getId(item).toString());
     }
 
     /**
@@ -60,7 +63,8 @@ public class FisherXpGetter {
         return item == Items.COD ||
                 item == Items.SALMON ||
                 item == Items.TROPICAL_FISH ||
-                item == Items.PUFFERFISH;
+                item == Items.PUFFERFISH ||
+                CrossModCompatRules.isFishItemId(Registries.ITEM.getId(item).toString());
     }
 
     /**
@@ -78,7 +82,8 @@ public class FisherXpGetter {
                 item == Items.INK_SAC ||
                 item == Items.TRIPWIRE_HOOK ||
                 item == Items.BAMBOO ||
-                item == Items.LILY_PAD;
+                item == Items.LILY_PAD ||
+                CrossModCompatRules.isFishingJunkItemId(Registries.ITEM.getId(item).toString());
     }
 
     /**

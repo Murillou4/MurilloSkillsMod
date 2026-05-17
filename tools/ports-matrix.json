@@ -1,20 +1,21 @@
 {
   "schemaVersion": 2,
   "implementedTargets": [
-    { "minecraft": "1.21.10", "loader": "fabric", "status": "runtime-port", "dist": "dist/1.21.10/fabric" },
-    { "minecraft": "1.21.1", "loader": "fabric", "status": "runtime-port", "dist": "dist/1.21.1/fabric" },
-    { "minecraft": "1.21.1", "loader": "forge", "status": "runtime-port", "dist": "dist/1.21.1/forge" },
-    { "minecraft": "1.21.1", "loader": "neoforge", "status": "runtime-port", "dist": "dist/1.21.1/neoforge" },
-    { "minecraft": "1.20.1", "loader": "fabric", "status": "runtime-port", "dist": "dist/1.20.1/fabric" },
-    { "minecraft": "1.20.1", "loader": "forge", "status": "runtime-port", "dist": "dist/1.20.1/forge" },
-    { "minecraft": "1.19.2", "loader": "fabric", "status": "runtime-port", "dist": "dist/1.19.2/fabric" },
-    { "minecraft": "1.19.2", "loader": "forge", "status": "runtime-port", "dist": "dist/1.19.2/forge" },
-    { "minecraft": "1.18.2", "loader": "fabric", "status": "runtime-port", "dist": "dist/1.18.2/fabric" },
-    { "minecraft": "1.18.2", "loader": "forge", "status": "runtime-port", "dist": "dist/1.18.2/forge" },
-    { "minecraft": "1.16.5", "loader": "fabric", "status": "runtime-port", "dist": "dist/1.16.5/fabric" },
-    { "minecraft": "1.16.5", "loader": "forge", "status": "runtime-port", "dist": "dist/1.16.5/forge" },
-    { "minecraft": "1.12.2", "loader": "legacy-fabric", "status": "runtime-port", "dist": "dist/1.12.2/legacy-fabric" },
-    { "minecraft": "1.12.2", "loader": "forge", "status": "runtime-port", "dist": "dist/1.12.2/forge" }
+    { "minecraft": "26.1.2", "loader": "fabric", "status": "blocked-no-yarn-mappings", "dist": "dist/26.1.2/fabric" },
+    { "minecraft": "1.21.10", "loader": "fabric", "status": "native-cross-mod-compat", "dist": "dist/1.21.10/fabric" },
+    { "minecraft": "1.21.1", "loader": "fabric", "status": "native-smoke-tested", "dist": "dist/1.21.1/fabric" },
+    { "minecraft": "1.21.1", "loader": "forge", "status": "blocked-needs-native-forge-port", "dist": "dist/1.21.1/forge" },
+    { "minecraft": "1.21.1", "loader": "neoforge", "status": "blocked-needs-native-neoforge-port", "dist": "dist/1.21.1/neoforge" },
+    { "minecraft": "1.20.1", "loader": "fabric", "status": "native-smoke-tested", "dist": "dist/1.20.1/fabric" },
+    { "minecraft": "1.20.1", "loader": "forge", "status": "blocked-needs-native-forge-port", "dist": "dist/1.20.1/forge" },
+    { "minecraft": "1.19.2", "loader": "fabric", "status": "native-smoke-tested", "dist": "dist/1.19.2/fabric" },
+    { "minecraft": "1.19.2", "loader": "forge", "status": "blocked-needs-native-forge-port", "dist": "dist/1.19.2/forge" },
+    { "minecraft": "1.18.2", "loader": "fabric", "status": "native-smoke-tested", "dist": "dist/1.18.2/fabric" },
+    { "minecraft": "1.18.2", "loader": "forge", "status": "blocked-needs-native-forge-port", "dist": "dist/1.18.2/forge" },
+    { "minecraft": "1.16.5", "loader": "fabric", "status": "native-smoke-tested", "dist": "dist/1.16.5/fabric" },
+    { "minecraft": "1.16.5", "loader": "forge", "status": "blocked-needs-native-forge-port", "dist": "dist/1.16.5/forge" },
+    { "minecraft": "1.12.2", "loader": "legacy-fabric", "status": "blocked-needs-native-legacy-fabric-port", "dist": "dist/1.12.2/legacy-fabric" },
+    { "minecraft": "1.12.2", "loader": "forge", "status": "blocked-needs-native-forge-port", "dist": "dist/1.12.2/forge" }
   ],
   "plannedTargets": []
 }

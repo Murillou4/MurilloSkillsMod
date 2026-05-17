@@ -4,6 +4,20 @@ Todas as mudanças importantes do mod serão documentadas aqui.
 
 ---
 
+## [1.2.75] - 2026-05-17
+
+### UI, QA e Validacao Fabric
+
+- **Skills responsivo por GUI scale**: o menu principal reorganiza cards, botoes e estados compactos para evitar cortes quando o GUI scale esta alto.
+- **Filter e Ultmine Config polidos em todas as Fabric validadas**: botoes pequenos com icones, posicionados antes do reset e fora da area dos perks.
+- **Tooltips, Guide e Synergy completos**: a validacao cobre perks, passivas, ativas, fontes de XP, timeline do Guide e sinergias para todas as 8 skills.
+- **Passivas, ativas, perks e Paragon testados em runtime**: self-test de cliente/servidor valida Farmer, Fisher, Archer, Miner, Builder, Blacksmith, Explorer e Warrior.
+- **Mais logs de diagnostico**: selecao de skill, Paragon, habilidades e fallbacks de compatibilidade agora deixam rastro claro no log.
+- **QoL de teclas e HUD**: keybinds sem conflitos padrao e HUDs de canto empilhados para evitar texto sobreposto.
+- **Smoke Fabric completo**: builds e client smoke passaram em 1.21.10, 1.21.1, 1.20.1, 1.19.2, 1.18.2 e 1.16.5.
+
+---
+
 ## [1.2.74] - 2026-05-08
 
 ### Tom's Storage - Craft e Drop Seguro

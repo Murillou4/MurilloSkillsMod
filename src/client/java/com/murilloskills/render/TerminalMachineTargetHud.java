@@ -44,7 +44,7 @@ public final class TerminalMachineTargetHud {
         int panelW = textWidth + PADDING_H * 2;
         int panelH = textHeight + PADDING_V * 2;
         int x = MARGIN;
-        int y = context.getScaledWindowHeight() - HOTBAR_OFFSET - panelH;
+        int y = HudAnchorStack.claimBottomLeft(context, panelH, HOTBAR_OFFSET, 4);
 
         context.fill(x, y, x + panelW, y + panelH, PALETTE.hudIndicatorBg());
         context.fill(x, y, x + panelW, y + 1, 0xFF27D7FF);

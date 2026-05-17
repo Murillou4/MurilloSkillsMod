@@ -1,6 +1,7 @@
 package com.murilloskills.utils;
 
 import com.murilloskills.models.SkillReceptorResult;
+import com.murilloskills.core.compat.CrossModCompatRules;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.registry.Registries;
@@ -49,6 +50,8 @@ public class MinerXpGetter {
             return new SkillReceptorResult(true, SkillConfig.getMinerXpNetherQuartz());
         } else if (block == Blocks.NETHER_GOLD_ORE) {
             return new SkillReceptorResult(true, SkillConfig.getMinerXpNetherGold());
+        } else if (CrossModCompatRules.isOreResourceId(Registries.BLOCK.getId(block).toString())) {
+            return new SkillReceptorResult(true, SkillConfig.getMinerXpIron());
         } else {
             // NULL OR NOT ORE BLOCK
             return new SkillReceptorResult(false, 0);
@@ -80,7 +83,13 @@ public class MinerXpGetter {
             path = path.substring(namespaceSeparator + 1);
         }
 
-        return path.endsWith("_ore") || path.equals("ancient_debris");
+        return path.endsWith("_ore")
+                || path.contains("_ore_")
+                || path.equals("ancient_debris")
+                || path.endsWith("_crystal_ore")
+                || path.endsWith("_gem_ore")
+                || path.endsWith("_cluster")
+                || path.endsWith("_deposit");
     }
 
     public static boolean isRawResourceBlock(Block block) {
@@ -101,10 +110,7 @@ public class MinerXpGetter {
             path = path.substring(namespaceSeparator + 1);
         }
 
-        return path.equals("raw_iron_block")
-                || path.equals("raw_copper_block")
-                || path.equals("raw_gold_block")
-                || (path.startsWith("raw_") && path.endsWith("_block"));
+        return CrossModCompatRules.isRawResourceBlockId(blockId);
     }
 
     public static String humanizeModdedOreName(String blockId) {

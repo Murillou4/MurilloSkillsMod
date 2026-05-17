@@ -65,8 +65,8 @@ class UltmineDropCollectorTest {
         UltmineDropCollector.addMerged(merged, new FakeStack("diamond", 3), ADAPTER);
 
         assertEquals(1, merged.size());
-        assertEquals("diamond", merged.getFirst().id());
-        assertEquals(3, merged.getFirst().count());
+        assertEquals("diamond", merged.get(0).id());
+        assertEquals(3, merged.get(0).count());
     }
 
     @Test

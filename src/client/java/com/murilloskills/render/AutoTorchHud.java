@@ -40,7 +40,7 @@ public class AutoTorchHud {
         }
 
         Text label = Text.translatable("murilloskills.hud.auto_torch");
-        Text icon = Text.literal("\uD83D\uDD26 ").formatted(Formatting.YELLOW);
+        Text icon = Text.literal("[Torch] ").formatted(Formatting.YELLOW);
         Text fullText = icon.copy().append(label.copy().formatted(Formatting.YELLOW, Formatting.BOLD));
 
         int textWidth = client.textRenderer.getWidth(fullText);
@@ -49,11 +49,7 @@ public class AutoTorchHud {
         int panelW = textWidth + PADDING_H * 2;
         int panelH = textHeight + PADDING_V * 2;
         int x = MARGIN;
-        // Stack below other HUD indicators
-        int yOffset = 0;
-        if (AreaPlantingHud.isEnabled()) yOffset += panelH + 4;
-        if (PathfinderHud.isActive()) yOffset += panelH + 4;
-        int y = context.getScaledWindowHeight() - HOTBAR_OFFSET - panelH - yOffset;
+        int y = HudAnchorStack.claimBottomLeft(context, panelH, HOTBAR_OFFSET, 4);
 
         // Panel background
         context.fill(x, y, x + panelW, y + panelH, PALETTE.hudIndicatorBg());

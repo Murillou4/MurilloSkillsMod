@@ -16,7 +16,7 @@ public record VeinMinerToggleC2SPayload(boolean activated) implements CustomPayl
     public static final CustomPayload.Id<VeinMinerToggleC2SPayload> ID = new CustomPayload.Id<>(
             Identifier.of(MurilloSkills.MOD_ID, "vein_miner_toggle"));
     public static final PacketCodec<RegistryByteBuf, VeinMinerToggleC2SPayload> CODEC = PacketCodec.tuple(
-            PacketCodecs.BOOLEAN, VeinMinerToggleC2SPayload::activated,
+            NetworkPayloadCodecs.BOOLEAN, VeinMinerToggleC2SPayload::activated,
             VeinMinerToggleC2SPayload::new);
 
     @Override

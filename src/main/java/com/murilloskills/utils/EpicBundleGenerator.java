@@ -175,8 +175,8 @@ public class EpicBundleGenerator {
         RegistryKey<Enchantment> chosen = fishingEnchantments[random.nextInt(fishingEnchantments.length)];
 
         // Get the enchantment registry
-        Registry<Enchantment> registry = world.getRegistryManager().getOrThrow(RegistryKeys.ENCHANTMENT);
-        Optional<RegistryEntry.Reference<Enchantment>> optionalEntry = registry.getOptional(chosen);
+        Registry<Enchantment> registry = MinecraftVersionCompat.enchantmentRegistry(world);
+        Optional<RegistryEntry.Reference<Enchantment>> optionalEntry = MinecraftVersionCompat.registryEntry(registry, chosen);
 
         if (optionalEntry.isPresent()) {
             RegistryEntry<Enchantment> enchantmentEntry = optionalEntry.get();
@@ -214,8 +214,8 @@ public class EpicBundleGenerator {
         RegistryKey<Enchantment> chosen = tridentEnchantments[random.nextInt(tridentEnchantments.length)];
 
         // Get the enchantment registry
-        Registry<Enchantment> registry = world.getRegistryManager().getOrThrow(RegistryKeys.ENCHANTMENT);
-        Optional<RegistryEntry.Reference<Enchantment>> optionalEntry = registry.getOptional(chosen);
+        Registry<Enchantment> registry = MinecraftVersionCompat.enchantmentRegistry(world);
+        Optional<RegistryEntry.Reference<Enchantment>> optionalEntry = MinecraftVersionCompat.registryEntry(registry, chosen);
 
         if (optionalEntry.isPresent()) {
             RegistryEntry<Enchantment> enchantmentEntry = optionalEntry.get();

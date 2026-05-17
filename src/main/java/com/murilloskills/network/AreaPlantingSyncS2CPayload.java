@@ -14,7 +14,7 @@ public record AreaPlantingSyncS2CPayload(boolean enabled, int diameter) implemen
     public static final CustomPayload.Id<AreaPlantingSyncS2CPayload> ID = new CustomPayload.Id<>(
             Identifier.of(MurilloSkills.MOD_ID, "area_planting_sync"));
     public static final PacketCodec<RegistryByteBuf, AreaPlantingSyncS2CPayload> CODEC = PacketCodec.tuple(
-            PacketCodecs.BOOLEAN, AreaPlantingSyncS2CPayload::enabled,
+            NetworkPayloadCodecs.BOOLEAN, AreaPlantingSyncS2CPayload::enabled,
             PacketCodecs.VAR_INT, AreaPlantingSyncS2CPayload::diameter,
             AreaPlantingSyncS2CPayload::new);
 

@@ -27,6 +27,14 @@ final class FabricReflectiveHooks {
                 "net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents$Disconnect", "player-disconnect");
         registerEvent(runtime, "net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents", "AFTER",
                 "net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents$After", "block-break");
+        registerEvent(runtime, "net.fabricmc.fabric.api.event.player.UseBlockCallback", "EVENT",
+                "net.fabricmc.fabric.api.event.player.UseBlockCallback", "use-block");
+        registerEvent(runtime, "net.fabricmc.fabric.api.event.player.AttackEntityCallback", "EVENT",
+                "net.fabricmc.fabric.api.event.player.AttackEntityCallback", "attack-entity");
+        registerEvent(runtime, "net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents",
+                "AFTER_KILLED_OTHER_ENTITY",
+                "net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents$AfterKilledOtherEntity",
+                "entity-kill");
 
         registerEvent(runtime, "net.legacyfabric.fabric.api.event.lifecycle.v1.ServerLifecycleEvents", "SERVER_STARTED",
                 "net.legacyfabric.fabric.api.event.lifecycle.v1.ServerLifecycleEvents$ServerStarted", "server-started");
@@ -54,7 +62,7 @@ final class FabricReflectiveHooks {
                     if (!method.getDeclaringClass().equals(Object.class)) {
                         runtime.events().handleFabricCallback(callbackName, args);
                     }
-                    return null;
+                    return defaultReturn(method);
                 }
             });
             register.invoke(event, proxy);
@@ -65,6 +73,48 @@ final class FabricReflectiveHooks {
                     + ex.getClass().getSimpleName() + ")");
             return false;
         }
+    }
+
+    private static Object defaultReturn(Method method) {
+        Class<?> type = method.getReturnType();
+        if (type == Void.TYPE) {
+            return null;
+        }
+        if (type == Boolean.TYPE) {
+            return Boolean.FALSE;
+        }
+        if (type == Integer.TYPE) {
+            return Integer.valueOf(0);
+        }
+        if (type == Long.TYPE) {
+            return Long.valueOf(0L);
+        }
+        if (type == Short.TYPE) {
+            return Short.valueOf((short) 0);
+        }
+        if (type == Byte.TYPE) {
+            return Byte.valueOf((byte) 0);
+        }
+        if (type == Float.TYPE) {
+            return Float.valueOf(0.0f);
+        }
+        if (type == Double.TYPE) {
+            return Double.valueOf(0.0d);
+        }
+        if (type.isEnum()) {
+            Object[] constants = type.getEnumConstants();
+            if (constants != null) {
+                for (Object constant : constants) {
+                    if ("PASS".equals(String.valueOf(constant))) {
+                        return constant;
+                    }
+                }
+                if (constants.length > 0) {
+                    return constants[0];
+                }
+            }
+        }
+        return null;
     }
 
     private static Method findRegister(Class<?> eventClass) throws NoSuchMethodException {

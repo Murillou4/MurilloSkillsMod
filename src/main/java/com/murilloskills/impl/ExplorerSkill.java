@@ -4,6 +4,7 @@ import com.murilloskills.api.AbstractSkill;
 
 import com.murilloskills.network.TreasureHunterS2CPayload;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.MinecraftVersionCompat;
 import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillNotifier;
 import com.murilloskills.utils.SkillsNetworkUtils;
@@ -12,7 +13,6 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -156,7 +156,7 @@ public class ExplorerSkill extends AbstractSkill {
 
             // --- LEVEL 45: PATHFINDER - Explorer Speed while sprinting (no FOV change) ---
             if (meetsLevelRequirement(level, SkillConfig.EXPLORER_PATHFINDER_LEVEL)) {
-                var speedAttr = player.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
+                var speedAttr = MinecraftVersionCompat.getAttributeInstance(player, "movement_speed");
                 if (speedAttr != null) {
                     boolean wasActive = speedAttr.getModifier(EXPLORER_PATHFINDER_SPEED_ID) != null;
                     speedAttr.removeModifier(EXPLORER_PATHFINDER_SPEED_ID);
@@ -202,7 +202,7 @@ public class ExplorerSkill extends AbstractSkill {
 
     private void handleMovementXp(ServerPlayerEntity player) {
         UUID uuid = player.getUuid();
-        net.minecraft.util.math.Vec3d currentPos = player.getEntityPos();
+        net.minecraft.util.math.Vec3d currentPos = MinecraftVersionCompat.pos(player);
         net.minecraft.util.math.Vec3d lastPos = lastPositions.get(uuid);
 
         if (lastPos != null) {
@@ -263,7 +263,7 @@ public class ExplorerSkill extends AbstractSkill {
 
             // --- MOVEMENT SPEED - Apply prestige bonus ---
             double speedBonus = level * SkillConfig.EXPLORER_SPEED_PER_LEVEL * prestigeMultiplier;
-            var speedAttribute = player.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
+            var speedAttribute = MinecraftVersionCompat.getAttributeInstance(player, "movement_speed");
 
             if (speedAttribute != null) {
                 speedAttribute.removeModifier(EXPLORER_SPEED_ID);
@@ -277,7 +277,7 @@ public class ExplorerSkill extends AbstractSkill {
 
             // --- LUCK (every 20 levels) ---
             int luckBonus = level / SkillConfig.EXPLORER_LUCK_INTERVAL;
-            var luckAttribute = player.getAttributeInstance(EntityAttributes.LUCK);
+            var luckAttribute = MinecraftVersionCompat.getAttributeInstance(player, "luck");
 
             if (luckAttribute != null) {
                 luckAttribute.removeModifier(EXPLORER_LUCK_ID);
@@ -290,7 +290,7 @@ public class ExplorerSkill extends AbstractSkill {
             }
 
             // --- STEP HEIGHT (Level 10+) - Only if enabled ---
-            var stepHeightAttribute = player.getAttributeInstance(EntityAttributes.STEP_HEIGHT);
+            var stepHeightAttribute = MinecraftVersionCompat.getAttributeInstance(player, "step_height");
             if (stepHeightAttribute != null) {
                 stepHeightAttribute.removeModifier(EXPLORER_STEP_HEIGHT_ID);
                 // Only apply if level requirement met AND toggle is enabled
@@ -402,7 +402,7 @@ public class ExplorerSkill extends AbstractSkill {
             player.sendMessage(
                     Text.translatable("murilloskills.explorer.speed_boost_disabled").formatted(Formatting.GRAY), true);
             // Remove the pathfinder speed attribute modifier
-            var speedAttr = player.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
+            var speedAttr = MinecraftVersionCompat.getAttributeInstance(player, "movement_speed");
             if (speedAttr != null) {
                 speedAttr.removeModifier(EXPLORER_PATHFINDER_SPEED_ID);
             }

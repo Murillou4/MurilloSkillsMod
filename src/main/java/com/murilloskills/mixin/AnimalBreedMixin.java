@@ -25,7 +25,8 @@ public abstract class AnimalBreedMixin {
         AnimalEntity self = (AnimalEntity) (Object) this;
 
         // Get the player who caused the breeding (the one who fed this animal)
-        if (self.getLovingPlayer() instanceof ServerPlayerEntity serverPlayer) {
+        ServerPlayerEntity serverPlayer = self.getLovingPlayer();
+        if (serverPlayer != null) {
             ChallengeEventsHandler.onAnimalBred(serverPlayer);
 
             // Track animal breeding for Animal Breeder achievement

@@ -5,11 +5,11 @@ import com.murilloskills.api.AbstractSkill;
 import com.murilloskills.data.ModAttachments;
 import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.MinecraftVersionCompat;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -154,7 +154,7 @@ public class BlacksmithSkill extends AbstractSkill {
                 knockbackResistance = SkillConfig.BLACKSMITH_KNOCKBACK_REDUCTION;
             }
 
-            var knockbackAttr = player.getAttributeInstance(EntityAttributes.KNOCKBACK_RESISTANCE);
+            var knockbackAttr = MinecraftVersionCompat.getAttributeInstance(player, "knockback_resistance");
             if (knockbackAttr != null) {
                 knockbackAttr.removeModifier(BLACKSMITH_KNOCKBACK_RESISTANCE_ID);
                 if (knockbackResistance > 0) {
@@ -201,7 +201,7 @@ public class BlacksmithSkill extends AbstractSkill {
                 false, true, true));
 
         // Apply full knockback immunity
-        var knockbackAttr = player.getAttributeInstance(EntityAttributes.KNOCKBACK_RESISTANCE);
+        var knockbackAttr = MinecraftVersionCompat.getAttributeInstance(player, "knockback_resistance");
         if (knockbackAttr != null) {
             knockbackAttr.removeModifier(TITANIUM_KNOCKBACK_RESISTANCE_ID);
             knockbackAttr.addTemporaryModifier(new EntityAttributeModifier(
@@ -232,7 +232,7 @@ public class BlacksmithSkill extends AbstractSkill {
         titaniumAuraPlayers.remove(player.getUuid());
 
         // Remove full knockback resistance (keep level 75 base if applicable)
-        var knockbackAttr = player.getAttributeInstance(EntityAttributes.KNOCKBACK_RESISTANCE);
+        var knockbackAttr = MinecraftVersionCompat.getAttributeInstance(player, "knockback_resistance");
         if (knockbackAttr != null) {
             knockbackAttr.removeModifier(TITANIUM_KNOCKBACK_RESISTANCE_ID);
         }

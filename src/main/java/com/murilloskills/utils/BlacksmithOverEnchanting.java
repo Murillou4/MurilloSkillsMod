@@ -215,15 +215,20 @@ public final class BlacksmithOverEnchanting {
         List<EnchantmentLevelEntry> upgradedEntries = null;
         for (int i = 0; i < enchantments.size(); i++) {
             EnchantmentLevelEntry entry = enchantments.get(i);
-            int upgradedLevel = rollEnchantingTableLevel(entry.enchantment().value().getMaxLevel(), random);
-            if (upgradedLevel <= entry.level()) {
+            RegistryEntry<Enchantment> enchantment = MinecraftVersionCompat.enchantmentEntry(entry);
+            int currentLevel = MinecraftVersionCompat.enchantmentLevel(entry);
+            if (enchantment == null) {
+                continue;
+            }
+            int upgradedLevel = rollEnchantingTableLevel(enchantment.value().getMaxLevel(), random);
+            if (upgradedLevel <= currentLevel) {
                 continue;
             }
 
             if (upgradedEntries == null) {
                 upgradedEntries = new ArrayList<>(enchantments);
             }
-            upgradedEntries.set(i, new EnchantmentLevelEntry(entry.enchantment(), upgradedLevel));
+            upgradedEntries.set(i, new EnchantmentLevelEntry(enchantment, upgradedLevel));
         }
 
         return upgradedEntries != null ? upgradedEntries : enchantments;

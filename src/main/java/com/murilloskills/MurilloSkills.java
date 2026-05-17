@@ -64,6 +64,7 @@ public class MurilloSkills implements ModInitializer {
             SkillRegistry.logRegisteredSkills();
 
             LOGGER.info("MurilloSkills Initialized with Skill Specialization System!");
+            com.murilloskills.dev.SkillRuntimeSelfTest.register();
 
         } catch (Exception e) {
             LOGGER.error("ERRO CRÍTICO NA INICIALIZAÇÃO DO MOD!", e);

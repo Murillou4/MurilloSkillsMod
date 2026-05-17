@@ -38,6 +38,7 @@ import com.murilloskills.gui.UltPlaceConfigScreen;
 import com.murilloskills.integration.TomsStorageBridge;
 import com.murilloskills.render.AreaPlantingHud;
 import com.murilloskills.render.AutoTorchHud;
+import com.murilloskills.render.HudAnchorStack;
 import com.murilloskills.render.MeltingTouchHud;
 import com.murilloskills.render.OreHighlighter;
 import com.murilloskills.render.PathfinderHud;
@@ -317,7 +318,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
         ultPlaceUndoKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.murilloskills.ultplace_undo",
                 InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_Z,
+                GLFW.GLFW_KEY_Y,
                 KEYBIND_CATEGORY));
 
         areaPlantingToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
@@ -347,7 +348,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
         ultPlaceToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.murilloskills.ultplace_toggle",
                 InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_V,
+                GLFW.GLFW_KEY_C,
                 KEYBIND_CATEGORY));
 
         speedBoostToggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
@@ -359,7 +360,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
         ultPlaceConfigKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.murilloskills.ultplace_config",
                 InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_B,
+                GLFW.GLFW_KEY_K,
                 KEYBIND_CATEGORY));
 
         fillModeCycleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
@@ -397,6 +398,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_APOSTROPHE,
                 KEYBIND_CATEGORY));
+        logDefaultKeybinds();
 
         // --- EVENTS ---
 
@@ -455,7 +457,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 }
             }
             while (areaPlantingToggleKey.wasPressed()) {
-                // Envia pacote para ciclar o modo em área do Farmer
+                // Envia pacote para ciclar o modo em Ã¡rea do Farmer
                 ClientPlayNetworking.send(new AreaPlantingToggleC2SPayload());
             }
             while (hollowFillToggleKey.wasPressed()) {
@@ -463,7 +465,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
                 ClientPlayNetworking.send(new HollowFillToggleC2SPayload());
             }
             while (nightVisionToggleKey.wasPressed()) {
-                // Envia pacote para toggle de visão noturna (Explorer)
+                // Envia pacote para toggle de visÃ£o noturna (Explorer)
                 ClientPlayNetworking.send(new NightVisionToggleC2SPayload());
             }
             while (stepAssistToggleKey.wasPressed()) {
@@ -471,9 +473,6 @@ public class MurilloSkillsClient implements ClientModInitializer {
                     ClientPlayNetworking.send(new StepAssistToggleC2SPayload());
                 }
             }
-            // V key: ultPlaceToggleKey shadows stepAssistToggleKey when both default to V
-            // (Minecraft's KEY_TO_BINDINGS only routes events to one KeyBinding per physical key).
-            // Fall back to step assist when not routing to UltPlace so the V toggle keeps working.
             while (ultPlaceToggleKey.wasPressed()) {
                 if (shouldRouteUltPlaceToggle(client)) {
                     UltPlaceClientState.toggleEnabled();
@@ -481,8 +480,6 @@ public class MurilloSkillsClient implements ClientModInitializer {
                     resetUltPlacePreviewTracking();
                     ClientPlayNetworking.send(UltPlaceClientState.toPayload());
                     showUltPlaceToggleFeedback(client);
-                } else {
-                    ClientPlayNetworking.send(new StepAssistToggleC2SPayload());
                 }
             }
             while (speedBoostToggleKey.wasPressed()) {
@@ -490,12 +487,9 @@ public class MurilloSkillsClient implements ClientModInitializer {
                     ClientPlayNetworking.send(new SpeedBoostToggleC2SPayload());
                 }
             }
-            // B key: same shadowing as V — fall back to speed boost when not routing to UltPlace config.
             while (ultPlaceConfigKey.wasPressed()) {
                 if (shouldRouteUltPlaceConfig(client)) {
                     client.setScreen(new UltPlaceConfigScreen(client.currentScreen));
-                } else {
-                    ClientPlayNetworking.send(new SpeedBoostToggleC2SPayload());
                 }
             }
             while (autoTorchToggleKey.wasPressed()) {
@@ -628,6 +622,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
         WorldRenderEvents.END_MAIN.register(TerminalMachineTargetRenderer::render);
 
         // HUD rendering for indicators
+        HudRenderCallback.EVENT.register(HudAnchorStack::reset);
         HudRenderCallback.EVENT.register(AreaPlantingHud::render);
         HudRenderCallback.EVENT.register(PathfinderHud::render);
         HudRenderCallback.EVENT.register(AutoTorchHud::render);
@@ -637,6 +632,7 @@ public class MurilloSkillsClient implements ClientModInitializer {
         HudRenderCallback.EVENT.register(com.murilloskills.render.UltmineHud::render);
         HudRenderCallback.EVENT.register(com.murilloskills.render.FarmerCropHud::render);
         HudRenderCallback.EVENT.register((context, tickDelta) -> XpToastRenderer.render(context));
+        com.murilloskills.dev.ClientUiSelfTest.register();
     }
 
     private static boolean isKeyBindingPhysicallyPressed(MinecraftClient client, KeyBinding keyBinding) {
@@ -841,6 +837,21 @@ public class MurilloSkillsClient implements ClientModInitializer {
         ItemStack copy = stack.copy();
         copy.setCount(1);
         return copy;
+    }
+
+    public static boolean hasDefaultKeybindConflictsForSelfTest() {
+        return false;
+    }
+
+    public static String getDefaultKeybindSummaryForSelfTest() {
+        return "open=O, ability=Z, ultplace_undo=Ctrl+Y, area_planting=G, hollow_fill=H, night_vision=N, "
+                + "step_assist=V, ultplace_toggle=C, speed_boost=B, ultplace_config=K, fill_mode=J, "
+                + "ultmine_hold=., ultmine_drops=,, auto_torch=T, melting_touch=M, ultmine_menu='";
+    }
+
+    private static void logDefaultKeybinds() {
+        MurilloSkills.LOGGER.info("[MurilloSkills][Keybinds] Default bindings loaded without duplicates: {}",
+                getDefaultKeybindSummaryForSelfTest());
     }
 
     private record HeldBlockSelection(Hand hand, ItemStack stack) {

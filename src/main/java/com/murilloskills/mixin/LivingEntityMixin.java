@@ -6,6 +6,7 @@ import com.murilloskills.data.PlayerSkillData;
 import com.murilloskills.impl.WarriorSkill;
 import com.murilloskills.skills.ArcherHitHandler;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.MinecraftVersionCompat;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -100,7 +101,8 @@ public abstract class LivingEntityMixin {
                 if (source.getAttacker() instanceof LivingEntity attacker && attacker != player) {
                     float reflectedDamage = com.murilloskills.impl.BlacksmithSkill.getReflectedDamage(amount);
                     // Deal damage back to attacker
-                    attacker.damage(world, player.getDamageSources().thorns(player), reflectedDamage);
+                    MinecraftVersionCompat.damage(attacker, world, player.getDamageSources().thorns(player),
+                            reflectedDamage);
                 }
             }
         }
@@ -176,7 +178,7 @@ public abstract class LivingEntityMixin {
             return;
 
         // Calcula a distância do tiro
-        double distance = projectile.getEntityPos().distanceTo(player.getEntityPos());
+        double distance = MinecraftVersionCompat.pos(projectile).distanceTo(MinecraftVersionCompat.pos(player));
 
         // Dá XP de kill ao Archer
         ArcherHitHandler.handleArrowKill(player, self, distance);

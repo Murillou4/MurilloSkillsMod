@@ -73,7 +73,10 @@ public class HoeItemMixin {
 
         if (tilled > 0) {
             world.playSound(null, origin, SoundEvents.ITEM_HOE_TILL, SoundCategory.BLOCKS, 1.0f, 1.0f);
-            hoeStack.damage(1, serverPlayer, context.getHand().getEquipmentSlot());
+            net.minecraft.entity.EquipmentSlot slot = context.getHand() == net.minecraft.util.Hand.MAIN_HAND
+                    ? net.minecraft.entity.EquipmentSlot.MAINHAND
+                    : net.minecraft.entity.EquipmentSlot.OFFHAND;
+            hoeStack.damage(1, serverPlayer, slot);
             cir.setReturnValue(ActionResult.SUCCESS);
         }
     }

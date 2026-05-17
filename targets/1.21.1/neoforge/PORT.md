@@ -1,5 +1,7 @@
 # NeoForge 1.21.1 Port
 
-Status: runtime-port.
+Status: blocked-needs-native-neoforge-port.
 
-Built by `tools/build-all.ps1` into `dist/1.21.1/neoforge`. Uses `multi-loader-runtime` with NeoForge metadata, NeoForge entrypoint, JSON player saves, core commands, and reflective event hooks.
+The previous jar was a `multi-loader-runtime` compatibility artifact, not the full MurilloSkills mod. It was removed from `dist` so it cannot be mistaken for a native port.
+
+Native NeoForge support for `1.21.1` requires a real NeoForge/Mojang-mappings port of the Fabric source: NeoForge entrypoint, events, networking, player data attachments, keybindings, screens, and mixin descriptors.

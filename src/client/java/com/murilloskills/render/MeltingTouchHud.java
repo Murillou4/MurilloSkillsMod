@@ -35,7 +35,7 @@ public class MeltingTouchHud {
         }
 
         Text label = Text.translatable("murilloskills.hud.melting_touch");
-        Text icon = Text.literal("\uD83D\uDD25 ").formatted(Formatting.GOLD);
+        Text icon = Text.literal("[Smelt] ").formatted(Formatting.GOLD);
         Text fullText = icon.copy().append(label.copy().formatted(Formatting.GOLD, Formatting.BOLD));
 
         int textWidth = client.textRenderer.getWidth(fullText);
@@ -44,11 +44,7 @@ public class MeltingTouchHud {
         int panelW = textWidth + PADDING_H * 2;
         int panelH = textHeight + PADDING_V * 2;
         int x = MARGIN;
-        int yOffset = 0;
-        if (AreaPlantingHud.isEnabled()) yOffset += panelH + 4;
-        if (PathfinderHud.isActive()) yOffset += panelH + 4;
-        if (AutoTorchHud.isEnabled()) yOffset += panelH + 4;
-        int y = context.getScaledWindowHeight() - HOTBAR_OFFSET - panelH - yOffset;
+        int y = HudAnchorStack.claimBottomLeft(context, panelH, HOTBAR_OFFSET, 4);
 
         context.fill(x, y, x + panelW, y + panelH, PALETTE.hudIndicatorBg());
         context.fill(x, y, x + panelW, y + 1, 0xFFFFAA00);

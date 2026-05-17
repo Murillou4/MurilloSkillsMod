@@ -1,8 +1,8 @@
 package com.murilloskills.mixin.client;
 
+import com.murilloskills.utils.MinecraftVersionCompat;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -31,7 +31,7 @@ public class ExplorerFovMixin {
     @Inject(method = "getFovMultiplier", at = @At("HEAD"))
     private void murilloskills$beforeFovCalc(boolean firstPerson, float fovEffectScale, CallbackInfoReturnable<Float> cir) {
         var self = (AbstractClientPlayerEntity) (Object) this;
-        var speedAttr = self.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
+        var speedAttr = MinecraftVersionCompat.getAttributeInstance(self, "movement_speed");
         if (speedAttr != null) {
             murilloskills$savedSpeedMod = speedAttr.getModifier(EXPLORER_SPEED_ID);
             murilloskills$savedPathfinderMod = speedAttr.getModifier(EXPLORER_PATHFINDER_SPEED_ID);
@@ -43,7 +43,7 @@ public class ExplorerFovMixin {
     @Inject(method = "getFovMultiplier", at = @At("RETURN"))
     private void murilloskills$afterFovCalc(boolean firstPerson, float fovEffectScale, CallbackInfoReturnable<Float> cir) {
         var self = (AbstractClientPlayerEntity) (Object) this;
-        var speedAttr = self.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
+        var speedAttr = MinecraftVersionCompat.getAttributeInstance(self, "movement_speed");
         if (speedAttr != null) {
             if (murilloskills$savedSpeedMod != null) {
                 speedAttr.addTemporaryModifier(murilloskills$savedSpeedMod);

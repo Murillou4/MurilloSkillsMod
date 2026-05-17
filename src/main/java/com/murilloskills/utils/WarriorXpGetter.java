@@ -1,10 +1,12 @@
 package com.murilloskills.utils;
 
 import com.murilloskills.models.SkillReceptorResult;
+import com.murilloskills.core.compat.CrossModCompatRules;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.passive.AnimalEntity;
+import net.minecraft.registry.Registries;
 
 public class WarriorXpGetter {
 
@@ -38,6 +40,12 @@ public class WarriorXpGetter {
         }
 
         // Se não for nada disso (ex: Armor Stand, Aldeão)
+        String entityId = Registries.ENTITY_TYPE.getId(entity.getType()).toString();
+        if (CrossModCompatRules.isLikelyHostileEntityId(entityId)
+                || CrossModCompatRules.isLikelyHostileEntityId(entity.getClass().getName())) {
+            return new SkillReceptorResult(true, SkillConfig.getWarriorXpMonsterDefault());
+        }
+
         return new SkillReceptorResult(false, 0);
     }
 

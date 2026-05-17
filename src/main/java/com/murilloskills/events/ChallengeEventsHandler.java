@@ -52,7 +52,8 @@ public class ChallengeEventsHandler {
 
             // Check for chests
             if (block == Blocks.CHEST || block == Blocks.TRAPPED_CHEST ||
-                    block == Blocks.ENDER_CHEST || block == Blocks.BARREL) {
+                    block == Blocks.ENDER_CHEST || block == Blocks.BARREL ||
+                    com.murilloskills.utils.CrossModMinecraftCompat.isLootContainer(block)) {
                 DailyChallengeManager.recordProgress(serverPlayer, ChallengeType.OPEN_CHESTS, 1);
                 DailyChallengeManager.syncChallenges(serverPlayer);
             }

@@ -91,6 +91,12 @@ final class ReflectionSupport {
         return null;
     }
 
+    static String describe(Object root) {
+        StringBuilder out = new StringBuilder();
+        describe(root, 0, Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>()), out);
+        return out.toString().toLowerCase(java.util.Locale.ROOT);
+    }
+
     private static Object findPlayerObject(Object root, int depth, Set<Object> visited) {
         if (root == null || depth > 3 || visited.contains(root)) {
             return null;
@@ -126,6 +132,57 @@ final class ReflectionSupport {
             }
         }
         return null;
+    }
+
+    private static void describe(Object root, int depth, Set<Object> visited, StringBuilder out) {
+        if (root == null || depth > 2 || visited.contains(root)) {
+            return;
+        }
+        if (root instanceof Object[]) {
+            Object[] values = (Object[]) root;
+            for (Object value : values) {
+                describe(value, depth + 1, visited, out);
+            }
+            return;
+        }
+        visited.add(root);
+        append(out, root.getClass().getName());
+        append(out, String.valueOf(root));
+
+        for (Method method : root.getClass().getMethods()) {
+            if (method.getParameterTypes().length != 0 || Modifier.isStatic(method.getModifiers())) {
+                continue;
+            }
+            String name = method.getName();
+            String lower = name.toLowerCase(java.util.Locale.ROOT);
+            if (!(lower.contains("block") || lower.contains("state") || lower.contains("item")
+                    || lower.contains("stack") || lower.contains("entity") || lower.contains("type")
+                    || lower.contains("registry") || lower.equals("getid") || lower.equals("getname")
+                    || lower.contains("translation") || lower.contains("description"))) {
+                continue;
+            }
+            try {
+                method.setAccessible(true);
+                Object value = method.invoke(root);
+                if (value == root) {
+                    continue;
+                }
+                append(out, name);
+                if (value == null || value instanceof Number || value instanceof Boolean || value instanceof CharSequence
+                        || value.getClass().isEnum()) {
+                    append(out, String.valueOf(value));
+                } else {
+                    describe(value, depth + 1, visited, out);
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    private static void append(StringBuilder out, String value) {
+        if (value != null && value.length() > 0) {
+            out.append(' ').append(value);
+        }
     }
 
     private static UUID readUuid(Object player) {

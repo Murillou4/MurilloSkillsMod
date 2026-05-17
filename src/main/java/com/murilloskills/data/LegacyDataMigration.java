@@ -76,7 +76,7 @@ public class LegacyDataMigration {
             }
 
             // Migrate player data
-            NbtCompound playerNbt = legacyData.getCompoundOrEmpty(playerUuid);
+            NbtCompound playerNbt = getCompoundOrEmpty(legacyData, playerUuid);
             migratePlayerData(player, currentData, playerNbt);
 
             LOGGER.info("Successfully migrated legacy data for player {}", player.getName().getString());
@@ -114,12 +114,12 @@ public class LegacyDataMigration {
             // The PersistentState format wraps data in a "data" compound
             NbtCompound dataCompound = root;
             if (root.contains("data")) {
-                dataCompound = root.getCompoundOrEmpty("data");
+                dataCompound = getCompoundOrEmpty(root, "data");
             }
 
             // Legacy SkillGlobalState stores player data under "players" key
             if (dataCompound.contains("players")) {
-                return dataCompound.getCompoundOrEmpty("players");
+                return getCompoundOrEmpty(dataCompound, "players");
             }
 
             // Fallback: maybe the data is directly at root level
@@ -141,12 +141,12 @@ public class LegacyDataMigration {
         for (MurilloSkillsList skill : MurilloSkillsList.values()) {
             String skillName = skill.name();
             if (playerNbt.contains(skillName)) {
-                NbtCompound skillNbt = playerNbt.getCompoundOrEmpty(skillName);
+                NbtCompound skillNbt = getCompoundOrEmpty(playerNbt, skillName);
 
-                int level = skillNbt.getInt("level", 0);
-                double xp = skillNbt.getDouble("xp", 0.0);
-                long lastAbilityUse = skillNbt.getLong("lastAbilityUse", -1L);
-                int prestige = skillNbt.getInt("prestige", 0);
+                int level = getInt(skillNbt, "level", 0);
+                double xp = getDouble(skillNbt, "xp", 0.0);
+                long lastAbilityUse = getLong(skillNbt, "lastAbilityUse", -1L);
+                int prestige = getInt(skillNbt, "prestige", 0);
 
                 data.setSkill(skill, level, xp, lastAbilityUse, prestige);
 
@@ -156,7 +156,7 @@ public class LegacyDataMigration {
 
         // Migrate paragon skill
         if (playerNbt.contains("paragonSkill")) {
-            String paragonName = playerNbt.getString("paragonSkill", "");
+            String paragonName = getString(playerNbt, "paragonSkill", "");
             if (!paragonName.isEmpty()) {
                 try {
                     data.paragonSkill = MurilloSkillsList.valueOf(paragonName);
@@ -169,13 +169,13 @@ public class LegacyDataMigration {
         // Migrate selected skills - Legacy format uses compound with "count" +
         // "skill0", "skill1", etc.
         if (playerNbt.contains("selectedSkills")) {
-            NbtCompound selectedNbt = playerNbt.getCompoundOrEmpty("selectedSkills");
-            int count = selectedNbt.getInt("count", 0);
+            NbtCompound selectedNbt = getCompoundOrEmpty(playerNbt, "selectedSkills");
+            int count = getInt(selectedNbt, "count", 0);
             List<MurilloSkillsList> selected = new ArrayList<>();
 
             for (int i = 0; i < count; i++) {
                 try {
-                    String skillName = selectedNbt.getString("skill" + i, "");
+                    String skillName = getString(selectedNbt, "skill" + i, "");
                     if (!skillName.isEmpty()) {
                         selected.add(MurilloSkillsList.valueOf(skillName));
                     }
@@ -191,22 +191,46 @@ public class LegacyDataMigration {
 
         // Migrate skill toggles if present
         if (playerNbt.contains("skillToggles")) {
-            NbtCompound togglesNbt = playerNbt.getCompoundOrEmpty("skillToggles");
+            NbtCompound togglesNbt = getCompoundOrEmpty(playerNbt, "skillToggles");
             for (String key : togglesNbt.getKeys()) {
-                data.skillToggles.put(key, togglesNbt.getBoolean(key, false));
+                data.skillToggles.put(key, getBoolean(togglesNbt, key, false));
             }
             LOGGER.debug("  Migrated {} skill toggles", data.skillToggles.size());
         }
 
         // Migrate achievement stats if present
         if (playerNbt.contains("achievementStats")) {
-            NbtCompound statsNbt = playerNbt.getCompoundOrEmpty("achievementStats");
+            NbtCompound statsNbt = getCompoundOrEmpty(playerNbt, "achievementStats");
             for (String key : statsNbt.getKeys()) {
-                data.achievementStats.put(key, statsNbt.getInt(key, 0));
+                data.achievementStats.put(key, getInt(statsNbt, key, 0));
             }
             LOGGER.debug("  Migrated {} achievement stats", data.achievementStats.size());
         }
 
         data.normalizeParagonState();
+    }
+
+    private static NbtCompound getCompoundOrEmpty(NbtCompound compound, String key) {
+        return compound.getCompoundOrEmpty(key);
+    }
+
+    private static int getInt(NbtCompound compound, String key, int fallback) {
+        return compound.getInt(key, fallback);
+    }
+
+    private static long getLong(NbtCompound compound, String key, long fallback) {
+        return compound.getLong(key, fallback);
+    }
+
+    private static double getDouble(NbtCompound compound, String key, double fallback) {
+        return compound.getDouble(key, fallback);
+    }
+
+    private static String getString(NbtCompound compound, String key, String fallback) {
+        return compound.getString(key, fallback);
+    }
+
+    private static boolean getBoolean(NbtCompound compound, String key, boolean fallback) {
+        return compound.getBoolean(key, fallback);
     }
 }

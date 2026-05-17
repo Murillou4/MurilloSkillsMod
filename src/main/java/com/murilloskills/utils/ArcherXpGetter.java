@@ -1,10 +1,12 @@
 package com.murilloskills.utils;
 
 import com.murilloskills.models.SkillReceptorResult;
+import com.murilloskills.core.compat.CrossModCompatRules;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.registry.Registries;
 
 /**
  * Utility class for calculating Archer XP rewards.
@@ -36,7 +38,7 @@ public class ArcherXpGetter {
         int baseXp = SkillConfig.getArcherXpHitBase();
 
         // Bônus de XP para mobs hostis
-        if (target instanceof HostileEntity) {
+        if (target instanceof HostileEntity || isLikelyHostile(target)) {
             baseXp = SkillConfig.getArcherXpHitHostile();
         }
 
@@ -76,7 +78,7 @@ public class ArcherXpGetter {
         int baseXp = SkillConfig.getArcherXpKillBase();
 
         // Bônus de XP para mobs hostis
-        if (target instanceof HostileEntity) {
+        if (target instanceof HostileEntity || isLikelyHostile(target)) {
             baseXp = SkillConfig.getArcherXpKillHostile();
         }
 
@@ -90,5 +92,11 @@ public class ArcherXpGetter {
         }
 
         return new SkillReceptorResult(true, baseXp);
+    }
+
+    private static boolean isLikelyHostile(Entity target) {
+        String entityId = Registries.ENTITY_TYPE.getId(target.getType()).toString();
+        return CrossModCompatRules.isLikelyHostileEntityId(entityId)
+                || CrossModCompatRules.isLikelyHostileEntityId(target.getClass().getName());
     }
 }

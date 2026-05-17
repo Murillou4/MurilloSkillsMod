@@ -662,7 +662,7 @@ public class ModInfoScreen extends Screen {
 
                 // Paragon crown with glow
                 if (isParagon) {
-                        context.drawTextWithShadow(textRenderer, Text.literal("👑").formatted(Formatting.GOLD),
+                        context.drawTextWithShadow(textRenderer, Text.literal("P").formatted(Formatting.GOLD),
                                         x + cardWidth - 18, y + 5, PALETTE.accentGold());
                 }
 

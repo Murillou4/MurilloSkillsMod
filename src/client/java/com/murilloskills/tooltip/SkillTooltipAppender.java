@@ -4,6 +4,7 @@ import com.murilloskills.data.ClientSkillData;
 import com.murilloskills.impl.ArcherSkill;
 import com.murilloskills.impl.FisherSkill;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.MinecraftVersionCompat;
 import com.murilloskills.utils.PrestigeManager;
 import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
@@ -16,7 +17,6 @@ import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.BowItem;
 import net.minecraft.item.CrossbowItem;
 import net.minecraft.item.FishingRodItem;
@@ -265,7 +265,7 @@ public final class SkillTooltipAppender {
         AtomicReference<Double> total = new AtomicReference<>(0.0);
 
         modifiers.applyModifiers(EquipmentSlot.MAINHAND, (attribute, modifier) -> {
-            if (!attribute.equals(EntityAttributes.ATTACK_DAMAGE)) {
+            if (!attribute.equals(MinecraftVersionCompat.getAttribute("attack_damage"))) {
                 return;
             }
 

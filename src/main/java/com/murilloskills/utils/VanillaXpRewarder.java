@@ -49,7 +49,7 @@ public class VanillaXpRewarder {
         player.addExperienceLevels(xpLevels);
 
         MutableText message = Text.empty()
-                .append(Text.literal("⭐ ").formatted(Formatting.GOLD))
+                .append(Text.literal("+ ").formatted(Formatting.GOLD))
                 .append(Text.translatable("murilloskills.notify.milestone").formatted(Formatting.GOLD, Formatting.BOLD))
                 .append(Text.literal(" " + skillName + " " + milestone).formatted(Formatting.YELLOW))
                 .append(Text.literal(" | ").formatted(Formatting.DARK_GRAY))

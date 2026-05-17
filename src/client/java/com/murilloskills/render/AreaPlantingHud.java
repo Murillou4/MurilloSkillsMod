@@ -52,7 +52,7 @@ public class AreaPlantingHud {
 
         String areaLabel = diameter + "x" + diameter;
         Text label = Text.translatable("murilloskills.hud.area_planting", areaLabel);
-        Text icon = Text.literal("🌾 ").formatted(Formatting.GREEN);
+        Text icon = Text.literal("[Farm] ").formatted(Formatting.GREEN);
         Text fullText = icon.copy().append(label.copy().formatted(Formatting.GREEN, Formatting.BOLD));
 
         int textWidth = client.textRenderer.getWidth(fullText);
@@ -61,7 +61,7 @@ public class AreaPlantingHud {
         int panelW = textWidth + PADDING_H * 2;
         int panelH = textHeight + PADDING_V * 2;
         int x = MARGIN;
-        int y = context.getScaledWindowHeight() - HOTBAR_OFFSET - panelH;
+        int y = HudAnchorStack.claimBottomLeft(context, panelH, HOTBAR_OFFSET, 4);
 
         // Panel background
         context.fill(x, y, x + panelW, y + panelH, PALETTE.hudIndicatorBg());

@@ -9,8 +9,8 @@ import com.murilloskills.skills.MinerBonusDropHandler;
 import com.murilloskills.skills.MobKillHandler;
 import com.murilloskills.skills.MurilloSkillsList;
 import com.murilloskills.skills.VeinMinerHandler;
+import com.murilloskills.utils.FabricEventCompat;
 import com.murilloskills.utils.SkillsNetworkUtils;
-import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
@@ -54,7 +54,7 @@ public class MinecraftEventsListener {
 
     public static void killEntityListen() {
         // Usando o evento oficial da Fabric API
-        ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.register((serverWorld, player, entity, damageSource) -> {
+        FabricEventCompat.registerAfterKilledOtherEntity((player, entity) -> {
 
             if (player.isPlayer()) {
                 final PlayerEntity playerEntity = (PlayerEntity) player;
@@ -204,6 +204,11 @@ public class MinecraftEventsListener {
 
                         // Delega a lógica para a classe da skill
                         skillObj.onTick(player, level);
+                        if (skillEnum == MurilloSkillsList.FARMER) {
+                            com.murilloskills.skills.FarmerGenericGrowthTicker.tick(player, level);
+                        } else if (skillEnum == MurilloSkillsList.BLACKSMITH) {
+                            com.murilloskills.skills.BlacksmithGenericMachineTicker.tick(player, level);
+                        }
                     }
                 }
             }

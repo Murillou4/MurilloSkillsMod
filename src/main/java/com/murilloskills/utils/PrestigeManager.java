@@ -127,7 +127,7 @@ public class PrestigeManager {
 
     private static void notifyPrestige(ServerPlayerEntity player, MurilloSkillsList skill, int newPrestige) {
         Text message = Text.empty()
-                .append(Text.literal("🌟 ").formatted(Formatting.GOLD))
+                .append(Text.literal("[Prestige] ").formatted(Formatting.GOLD))
                 .append(Text.translatable("murilloskills.notify.prestige").formatted(Formatting.GOLD, Formatting.BOLD))
                 .append(Text.literal(" | ").formatted(Formatting.DARK_GRAY))
                 .append(Text.translatable("murilloskills.skill.name." + skill.name().toLowerCase())

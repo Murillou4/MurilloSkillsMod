@@ -3,6 +3,7 @@ package com.murilloskills.skills;
 import com.murilloskills.impl.FarmerSkill;
 import com.murilloskills.models.SkillReceptorResult;
 import com.murilloskills.utils.FarmerXpGetter;
+import com.murilloskills.utils.CrossModMinecraftCompat;
 import com.murilloskills.utils.SkillConfig;
 import com.murilloskills.utils.SkillNotifier;
 import com.murilloskills.utils.SkillsNetworkUtils;
@@ -146,7 +147,7 @@ public class CropHarvestHandler {
             return true;
         }
 
-        return false;
+        return CrossModMinecraftCompat.isMaturePlant(state);
     }
 
     /**
@@ -264,8 +265,7 @@ public class CropHarvestHandler {
             BlockState adjState = world.getBlockState(adjacent);
             Block adjBlock = adjState.getBlock();
 
-            if (adjBlock instanceof CropBlock cropBlock) {
-                if (cropBlock.isMature(adjState)) {
+            if (FarmerXpGetter.isCropBlock(adjBlock) && isCropMature(adjState, adjBlock)) {
                     // Drop the items
                     java.util.List<ItemStack> drops = Block.getDroppedStacks(adjState, world, adjacent, null, player,
                             player.getMainHandStack());
@@ -281,7 +281,6 @@ public class CropHarvestHandler {
 
                     LOGGER.debug("Adjacent harvest at {} for player {}", adjacent, player.getName().getString());
                     break; // Only harvest one adjacent crop per trigger
-                }
             }
         }
     }

@@ -4,11 +4,11 @@ import com.murilloskills.api.AbstractSkill;
 
 import com.murilloskills.network.MinerScanResultPayload;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.MinecraftVersionCompat;
 import com.murilloskills.utils.MinerXpGetter;
 import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.block.Block;
@@ -37,6 +37,12 @@ public class MinerSkill extends AbstractSkill {
 
     // Toggle key name for persistent storage
     private static final String TOGGLE_AUTO_TORCH = "autoTorch";
+
+    public static float getMiningSpeedMultiplier(int level, int prestige) {
+        int safeLevel = Math.max(0, level);
+        float prestigeMultiplier = com.murilloskills.utils.PrestigeManager.getPassiveMultiplier(Math.max(0, prestige));
+        return 1.0f + (safeLevel * SkillConfig.getMinerSpeedPerLevel() * prestigeMultiplier);
+    }
 
     @Override
     public MurilloSkillsList getSkillType() {
@@ -156,11 +162,8 @@ public class MinerSkill extends AbstractSkill {
             // Get prestige level for passive multiplier
             var data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
             int prestige = data.getSkill(MurilloSkillsList.MINER).prestige;
-            float prestigeMultiplier = com.murilloskills.utils.PrestigeManager.getPassiveMultiplier(prestige);
-
-            // Apply prestige bonus to mining speed
-            double speedBonus = level * SkillConfig.MINER_SPEED_PER_LEVEL * prestigeMultiplier;
-            var attributeInstance = player.getAttributeInstance(EntityAttributes.BLOCK_BREAK_SPEED);
+            double speedBonus = getMiningSpeedMultiplier(level, prestige) - 1.0f;
+            var attributeInstance = MinecraftVersionCompat.getAttributeInstance(player, "block_break_speed");
 
             if (attributeInstance != null) {
                 attributeInstance.removeModifier(MINER_SPEED_ID);
@@ -333,7 +336,7 @@ public class MinerSkill extends AbstractSkill {
      * Places torches optimally to prevent mob spawning.
      */
     private void handleAutoTorch(ServerPlayerEntity player) {
-        net.minecraft.server.world.ServerWorld world = player.getEntityWorld();
+        net.minecraft.server.world.ServerWorld world = MinecraftVersionCompat.serverWorld(player);
         BlockPos playerPos = player.getBlockPos();
 
         // Only in overworld-like dimensions (skip Nether ceiling, etc.)

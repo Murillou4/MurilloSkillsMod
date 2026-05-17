@@ -3,6 +3,7 @@ package com.murilloskills.mixin;
 import com.murilloskills.impl.ArcherSkill;
 import com.murilloskills.skills.ArcherHitHandler;
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.MinecraftVersionCompat;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
@@ -59,7 +60,7 @@ public abstract class ArrowEntityMixin {
         }
 
         // Calcula a distância do tiro
-        double distance = arrow.getEntityPos().distanceTo(player.getEntityPos());
+        double distance = MinecraftVersionCompat.pos(arrow).distanceTo(MinecraftVersionCompat.pos(player));
 
         // Dá XP para o Archer
         ArcherHitHandler.handleArrowHit(player, target, distance);
@@ -156,7 +157,7 @@ public abstract class ArrowEntityMixin {
             return;
         }
 
-        Vec3d arrowPos = arrow.getEntityPos();
+        Vec3d arrowPos = MinecraftVersionCompat.pos(arrow);
         Vec3d currentDirection = currentVelocity.normalize();
 
         // Busca o alvo - primeiro tenta o último inimigo danificado
@@ -184,7 +185,7 @@ public abstract class ArrowEntityMixin {
         }
 
         // Calcula a direção para o alvo (mira no centro do corpo)
-        Vec3d targetPos = targetEntity.getEntityPos().add(0, targetEntity.getHeight() * 0.5, 0);
+        Vec3d targetPos = MinecraftVersionCompat.pos(targetEntity).add(0, targetEntity.getHeight() * 0.5, 0);
         Vec3d toTarget = targetPos.subtract(arrowPos);
         double distanceToTarget = toTarget.length();
 
@@ -265,7 +266,7 @@ public abstract class ArrowEntityMixin {
                 e -> e != player && e.isAlive() && !e.isSpectator())) {
 
             // Vetor da flecha para a entidade
-            Vec3d toEntity = entity.getEntityPos().add(0, entity.getHeight() * 0.5, 0).subtract(arrowPos);
+            Vec3d toEntity = MinecraftVersionCompat.pos(entity).add(0, entity.getHeight() * 0.5, 0).subtract(arrowPos);
             double distance = toEntity.length();
 
             // Ignora entidades muito longe

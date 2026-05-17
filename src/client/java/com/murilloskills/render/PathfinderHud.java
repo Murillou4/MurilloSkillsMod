@@ -49,7 +49,7 @@ public class PathfinderHud {
         }
 
         Text label = Text.translatable("murilloskills.hud.pathfinder");
-        Text icon = Text.literal("\u26A1 ").formatted(Formatting.AQUA);
+        Text icon = Text.literal("[Path] ").formatted(Formatting.AQUA);
         Text fullText = icon.copy().append(label.copy().formatted(Formatting.AQUA, Formatting.BOLD));
 
         int textWidth = client.textRenderer.getWidth(fullText);
@@ -58,9 +58,7 @@ public class PathfinderHud {
         int panelW = textWidth + PADDING_H * 2;
         int panelH = textHeight + PADDING_V * 2;
         int x = MARGIN;
-        // Stack below AreaPlantingHud if both are active
-        int yOffset = AreaPlantingHud.isEnabled() ? (panelH + 4) : 0;
-        int y = context.getScaledWindowHeight() - HOTBAR_OFFSET - panelH - yOffset;
+        int y = HudAnchorStack.claimBottomLeft(context, panelH, HOTBAR_OFFSET, 4);
 
         // Panel background (darker blue tint)
         context.fill(x, y, x + panelW, y + panelH, PALETTE.hudIndicatorBg());

@@ -75,6 +75,34 @@ public interface ClientModInitializer {
     void onInitializeClient();
 }
 "@
+    Write-TextFile (Join-Path $sourceDir "net\minecraft\class_2561.java") @"
+package net.minecraft;
+public interface class_2561 {
+    static class_2561 method_30163(String text) { return null; }
+}
+"@
+    Write-TextFile (Join-Path $sourceDir "net\minecraft\class_327.java") @"
+package net.minecraft;
+public class class_327 {}
+"@
+    Write-TextFile (Join-Path $sourceDir "net\minecraft\class_332.java") @"
+package net.minecraft;
+public class class_332 {
+    public void method_25294(int x1, int y1, int x2, int y2, int color) {}
+    public void method_25300(class_327 font, String text, int x, int y, int color) {}
+}
+"@
+    Write-TextFile (Join-Path $sourceDir "net\minecraft\class_437.java") @"
+package net.minecraft;
+public abstract class class_437 {
+    public int field_22789;
+    public int field_22790;
+    protected class_327 field_22793;
+    protected class_437(class_2561 title) {}
+    public void method_25394(class_332 context, int mouseX, int mouseY, float delta) {}
+    public boolean method_25422() { return true; }
+}
+"@
     Write-TextFile (Join-Path $sourceDir "net\minecraftforge\fml\common\Mod.java") @"
 package net.minecraftforge.fml.common;
 import java.lang.annotation.ElementType;
@@ -198,7 +226,7 @@ function Write-FabricMetadata($resourceDir, $mc, $loaderName) {
   "id": "murilloskills",
   "version": "$modVersion",
   "name": "Murillo Skills",
-  "description": "Multi-version MurilloSkills runtime for Minecraft $mc ($loaderName).",
+  "description": "Multi-version MurilloSkills runtime with cross-mod compatibility heuristics for Minecraft $mc ($loaderName).",
   "authors": ["Murillo"],
   "contact": {},
   "license": "MIT",
@@ -214,7 +242,7 @@ function Write-FabricMetadata($resourceDir, $mc, $loaderName) {
   },
   "custom": {
     "murilloskills:loader": "$loaderId",
-    "murilloskills:runtime": "reflective-core"
+    "murilloskills:runtime": "reflective-cross-mod-compat"
   }
 }
 "@
@@ -262,7 +290,7 @@ modId="murilloskills"
 version="$modVersion"
 displayName="Murillo Skills"
 authors="Murillo"
-description='''Multi-version MurilloSkills runtime for Minecraft $mc Forge.'''
+description='''Multi-version MurilloSkills runtime with cross-mod compatibility heuristics for Minecraft $mc Forge.'''
 
 [[dependencies.murilloskills]]
 modId="forge"
@@ -294,7 +322,7 @@ modId="murilloskills"
 version="$modVersion"
 displayName="Murillo Skills"
 authors="Murillo"
-description='''Multi-version MurilloSkills runtime for Minecraft $mc NeoForge.'''
+description='''Multi-version MurilloSkills runtime with cross-mod compatibility heuristics for Minecraft $mc NeoForge.'''
 
 [[dependencies.murilloskills]]
 modId="neoforge"
@@ -324,7 +352,7 @@ function Copy-SharedResources($resourceDir, $mc, $loader) {
 {
   "minecraft": "$mc",
   "loader": "$loader",
-  "runtime": "reflective-core",
+  "runtime": "reflective-cross-mod-compat",
   "saveSchema": "murilloskills/players/<uuid>.json"
 }
 "@
@@ -425,21 +453,7 @@ try {
     Pop-Location
 }
 
-$targets = @(
-    @{ minecraft = "1.21.1"; loader = "fabric" },
-    @{ minecraft = "1.21.1"; loader = "forge"; forgeMajor = "52" },
-    @{ minecraft = "1.21.1"; loader = "neoforge"; neoVersion = "21.1.230" },
-    @{ minecraft = "1.20.1"; loader = "fabric" },
-    @{ minecraft = "1.20.1"; loader = "forge"; forgeMajor = "47" },
-    @{ minecraft = "1.19.2"; loader = "fabric" },
-    @{ minecraft = "1.19.2"; loader = "forge"; forgeMajor = "43" },
-    @{ minecraft = "1.18.2"; loader = "fabric" },
-    @{ minecraft = "1.18.2"; loader = "forge"; forgeMajor = "40" },
-    @{ minecraft = "1.16.5"; loader = "fabric" },
-    @{ minecraft = "1.16.5"; loader = "forge"; forgeMajor = "36" },
-    @{ minecraft = "1.12.2"; loader = "legacy-fabric" },
-    @{ minecraft = "1.12.2"; loader = "forge"; forgeMajor = "14"; legacy = $true }
-)
+$targets = @()
 
 foreach ($target in $targets) {
     Build-Target $target $commonClasses $runtimeClasses $gsonExtract

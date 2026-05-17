@@ -28,6 +28,15 @@ loom {
 		}
 	}
 
+	runs {
+		client {
+			def quickplayWorld = providers.gradleProperty("murilloskills_quickplay_world").orNull
+			if (quickplayWorld != null && !quickplayWorld.isBlank()) {
+				programArgs "--quickPlaySingleplayer", quickplayWorld
+			}
+		}
+	}
+
 }
 
 dependencies {
@@ -57,6 +66,19 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.release = 21
+}
+
+def minecraftRuntimeJava = providers.gradleProperty("minecraft_runtime_java")
+	.orElse(providers.environmentVariable("MINECRAFT_RUNTIME_JAVA"))
+	.orNull
+if (minecraftRuntimeJava != null && !minecraftRuntimeJava.isBlank()) {
+	tasks.withType(JavaExec).configureEach {
+		def javaExecutable = file("${minecraftRuntimeJava}/bin/java.exe")
+		if (!javaExecutable.exists()) {
+			javaExecutable = file("${minecraftRuntimeJava}/bin/java")
+		}
+		executable = javaExecutable.absolutePath
+	}
 }
 
 test {

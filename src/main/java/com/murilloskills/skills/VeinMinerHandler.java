@@ -4,6 +4,7 @@ import com.murilloskills.data.ModAttachments;
 import com.murilloskills.integration.TomsStorageBridge;
 import com.murilloskills.network.UltmineResultS2CPayload;
 import com.murilloskills.utils.BatchSkillUpdateContext;
+import com.murilloskills.utils.MinecraftVersionCompat;
 import com.murilloskills.utils.SkillConfig;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.Block;
@@ -933,7 +934,7 @@ public final class VeinMinerHandler {
         List<ExperienceOrbEntity> orbs = world.getEntitiesByClass(
                 ExperienceOrbEntity.class, searchBox, entity -> !entity.isRemoved());
         for (ExperienceOrbEntity orb : orbs) {
-            player.addExperience(orb.getValue());
+            player.addExperience(MinecraftVersionCompat.experienceOrbValue(orb));
             orb.discard();
         }
     }
@@ -1243,7 +1244,7 @@ public final class VeinMinerHandler {
         }
 
         int range = getMagnetRange(player);
-        Vec3d playerPos = player.getEntityPos();
+        Vec3d playerPos = MinecraftVersionCompat.pos(player);
         Box magnetBox = new Box(
                 playerPos.x - range, playerPos.y - range, playerPos.z - range,
                 playerPos.x + range, playerPos.y + range, playerPos.z + range);
@@ -1256,7 +1257,7 @@ public final class VeinMinerHandler {
             if (item.cannotPickup()) {
                 continue;
             }
-            Vec3d itemPos = item.getEntityPos();
+            Vec3d itemPos = MinecraftVersionCompat.pos(item);
             double dist = itemPos.distanceTo(playerPos);
             if (dist < 1.5) {
                 // Close enough - teleport directly to player
@@ -1274,7 +1275,7 @@ public final class VeinMinerHandler {
         List<ExperienceOrbEntity> orbs = serverWorld.getEntitiesByClass(
                 ExperienceOrbEntity.class, magnetBox, entity -> !entity.isRemoved());
         for (ExperienceOrbEntity orb : orbs) {
-            Vec3d orbPos = orb.getEntityPos();
+            Vec3d orbPos = MinecraftVersionCompat.pos(orb);
             double dist = orbPos.distanceTo(playerPos);
             if (dist < 1.5) {
                 orb.setPosition(playerPos.x, playerPos.y, playerPos.z);

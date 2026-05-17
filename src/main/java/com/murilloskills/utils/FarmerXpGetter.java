@@ -73,6 +73,11 @@ public class FarmerXpGetter {
             return new SkillReceptorResult(true, SkillConfig.getFarmerXpSugarCane());
         }
 
+        int genericXp = CrossModMinecraftCompat.genericFarmerHarvestXp(block);
+        if (genericXp > 0) {
+            return new SkillReceptorResult(true, genericXp);
+        }
+
         return new SkillReceptorResult(false, 0);
     }
 
@@ -95,6 +100,8 @@ public class FarmerXpGetter {
             baseXp = SkillConfig.getFarmerXpBeetroot();
         else if (block == Blocks.NETHER_WART)
             baseXp = SkillConfig.getFarmerXpNetherWart();
+        else
+            baseXp = CrossModMinecraftCompat.genericFarmerHarvestXp(block);
 
         if (baseXp > 0) {
             // +25% of base (minimum 1 XP)
@@ -140,7 +147,8 @@ public class FarmerXpGetter {
                 block == Blocks.NETHER_WART ||
                 block == Blocks.SWEET_BERRY_BUSH ||
                 block == Blocks.COCOA ||
-                block == Blocks.SUGAR_CANE;
+                block == Blocks.SUGAR_CANE ||
+                CrossModMinecraftCompat.isHarvestablePlant(block.getDefaultState());
     }
 
     /**
@@ -176,6 +184,6 @@ public class FarmerXpGetter {
             return true;
         }
 
-        return false;
+        return CrossModMinecraftCompat.isMaturePlant(block.getDefaultState());
     }
 }

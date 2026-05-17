@@ -3,9 +3,9 @@ package com.murilloskills.impl;
 import com.murilloskills.api.AbstractSkill;
 
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.MinecraftVersionCompat;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -124,7 +124,7 @@ public class WarriorSkill extends AbstractSkill {
             // --- 1. DANO (por level) - Apply prestige bonus ---
             double damageBonus = level * SkillConfig.WARRIOR_DAMAGE_PER_LEVEL * prestigeMultiplier;
 
-            var damageAttr = player.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE);
+            var damageAttr = MinecraftVersionCompat.getAttributeInstance(player, "attack_damage");
             if (damageAttr != null) {
                 damageAttr.removeModifier(WARRIOR_DAMAGE_ID);
                 if (damageBonus > 0) {
@@ -146,7 +146,7 @@ public class WarriorSkill extends AbstractSkill {
             if (level >= 100)
                 healthBonus += 6.0;
 
-            var healthAttr = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
+            var healthAttr = MinecraftVersionCompat.getAttributeInstance(player, "max_health");
             if (healthAttr != null) {
                 healthAttr.removeModifier(WARRIOR_HEALTH_ID);
                 if (healthBonus > 0) {
@@ -204,7 +204,7 @@ public class WarriorSkill extends AbstractSkill {
                 false, true, true));
 
         // Aplica Knockback Resistance (imunidade total)
-        var knockbackAttr = player.getAttributeInstance(EntityAttributes.KNOCKBACK_RESISTANCE);
+        var knockbackAttr = MinecraftVersionCompat.getAttributeInstance(player, "knockback_resistance");
         if (knockbackAttr != null) {
             knockbackAttr.removeModifier(BERSERK_KNOCKBACK_RESISTANCE_ID);
             knockbackAttr.addTemporaryModifier(new EntityAttributeModifier(
@@ -234,7 +234,7 @@ public class WarriorSkill extends AbstractSkill {
         berserkPlayers.remove(player.getUuid());
 
         // Remove Knockback Resistance
-        var knockbackAttr = player.getAttributeInstance(EntityAttributes.KNOCKBACK_RESISTANCE);
+        var knockbackAttr = MinecraftVersionCompat.getAttributeInstance(player, "knockback_resistance");
         if (knockbackAttr != null) {
             knockbackAttr.removeModifier(BERSERK_KNOCKBACK_RESISTANCE_ID);
         }

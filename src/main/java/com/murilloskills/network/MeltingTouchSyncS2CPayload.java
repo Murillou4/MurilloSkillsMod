@@ -11,7 +11,7 @@ public record MeltingTouchSyncS2CPayload(boolean enabled) implements CustomPaylo
     public static final CustomPayload.Id<MeltingTouchSyncS2CPayload> ID = new CustomPayload.Id<>(
             Identifier.of(MurilloSkills.MOD_ID, "melting_touch_sync"));
     public static final PacketCodec<RegistryByteBuf, MeltingTouchSyncS2CPayload> CODEC = PacketCodec.tuple(
-            PacketCodecs.BOOLEAN, MeltingTouchSyncS2CPayload::enabled,
+            NetworkPayloadCodecs.BOOLEAN, MeltingTouchSyncS2CPayload::enabled,
             MeltingTouchSyncS2CPayload::new);
 
     @Override

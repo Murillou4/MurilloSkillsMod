@@ -13,9 +13,13 @@ final class NeoForgeRuntimeRegistration {
             "net.neoforged.neoforge.event.server.ServerStoppingEvent",
             "net.neoforged.neoforge.event.tick.ServerTickEvent$Post",
             "net.neoforged.neoforge.event.level.BlockEvent$BreakEvent",
+            "net.neoforged.neoforge.event.level.BlockEvent$CropGrowEvent$Post",
+            "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent$RightClickBlock",
             "net.neoforged.neoforge.event.entity.living.LivingDeathEvent",
+            "net.neoforged.neoforge.event.entity.ProjectileImpactEvent",
             "net.neoforged.neoforge.event.entity.player.PlayerEvent$ItemCraftedEvent",
-            "net.neoforged.neoforge.event.entity.player.PlayerEvent$ItemSmeltedEvent"
+            "net.neoforged.neoforge.event.entity.player.PlayerEvent$ItemSmeltedEvent",
+            "net.neoforged.neoforge.event.entity.player.ItemFishedEvent"
     };
 
     private NeoForgeRuntimeRegistration() {
@@ -29,9 +33,12 @@ final class NeoForgeRuntimeRegistration {
             Consumer<Object> consumer = event -> runtime.events().handleEvent(event);
             int registered = 0;
             for (String eventClassName : EVENT_CLASSES) {
-                Class<?> eventClass = Class.forName(eventClassName);
-                addListener.invoke(eventBus, eventClass, consumer);
-                registered++;
+                try {
+                    Class<?> eventClass = Class.forName(eventClassName);
+                    addListener.invoke(eventBus, eventClass, consumer);
+                    registered++;
+                } catch (Throwable ignored) {
+                }
             }
             runtime.log("NeoForge event bridge registered: " + registered + " events");
         } catch (Throwable ex) {

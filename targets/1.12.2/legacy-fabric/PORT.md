@@ -1,5 +1,7 @@
 # Legacy Fabric 1.12.2 Port
 
-Status: runtime-port.
+Status: blocked-needs-native-legacy-fabric-port.
 
-Built by `tools/build-all.ps1` into `dist/1.12.2/legacy-fabric`. Uses `multi-loader-runtime` with Legacy Fabric metadata, JSON player saves, core commands, and reflective Fabric hooks where the runtime API is available.
+The previous runtime compatibility jar was removed from `dist/1.12.2/legacy-fabric` because it did not contain the real MurilloSkills client, GUI, keybinds, mixins, networking, or full skill behavior from the 1.21.10 Fabric source.
+
+A valid target here must be a native Legacy Fabric port, not a `multi-loader-runtime` jar.

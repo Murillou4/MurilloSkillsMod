@@ -15,7 +15,7 @@ public record PathfinderSyncS2CPayload(boolean active) implements CustomPayload 
     public static final CustomPayload.Id<PathfinderSyncS2CPayload> ID = new CustomPayload.Id<>(
             Identifier.of(MurilloSkills.MOD_ID, "pathfinder_sync"));
     public static final PacketCodec<RegistryByteBuf, PathfinderSyncS2CPayload> CODEC = PacketCodec.tuple(
-            PacketCodecs.BOOLEAN, PathfinderSyncS2CPayload::active,
+            NetworkPayloadCodecs.BOOLEAN, PathfinderSyncS2CPayload::active,
             PathfinderSyncS2CPayload::new);
 
     @Override

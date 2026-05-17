@@ -3,6 +3,8 @@ package com.murilloskills.impl;
 import com.murilloskills.api.AbstractSkill;
 
 import com.murilloskills.skills.MurilloSkillsList;
+import com.murilloskills.utils.CrossModMinecraftCompat;
+import com.murilloskills.utils.MinecraftVersionCompat;
 import com.murilloskills.utils.SkillConfig;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -256,14 +258,16 @@ public class FarmerSkill extends AbstractSkill {
         if (crop != null) {
             return crop;
         }
-        if (item instanceof BlockItem blockItem && isSaplingBlock(blockItem.getBlock())) {
+        if (item instanceof BlockItem blockItem && CrossModMinecraftCompat.isAreaPlantableBlock(blockItem.getBlock())) {
             return blockItem.getBlock();
         }
         return null;
     }
 
     public static boolean isSaplingBlock(Block block) {
-        return block != null && block.getDefaultState().isIn(BlockTags.SAPLINGS);
+        return block != null && (block.getDefaultState().isIn(BlockTags.SAPLINGS)
+                || com.murilloskills.core.compat.CrossModCompatRules.isSaplingLikeId(
+                        CrossModMinecraftCompat.blockId(block)));
     }
 
     /**
@@ -408,7 +412,7 @@ public class FarmerSkill extends AbstractSkill {
      * Limited to 50 blocks per tick to prevent lag.
      */
     private void performHarvestMoon(ServerPlayerEntity player) {
-        ServerWorld world = player.getEntityWorld();
+        ServerWorld world = MinecraftVersionCompat.serverWorld(player);
         BlockPos playerPos = player.getBlockPos();
         int radius = SkillConfig.FARMER_ABILITY_RADIUS;
         int harvested = 0;
@@ -438,6 +442,10 @@ public class FarmerSkill extends AbstractSkill {
                     harvestAndReplant(player, world, pos.toImmutable(), state, block, true);
                     harvested++;
                 }
+            } else if (com.murilloskills.utils.FarmerXpGetter.isCropBlock(block)
+                    && CrossModMinecraftCompat.isMaturePlant(state)) {
+                harvestAndReplant(player, world, pos.toImmutable(), state, block, true);
+                harvested++;
             }
         }
     }

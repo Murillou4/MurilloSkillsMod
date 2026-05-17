@@ -23,6 +23,7 @@
     "AnvilScreenHandlerMixin",
     "EnchantmentScreenHandlerMixin",
     "PlayerEntityReachMixin",
+    "PlayerMiningSpeedMixin",
     "ScaffoldingClimbMixin",
     "MagmaBlockMixin",
     "LootChestMixin",

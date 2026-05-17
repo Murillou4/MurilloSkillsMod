@@ -1,5 +1,7 @@
 # Forge 1.18.2 Port
 
-Status: runtime-port.
+Status: blocked-needs-native-forge-port.
 
-Built by `tools/build-all.ps1` into `dist/1.18.2/forge`. Uses `multi-loader-runtime` with Forge metadata, Forge entrypoint, JSON player saves, core commands, and reflective event hooks.
+The previous `multi-loader-runtime` jar was removed from `dist/1.18.2/forge` because it was not equivalent to the native Fabric mod: it did not contain the real client GUI/keybind implementation and exposed runtime compatibility behavior instead.
+
+A valid Forge 1.18.2 target still needs a native Forge source set/adapter for the full MurilloSkills feature set before it can be built and smoke-tested.

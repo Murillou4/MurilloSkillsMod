@@ -35,9 +35,13 @@ public final class SkillSelectionNetworkHandler {
                 try {
                     var player = context.player();
                     var data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
+                    LOGGER.info("[Selection] request player={} current={} incoming={}",
+                            player.getName().getString(), data.getSelectedSkills(), payload.selectedSkills());
 
                     // Validation: Check if player already has 3 skills selected (maxed out)
                     if (data.hasSelectedSkills()) {
+                        LOGGER.warn("[Selection] rejected player={} reason=already_has_selection current={}",
+                                player.getName().getString(), data.getSelectedSkills());
                         player.sendMessage(Text.translatable("murilloskills.selection.limit_reached")
                                 .formatted(Formatting.RED), true);
                         return;
@@ -55,6 +59,8 @@ public final class SkillSelectionNetworkHandler {
 
                     // Validation: Must select between 1 and max skills
                     if (newCount < 1 || newCount > maxSkills) {
+                        LOGGER.warn("[Selection] rejected player={} reason=count_out_of_range count={} max={}",
+                                player.getName().getString(), newCount, maxSkills);
                         player.sendMessage(Text.translatable("murilloskills.selection.select_1_to_3", maxSkills)
                                 .formatted(Formatting.RED), true);
                         return;
@@ -62,6 +68,8 @@ public final class SkillSelectionNetworkHandler {
 
                     // Validation: No duplicate skills in the payload
                     if (newCount != incoming.stream().distinct().count()) {
+                        LOGGER.warn("[Selection] rejected player={} reason=duplicates incoming={}",
+                                player.getName().getString(), incoming);
                         player.sendMessage(Text.translatable("murilloskills.selection.duplicates")
                                 .formatted(Formatting.RED), true);
                         return;
@@ -70,6 +78,8 @@ public final class SkillSelectionNetworkHandler {
                     // Apply the selection (Overwrite existing selection with new cumulative list)
                     // Note: Client should send the FULL list of selected skills (old + new)
                     if (data.setSelectedSkills(incoming)) {
+                        LOGGER.info("[Selection] applied player={} selected={} max={}",
+                                player.getName().getString(), data.getSelectedSkills(), maxSkills);
 
                         // Apply attributes for selected skills immediately
                         SkillAttributes.updateAllStats(player);
@@ -115,6 +125,8 @@ public final class SkillSelectionNetworkHandler {
                                     .formatted(Formatting.GRAY), false);
                         }
                     } else {
+                        LOGGER.warn("[Selection] rejected player={} reason=setSelectedSkills_failed incoming={}",
+                                player.getName().getString(), incoming);
                         player.sendMessage(Text.translatable("murilloskills.selection.error").formatted(Formatting.RED),
                                 true);
                     }

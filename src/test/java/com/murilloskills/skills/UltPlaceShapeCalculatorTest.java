@@ -321,8 +321,8 @@ class UltPlaceShapeCalculatorTest {
                 UltPlaceRotationMode.FACE_LOCKED);
 
         assertEquals(4, blocks.size());
-        assertEquals(origin, blocks.getFirst());
-        assertEquals(new BlockPos(3, 43, 10), blocks.getLast());
+        assertEquals(origin, blocks.get(0));
+        assertEquals(new BlockPos(3, 43, 10), blocks.get(blocks.size() - 1));
     }
 
     @Test

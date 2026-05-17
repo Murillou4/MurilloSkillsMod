@@ -1,5 +1,7 @@
 # Forge 1.20.1 Port
 
-Status: runtime-port.
+Status: blocked-needs-native-forge-port.
 
-Built by `tools/build-all.ps1` into `dist/1.20.1/forge`. Forge is the supported 1.20.1 Forge-family target; NeoForge 1.20.1 stays outside the requested matrix.
+The previous jar was a `multi-loader-runtime` compatibility artifact, not the full MurilloSkills mod. It was removed from `dist` so it cannot be mistaken for a native port.
+
+Native Forge support for `1.20.1` requires a real ForgeGradle/Mojang-mappings port of the Fabric source: Forge entrypoint, events, networking, player data storage/capabilities, keybindings, screens, and mixin descriptors.

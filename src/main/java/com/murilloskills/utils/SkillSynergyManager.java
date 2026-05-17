@@ -152,7 +152,7 @@ public class SkillSynergyManager {
 
         for (SkillSynergy synergy : activeSynergies) {
             int bonusPercent = Math.round(synergy.bonusMultiplier() * 100);
-            lines.add(Text.literal("✦ ")
+            lines.add(Text.literal("* ")
                     .append(Text.translatable("murilloskills.synergy." + synergy.id()))
                     .append(Text.literal(" +" + bonusPercent + "%"))
                     .formatted(Formatting.GREEN));

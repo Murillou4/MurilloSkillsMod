@@ -70,35 +70,35 @@ public class FirstTimeHints {
     private static Text getHintText(HintType hintType) {
         return switch (hintType) {
             case SKILL_MENU_OPENED -> Text.empty()
-                    .append(Text.literal("💡 ").formatted(Formatting.YELLOW))
+                    .append(Text.literal("[Tip] ").formatted(Formatting.YELLOW))
                     .append(Text.translatable("murilloskills.hint.skill_menu").formatted(Formatting.GRAY));
 
             case FIRST_XP_GAIN -> Text.empty()
-                    .append(Text.literal("💡 ").formatted(Formatting.YELLOW))
+                    .append(Text.literal("[Tip] ").formatted(Formatting.YELLOW))
                     .append(Text.translatable("murilloskills.hint.first_xp").formatted(Formatting.GRAY));
 
             case ABILITY_UNLOCKED -> Text.empty()
-                    .append(Text.literal("🎉 ").formatted(Formatting.GOLD))
+                    .append(Text.literal("[OK] ").formatted(Formatting.GOLD))
                     .append(Text.translatable("murilloskills.hint.ability_unlocked").formatted(Formatting.YELLOW));
 
             case PERK_UNLOCKED -> Text.empty()
-                    .append(Text.literal("✨ ").formatted(Formatting.AQUA))
+                    .append(Text.literal("* ").formatted(Formatting.AQUA))
                     .append(Text.translatable("murilloskills.hint.perk_unlocked").formatted(Formatting.GRAY));
 
             case STREAK_STARTED -> Text.empty()
-                    .append(Text.literal("🔥 ").formatted(Formatting.GOLD))
+                    .append(Text.literal("[Smelt] ").formatted(Formatting.GOLD))
                     .append(Text.translatable("murilloskills.hint.streak_started").formatted(Formatting.GRAY));
 
             case PARAGON_EXPLAINED -> Text.empty()
-                    .append(Text.literal("⭐ ").formatted(Formatting.LIGHT_PURPLE))
+                    .append(Text.literal("[Tip] ").formatted(Formatting.LIGHT_PURPLE))
                     .append(Text.translatable("murilloskills.hint.paragon").formatted(Formatting.GRAY));
 
             case SKILL_SELECTION -> Text.empty()
-                    .append(Text.literal("💡 ").formatted(Formatting.YELLOW))
+                    .append(Text.literal("[Tip] ").formatted(Formatting.YELLOW))
                     .append(Text.translatable("murilloskills.hint.skill_selection").formatted(Formatting.GRAY));
 
             case MILESTONE_REACHED -> Text.empty()
-                    .append(Text.literal("🏆 ").formatted(Formatting.GOLD))
+                    .append(Text.literal("[Done] ").formatted(Formatting.GOLD))
                     .append(Text.translatable("murilloskills.hint.milestone").formatted(Formatting.GRAY));
         };
     }

@@ -71,8 +71,8 @@ public final class UltmineHud {
         int variant = UltmineClientState.getVariant();
 
         Text blockName = targetState.getBlock().getName().copy().formatted(Formatting.WHITE);
-        Text countText = Text.literal(" ×" + count).formatted(Formatting.GOLD, Formatting.BOLD);
-        Text line1 = Text.literal("⛏ ").formatted(Formatting.GOLD)
+        Text countText = Text.literal(" x" + count).formatted(Formatting.GOLD, Formatting.BOLD);
+        Text line1 = Text.literal("[Mine] ").formatted(Formatting.GOLD)
                 .copy()
                 .append(blockName)
                 .append(countText);
@@ -80,7 +80,7 @@ public final class UltmineHud {
         Text shapeName = Text.translatable(shape.getTranslationKey())
                 .copy()
                 .formatted(Formatting.GOLD, Formatting.BOLD);
-        Text line2 = Text.literal("◆ ").formatted(Formatting.GOLD)
+        Text line2 = Text.literal("[Shape] ").formatted(Formatting.GOLD)
                 .copy()
                 .append(shapeName);
         if (UltmineShape.getVariantCount(shape) > 1) {
@@ -88,7 +88,7 @@ public final class UltmineHud {
                     .copy()
                     .formatted(Formatting.AQUA);
             line2 = line2.copy()
-                    .append(Text.literal(" · ").formatted(Formatting.DARK_GRAY))
+                    .append(Text.literal(" - ").formatted(Formatting.DARK_GRAY))
                     .append(variantText);
         }
 
@@ -101,7 +101,7 @@ public final class UltmineHud {
         int panelW = textW + PADDING_H * 2;
         int panelH = textH * 2 + LINE_GAP + PADDING_V * 2;
         int x = context.getScaledWindowWidth() - MARGIN_X - panelW;
-        int y = context.getScaledWindowHeight() - MARGIN_Y - panelH;
+        int y = HudAnchorStack.claimBottomRight(context, panelH, MARGIN_Y, 4);
 
         // Subtle drop shadow behind the panel.
         context.fill(x + 2, y + 2, x + panelW + 2, y + panelH + 2, 0x66000000);

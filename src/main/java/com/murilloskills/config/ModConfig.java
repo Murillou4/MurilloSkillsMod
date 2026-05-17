@@ -364,7 +364,7 @@ public class ModConfig {
         public float maxCooldownReduction = 0.50f;
         public int maxPrestigeLevel = 10;
         public String[] prestigeSymbols = {
-                "⚔", "⚔⚔", "★", "★★", "✦", "✦✦", "✦✦✦", "♦", "♦♦", "👑"
+                "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"
         };
         // Hex colors: Green, Green, Cyan, Cyan, Yellow, Yellow, Magenta, Magenta, Gold,
         // Gold

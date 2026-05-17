@@ -2,6 +2,7 @@ package com.murilloskills.utils;
 
 import com.murilloskills.data.ModAttachments;
 import com.murilloskills.data.PlayerSkillData;
+import com.murilloskills.core.compat.CrossModCompatRules;
 import com.murilloskills.skills.MurilloSkillsList;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -280,6 +281,71 @@ public final class BlacksmithMachineSpeedHelper {
             progressField.setInt(blockEntity, Math.min(progress + extraTicks, totalTime - 1));
             spawnSpeedParticles(world, pos);
         } catch (ReflectiveOperationException ignored) {
+        }
+    }
+
+    public static void tryBoostGenericMachine(Object blockEntity, ServerWorld world, BlockPos pos) {
+        if (blockEntity == null) {
+            return;
+        }
+
+        String className = blockEntity.getClass().getName();
+        String blockId = net.minecraft.registry.Registries.BLOCK.getId(world.getBlockState(pos).getBlock()).toString();
+        if (!CrossModCompatRules.isLikelyMachineIdOrClass(className)
+                && !CrossModCompatRules.isLikelyMachineIdOrClass(blockId)) {
+            return;
+        }
+
+        String[][] progressPairs = {
+                { "progress", "maxProgress" },
+                { "progress", "progressMax" },
+                { "progress", "totalProgress" },
+                { "progress", "requiredProgress" },
+                { "craftingProgress", "craftingTime" },
+                { "craftingProgress", "maxCraftingProgress" },
+                { "processingTime", "processingTotalTime" },
+                { "processTime", "processTimeTotal" },
+                { "cookTime", "cookTimeTotal" },
+                { "cookingTimeSpent", "cookingTotalTime" },
+                { "workTime", "workTimeTotal" },
+                { "burnTime", "maxBurnTime" }
+        };
+
+        for (String[] pair : progressPairs) {
+            if (tryBoostProgressPair(blockEntity, world, pos, pair[0], pair[1])) {
+                return;
+            }
+        }
+    }
+
+    private static boolean tryBoostProgressPair(Object blockEntity, ServerWorld world, BlockPos pos,
+            String progressName, String maxName) {
+        try {
+            Class<?> cls = blockEntity.getClass();
+            Field progressField = findField(cls, progressName);
+            Field maxField = findField(cls, maxName);
+            if (progressField == null || maxField == null
+                    || progressField.getType() != int.class || maxField.getType() != int.class) {
+                return false;
+            }
+
+            int progress = progressField.getInt(blockEntity);
+            int maxProgress = maxField.getInt(blockEntity);
+            if (progress <= 0 || maxProgress <= 0 || progress >= maxProgress) {
+                return false;
+            }
+
+            int bestLevel = getBestNearbyBlacksmithLevel(world, pos);
+            int extraTicks = getExtraProgressTicks(world, bestLevel);
+            if (extraTicks <= 0) {
+                return false;
+            }
+
+            progressField.setInt(blockEntity, Math.min(progress + extraTicks, maxProgress - 1));
+            spawnSpeedParticles(world, pos);
+            return true;
+        } catch (ReflectiveOperationException ignored) {
+            return false;
         }
     }
 

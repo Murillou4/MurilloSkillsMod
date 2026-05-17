@@ -32,8 +32,13 @@ public final class ParagonActivationNetworkHandler {
                     var data = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
                     var requestedSkill = payload.skill();
                     data.normalizeParagonState();
+                    LOGGER.info("[Paragon] request player={} skill={} selected={} paragonSkills={} active={}",
+                            player.getName().getString(), requestedSkill, data.getSelectedSkills(), data.paragonSkills,
+                            data.getActiveParagonSkill());
 
                     if (data.isParagonSkill(requestedSkill)) {
+                        LOGGER.warn("[Paragon] rejected player={} skill={} reason=already_paragon",
+                                player.getName().getString(), requestedSkill);
                         player.sendMessage(
                                 Text.translatable("murilloskills.paragon.already_chosen").formatted(Formatting.RED),
                                 true);
@@ -42,6 +47,8 @@ public final class ParagonActivationNetworkHandler {
 
                     // Validation: Paragon can only be activated on selected skills
                     if (!data.isSkillSelected(requestedSkill)) {
+                        LOGGER.warn("[Paragon] rejected player={} skill={} reason=not_selected selected={}",
+                                player.getName().getString(), requestedSkill, data.getSelectedSkills());
                         player.sendMessage(
                                 Text.translatable("murilloskills.paragon.only_selected_skills")
                                         .formatted(Formatting.RED),
@@ -50,6 +57,8 @@ public final class ParagonActivationNetworkHandler {
                     }
 
                     if (!data.canActivateParagonSkill(requestedSkill)) {
+                        LOGGER.warn("[Paragon] rejected player={} skill={} reason=activation_rule paragonSkills={}",
+                                player.getName().getString(), requestedSkill, data.paragonSkills);
                         String messageKey = requestedSkill.isMasterClass()
                                 ? "murilloskills.paragon.master_already_chosen"
                                 : "murilloskills.paragon.already_chosen";
@@ -61,6 +70,8 @@ public final class ParagonActivationNetworkHandler {
                     // Paragon can be selected at level 99 (locks at 99 until chosen)
                     if (stats.level >= 99) {
                         data.activateParagonSkill(requestedSkill);
+                        LOGGER.info("[Paragon] activated player={} skill={} level={} paragonSkills={}",
+                                player.getName().getString(), requestedSkill, stats.level, data.paragonSkills);
 
                         SkillsNetworkUtils.syncSkills(player);
                         player.sendMessage(Text.translatable("murilloskills.paragon.defined", requestedSkill.name())
@@ -69,6 +80,8 @@ public final class ParagonActivationNetworkHandler {
                         // Grant "First Paragon" advancement
                         com.murilloskills.utils.AdvancementGranter.grantFirstParagon(player);
                     } else {
+                        LOGGER.warn("[Paragon] rejected player={} skill={} reason=level_insufficient level={}",
+                                player.getName().getString(), requestedSkill, stats.level);
                         player.sendMessage(
                                 Text.translatable("murilloskills.paragon.level_insufficient").formatted(Formatting.RED),
                                 true);

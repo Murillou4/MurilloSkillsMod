@@ -49,7 +49,7 @@ public class UltPlaceHud {
         String anchor = formatAnchor(shape);
         String rotation = formatRotation(shape);
 
-        Text icon = Text.literal("\u25A3 ").formatted(Formatting.GOLD);
+        Text icon = Text.literal("[Place] ").formatted(Formatting.GOLD);
         Text body = Text.translatable("murilloskills.hud.ultplace", shapeName, dims, anchor, rotation)
                 .copy().formatted(Formatting.GOLD, Formatting.BOLD);
         Text fullText = icon.copy().append(body);
@@ -66,10 +66,7 @@ public class UltPlaceHud {
         int panelW = textWidth + PADDING_H * 2;
         int panelH = textHeight + PADDING_V * 2;
         int x = MARGIN;
-        int y = context.getScaledWindowHeight() - HOTBAR_OFFSET - panelH;
-        if (AreaPlantingHud.isEnabled()) {
-            y -= panelH + STACK_SPACING;
-        }
+        int y = HudAnchorStack.claimBottomLeft(context, panelH, HOTBAR_OFFSET, STACK_SPACING);
 
         context.fill(x, y, x + panelW, y + panelH, PALETTE.hudIndicatorBg());
 

@@ -36,14 +36,21 @@ public final class AbilityNetworkHandler {
                     var playerData = player.getAttachedOrCreate(com.murilloskills.data.ModAttachments.PLAYER_SKILLS);
                     var requestedParagon = payload.skill();
                     var activeParagon = requestedParagon != null ? requestedParagon : playerData.getActiveParagonSkill();
+                    LOGGER.info("[Ability] request player={} requested={} resolved={} paragonSkills={} selectedSkills={}",
+                            player.getName().getString(), requestedParagon, activeParagon, playerData.paragonSkills,
+                            playerData.selectedSkills);
 
                     if (activeParagon == null) {
+                        LOGGER.warn("[Ability] rejected player={} reason=no_active_paragon",
+                                player.getName().getString());
                         player.sendMessage(Text.translatable("murilloskills.paragon.need_confirm")
                                 .formatted(Formatting.RED), true);
                         return;
                     }
 
                     if (!playerData.isParagonSkill(activeParagon)) {
+                        LOGGER.warn("[Ability] rejected player={} skill={} reason=not_paragon paragonSkills={}",
+                                player.getName().getString(), activeParagon, playerData.paragonSkills);
                         player.sendMessage(Text.translatable("murilloskills.prestige.not_paragon")
                                 .formatted(Formatting.RED), true);
                         return;
@@ -53,7 +60,12 @@ public final class AbilityNetworkHandler {
                     AbstractSkill skill = SkillRegistry.get(activeParagon);
                     if (skill != null) {
                         var stats = playerData.getSkill(activeParagon);
+                        long before = stats.lastAbilityUse;
+                        LOGGER.info("[Ability] activating player={} skill={} level={} prestige={} lastUseBefore={}",
+                                player.getName().getString(), activeParagon, stats.level, stats.prestige, before);
                         skill.onActiveAbility(player, stats);
+                        LOGGER.info("[Ability] completed player={} skill={} lastUseAfter={}",
+                                player.getName().getString(), activeParagon, stats.lastAbilityUse);
                         SkillsNetworkUtils.syncSkills(player);
                     } else {
                         LOGGER.warn("Paragon skill not found in registry: {}", activeParagon);

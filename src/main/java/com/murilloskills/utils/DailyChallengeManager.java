@@ -239,7 +239,7 @@ public class DailyChallengeManager {
 
         // Notificar jogador
         Text message = Text.empty()
-                .append(Text.literal("🎯 ").formatted(Formatting.GREEN))
+                .append(Text.literal("[Goal] ").formatted(Formatting.GREEN))
                 .append(Text.translatable("murilloskills.challenge.complete").formatted(Formatting.GREEN,
                         Formatting.BOLD))
                 .append(Text.literal(" | ").formatted(Formatting.DARK_GRAY))
@@ -277,7 +277,7 @@ public class DailyChallengeManager {
         }
 
         Text message = Text.empty()
-                .append(Text.literal("🏆 ").formatted(Formatting.GOLD))
+                .append(Text.literal("[Done] ").formatted(Formatting.GOLD))
                 .append(Text.translatable("murilloskills.challenge.all_complete").formatted(Formatting.GOLD,
                         Formatting.BOLD))
                 .append(Text.literal(" +" + SkillConfig.getBonusXpAllComplete() + " XP").formatted(Formatting.YELLOW));

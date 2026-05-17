@@ -16,7 +16,7 @@ public record UltmineResultS2CPayload(boolean success, int minedBlocks, int requ
             Identifier.of(MurilloSkills.MOD_ID, "ultmine_result"));
 
     public static final PacketCodec<RegistryByteBuf, UltmineResultS2CPayload> CODEC = PacketCodec.tuple(
-            PacketCodecs.BOOLEAN, UltmineResultS2CPayload::success,
+            NetworkPayloadCodecs.BOOLEAN, UltmineResultS2CPayload::success,
             PacketCodecs.VAR_INT, UltmineResultS2CPayload::minedBlocks,
             PacketCodecs.VAR_INT, UltmineResultS2CPayload::requestedBlocks,
             PacketCodecs.STRING, UltmineResultS2CPayload::messageKey,

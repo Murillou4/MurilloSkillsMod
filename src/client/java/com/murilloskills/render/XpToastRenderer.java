@@ -200,14 +200,14 @@ public class XpToastRenderer {
 
     private static String getSkillIcon(MurilloSkillsList skill) {
         return switch (skill) {
-            case MINER -> "⛏";
-            case WARRIOR -> "⚔";
-            case FARMER -> "🌾";
-            case ARCHER -> "🏹";
-            case FISHER -> "🎣";
-            case BUILDER -> "🧱";
-            case BLACKSMITH -> "🔨";
-            case EXPLORER -> "🧭";
+            case MINER -> "[M]";
+            case WARRIOR -> "[W]";
+            case FARMER -> "[F]";
+            case ARCHER -> "[A]";
+            case FISHER -> "[Fi]";
+            case BUILDER -> "[B]";
+            case BLACKSMITH -> "[S]";
+            case EXPLORER -> "[E]";
         };
     }
 

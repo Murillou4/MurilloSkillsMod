@@ -59,7 +59,7 @@ public final class UltminePreview {
             // Keep one-block outline visible while waiting for server preview update.
             blocks.add(primary.toImmutable());
         } else if (primary == null && !preview.isEmpty()) {
-            primary = blocks.isEmpty() ? null : blocks.getFirst();
+            primary = blocks.isEmpty() ? null : blocks.iterator().next();
         }
         if (blocks.isEmpty()) {
             return;

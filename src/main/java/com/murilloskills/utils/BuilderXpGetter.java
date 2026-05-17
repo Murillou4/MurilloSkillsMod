@@ -1,9 +1,11 @@
 package com.murilloskills.utils;
 
 import com.murilloskills.models.SkillReceptorResult;
+import com.murilloskills.core.compat.CrossModCompatRules;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
+import net.minecraft.registry.Registries;
 
 import java.util.Set;
 
@@ -111,6 +113,20 @@ public class BuilderXpGetter {
         if (BASIC_BLOCKS.contains(block)) {
             return new SkillReceptorResult(true, SkillConfig.getBuilderXpBasic());
         }
+        CrossModCompatRules.BuilderCategory category = CrossModCompatRules.builderCategory(
+                Registries.BLOCK.getId(block).toString());
+        if (category == CrossModCompatRules.BuilderCategory.PREMIUM) {
+            return new SkillReceptorResult(true, SkillConfig.getBuilderXpPremium());
+        }
+        if (category == CrossModCompatRules.BuilderCategory.STRUCTURAL) {
+            return new SkillReceptorResult(true, SkillConfig.getBuilderXpStructural());
+        }
+        if (category == CrossModCompatRules.BuilderCategory.DECORATIVE) {
+            return new SkillReceptorResult(true, SkillConfig.getBuilderXpDecorative());
+        }
+        if (category == CrossModCompatRules.BuilderCategory.BASIC) {
+            return new SkillReceptorResult(true, SkillConfig.getBuilderXpBasic());
+        }
         // Default: some XP for any solid block
         try {
             if (block.getDefaultState().isSolidBlock(null, null)) {
@@ -131,10 +147,14 @@ public class BuilderXpGetter {
      * @return SkillReceptorResult with XP info
      */
     public static SkillReceptorResult getCraftingXp(Item item) {
-        if (isStructuralItem(item)) {
+        CrossModCompatRules.BuilderCategory category = CrossModCompatRules.builderCategory(
+                Registries.ITEM.getId(item).toString());
+        if (category == CrossModCompatRules.BuilderCategory.STRUCTURAL
+                || category == CrossModCompatRules.BuilderCategory.PREMIUM
+                || isStructuralItem(item)) {
             return new SkillReceptorResult(true, SkillConfig.getBuilderXpCraftStructural());
         }
-        if (isDecorativeItem(item)) {
+        if (category == CrossModCompatRules.BuilderCategory.DECORATIVE || isDecorativeItem(item)) {
             return new SkillReceptorResult(true, SkillConfig.getBuilderXpCraftDecorative());
         }
         return new SkillReceptorResult(false, 0);
@@ -218,6 +238,8 @@ public class BuilderXpGetter {
                 STRUCTURAL_BLOCKS.contains(block) ||
                 DECORATIVE_BLOCKS.contains(block) ||
                 isDecorativeVariant(block) ||
-                BASIC_BLOCKS.contains(block);
+                BASIC_BLOCKS.contains(block) ||
+                CrossModCompatRules.builderCategory(Registries.BLOCK.getId(block).toString())
+                        != CrossModCompatRules.BuilderCategory.NONE;
     }
 }

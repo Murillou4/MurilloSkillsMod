@@ -18,6 +18,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.MathHelper;
@@ -49,6 +51,8 @@ public class SkillsScreen extends Screen {
     private int columns;
     private int startX, startY;
     private int headerHeight;
+    private boolean compactCards;
+    private boolean ultraCompactCards;
 
     // Selection Mode State
     private final Set<MurilloSkillsList> pendingSelection = new HashSet<>();
@@ -59,13 +63,34 @@ public class SkillsScreen extends Screen {
 
     // XP Toast toggle button
     private ButtonWidget toastToggleButton;
+    private final List<SkillCardIconButton> iconButtons = new ArrayList<>();
+
+    private record SkillCardIconButton(int x, int y, int size, ItemStack icon) {
+    }
 
     public SkillsScreen() {
         super(Text.translatable("murilloskills.gui.title"));
     }
 
+    @Override
+    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+        // SkillsScreen renders its own background; keep vanilla blur off custom content.
+    }
     private boolean isSelectionMode() {
         return !ClientSkillData.hasSelectedSkills();
+    }
+
+    private int cardActionButtonHeight() {
+        return Math.max(12, Math.min(16, cardHeight / 3));
+    }
+
+    private int cardBottomButtonSize() {
+        return Math.max(12, Math.min(16, cardHeight / 5));
+    }
+
+    private int cardBottomButtonY(int cardY, int buttonHeight) {
+        int bottomPadding = ultraCompactCards ? 4 : (compactCards ? 5 : 8);
+        return cardY + cardHeight - buttonHeight - bottomPadding;
     }
 
     private void updateSelectionButtonStates() {
@@ -105,56 +130,78 @@ public class SkillsScreen extends Screen {
      * Calcula layout responsivo baseado no tamanho da janela e escala da GUI
      */
     private void calculateResponsiveLayout() {
-        // Margem mínima das bordas
-        int marginX = 20;
-        int marginTop = 50;
-        int marginBottom = 50;
+        boolean selectionMode = isSelectionMode();
+        int marginX = selectionMode ? 12 : 14;
+        this.headerHeight = selectionMode
+                ? Math.max(24, Math.min(42, this.height / 7))
+                : Math.max(28, Math.min(42, this.height / 11));
+        int topGap = selectionMode ? 5 : 8;
+        int bottomReserve = selectionMode ? 30 : 34;
 
-        // Espaço disponível
-        int availableWidth = this.width - (marginX * 2);
-        int availableHeight = this.height - marginTop - marginBottom;
+        int availableWidth = Math.max(1, this.width - (marginX * 2));
+        int availableHeight = Math.max(1, this.height - headerHeight - topGap - bottomReserve);
 
-        // Número de skills (8)
         int skillCount = MurilloSkillsList.values().length;
+        int minCardWidth = selectionMode ? 112 : 104;
+        int maxCardWidth = selectionMode ? 190 : 180;
+        int minCardHeight = selectionMode ? 38 : 44;
+        int maxCardHeight = selectionMode ? 64 : 82;
 
-        // Determinar número de colunas baseado na largura (2, 4 ou até 8 para telas
-        // muito largas)
-        if (availableWidth >= 700) {
-            this.columns = 4;
-        } else if (availableWidth >= 400) {
-            this.columns = 2;
-        } else {
-            this.columns = 2; // Mínimo 2 colunas
+        int bestColumns = 1;
+        int bestHeight = -1;
+        int bestWidth = minCardWidth;
+        for (int candidate = 1; candidate <= 4; candidate++) {
+            if (selectionMode && candidate > 3) {
+                continue;
+            }
+            int candidatePadding = Math.max(4, Math.min(selectionMode ? 8 : 10, availableWidth / 60));
+            int totalPaddingX = (candidate - 1) * candidatePadding;
+            int candidateWidth = (availableWidth - totalPaddingX) / candidate;
+            if (candidateWidth < minCardWidth) {
+                continue;
+            }
+            candidateWidth = Math.min(maxCardWidth, candidateWidth);
+            int rows = (int) Math.ceil((double) skillCount / candidate);
+            int totalPaddingY = (rows - 1) * candidatePadding;
+            int naturalHeight = Math.min(maxCardHeight, Math.max(minCardHeight, candidateWidth * 48 / 100));
+            int fitHeight = (availableHeight - totalPaddingY) / rows;
+            int candidateHeight = Math.min(naturalHeight, fitHeight);
+            if (candidateHeight >= minCardHeight && candidateHeight > bestHeight) {
+                bestColumns = candidate;
+                bestHeight = candidateHeight;
+                bestWidth = candidateWidth;
+            }
         }
 
+        this.columns = bestColumns;
         int rows = (int) Math.ceil((double) skillCount / columns);
 
-        // Calcular padding baseado no tamanho
-        this.padding = Math.max(6, Math.min(12, availableWidth / 40));
+        this.padding = selectionMode
+                ? Math.max(4, Math.min(8, availableWidth / 60))
+                : Math.max(4, Math.min(10, availableWidth / 55));
 
-        // Calcular tamanho dos cards para caber na tela
         int totalPaddingX = (columns - 1) * padding;
         int totalPaddingY = (rows - 1) * padding;
 
-        // Card width: Usar espaço disponível dividido pelas colunas
-        this.cardWidth = Math.min(180, Math.max(120, (availableWidth - totalPaddingX) / columns));
+        this.cardWidth = Math.min(maxCardWidth,
+                Math.max(minCardWidth, (availableWidth - totalPaddingX) / columns));
 
-        // Card height: Proporcional ao width (ratio ~2.5:1) mas limitado
-        this.cardHeight = Math.min(70, Math.max(50, cardWidth * 45 / 100));
+        this.cardHeight = Math.min(maxCardHeight, Math.max(minCardHeight, cardWidth * 48 / 100));
 
-        // Verificar se cabe verticalmente, se não, reduzir
         int neededHeight = (rows * cardHeight) + totalPaddingY;
         if (neededHeight > availableHeight) {
-            this.cardHeight = Math.max(45, (availableHeight - totalPaddingY) / rows);
+            this.cardHeight = Math.max(minCardHeight, (availableHeight - totalPaddingY) / rows);
         }
+        if (bestHeight < 0) {
+            this.cardWidth = bestWidth;
+            this.cardHeight = minCardHeight;
+        }
+        this.compactCards = cardHeight < 62;
+        this.ultraCompactCards = cardHeight < 50;
 
-        // Header dinâmico
-        this.headerHeight = Math.max(35, this.height / 12);
-
-        // Posições iniciais (centralizadas)
         int totalGridWidth = (columns * cardWidth) + totalPaddingX;
         this.startX = (this.width - totalGridWidth) / 2;
-        this.startY = headerHeight + 10;
+        this.startY = headerHeight + topGap;
     }
 
     @Override
@@ -170,9 +217,10 @@ public class SkillsScreen extends Screen {
         // Calcular layout responsivo baseado no tamanho da janela
         calculateResponsiveLayout();
 
-        // Limpar widgets antigos para não duplicar se a tela for redimensionada
+        // Limpar widgets antigos para nÃƒÂ£o duplicar se a tela for redimensionada
         this.clearChildren();
         selectionButtons.clear();
+        iconButtons.clear();
 
         MurilloSkillsList[] skills = MurilloSkillsList.values();
         boolean selectionMode = isSelectionMode();
@@ -187,11 +235,11 @@ public class SkillsScreen extends Screen {
                 int x = startX + (col * (cardWidth + padding));
                 int y = startY + (row * (cardHeight + padding));
 
-                // Botões proporcionais ao tamanho do card
-                int btnX = x + 18;
-                int btnY = y + cardHeight - 18;
-                int btnWidth = cardWidth - 36;
-                int btnHeight = 14;
+                // BotÃƒÂµes proporcionais ao tamanho do card
+                int btnHeight = cardActionButtonHeight();
+                int btnX = x + 20;
+                int btnY = cardBottomButtonY(y, btnHeight);
+                int btnWidth = cardWidth - 40;
 
                 boolean isSelected = pendingSelection.contains(skill);
                 boolean isPermanent = ClientSkillData.isSkillSelected(skill);
@@ -226,9 +274,9 @@ public class SkillsScreen extends Screen {
 
                 // If permanent, also add the Reset button to allow "unlocking" it
                 if (isPermanent) {
-                    int resetBtnSize = Math.max(12, cardHeight / 5);
+                    int resetBtnSize = cardBottomButtonSize();
                     int resetBtnX = x + cardWidth - resetBtnSize - 4;
-                    int resetBtnY = y + cardHeight - resetBtnSize - 4;
+                    int resetBtnY = cardBottomButtonY(y, resetBtnSize);
                     int resetBtnWidth = resetBtnSize;
                     int resetBtnHeight = resetBtnSize;
 
@@ -251,11 +299,13 @@ public class SkillsScreen extends Screen {
                 }
             }
 
-            // Botão de confirmação responsivo
+            // BotÃƒÂ£o de confirmaÃƒÂ§ÃƒÂ£o responsivo
             int confirmBtnWidth = Math.min(300, Math.max(180, this.width / 3));
             int confirmBtnHeight = 22;
             int confirmBtnX = (this.width - confirmBtnWidth) / 2;
-            int confirmBtnY = this.height - 35;
+            int rows = (int) Math.ceil((double) skills.length / columns);
+            int gridBottom = startY + (rows * cardHeight) + ((rows - 1) * padding);
+            int confirmBtnY = Math.min(this.height - confirmBtnHeight - 8, gridBottom + 6);
 
             confirmButton = ButtonWidget
                     .builder(Text.translatable("murilloskills.gui.btn_save_partial", 0, ClientSkillData.getMaxSelectedSkills()), (button) -> {
@@ -287,11 +337,14 @@ public class SkillsScreen extends Screen {
                     int x = startX + (col * (cardWidth + padding));
                     int y = startY + (row * (cardHeight + padding));
 
-                    // Botões proporcionais ao tamanho do card
-                    int btnX = x + 18;
-                    int btnY = y + cardHeight - 18;
-                    int btnWidth = cardWidth - 36;
-                    int btnHeight = 14;
+                    // BotÃƒÂµes proporcionais ao tamanho do card
+                    int sideButtonSize = cardBottomButtonSize();
+                    int leftReserve = skill == MurilloSkillsList.MINER ? (sideButtonSize * 2) + 8 : 0;
+                    int rightReserve = sideButtonSize + 8;
+                    int btnHeight = cardActionButtonHeight();
+                    int btnX = x + 8 + leftReserve;
+                    int btnY = cardBottomButtonY(y, btnHeight);
+                    int btnWidth = Math.max(88, cardWidth - 16 - leftReserve - rightReserve);
 
                     ButtonWidget paragonBtn = ButtonWidget
                             .builder(Text.translatable("murilloskills.gui.btn_paragon"), (button) -> {
@@ -312,11 +365,11 @@ public class SkillsScreen extends Screen {
                     int x = startX + (col * (cardWidth + padding));
                     int y = startY + (row * (cardHeight + padding));
 
-                    // Botão de prestígio no card (acima da fileira de botões inferiores)
-                    int bottomBtnSize = Math.max(12, cardHeight / 5);
+                    // BotÃƒÂ£o de prestÃƒÂ­gio no card (acima da fileira de botÃƒÂµes inferiores)
+                    int bottomBtnSize = cardBottomButtonSize();
                     int btnX = x + 18;
                     int btnHeight = 14;
-                    int btnY = y + cardHeight - bottomBtnSize - 4 - btnHeight - 2;
+                    int btnY = cardBottomButtonY(y, bottomBtnSize) - btnHeight - 4;
                     int btnWidth = cardWidth - 36;
 
                     int nextPrestige = stats.prestige + 1;
@@ -328,31 +381,31 @@ public class SkillsScreen extends Screen {
 
                     // Build rich multiline tooltip
                     Text prestigeTooltip = Text.empty()
-                            .append(Text.literal("⭐ ").formatted(Formatting.GOLD))
+                            .append(Text.literal("Prestige ").formatted(Formatting.GOLD))
                             .append(Text.translatable("murilloskills.gui.prestige_tooltip.title", nextPrestige)
                                     .formatted(Formatting.GOLD, Formatting.BOLD))
                             .append(Text.literal("\n"))
                             .append(Text.literal("\n"))
-                            .append(Text.literal("📈 ").formatted(Formatting.GREEN))
+                            .append(Text.literal("XP: ").formatted(Formatting.GREEN))
                             .append(Text.translatable("murilloskills.gui.prestige_tooltip.xp_bonus", nextXpBonus)
                                     .formatted(Formatting.GREEN))
                             .append(Text.literal("\n"))
-                            .append(Text.literal("💪 ").formatted(Formatting.AQUA))
+                            .append(Text.literal("Passive: ").formatted(Formatting.AQUA))
                             .append(Text
                                     .translatable("murilloskills.gui.prestige_tooltip.passive_bonus", nextPassiveBonus)
                                     .formatted(Formatting.AQUA))
                             .append(Text.literal("\n"))
-                            .append(Text.literal("⏱ ").formatted(Formatting.LIGHT_PURPLE))
+                            .append(Text.literal("Cooldown: ").formatted(Formatting.LIGHT_PURPLE))
                             .append(Text
                                     .translatable("murilloskills.gui.prestige_tooltip.cooldown_bonus", nextCooldownBonus)
                                     .formatted(Formatting.LIGHT_PURPLE))
                             .append(Text.literal("\n"))
                             .append(Text.literal("\n"))
-                            .append(Text.literal("✓ ").formatted(Formatting.YELLOW))
+                            .append(Text.literal("OK: ").formatted(Formatting.YELLOW))
                             .append(Text.translatable("murilloskills.gui.prestige_tooltip.keeps_master")
                                     .formatted(Formatting.YELLOW))
                             .append(Text.literal("\n"))
-                            .append(Text.literal("⚠ ").formatted(Formatting.RED))
+                            .append(Text.literal("Warning: ").formatted(Formatting.RED))
                             .append(Text.translatable("murilloskills.gui.prestige_tooltip.resets_level")
                                     .formatted(Formatting.RED));
 
@@ -379,10 +432,10 @@ public class SkillsScreen extends Screen {
                     int x = startX + (col * (cardWidth + padding));
                     int y = startY + (row * (cardHeight + padding));
 
-                    // Botão de reset no canto inferior direito (não sobrepor o nível)
-                    int resetBtnSize = Math.max(12, cardHeight / 5);
+                    // BotÃƒÂ£o de reset no canto inferior direito (nÃƒÂ£o sobrepor o nÃƒÂ­vel)
+                    int resetBtnSize = cardBottomButtonSize();
                     int resetBtnX = x + cardWidth - resetBtnSize - 4;
-                    int resetBtnY = y + cardHeight - resetBtnSize - 4;
+                    int resetBtnY = cardBottomButtonY(y, resetBtnSize);
                     int resetBtnWidth = resetBtnSize;
                     int resetBtnHeight = resetBtnSize;
 
@@ -405,36 +458,32 @@ public class SkillsScreen extends Screen {
                     // Miner: Add ore filter + ultmine config buttons
                     if (skill == MurilloSkillsList.MINER) {
                         int configBtnSize = resetBtnSize;
-                        int configBtnX = x + 4;
-                        int configBtnY = y + cardHeight - configBtnSize - 4;
+                        int configBtnGap = 2;
+                        int configBtnY = resetBtnY;
+                        int ultmineBtnX = resetBtnX - configBtnGap - configBtnSize;
+                        int configBtnX = ultmineBtnX - configBtnGap - configBtnSize;
+                        if (configBtnX < x + 4) {
+                            configBtnX = x + 4;
+                            ultmineBtnX = configBtnX + configBtnSize + configBtnGap;
+                        }
 
-                        ButtonWidget configBtn = ButtonWidget
-                                .builder(Text.literal("⚙"), (button) -> {
-                                    MinecraftClient.getInstance().setScreen(new OreFilterScreen(this));
-                                })
-                                .dimensions(configBtnX, configBtnY, configBtnSize, configBtnSize)
-                                .tooltip(net.minecraft.client.gui.tooltip.Tooltip.of(
-                                        Text.translatable("murilloskills.ore_filter.title")))
-                                .build();
-                        this.addDrawableChild(configBtn);
+                        addIconButton(configBtnX, configBtnY, configBtnSize, new ItemStack(Items.DIAMOND_ORE),
+                                Text.translatable("murilloskills.ore_filter.title"),
+                                (button) -> MinecraftClient.getInstance().setScreen(new OreFilterScreen(this)));
 
-                        // Ultmine config button
-                        int ultmineBtnX = configBtnX + configBtnSize + 2;
-                        ButtonWidget ultmineConfigBtn = ButtonWidget
-                                .builder(Text.literal("⛏"), (button) -> {
-                                    MinecraftClient.getInstance().setScreen(new UltmineConfigScreen(this));
-                                })
-                                .dimensions(ultmineBtnX, configBtnY, configBtnSize, configBtnSize)
-                                .tooltip(net.minecraft.client.gui.tooltip.Tooltip.of(
-                                        Text.translatable("murilloskills.ultmine_config.title")))
-                                .build();
-                        this.addDrawableChild(ultmineConfigBtn);
+                        addIconButton(ultmineBtnX, configBtnY, configBtnSize, new ItemStack(Items.DIAMOND_PICKAXE),
+                                Text.translatable("murilloskills.ultmine_config.title"),
+                                (button) -> MinecraftClient.getInstance().setScreen(new UltmineConfigScreen(this)));
                     }
                 }
             }
         }
 
-        // XP Toast toggle button (both modes) - positioned // XP Toast toggle button
+        if (isSelectionMode()) {
+            return;
+        }
+
+        // XP Toast toggle button (normal mode only) - positioned // XP Toast toggle button
         int toastBtnWidth = 130;
         int toastBtnHeight = 16;
         int toastBtnX = this.width - toastBtnWidth - 10;
@@ -457,7 +506,7 @@ public class SkillsScreen extends Screen {
         int infoBtnY = 7;
 
         ButtonWidget infoButton = ButtonWidget.builder(
-                Text.literal("📖 ").append(Text.translatable("murilloskills.gui.info_button_short")),
+                Text.translatable("murilloskills.gui.info_button_short"),
                 (button) -> {
                     MinecraftClient.getInstance().setScreen(new ModInfoScreen(this));
                 })
@@ -490,7 +539,7 @@ public class SkillsScreen extends Screen {
         long worldTime = MinecraftClient.getInstance().world != null ? MinecraftClient.getInstance().world.getTime()
                 : 0;
 
-        // 2. Renderizar os Cartões (Fundo, Ícones, Texto)
+        // 2. Renderizar os CartÃƒÂµes (Fundo, ÃƒÂcones, Texto)
         for (int i = 0; i < skills.length; i++) {
             MurilloSkillsList skill = skills[i];
             var stats = ClientSkillData.get(skill);
@@ -541,11 +590,12 @@ public class SkillsScreen extends Screen {
                     isSelected && !isLocked, isParagon);
 
             // Skill Icon with subtle glow for active skills
-            if (!isLocked && (isSelected || isParagon)) {
+            int iconY = y + (ultraCompactCards ? 10 : 14);
+            if (!isLocked && (isSelected || isParagon) && !ultraCompactCards) {
                 // Subtle item glow
-                context.fill(x + 3, y + 12, x + 23, y + 32, PALETTE.panelHighlight());
+                context.fill(x + 3, iconY - 2, x + 23, iconY + 18, PALETTE.panelHighlight());
             }
-            context.drawItem(SkillUiData.getSkillIcon(skill), x + 5, y + 14);
+            context.drawItem(SkillUiData.getSkillIcon(skill), x + 5, iconY);
 
             // Skill Name with better typography
             int titleColor = isLocked ? PALETTE.textMuted() : PALETTE.textGold();
@@ -577,38 +627,53 @@ public class SkillsScreen extends Screen {
             }
 
             // Barra de XP
-            renderXpBar(context, x + 28, y + 25, stats, isLocked);
+            if (!selectionMode) {
+                renderXpBar(context, x + 28, y + (ultraCompactCards ? 22 : 25), stats, isLocked);
+            }
 
             // Status text below XP bar (buttons handle selection mode text)
             if (isLocked) {
                 // CHANGED: Clearer feedback that skill is inactive, not just "locked"
-                context.drawText(this.textRenderer, Text.literal("NOT ACTIVE"), x + 28, y + 40,
-                        PALETTE.statusInactive(), false);
+                if (!ultraCompactCards) {
+                    context.drawText(this.textRenderer, Text.literal("NOT ACTIVE"), x + 28, y + 40,
+                            PALETTE.statusInactive(), false);
+                }
             } else if (isParagon) {
                 long cooldownTicks = getSkillCooldown(skill, stats.prestige);
                 long timeSinceUse = worldTime - stats.lastAbilityUse;
 
                 // Se lastAbilityUse == -1, significa que nunca foi usada (pronto para usar)
-                // Ou se já passou o cooldown, também está pronto
+                // Ou se jÃƒÂ¡ passou o cooldown, tambÃƒÂ©m estÃƒÂ¡ pronto
                 if (stats.lastAbilityUse < 0 || timeSinceUse >= cooldownTicks) {
-                    context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.ready"), x + 28, y + 40,
-                            PALETTE.statusReady(), false);
+                    if (!ultraCompactCards) {
+                        context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.ready"), x + 28, y + 40,
+                                PALETTE.statusReady(), false);
+                    }
                 } else {
                     long secondsLeft = (cooldownTicks - timeSinceUse) / 20;
                     String cdText = formatTime(secondsLeft);
-                    context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.cooldown", cdText), x + 28,
-                            y + 40, PALETTE.statusCooldown(), false);
+                    if (!ultraCompactCards) {
+                        context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.cooldown", cdText), x + 28,
+                                y + 40, PALETTE.statusCooldown(), false);
+                    }
                 }
-                context.drawTextWithShadow(this.textRenderer, Text.translatable("murilloskills.gui.icon.paragon"),
-                        x + 120, y - 4, PALETTE.textYellow());
+                if (!compactCards) {
+                    context.drawTextWithShadow(this.textRenderer, Text.translatable("murilloskills.gui.icon.paragon"),
+                            x + 120, y - 4, PALETTE.textYellow());
+                }
             } else if (isSelected) {
-                context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.active"), x + 28, y + 40,
-                        PALETTE.statusActive(), false);
+                if (!ultraCompactCards) {
+                    context.drawText(this.textRenderer, Text.translatable("murilloskills.gui.active"), x + 28, y + 40,
+                            PALETTE.statusActive(), false);
+                }
             }
 
             // Render perk roadmap dots (shows progress toward perks)
-            if (!selectionMode) {
-                renderPerkRoadmap(context, x + 28, y + 55, skill, stats.level, isLocked);
+            if (!selectionMode && !ultraCompactCards) {
+                int roadmapY = Math.min(y + 55, cardBottomButtonY(y, cardBottomButtonSize()) - 10);
+                if (roadmapY >= y + 44) {
+                    renderPerkRoadmap(context, x + 28, roadmapY, skill, stats.level, isLocked);
+                }
             }
 
             // Tooltip Logic
@@ -627,15 +692,16 @@ public class SkillsScreen extends Screen {
             }
         }
 
-        // 3. Renderizar Widgets Nativos (Os botões adicionados no init)
+        // 3. Renderizar Widgets Nativos (Os botÃƒÂµes adicionados no init)
         super.render(context, mouseX, mouseY, delta);
+        renderIconButtons(context);
 
         // 4. Render Daily Challenges Panel (right side)
         if (!selectionMode) {
             renderDailyChallengesPanel(context, mouseX, mouseY);
         }
 
-        // 5. Renderizar Tooltip por último (topo de tudo)
+        // 5. Renderizar Tooltip por ÃƒÂºltimo (topo de tudo)
         if (tooltipToRender != null) {
             context.drawTooltip(this.textRenderer, tooltipToRender, mouseX, mouseY);
         }
@@ -655,6 +721,31 @@ public class SkillsScreen extends Screen {
             return Text.translatable("murilloskills.gui.xp_toasts_on");
         } else {
             return Text.translatable("murilloskills.gui.xp_toasts_off");
+        }
+    }
+
+    private ButtonWidget addIconButton(int x, int y, int size, ItemStack icon, Text tooltip,
+            ButtonWidget.PressAction action) {
+        ButtonWidget button = ButtonWidget.builder(Text.empty(), action)
+                .dimensions(x, y, size, size)
+                .tooltip(net.minecraft.client.gui.tooltip.Tooltip.of(tooltip))
+                .build();
+        this.addDrawableChild(button);
+        iconButtons.add(new SkillCardIconButton(x, y, size, icon));
+        return button;
+    }
+
+    private void renderIconButtons(DrawContext context) {
+        for (SkillCardIconButton button : iconButtons) {
+            float scale = 0.72f;
+            int iconSize = Math.round(16 * scale);
+            int iconX = button.x() + Math.max(0, (button.size() - iconSize) / 2);
+            int iconY = button.y() + Math.max(0, (button.size() - iconSize) / 2);
+            context.getMatrices().pushMatrix();
+            context.getMatrices().translate(iconX, iconY);
+            context.getMatrices().scale(scale, scale);
+            context.drawItem(button.icon(), 0, 0);
+            context.getMatrices().popMatrix();
         }
     }
 
@@ -700,14 +791,14 @@ public class SkillsScreen extends Screen {
                 int passiveBonus = Math.round(prestige * SkillConfig.getPrestigePassiveBonus() * 100.0f);
                 String prestigeSymbol = getPrestigeSymbol(prestige);
                 tooltip.add(Text.empty());
-                tooltip.add(Text.literal("⭐ ").formatted(Formatting.GOLD)
+                tooltip.add(Text.literal("Prestige ").formatted(Formatting.GOLD)
                         .append(Text.translatable("murilloskills.gui.prestige.level", prestige)
                                 .formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD))
                         .append(Text.literal(" " + prestigeSymbol).formatted(Formatting.YELLOW)));
-                tooltip.add(Text.literal("  📈 ").formatted(Formatting.GREEN)
+                tooltip.add(Text.literal("XP: ").formatted(Formatting.GREEN)
                         .append(Text.translatable("murilloskills.gui.prestige.xp_active", xpBonus)
                                 .formatted(Formatting.GREEN)));
-                tooltip.add(Text.literal("  💪 ").formatted(Formatting.AQUA)
+                tooltip.add(Text.literal("Passive: ").formatted(Formatting.AQUA)
                         .append(Text.translatable("murilloskills.gui.prestige.passive_active", passiveBonus)
                                 .formatted(Formatting.AQUA)));
             }
@@ -716,7 +807,7 @@ public class SkillsScreen extends Screen {
                 tooltip.add(Text.literal("NOT ACTIVE").formatted(Formatting.RED, Formatting.BOLD));
                 tooltip.add(Text.translatable("murilloskills.gui.skill_not_selected").formatted(Formatting.GRAY));
                 tooltip.add(Text.empty());
-                tooltip.add(Text.literal("⚠ XP Gain Disabled").formatted(Formatting.RED));
+                tooltip.add(Text.literal("XP Gain Disabled").formatted(Formatting.RED));
                 tooltip.add(Text.literal("Only selected skills gain XP.").formatted(Formatting.DARK_GRAY));
                 return tooltip;
             }
@@ -734,7 +825,7 @@ public class SkillsScreen extends Screen {
             SkillUiData.PerkInfo nextPerk = SkillUiData.getNextPerk(skill, level);
             if (nextPerk != null) {
                 int levelsRemaining = nextPerk.level() - level;
-                tooltip.add(Text.literal("→ ").append(Text.translatable(nextPerk.nameKey()))
+                tooltip.add(Text.literal("-> ").append(Text.translatable(nextPerk.nameKey()))
                         .append(Text.literal(" (" + levelsRemaining + " lvls)")).formatted(Formatting.YELLOW));
             } else {
                 tooltip.add(Text.translatable("murilloskills.gui.all_perks_unlocked").formatted(Formatting.GOLD));
@@ -759,10 +850,10 @@ public class SkillsScreen extends Screen {
                     tooltip.add(Text.empty());
                     tooltip.add(Text.translatable("murilloskills.gui.next_perk").formatted(Formatting.LIGHT_PURPLE));
                     tooltip.add(
-                            Text.literal("🔓 ").append(Text.translatable(nextPerk.nameKey()))
+                            Text.literal("").append(Text.translatable(nextPerk.nameKey()))
                                     .formatted(Formatting.YELLOW));
                     tooltip.add(
-                            Text.literal("   ").append(Text.translatable(nextPerk.descKey()))
+                            Text.literal("").append(Text.translatable(nextPerk.descKey()))
                                     .formatted(Formatting.GRAY));
                     tooltip.add(Text
                             .translatable("murilloskills.gui.perk_remaining", nextPerk.level(),
@@ -892,7 +983,7 @@ public class SkillsScreen extends Screen {
                         }
                     }
                     case ARCHER -> {
-                        // Dano base por flecha (+2% por level) com bônus de prestígio
+                        // Dano base por flecha (+2% por level) com bÃƒÂ´nus de prestÃƒÂ­gio
                         int baseArrowDamage = (int) (level * SkillConfig.ARCHER_DAMAGE_PER_LEVEL * 100);
                         int arrowDamage = (int) (baseArrowDamage * prestigeMultiplier);
                         tooltip.add(Text.translatable("murilloskills.passive.archer.arrow_damage", arrowDamage)
@@ -906,34 +997,34 @@ public class SkillsScreen extends Screen {
                                 .append(Text.literal(prestigeIndicator).formatted(Formatting.LIGHT_PURPLE))
                                 .formatted(Formatting.GREEN));
 
-                        // Nível 10: Flechas mais rápidas
+                        // NÃƒÂ­vel 10: Flechas mais rÃƒÂ¡pidas
                         if (level >= SkillConfig.ARCHER_FAST_ARROWS_LEVEL) {
                             int speedBonus = (int) ((SkillConfig.ARCHER_ARROW_SPEED_MULTIPLIER - 1) * 100);
                             tooltip.add(Text.translatable("murilloskills.passive.archer.arrow_speed", speedBonus)
                                     .formatted(Formatting.AQUA));
                         }
 
-                        // Nível 25: +5% dano adicional
+                        // NÃƒÂ­vel 25: +5% dano adicional
                         if (level >= SkillConfig.ARCHER_BONUS_DAMAGE_LEVEL) {
                             int bonusDamage = (int) (SkillConfig.ARCHER_BONUS_DAMAGE_AMOUNT * 100);
                             tooltip.add(Text.translatable("murilloskills.passive.archer.bonus_damage", bonusDamage)
                                     .formatted(Formatting.AQUA));
                         }
 
-                        // Nível 50: Penetração de flechas
+                        // NÃƒÂ­vel 50: PenetraÃƒÂ§ÃƒÂ£o de flechas
                         if (level >= SkillConfig.ARCHER_PENETRATION_LEVEL) {
                             tooltip.add(Text.translatable("murilloskills.passive.archer.penetration")
                                     .formatted(Formatting.AQUA));
                         }
 
-                        // Nível 75: Tiros mais estáveis
+                        // NÃƒÂ­vel 75: Tiros mais estÃƒÂ¡veis
                         if (level >= SkillConfig.ARCHER_STABLE_SHOT_LEVEL) {
                             int spreadReduction = (int) (SkillConfig.ARCHER_SPREAD_REDUCTION * 100);
                             tooltip.add(Text.translatable("murilloskills.passive.archer.precision", spreadReduction)
                                     .formatted(Formatting.AQUA));
                         }
 
-                        // Nível 100: Master Ranger
+                        // NÃƒÂ­vel 100: Master Ranger
                         if (level >= SkillConfig.ARCHER_MASTER_LEVEL) {
                             tooltip.add(
                                     Text.translatable("murilloskills.passive.archer.master")
@@ -1046,7 +1137,7 @@ public class SkillsScreen extends Screen {
                         }
                     }
                     case EXPLORER -> {
-                        // Velocidade base com bônus de prestígio
+                        // Velocidade base com bÃƒÂ´nus de prestÃƒÂ­gio
                         int baseSpeedBonus = (int) (level * SkillConfig.EXPLORER_SPEED_PER_LEVEL * 100);
                         int speedBonusExplorer = (int) (baseSpeedBonus * prestigeMultiplier);
                         tooltip.add(Text.translatable("murilloskills.passive.explorer.speed", speedBonusExplorer)
@@ -1262,6 +1353,11 @@ public class SkillsScreen extends Screen {
         int panelHeight = 35 + (challenges.size() * 38);
         int panelX = 8; // Left side
         int panelY = this.height - panelHeight - 8; // Bottom aligned
+        int gridRows = (int) Math.ceil(MurilloSkillsList.values().length / (double) columns);
+        int gridBottom = startY + (gridRows * cardHeight) + ((gridRows - 1) * padding);
+        if (panelY < gridBottom + 8) {
+            return;
+        }
 
         // Panel background with enhanced styling
         context.fill(panelX - 2, panelY - 2, panelX + panelWidth + 2, panelY + panelHeight + 2, PALETTE.panelShadow());
@@ -1299,7 +1395,7 @@ public class SkillsScreen extends Screen {
 
             // Status icon
             if (challenge.completed()) {
-                context.drawText(textRenderer, Text.literal("✓"), panelX + panelWidth - 16, y + 2, PALETTE.textGreen(),
+                context.drawText(textRenderer, Text.literal("OK"), panelX + panelWidth - 20, y + 2, PALETTE.textGreen(),
                         false);
             }
 
@@ -1342,19 +1438,7 @@ public class SkillsScreen extends Screen {
     private String getPrestigeSymbol(int prestige) {
         if (prestige <= 0)
             return "";
-        return switch (prestige) {
-            case 1 -> "★";
-            case 2 -> "★★";
-            case 3 -> "★★★";
-            case 4 -> "✦";
-            case 5 -> "✦✦";
-            case 6 -> "✦✦✦";
-            case 7 -> "◆";
-            case 8 -> "◆◆";
-            case 9 -> "◆◆◆";
-            case 10 -> "👑";
-            default -> "P" + prestige;
-        };
+        return "P" + prestige;
     }
 
     /**
@@ -1398,9 +1482,15 @@ public class SkillsScreen extends Screen {
                     Text.translatable("murilloskills.gui.select_skills_count", count, ClientSkillData.getMaxSelectedSkills()).formatted(Formatting.YELLOW),
                     this.width / 2, titleY + 12, PALETTE.textGray());
         } else {
-            context.drawCenteredTextWithShadow(this.textRenderer,
-                    Text.translatable("murilloskills.gui.title").formatted(Formatting.GOLD, Formatting.BOLD),
-                    this.width / 2, titleY + 5, PALETTE.textGold());
+            Text title = Text.translatable("murilloskills.gui.title").formatted(Formatting.GOLD, Formatting.BOLD);
+            int titleWidth = this.textRenderer.getWidth(title);
+            int headerButtonStartX = this.width - 130 - 10 - 70 - 10;
+            if ((this.width / 2) + (titleWidth / 2) + 8 >= headerButtonStartX) {
+                context.drawTextWithShadow(this.textRenderer, title, 10, titleY + 5, PALETTE.textGold());
+            } else {
+                context.drawCenteredTextWithShadow(this.textRenderer, title, this.width / 2, titleY + 5,
+                        PALETTE.textGold());
+            }
         }
     }
 

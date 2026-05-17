@@ -14,7 +14,7 @@ public record AutoTorchSyncS2CPayload(boolean enabled) implements CustomPayload 
     public static final CustomPayload.Id<AutoTorchSyncS2CPayload> ID = new CustomPayload.Id<>(
             Identifier.of(MurilloSkills.MOD_ID, "auto_torch_sync"));
     public static final PacketCodec<RegistryByteBuf, AutoTorchSyncS2CPayload> CODEC = PacketCodec.tuple(
-            PacketCodecs.BOOLEAN, AutoTorchSyncS2CPayload::enabled,
+            NetworkPayloadCodecs.BOOLEAN, AutoTorchSyncS2CPayload::enabled,
             AutoTorchSyncS2CPayload::new);
 
     @Override
