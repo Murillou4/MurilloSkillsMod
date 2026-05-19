@@ -59,6 +59,18 @@ public final class SkillProgressionConfig {
         return xpBase + (level * xpMultiplier) + (xpExponent * level * level);
     }
 
+    public int getXpBase() {
+        return xpBase;
+    }
+
+    public int getXpMultiplier() {
+        return xpMultiplier;
+    }
+
+    public int getXpExponent() {
+        return xpExponent;
+    }
+
     public float getPrestigeXpBonus() {
         return prestigeXpBonus;
     }

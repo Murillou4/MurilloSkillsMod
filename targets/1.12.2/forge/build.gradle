@@ -1,0 +1,97 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net/' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+
+version = '1.2.75'
+group = 'com.murilloskills'
+archivesBaseName = 'murilloskills-1.12.2-forge'
+
+sourceCompatibility = targetCompatibility = '1.8'
+
+def murilloClientJvmArgs = ['-Xmx6G', '-Xms2G']
+if (project.hasProperty('murilloskills_selftest') || System.getenv('MURILLOSKILLS_SELFTEST') == '1') {
+    murilloClientJvmArgs += '-Dmurilloskills.selftest=true'
+}
+if (project.hasProperty('murilloskills_autoworld') || System.getenv('MURILLOSKILLS_AUTOWORLD') == '1') {
+    murilloClientJvmArgs += '-Dmurilloskills.autoworld=true'
+}
+if (project.hasProperty('murilloskills_openui') || System.getenv('MURILLOSKILLS_OPENUI') == '1') {
+    murilloClientJvmArgs += '-Dmurilloskills.openui=true'
+}
+if (project.hasProperty('murilloskills_client_ui_selftest') || System.getenv('MURILLOSKILLS_CLIENT_UI_SELFTEST') == '1') {
+    murilloClientJvmArgs += '-Dmurilloskills.clientUiSelfTest112=true'
+}
+if (project.hasProperty('murilloskills_client_ui_selftest_exit') || System.getenv('MURILLOSKILLS_CLIENT_UI_SELFTEST_EXIT') == '1') {
+    murilloClientJvmArgs += '-Dmurilloskills.clientUiSelfTestExit112=true'
+}
+
+minecraft {
+    mappings channel: 'snapshot', version: '20171003-1.12'
+    runs {
+        client {
+            workingDirectory project.file('run-clean')
+            property 'forge.logging.console.level', 'info'
+            jvmArgs murilloClientJvmArgs
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2859'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = [
+                    'src/main/java',
+                    '../../../common-core/src/main/java'
+            ]
+        }
+        resources {
+            srcDirs = ['src/main/resources']
+        }
+    }
+}
+
+processResources {
+    inputs.property 'version', project.version
+    inputs.property 'mcversion', '1.12.2'
+
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+        expand 'version': project.version, 'mcversion': '1.12.2'
+    }
+
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+                'Specification-Title': 'MurilloSkills',
+                'Specification-Vendor': 'Murillo',
+                'Specification-Version': '1',
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version,
+                'Implementation-Vendor': 'Murillo',
+                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        )
+    }
+}
+
+jar.finalizedBy('reobfJar')

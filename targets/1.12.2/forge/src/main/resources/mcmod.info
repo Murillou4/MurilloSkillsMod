@@ -1,0 +1,16 @@
+[
+  {
+    "modid": "murilloskills",
+    "name": "Murillo Skills",
+    "description": "Native Forge 1.12.2 port of MurilloSkills for SevTech-style packs.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": ["Murillo"],
+    "credits": "Ported for Forge 1.12.2 compatibility.",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
