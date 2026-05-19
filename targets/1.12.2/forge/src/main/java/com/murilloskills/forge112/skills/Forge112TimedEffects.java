@@ -175,6 +175,7 @@ public final class Forge112TimedEffects {
             return true;
         }
         return false;
+    }
 
     public static void tickTimedAbilities(EntityPlayer player, PlayerSkillDataCore data, PlayerRuntime runtime) {
         UUID id = player.getUniqueID();

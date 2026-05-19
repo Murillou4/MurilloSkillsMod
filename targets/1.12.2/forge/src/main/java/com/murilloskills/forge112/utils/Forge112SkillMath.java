@@ -243,4 +243,14 @@ public final class Forge112SkillMath {
     }
 
     public static boolean isNaturalGround(IBlockState state) {
+        if (state == null || state.getBlock() == null) {
+            return false;
+        }
+        Block block = state.getBlock();
+        return block == Blocks.GRASS
+                || block == Blocks.DIRT
+                || block == Blocks.FARMLAND
+                || block == Blocks.MYCELIUM
+                || block == Blocks.GRASS_PATH;
+    }
 }

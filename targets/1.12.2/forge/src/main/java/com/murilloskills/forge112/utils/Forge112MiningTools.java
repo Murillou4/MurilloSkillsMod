@@ -514,4 +514,7 @@ public final class Forge112MiningTools {
                 tMaxZ += tDeltaZ;
             }
             result.add(new BlockPos(x, y, z));
+        }
+        return result;
+    }
 }
