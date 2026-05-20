@@ -190,11 +190,11 @@ public final class GuideGuiParity extends GuiScreen {
         int tabStartX = (width - totalTabW) / 2;
         String[] tabs = new String[] { "Status", "Synergy", "Prestige", "Perks" };
         for (int i = 0; i < tabs.length; i++) {
-            GuiButton tab = new GuiButton(TAB_BASE + i, tabStartX + i * (tabW + 3), tabY, tabW, tabH, tabs[i]);
+            GuiButton tab = flatButton(TAB_BASE + i, tabStartX + i * (tabW + 3), tabY, tabW, tabH, tabs[i]);
             tab.enabled = currentTab != i;
             buttonList.add(tab);
         }
-        buttonList.add(new GuiButton(BACK, 10, height - 28, 80, 20, "Back"));
+        buttonList.add(flatButton(BACK, 10, height - 28, 80, 20, "Back"));
         clampScroll();
     }
 

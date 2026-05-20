@@ -10,6 +10,7 @@ import java.io.IOException;
 
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.clamp;
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.drawPanelBorder;
+import static com.murilloskills.forge112.client.gui.Forge112UiSupport.flatButton;
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.renderCornerAccents;
 
 public final class TerminalMachineTransferAmountGui112 extends GuiScreen {
@@ -33,11 +34,11 @@ public final class TerminalMachineTransferAmountGui112 extends GuiScreen {
         buttonList.clear();
         panelX = (width - 280) / 2;
         panelY = (height - 142) / 2;
-        buttonList.add(new GuiButton(MINUS, panelX + 54, panelY + 66, 34, 20, "-"));
-        buttonList.add(new GuiButton(PLUS, panelX + 192, panelY + 66, 34, 20, "+"));
-        buttonList.add(new GuiButton(MODE, panelX + 70, panelY + 94, 140, 20, modeText()));
-        buttonList.add(new GuiButton(CONFIRM, panelX + 134, panelY + 114, 64, 20, "Move"));
-        buttonList.add(new GuiButton(CANCEL, panelX + 206, panelY + 114, 64, 20, "Cancel"));
+        buttonList.add(flatButton(MINUS, panelX + 54, panelY + 66, 34, 20, "-"));
+        buttonList.add(flatButton(PLUS, panelX + 192, panelY + 66, 34, 20, "+"));
+        buttonList.add(flatButton(MODE, panelX + 70, panelY + 94, 140, 20, modeText()));
+        buttonList.add(flatButton(CONFIRM, panelX + 134, panelY + 114, 64, 20, "Move"));
+        buttonList.add(flatButton(CANCEL, panelX + 206, panelY + 114, 64, 20, "Cancel"));
     }
 
     @Override

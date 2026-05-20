@@ -12,6 +12,7 @@ import com.murilloskills.forge112.config.*;
 import com.murilloskills.forge112.data.*;
 import com.murilloskills.forge112.dev.*;
 import com.murilloskills.forge112.events.*;
+import com.murilloskills.forge112.network.ModNetwork112;
 import com.murilloskills.forge112.skills.*;
 import com.murilloskills.forge112.utils.*;
 import static com.murilloskills.forge112.MurilloSkillsForge112.*;
@@ -42,8 +43,10 @@ import net.minecraft.block.BlockCrops;
 import net.minecraft.block.IGrowable;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiControls;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraft.client.gui.GuiOptions;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.ScaledResolution;
@@ -89,6 +92,8 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.ScreenShotHelper;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.GameType;
 import net.minecraft.world.World;
@@ -157,7 +162,12 @@ public final class Forge112ClientTickHandler {
     private static boolean autoUiOpened;
     private static boolean ultmineKeyHeld;
     private static boolean ultmineMenuHeld;
+    private static boolean ultmineConfigSynced;
+    private static long lastPreviewRequestTick = -1L;
+    private static int lastPreviewLogCount = -1;
     private static int uiSelfTestStep;
+    private static int uiSelfTestTicks;
+    private static boolean tooltipCoverageChecked;
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
@@ -165,6 +175,7 @@ public final class Forge112ClientTickHandler {
             return;
         }
         Minecraft mc = Minecraft.getMinecraft();
+        Forge112ClientHooks.ensurePostOptionsKeyAliases();
         if (Boolean.getBoolean("murilloskills.autoworld") && !autoWorldStarted
                 && mc.world == null && mc.currentScreen instanceof GuiMainMenu) {
             autoWorldStarted = true;
@@ -184,56 +195,173 @@ public final class Forge112ClientTickHandler {
             runClientUiSelfTest(mc);
         }
         if (mc.player == null || mc.world == null) {
+            ultmineConfigSynced = false;
+            UltmineClientState112.clearPreview();
             return;
         }
-        boolean held = Forge112ClientHooks.ULTMINE.isKeyDown();
+        if (!ultmineConfigSynced) {
+            ultmineConfigSynced = true;
+            ModNetwork112.sendUltmineConfigToServer();
+            UltmineShape112 shape = ClientUltmineConfig.getSelectedShape();
+            ModNetwork112.sendUltmineSelection(shape, ClientUltmineConfig.getDepth(shape),
+                    ClientUltmineConfig.getLength(shape), ClientUltmineConfig.getVariant(shape),
+                    ClientUltmineConfig.getLegacyMaxBlocks());
+            applyClientUltmineConfig(mc.player, ClientUltmineConfig.toNetworkJson());
+            setUltmineSelection(mc.player, shape, ClientUltmineConfig.getDepth(shape),
+                    ClientUltmineConfig.getLength(shape), ClientUltmineConfig.getVariant(shape),
+                    ClientUltmineConfig.getLegacyMaxBlocks());
+        }
+        boolean held = isUltmineHoldDown();
         UltmineClientState112.setHeld(held);
+        setUltmineHeld(mc.player, held);
         if (held != ultmineKeyHeld) {
             ultmineKeyHeld = held;
-            mc.player.sendChatMessage("/murilloskills clientstate ultmine_hold " + held);
+            ModNetwork112.sendUltmineHeld(held);
+            LOG.info("[MurilloSkills][1.12.2][Client] Ultmine hold {} via key {} ({})",
+                    held ? "pressed" : "released", Forge112ClientHooks.getUltmineKeyName(),
+                    Forge112ClientHooks.getUltmineKeyCode());
+            if (!held) {
+                UltmineClientState112.clearPreview();
+                lastPreviewLogCount = -1;
+            }
         }
-        boolean menuHeld = Forge112ClientHooks.MENU.isKeyDown();
+        if (held) {
+            RayTraceResult hit = mc.objectMouseOver;
+            if (hit != null && hit.typeOfHit == RayTraceResult.Type.BLOCK && hit.getBlockPos() != null) {
+                UltmineClientState112.setPreview(getValidatedUltminePreview(mc.player,
+                        hit.getBlockPos(), hit.sideHit));
+            } else {
+                UltmineClientState112.clearPreview();
+            }
+            long time = mc.world.getTotalWorldTime();
+            if (time != lastPreviewRequestTick && time % 4L == 0L) {
+                lastPreviewRequestTick = time;
+                if (hit != null && hit.typeOfHit == RayTraceResult.Type.BLOCK && hit.getBlockPos() != null) {
+                    ModNetwork112.requestUltminePreview(hit.getBlockPos(), hit.sideHit);
+                }
+            }
+            int previewCount = UltmineClientState112.getPreviewBlocks();
+            if (previewCount != lastPreviewLogCount) {
+                lastPreviewLogCount = previewCount;
+                LOG.info("[MurilloSkills][1.12.2][Client] Ultmine preview {} blocks for shape {}",
+                        previewCount, ClientUltmineConfig.getSelectedShape());
+            }
+        }
+        boolean menuHeld = isBindingDown(Forge112ClientHooks.MENU);
         if (menuHeld && !ultmineMenuHeld && mc.currentScreen == null) {
             ultmineMenuHeld = true;
+            LOG.info("[MurilloSkills][1.12.2][Client] Ultmine radial pressed via key {} ({})",
+                    Forge112ClientHooks.getKeyName(Forge112ClientHooks.MENU),
+                    Forge112ClientHooks.getKeyCode(Forge112ClientHooks.MENU));
             mc.displayGuiScreen(new UltmineRadialGui112());
-        } else if (!menuHeld) {
+        } else if (!menuHeld && ultmineMenuHeld) {
             ultmineMenuHeld = false;
+            LOG.info("[MurilloSkills][1.12.2][Client] Ultmine radial released via key {} ({})",
+                    Forge112ClientHooks.getKeyName(Forge112ClientHooks.MENU),
+                    Forge112ClientHooks.getKeyCode(Forge112ClientHooks.MENU));
+            if (mc.currentScreen instanceof UltmineRadialGui112) {
+                ((UltmineRadialGui112) mc.currentScreen).releaseAndClose();
+            }
         }
     }
 
+    private static boolean isUltmineHoldDown() {
+        return isBindingDown(Forge112ClientHooks.ULTMINE);
+    }
+
+    private static boolean isBindingDown(KeyBinding key) {
+        if (key == null) {
+            return false;
+        }
+        int code = key.getKeyCode();
+        if (code < 0) {
+            return Mouse.isButtonDown(code + 100);
+        }
+        return code > 0 && Keyboard.isKeyDown(code);
+    }
+
     private static void runClientUiSelfTest(Minecraft mc) {
-        int tick = mc.player.ticksExisted;
+        int tick = ++uiSelfTestTicks;
         if (uiSelfTestStep == 0) {
+            if (!tooltipCoverageChecked) {
+                tooltipCoverageChecked = true;
+                UiData.validateTooltipCoverage();
+                LOG.info("[MurilloSkills][1.12.2][ClientUiSelfTest] tooltip coverage PASS");
+            }
             uiSelfTestStep = 1;
             mc.displayGuiScreen(new SkillsGuiParity());
             LOG.info("[MurilloSkills][1.12.2][ClientUiSelfTest] opened SkillsGuiParity");
         } else if (uiSelfTestStep == 1 && tick > 110) {
+            saveSmokeScreenshot(mc, "skills");
             uiSelfTestStep = 2;
             mc.displayGuiScreen(new OreFilterGui112(new SkillsGuiParity()));
             LOG.info("[MurilloSkills][1.12.2][ClientUiSelfTest] opened OreFilterGui112");
         } else if (uiSelfTestStep == 2 && tick > 140) {
+            saveSmokeScreenshot(mc, "ore_filter");
             uiSelfTestStep = 3;
             mc.displayGuiScreen(new UltmineConfigGui112(new SkillsGuiParity()));
             LOG.info("[MurilloSkills][1.12.2][ClientUiSelfTest] opened UltmineConfigGui112");
         } else if (uiSelfTestStep == 3 && tick > 170) {
+            saveSmokeScreenshot(mc, "ultmine_config");
             uiSelfTestStep = 4;
             mc.displayGuiScreen(new UltmineListPickerGui112(new UltmineConfigGui112(new SkillsGuiParity()), false));
             LOG.info("[MurilloSkills][1.12.2][ClientUiSelfTest] opened TrashItemPicker112");
         } else if (uiSelfTestStep == 4 && tick > 200) {
+            saveSmokeScreenshot(mc, "trash_picker");
             uiSelfTestStep = 5;
             mc.displayGuiScreen(new UltmineListPickerGui112(new UltmineConfigGui112(new SkillsGuiParity()), true));
             LOG.info("[MurilloSkills][1.12.2][ClientUiSelfTest] opened ClassicBlockPicker112");
         } else if (uiSelfTestStep == 5 && tick > 230) {
+            saveSmokeScreenshot(mc, "classic_picker");
             uiSelfTestStep = 6;
             mc.displayGuiScreen(new UltmineRadialGui112());
             LOG.info("[MurilloSkills][1.12.2][ClientUiSelfTest] opened UltmineRadialGui112");
         } else if (uiSelfTestStep == 6 && tick > 260) {
+            saveSmokeScreenshot(mc, "ultmine_radial");
             uiSelfTestStep = 7;
+            mc.displayGuiScreen(new GuiControls(new GuiOptions(new SkillsGuiParity(), mc.gameSettings), mc.gameSettings));
+            LOG.info("[MurilloSkills][1.12.2][ClientUiSelfTest] opened Controls");
+        } else if (uiSelfTestStep == 7 && tick > 290) {
+            saveSmokeScreenshot(mc, "controls");
+            uiSelfTestStep = 8;
             mc.displayGuiScreen(null);
+            seedUltminePreviewForScreenshot(mc);
+            LOG.info("[MurilloSkills][1.12.2][ClientUiSelfTest] opened world preview");
+        } else if (uiSelfTestStep == 8 && tick > 320) {
+            saveSmokeScreenshot(mc, "ultmine_preview_world");
+            UltmineClientState112.clearPreview();
+            UltmineClientState112.setHeld(false);
+            uiSelfTestStep = 9;
             LOG.info("[MurilloSkills][1.12.2][ClientUiSelfTest] PASS");
             if (Boolean.getBoolean("murilloskills.clientUiSelfTestExit112")) {
                 mc.shutdown();
             }
         }
+    }
+
+    private static void saveSmokeScreenshot(Minecraft mc, String label) {
+        try {
+            ITextComponent result = ScreenShotHelper.saveScreenshot(mc.mcDataDir,
+                    "murilloskills-112-" + label + ".png", mc.displayWidth, mc.displayHeight, mc.getFramebuffer());
+            LOG.info("[MurilloSkills][1.12.2][ClientUiSelfTest] SCREENSHOT {} {}",
+                    label, result == null ? "" : result.getUnformattedText());
+        } catch (Throwable error) {
+            LOG.warn("[MurilloSkills][1.12.2][ClientUiSelfTest] screenshot {} failed: {}",
+                    label, error.toString());
+        }
+    }
+
+    private static void seedUltminePreviewForScreenshot(Minecraft mc) {
+        if (mc.player == null) {
+            return;
+        }
+        List<BlockPos> preview = new ArrayList<BlockPos>();
+        BlockPos base = mc.player.getPosition().add(2, 0, 2);
+        preview.add(base);
+        preview.add(base.east());
+        preview.add(base.south());
+        preview.add(base.east().south());
+        UltmineClientState112.setHeld(true);
+        UltmineClientState112.setPreview(preview);
     }
 }

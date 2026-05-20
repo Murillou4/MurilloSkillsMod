@@ -39,7 +39,9 @@ public final class Forge112StatusHud {
         int y = resolution.getScaledHeight() - 34;
         if (UltmineClientState112.isHeld() || Forge112ClientHooks.ULTMINE.isKeyDown()) {
             y = drawMode(mc.fontRenderer, x, y, "Ultmine",
-                    ClientUltmineConfig.getSelectedShape().name() + " D" + ClientUltmineConfig.getDepth(ClientUltmineConfig.getSelectedShape()),
+                    ClientUltmineConfig.getSelectedShape().name() + " "
+                            + UltmineClientState112.getPreviewBlocks() + " blocks "
+                            + Forge112ClientHooks.getUltmineKeyName(),
                     Palette.ACCENT_GOLD);
         }
         if (TerminalMachineTargetClientState112.isActive()) {

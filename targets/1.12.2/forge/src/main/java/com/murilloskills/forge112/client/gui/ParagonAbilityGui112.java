@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.drawPanelBorder;
+import static com.murilloskills.forge112.client.gui.Forge112UiSupport.flatButton;
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.renderCornerAccents;
 import static com.murilloskills.forge112.skills.Forge112Abilities.abilityCooldownMillis;
 import static com.murilloskills.forge112.utils.Forge112PlayerServices.data;
@@ -53,7 +54,7 @@ public final class ParagonAbilityGui112 extends GuiScreen {
             int x = cardX(i);
             int y = cardY(i);
             int id = 32000 + i;
-            buttonList.add(new GuiButton(id, x + CARD_W - 62, y + CARD_H - 20, 54, 14, buttonText(skill)));
+            buttonList.add(flatButton(id, x + CARD_W - 62, y + CARD_H - 20, 54, 14, buttonText(skill)));
             buttons.put(Integer.valueOf(id), skill);
         }
         updateButtons();

@@ -1,206 +1,84 @@
 package com.murilloskills.forge112.client.gui;
 
-import com.murilloskills.forge112.MurilloSkillsForge112;
-import com.murilloskills.forge112.client.*;
-import com.murilloskills.forge112.client.config.*;
-import com.murilloskills.forge112.client.gui.*;
-import com.murilloskills.forge112.client.input.*;
-import com.murilloskills.forge112.client.render.*;
-import com.murilloskills.forge112.commands.*;
-import com.murilloskills.forge112.config.*;
-import com.murilloskills.forge112.data.*;
-import com.murilloskills.forge112.dev.*;
-import com.murilloskills.forge112.events.*;
-import com.murilloskills.forge112.skills.*;
-import com.murilloskills.forge112.utils.*;
-import static com.murilloskills.forge112.MurilloSkillsForge112.*;
-import static com.murilloskills.forge112.client.gui.Forge112UiSupport.*;
-import static com.murilloskills.forge112.dev.Forge112SelfTest.*;
-import static com.murilloskills.forge112.skills.Forge112Abilities.*;
-import static com.murilloskills.forge112.skills.Forge112Passives.*;
-import static com.murilloskills.forge112.skills.Forge112TimedEffects.*;
-import static com.murilloskills.forge112.utils.Forge112EnvironmentEffects.*;
-import static com.murilloskills.forge112.utils.Forge112MiningTools.*;
-import static com.murilloskills.forge112.utils.Forge112PlayerServices.*;
-import static com.murilloskills.forge112.utils.Forge112SkillMath.*;
-
-import com.google.gson.JsonElement;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.murilloskills.core.compat.CrossModCompatRules;
-import com.murilloskills.core.config.SkillProgressionConfig;
-import com.murilloskills.core.config.SkillType;
-import com.murilloskills.core.data.PlayerSkillDataCore;
-import com.murilloskills.core.data.SkillStatsCore;
-import com.murilloskills.core.data.XpAddResult;
-import com.murilloskills.core.io.PlayerSkillJsonCodec;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockCrops;
-import net.minecraft.block.IGrowable;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.Minecraft;
+import com.murilloskills.forge112.client.config.ClientUltmineConfig;
+import com.murilloskills.forge112.network.ModNetwork112;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.client.settings.KeyBinding;
-import net.minecraft.command.CommandBase;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.command.WrongUsageException;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.SharedMonsterAttributes;
-import net.minecraft.entity.ai.attributes.AttributeModifier;
-import net.minecraft.entity.ai.attributes.IAttribute;
-import net.minecraft.entity.ai.attributes.IAttributeInstance;
-import net.minecraft.entity.item.EntityItem;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.entity.projectile.EntityArrow;
-import net.minecraft.init.Blocks;
-import net.minecraft.init.Items;
-import net.minecraft.init.MobEffects;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.potion.PotionEffect;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.tileentity.TileEntityChest;
-import net.minecraft.tileentity.TileEntityMobSpawner;
-import net.minecraft.util.DamageSource;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.SoundCategory;
-import net.minecraft.init.SoundEvents;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.world.GameType;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldSettings;
-import net.minecraft.world.WorldType;
-import net.minecraft.world.WorldServer;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingFallEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.player.AttackEntityEvent;
-import net.minecraftforge.event.entity.player.ItemFishedEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.world.BlockEvent;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
-import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
-import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
-import net.minecraftforge.fml.common.eventhandler.Event.Result;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.InputEvent;
-import net.minecraftforge.fml.common.gameevent.PlayerEvent.ItemCraftedEvent;
-import net.minecraftforge.fml.common.gameevent.PlayerEvent.ItemSmeltedEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashSet;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
+
+import static com.murilloskills.forge112.client.gui.Forge112UiSupport.*;
 
 public final class UltmineConfigGui112 extends GuiScreen {
-    private static final int BACK = 28000;
+    private static final int SAVE = 28001;
+    private static final int RESET = 28002;
     private static final int SHAPE_BASE = 28100;
     private static final int DROPS = 28200;
     private static final int STORAGE = 28201;
     private static final int XP = 28202;
     private static final int SAME = 28203;
     private static final int MAGNET = 28204;
-    private static final int DEPTH_MINUS = 28300;
-    private static final int DEPTH_PLUS = 28301;
-    private static final int LENGTH_MINUS = 28302;
-    private static final int LENGTH_PLUS = 28303;
-    private static final int VARIANT = 28304;
-    private static final int LEGACY_MINUS = 28305;
-    private static final int LEGACY_PLUS = 28306;
-    private static final int MAGNET_MINUS = 28307;
-    private static final int MAGNET_PLUS = 28308;
+    private static final int VARIANT_LEFT = 28304;
+    private static final int VARIANT_RIGHT = 28305;
     private static final int TRASH_ADD = 28400;
     private static final int TRASH_BROWSE = 28401;
-    private static final int TRASH_UP = 28402;
-    private static final int TRASH_DOWN = 28403;
     private static final int TRASH_REMOVE_BASE = 28500;
     private static final int CLASSIC_ADD = 28600;
     private static final int CLASSIC_BROWSE = 28601;
-    private static final int CLASSIC_UP = 28602;
-    private static final int CLASSIC_DOWN = 28603;
     private static final int CLASSIC_REMOVE_BASE = 28700;
     private static final int STORAGE_WHITELIST = 28800;
+
+    private static final int HEADER_HEIGHT = 38;
+    private static final int SECTION_GAP = 10;
+    private static final int PANEL_PADDING = 10;
+    private static final int MAX_VISIBLE_TRASH = 4;
+    private static final int MAX_VISIBLE_CLASSIC_BLOCKS = 4;
+    private static final int SCROLLBAR_WIDTH = 7;
+
     private final GuiScreen parent;
+    private UltmineShape112 selectedShape = UltmineShape112.S_3x3;
+    private GuiTextField depthField;
+    private GuiTextField lengthField;
+    private GuiTextField classicMaxBlocksField;
+    private GuiTextField magnetRangeField;
+    private GuiTextField trashField;
+    private GuiTextField classicField;
+
+    private int trashScrollOffset;
+    private int classicBlockScrollOffset;
     private int panelX;
     private int panelY;
     private int panelW;
     private int panelH;
-    private int leftX;
-    private int leftW;
-    private int rightX;
-    private int rightW;
-    private int trashScroll;
-    private int classicScroll;
-    private int trashY;
-    private int trashH;
-    private int classicY;
-    private int classicH;
-    private boolean draggingTrashScrollbar;
-    private boolean draggingClassicScrollbar;
-    private int trashScrollbarGrabOffset;
-    private int classicScrollbarGrabOffset;
-    private GuiTextField trashField;
-    private GuiTextField classicField;
-    private List<String> trashItems = new ArrayList<String>();
-    private List<String> classicBlocks = new ArrayList<String>();
+    private int contentHeight;
+    private int scrollOffset;
+    private int toggleSectionY;
+    private int shapeSelectorY;
+    private int shapeConfigY;
+    private int magnetSectionY;
+    private int trashSectionY;
+    private int classicBlockSectionY;
+    private int bottomY;
+    private int leftColX;
+    private int leftColW;
+    private int rightColX;
+    private int rightColW;
+    private boolean showClassicBlockSection;
+    private int secX;
+    private int secW;
+    private int secCx;
+    private boolean draggingScrollbar;
+    private int scrollbarThumbY;
+    private int scrollbarThumbH;
+    private int scrollbarTrackY;
+    private int scrollbarTrackH;
+    private int scrollbarDragGrabOffset;
 
     public UltmineConfigGui112(GuiScreen parent) {
         this.parent = parent;
@@ -209,117 +87,291 @@ public final class UltmineConfigGui112 extends GuiScreen {
     @Override
     public void initGui() {
         ClientUltmineConfig.load();
-        trashItems = ClientUltmineConfig.getTrashItems();
-        classicBlocks = ClientUltmineConfig.getLegacyBlockedBlocks();
+        selectedShape = ClientUltmineConfig.getSelectedShape();
         buttonList.clear();
-        panelW = Math.min(720, width - 20);
-        panelH = Math.min(430, height - 20);
-        panelX = (width - panelW) / 2;
-        panelY = (height - panelH) / 2;
-        leftX = panelX + 14;
-        leftW = (panelW - 42) / 2;
-        rightX = leftX + leftW + 14;
-        rightW = panelW - 28 - leftW - 14;
+        calculateLayout();
+        int oY = -scrollOffset;
 
-        buttonList.add(flatButton(BACK, panelX + panelW - 82, panelY + panelH - 28, 70, 20, "Back"));
-        int shapeW = Math.max(58, (panelW - 28 - (UltmineShape112.values().length - 1) * 4) / UltmineShape112.values().length);
-        int startX = panelX + 14;
-        int shapeY = panelY + 42;
+        setSectionAnchor(leftColX, leftColW);
+        int toggleW = secW - PANEL_PADDING * 2;
+        int toggleGap = 4;
+        int toggleBtnW = (toggleW - toggleGap * 3) / 4;
+        int toggleStartX = secCx - toggleW / 2;
+        int toggleY = toggleSectionY + 16 + oY;
+        buttonList.add(flatButton(DROPS, toggleStartX, toggleY, toggleBtnW, 20, ""));
+        buttonList.add(flatButton(STORAGE, toggleStartX + toggleBtnW + toggleGap, toggleY, toggleBtnW, 20, ""));
+        buttonList.add(flatButton(XP, toggleStartX + 2 * (toggleBtnW + toggleGap), toggleY, toggleBtnW, 20, ""));
+        buttonList.add(flatButton(SAME, toggleStartX + 3 * (toggleBtnW + toggleGap), toggleY, toggleBtnW, 20, ""));
+        buttonList.add(flatButton(STORAGE_WHITELIST, toggleStartX, toggleY + 22, toggleW, 18,
+                tr("murilloskills.ultmine_config.storage_filter.button", ClientUltmineConfig.getStorageWhitelist().size())));
+
         UltmineShape112[] shapes = UltmineShape112.values();
+        int shapeBtnW = Math.min(55, (secW - (shapes.length - 1) * 4) / shapes.length);
+        int totalShapesW = shapes.length * shapeBtnW + (shapes.length - 1) * 4;
+        int shapeStartX = secCx - totalShapesW / 2;
         for (int i = 0; i < shapes.length; i++) {
-            UltmineShape112 shape = shapes[i];
-            GuiButton b = flatButton(SHAPE_BASE + i, startX + i * (shapeW + 4), shapeY, shapeW, 20, shapeLabel(shape));
-            b.enabled = shape != ClientUltmineConfig.getSelectedShape();
-            buttonList.add(b);
+            buttonList.add(flatButton(SHAPE_BASE + i, shapeStartX + i * (shapeBtnW + 4),
+                    shapeSelectorY + 16 + oY, shapeBtnW, 18, ""));
         }
-        int toggleY = panelY + 72;
-        int toggleW = (panelW - 36) / 4;
-        addToggle(DROPS, panelX + 12, toggleY, toggleW, "Inventory", ClientUltmineConfig.isDropsToInventory());
-        addToggle(STORAGE, panelX + 18 + toggleW, toggleY, toggleW, "Storage", ClientUltmineConfig.isDropsToStorage());
-        addToggle(XP, panelX + 24 + toggleW * 2, toggleY, toggleW, "XP Direct", ClientUltmineConfig.isXpDirectToPlayer());
-        addToggle(SAME, panelX + 30 + toggleW * 3, toggleY, toggleW, "Same Block", ClientUltmineConfig.isSameBlockOnly());
-        buttonList.add(flatButton(STORAGE_WHITELIST, panelX + 18 + toggleW, toggleY + 24, toggleW, 18, "Whitelist"));
 
-        int sectionTop = panelY + 106;
-        int bottom = panelY + panelH - 40;
-        int shapeCardY = sectionTop;
-        int shapeCardH = 120;
-        int classicCardY = shapeCardY + shapeCardH + 10;
-        int classicCardH = 64;
-        int magnetCardY = classicCardY + classicCardH + 10;
-        int rowX = leftX + 12;
-        int shapeRowY = shapeCardY + 42;
-        int classicRowY = classicCardY + 28;
-        int magnetToggleY = magnetCardY + 26;
-        int magnetRangeY = magnetCardY + 58;
-        buttonList.add(flatButton(DEPTH_MINUS, rowX + 94, shapeRowY, 24, 18, "-"));
-        buttonList.add(flatButton(DEPTH_PLUS, rowX + 172, shapeRowY, 24, 18, "+"));
-        buttonList.add(flatButton(LENGTH_MINUS, rowX + 94, shapeRowY + 28, 24, 18, "-"));
-        buttonList.add(flatButton(LENGTH_PLUS, rowX + 172, shapeRowY + 28, 24, 18, "+"));
-        buttonList.add(flatButton(VARIANT, rowX + 94, shapeRowY + 56, 102, 18, variantLabel()));
-        buttonList.add(flatButton(LEGACY_MINUS, rowX + 94, classicRowY, 24, 18, "-"));
-        buttonList.add(flatButton(LEGACY_PLUS, rowX + 172, classicRowY, 24, 18, "+"));
-        addToggle(MAGNET, rowX + 64, magnetToggleY, 132, "Magnet", ClientUltmineConfig.isMagnetEnabled());
-        buttonList.add(flatButton(MAGNET_MINUS, rowX + 94, magnetRangeY, 24, 18, "-"));
-        buttonList.add(flatButton(MAGNET_PLUS, rowX + 172, magnetRangeY, 24, 18, "+"));
+        int maxDepth = maxDepth(selectedShape);
+        int maxLength = maxLength(selectedShape);
+        int variantCount = variantCount(selectedShape);
+        int fieldW = 50;
+        depthField = null;
+        lengthField = null;
+        classicMaxBlocksField = null;
+        if (maxDepth > 1) {
+            depthField = numericField(11, secCx + 20, shapeConfigY + 30 + oY, fieldW, 18,
+                    ClientUltmineConfig.getDepth(selectedShape), 4);
+        }
+        if (maxLength > 1) {
+            int lengthRowY = shapeConfigY + (maxDepth > 1 ? 54 : 30) + oY;
+            lengthField = numericField(12, secCx + 20, lengthRowY, fieldW, 18,
+                    ClientUltmineConfig.getLength(selectedShape), 4);
+        }
+        if (variantCount > 1) {
+            int variantRowY = shapeConfigY + 30 + oY;
+            if (maxDepth > 1) {
+                variantRowY += 24;
+            }
+            if (maxLength > 1) {
+                variantRowY += 24;
+            }
+            int variantBtnW = 20;
+            int ctrlGap = 6;
+            int variantValueW = Math.min(100, secW - PANEL_PADDING - 4 - 2 * variantBtnW - 2 * ctrlGap);
+            if (variantValueW < 40) {
+                variantValueW = 40;
+            }
+            int variantStartX = secCx + 20;
+            int variantEndX = variantStartX + variantBtnW + ctrlGap + variantValueW + ctrlGap + variantBtnW;
+            int colRight = secX + secW - 2;
+            if (variantEndX > colRight) {
+                variantStartX -= variantEndX - colRight;
+            }
+            if (variantStartX < secX + 2) {
+                variantStartX = secX + 2;
+            }
+            buttonList.add(flatButton(VARIANT_LEFT, variantStartX, variantRowY, variantBtnW, 18, "<"));
+            buttonList.add(flatButton(VARIANT_RIGHT, variantStartX + variantBtnW + ctrlGap + variantValueW + ctrlGap,
+                    variantRowY, variantBtnW, 18, ">"));
+        }
+        if (selectedShape == UltmineShape112.LEGACY) {
+            int rowY = shapeConfigY + 30 + oY;
+            if (maxDepth > 1) {
+                rowY += 24;
+            }
+            if (maxLength > 1) {
+                rowY += 24;
+            }
+            if (variantCount > 1) {
+                rowY += 24;
+            }
+            classicMaxBlocksField = numericField(13, secCx + 20, rowY, fieldW, 18,
+                    ClientUltmineConfig.getLegacyMaxBlocks(), 4);
+        }
 
-        int listH = Math.max(88, (bottom - sectionTop - 12) / 2);
-        trashY = sectionTop;
-        trashH = listH;
-        classicY = trashY + listH + 12;
-        classicH = Math.max(88, bottom - classicY);
-        int fieldW = Math.max(80, rightW - 90);
-        trashField = new GuiTextField(1, fontRenderer, rightX + 10, trashY + 26, fieldW, 18);
+        int magnetInnerW = secW - PANEL_PADDING * 2;
+        int magnetToggleW = magnetInnerW / 2 - 2;
+        int magnetLeftX = secCx - magnetInnerW / 2;
+        buttonList.add(flatButton(MAGNET, magnetLeftX, magnetSectionY + 16 + oY, magnetToggleW, 20, ""));
+        magnetRangeField = numericField(14, magnetLeftX + magnetToggleW + 54,
+                magnetSectionY + 17 + oY, 36, 18, ClientUltmineConfig.getMagnetRange(), 2);
+
+        setSectionAnchor(rightColX, rightColW);
+        int browseBtnW = Math.min(70, secW / 4);
+        int addBtnW = 22;
+        int trashFieldW = secW - PANEL_PADDING * 2 - browseBtnW - addBtnW - 8;
+        if (trashFieldW < 60) {
+            trashFieldW = Math.max(40, secW - PANEL_PADDING * 2 - browseBtnW - addBtnW - 8);
+        }
+        int trashFieldX = secX + PANEL_PADDING;
+        trashField = new GuiTextField(21, fontRenderer, trashFieldX, trashSectionY + 16 + oY, trashFieldW, 18);
         trashField.setMaxStringLength(100);
-        classicField = new GuiTextField(2, fontRenderer, rightX + 10, classicY + 26, fieldW, 18);
-        classicField.setMaxStringLength(120);
-        buttonList.add(flatButton(TRASH_ADD, rightX + 14 + fieldW, trashY + 26, 22, 18, "+"));
-        buttonList.add(flatButton(TRASH_BROWSE, rightX + 40 + fieldW, trashY + 26, 48, 18, "Browse"));
-        buttonList.add(flatButton(CLASSIC_ADD, rightX + 14 + fieldW, classicY + 26, 22, 18, "+"));
-        buttonList.add(flatButton(CLASSIC_BROWSE, rightX + 40 + fieldW, classicY + 26, 48, 18, "Browse"));
+        buttonList.add(flatButton(TRASH_ADD, trashFieldX + trashFieldW + 4, trashSectionY + 16 + oY, addBtnW, 18, "+"));
+        buttonList.add(flatButton(TRASH_BROWSE, trashFieldX + trashFieldW + addBtnW + 8,
+                trashSectionY + 16 + oY, browseBtnW, 18, tr("murilloskills.ultmine_config.trash.browse")));
+        addListControls(false, ClientUltmineConfig.getTrashItems(), trashSectionY, trashScrollOffset, TRASH_REMOVE_BASE,
+                MAX_VISIBLE_TRASH);
 
-        addListControls(false, trashItems, trashY, trashH, trashScroll, TRASH_REMOVE_BASE);
-        addListControls(true, classicBlocks, classicY, classicH, classicScroll, CLASSIC_REMOVE_BASE);
+        classicField = null;
+        if (showClassicBlockSection) {
+            int classicFieldW = secW - PANEL_PADDING * 2 - browseBtnW - addBtnW - 8;
+            int classicFieldX = secX + PANEL_PADDING;
+            classicField = new GuiTextField(22, fontRenderer, classicFieldX, classicBlockSectionY + 16 + oY,
+                    classicFieldW, 18);
+            classicField.setMaxStringLength(120);
+            buttonList.add(flatButton(CLASSIC_ADD, classicFieldX + classicFieldW + 4,
+                    classicBlockSectionY + 16 + oY, addBtnW, 18, "+"));
+            buttonList.add(flatButton(CLASSIC_BROWSE, classicFieldX + classicFieldW + addBtnW + 8,
+                    classicBlockSectionY + 16 + oY, browseBtnW, 18,
+                    tr("murilloskills.ultmine_config.classic_block_lock.browse")));
+            addListControls(true, ClientUltmineConfig.getLegacyBlockedBlocks(), classicBlockSectionY,
+                    classicBlockScrollOffset, CLASSIC_REMOVE_BASE, MAX_VISIBLE_CLASSIC_BLOCKS);
+        }
+
+        int btnW = 90;
+        int btnGap = 12;
+        int panelCenterX = panelX + panelW / 2;
+        buttonList.add(flatButton(SAVE, panelCenterX - btnW - btnGap / 2, bottomY + oY, btnW, 20,
+                tr("murilloskills.ultmine_config.save")));
+        buttonList.add(flatButton(RESET, panelCenterX + btnGap / 2, bottomY + oY, btnW, 20,
+                tr("murilloskills.ultmine_config.reset")));
     }
 
-    private void addToggle(int id, int x, int y, int w, String label, boolean enabled) {
-        buttonList.add(flatButton(id, x, y, w, 20, label + ": " + (enabled ? "ON" : "OFF")));
+    private GuiTextField numericField(int id, int x, int y, int w, int h, int value, int maxLength) {
+        GuiTextField field = new GuiTextField(id, fontRenderer, x, y, w, h);
+        field.setMaxStringLength(maxLength);
+        field.setText(String.valueOf(value));
+        return field;
     }
 
-    private void addListControls(boolean classic, List<String> values, int sectionY, int sectionH, int offset,
-            int removeBase) {
-        int visible = visibleListRows(sectionH);
-        int maxScroll = Math.max(0, values.size() - visible);
+    private void addListControls(boolean classic, List<String> values, int sectionY, int offset, int removeBase,
+            int maxVisible) {
+        int maxScroll = Math.max(0, values.size() - maxVisible);
         if (classic) {
-            classicScroll = clamp(classicScroll, 0, maxScroll);
-            offset = classicScroll;
+            classicBlockScrollOffset = clamp(classicBlockScrollOffset, 0, maxScroll);
+            offset = classicBlockScrollOffset;
         } else {
-            trashScroll = clamp(trashScroll, 0, maxScroll);
-            offset = trashScroll;
+            trashScrollOffset = clamp(trashScrollOffset, 0, maxScroll);
+            offset = trashScrollOffset;
         }
-        int count = Math.min(visible, Math.max(0, values.size() - offset));
+        int oY = -scrollOffset;
+        int count = Math.min(maxVisible, Math.max(0, values.size() - offset));
         for (int i = 0; i < count; i++) {
-            int y = sectionY + 50 + i * 16;
-            buttonList.add(flatButton(removeBase + i, rightX + rightW - 29, y - 2, 18, 14, "x"));
+            int y = sectionY + 38 + i * 16 + oY;
+            buttonList.add(flatButton(removeBase + i, secX + secW - PANEL_PADDING - 18, y, 18, 14, "x"));
         }
     }
 
-    private int visibleListRows(int sectionH) {
-        return Math.max(1, (sectionH - 58) / 16);
+    private void calculateLayout() {
+        showClassicBlockSection = selectedShape == UltmineShape112.LEGACY;
+        int maxDepth = maxDepth(selectedShape);
+        int maxLength = maxLength(selectedShape);
+        int variantCount = variantCount(selectedShape);
+        int shapeConfigH;
+        if (selectedShape == UltmineShape112.LEGACY) {
+            int variantH = variantCount > 1 ? 24 : 0;
+            int maxBlocksH = 24;
+            int infoCardH = 2 * 14 + 10;
+            shapeConfigH = 30 + variantH + maxBlocksH + infoCardH + 8;
+        } else {
+            int rows = 0;
+            if (maxDepth > 1) {
+                rows++;
+            }
+            if (maxLength > 1) {
+                rows++;
+            }
+            if (variantCount > 1) {
+                rows++;
+            }
+            int rowsH = rows == 0 ? 18 : rows * 24;
+            shapeConfigH = 30 + rowsH + 8;
+        }
+
+        int trashCount = ClientUltmineConfig.getTrashItems().size();
+        int trashH = 38 + Math.max(Math.min(MAX_VISIBLE_TRASH, trashCount), 1) * 16
+                + (trashCount > MAX_VISIBLE_TRASH ? 18 : 0) + 6;
+        int classicCount = ClientUltmineConfig.getLegacyBlockedBlocks().size();
+        int classicH = 38 + Math.max(Math.min(MAX_VISIBLE_CLASSIC_BLOCKS, classicCount), 1) * 16
+                + (classicCount > MAX_VISIBLE_CLASSIC_BLOCKS ? 18 : 0) + 6;
+
+        int compactGap = 8;
+        int toggleSectH = 62;
+        int shapeSelH = 36;
+        int magnetH = 42;
+        int leftContentH = toggleSectH + compactGap + shapeSelH + compactGap + shapeConfigH + compactGap + magnetH;
+        int rightContentH = trashH + (showClassicBlockSection ? compactGap + classicH : 0);
+        int twoColContentH = HEADER_HEIGHT + 4 + Math.max(leftContentH, rightContentH) + SECTION_GAP + 26;
+        boolean twoColumn = width >= 460 && height >= Math.min(340, twoColContentH + 6);
+
+        if (twoColumn) {
+            panelW = Math.min(620, width - 16);
+            panelX = (width - panelW) / 2;
+            panelY = Math.max(4, (height - twoColContentH) / 2);
+            int innerGap = 12;
+            int innerW = panelW - PANEL_PADDING * 2 - innerGap;
+            leftColW = innerW / 2;
+            rightColW = innerW - leftColW;
+            leftColX = panelX + PANEL_PADDING;
+            rightColX = leftColX + leftColW + innerGap;
+            int colTop = panelY + HEADER_HEIGHT + 4;
+            toggleSectionY = colTop;
+            shapeSelectorY = toggleSectionY + toggleSectH + compactGap;
+            shapeConfigY = shapeSelectorY + shapeSelH + compactGap;
+            magnetSectionY = shapeConfigY + shapeConfigH + compactGap;
+            int leftBottom = magnetSectionY + magnetH;
+            trashSectionY = colTop;
+            classicBlockSectionY = showClassicBlockSection ? trashSectionY + trashH + compactGap : -9999;
+            int rightBottom = showClassicBlockSection ? classicBlockSectionY + classicH : trashSectionY + trashH;
+            int contentBottom = Math.max(leftBottom, rightBottom);
+            bottomY = contentBottom + SECTION_GAP;
+            contentHeight = bottomY + 26;
+            panelH = contentHeight - panelY;
+        } else {
+            panelW = Math.min(380, width - 16);
+            panelX = (width - panelW) / 2;
+            panelY = 8;
+            leftColX = panelX;
+            rightColX = panelX;
+            leftColW = panelW;
+            rightColW = panelW;
+            toggleSectionY = panelY + HEADER_HEIGHT + 4;
+            shapeSelectorY = toggleSectionY + toggleSectH + compactGap;
+            shapeConfigY = shapeSelectorY + shapeSelH + compactGap;
+            magnetSectionY = shapeConfigY + shapeConfigH + compactGap;
+            trashSectionY = magnetSectionY + magnetH + compactGap;
+            classicBlockSectionY = showClassicBlockSection ? trashSectionY + trashH + compactGap : -9999;
+            int contentBottom = showClassicBlockSection ? classicBlockSectionY + classicH : trashSectionY + trashH;
+            bottomY = contentBottom + SECTION_GAP;
+            contentHeight = bottomY + 26;
+            panelH = contentHeight - panelY;
+        }
+        scrollOffset = clamp(scrollOffset, 0, maxMainScroll());
+        if (panelY + panelH - scrollOffset > height - 4) {
+            panelH = height - 4 - panelY + scrollOffset;
+        }
+    }
+
+    private int maxMainScroll() {
+        return Math.max(0, contentHeight - (height - 4));
+    }
+
+    private void setSectionAnchor(int x, int w) {
+        secX = x;
+        secW = w;
+        secCx = x + w / 2;
     }
 
     @Override
     protected void actionPerformed(GuiButton button) {
-        UltmineShape112 shape = ClientUltmineConfig.getSelectedShape();
-        if (button.id == BACK) {
-            ClientUltmineConfig.save();
-            mc.displayGuiScreen(parent);
+        applyFieldValues();
+        if (button.id == SAVE) {
+            saveAndClose();
+            return;
+        }
+        if (button.id == RESET) {
+            ClientUltmineConfig.resetDefaults();
+            selectedShape = ClientUltmineConfig.getSelectedShape();
+            trashScrollOffset = 0;
+            classicBlockScrollOffset = 0;
+            scrollOffset = 0;
+            syncConfigToServer();
+            initGui();
             return;
         }
         int shapeIndex = button.id - SHAPE_BASE;
         if (shapeIndex >= 0 && shapeIndex < UltmineShape112.values().length) {
-            ClientUltmineConfig.setSelectedShape(UltmineShape112.values()[shapeIndex]);
-        } else if (button.id == DROPS) {
+            selectedShape = UltmineShape112.values()[shapeIndex];
+            ClientUltmineConfig.setSelectedShape(selectedShape);
+            ClientUltmineConfig.save();
+            syncConfigToServer();
+            initGui();
+            return;
+        }
+        if (button.id == DROPS) {
             ClientUltmineConfig.toggleDropsToInventory();
         } else if (button.id == STORAGE) {
             ClientUltmineConfig.toggleDropsToStorage();
@@ -329,16 +381,14 @@ public final class UltmineConfigGui112 extends GuiScreen {
             ClientUltmineConfig.toggleSameBlockOnly();
         } else if (button.id == MAGNET) {
             ClientUltmineConfig.toggleMagnet();
-        } else if (button.id == DEPTH_MINUS || button.id == DEPTH_PLUS) {
-            ClientUltmineConfig.setDepth(shape, ClientUltmineConfig.getDepth(shape) + (button.id == DEPTH_PLUS ? 1 : -1));
-        } else if (button.id == LENGTH_MINUS || button.id == LENGTH_PLUS) {
-            ClientUltmineConfig.setLength(shape, ClientUltmineConfig.getLength(shape) + (button.id == LENGTH_PLUS ? 1 : -1));
-        } else if (button.id == VARIANT) {
-            ClientUltmineConfig.setVariant(shape, ClientUltmineConfig.getVariant(shape) + 1);
-        } else if (button.id == LEGACY_MINUS || button.id == LEGACY_PLUS) {
-            ClientUltmineConfig.setLegacyMaxBlocks(ClientUltmineConfig.getLegacyMaxBlocks() + (button.id == LEGACY_PLUS ? 25 : -25));
-        } else if (button.id == MAGNET_MINUS || button.id == MAGNET_PLUS) {
-            ClientUltmineConfig.setMagnetRange(ClientUltmineConfig.getMagnetRange() + (button.id == MAGNET_PLUS ? 1 : -1));
+        } else if (button.id == VARIANT_LEFT || button.id == VARIANT_RIGHT) {
+            int count = variantCount(selectedShape);
+            int current = ClientUltmineConfig.getVariant(selectedShape);
+            int next = button.id == VARIANT_RIGHT ? current + 1 : current - 1;
+            if (next < 0) {
+                next = count - 1;
+            }
+            ClientUltmineConfig.setVariant(selectedShape, next);
         } else if (button.id == TRASH_ADD) {
             addFromField(trashField, false);
             return;
@@ -346,26 +396,35 @@ public final class UltmineConfigGui112 extends GuiScreen {
             addFromField(classicField, true);
             return;
         } else if (button.id == TRASH_BROWSE) {
+            ClientUltmineConfig.save();
+            syncConfigToServer();
             mc.displayGuiScreen(new TrashItemPickerGui112(this));
             return;
         } else if (button.id == CLASSIC_BROWSE) {
+            ClientUltmineConfig.save();
+            syncConfigToServer();
             mc.displayGuiScreen(new UltmineClassicBlockPickerGui112(this));
             return;
         } else if (button.id == STORAGE_WHITELIST) {
+            ClientUltmineConfig.save();
+            syncConfigToServer();
             mc.displayGuiScreen(new StorageWhitelistPickerGui112(this));
             return;
         } else if (button.id >= TRASH_REMOVE_BASE && button.id < TRASH_REMOVE_BASE + 100) {
-            int index = trashScroll + button.id - TRASH_REMOVE_BASE;
-            if (index >= 0 && index < trashItems.size()) {
-                ClientUltmineConfig.removeTrashItem(trashItems.get(index));
+            int index = trashScrollOffset + button.id - TRASH_REMOVE_BASE;
+            List<String> values = ClientUltmineConfig.getTrashItems();
+            if (index >= 0 && index < values.size()) {
+                ClientUltmineConfig.removeTrashItem(values.get(index));
             }
         } else if (button.id >= CLASSIC_REMOVE_BASE && button.id < CLASSIC_REMOVE_BASE + 100) {
-            int index = classicScroll + button.id - CLASSIC_REMOVE_BASE;
-            if (index >= 0 && index < classicBlocks.size()) {
-                ClientUltmineConfig.removeLegacyBlockedBlock(classicBlocks.get(index));
+            int index = classicBlockScrollOffset + button.id - CLASSIC_REMOVE_BASE;
+            List<String> values = ClientUltmineConfig.getLegacyBlockedBlocks();
+            if (index >= 0 && index < values.size()) {
+                ClientUltmineConfig.removeLegacyBlockedBlock(values.get(index));
             }
         }
         ClientUltmineConfig.save();
+        syncConfigToServer();
         initGui();
     }
 
@@ -382,23 +441,57 @@ public final class UltmineConfigGui112 extends GuiScreen {
         } else {
             ClientUltmineConfig.addTrashItem(value);
         }
-        ClientUltmineConfig.save();
         field.setText("");
+        ClientUltmineConfig.save();
+        syncConfigToServer();
         initGui();
+    }
+
+    private void applyFieldValues() {
+        if (depthField != null) {
+            ClientUltmineConfig.setDepth(selectedShape, parseField(depthField, ClientUltmineConfig.getDepth(selectedShape)));
+        }
+        if (lengthField != null) {
+            ClientUltmineConfig.setLength(selectedShape, parseField(lengthField, ClientUltmineConfig.getLength(selectedShape)));
+        }
+        if (classicMaxBlocksField != null) {
+            ClientUltmineConfig.setLegacyMaxBlocks(parseField(classicMaxBlocksField, ClientUltmineConfig.getLegacyMaxBlocks()));
+        }
+        if (magnetRangeField != null) {
+            ClientUltmineConfig.setMagnetRange(parseField(magnetRangeField, ClientUltmineConfig.getMagnetRange()));
+        }
+    }
+
+    private int parseField(GuiTextField field, int fallback) {
+        try {
+            return Integer.parseInt(field.getText().trim());
+        } catch (Exception ignored) {
+            return fallback;
+        }
     }
 
     @Override
     public void updateScreen() {
-        if (trashField != null) {
-            trashField.updateCursorCounter();
-        }
-        if (classicField != null) {
-            classicField.updateCursorCounter();
+        tickField(depthField);
+        tickField(lengthField);
+        tickField(classicMaxBlocksField);
+        tickField(magnetRangeField);
+        tickField(trashField);
+        tickField(classicField);
+    }
+
+    private void tickField(GuiTextField field) {
+        if (field != null) {
+            field.updateCursorCounter();
         }
     }
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
+        if (keyCode == Keyboard.KEY_ESCAPE) {
+            saveAndClose();
+            return;
+        }
         if (keyCode == Keyboard.KEY_RETURN || keyCode == Keyboard.KEY_NUMPADENTER) {
             if (trashField != null && trashField.isFocused()) {
                 addFromField(trashField, false);
@@ -409,39 +502,43 @@ public final class UltmineConfigGui112 extends GuiScreen {
                 return;
             }
         }
-        if (trashField != null && trashField.textboxKeyTyped(typedChar, keyCode)) {
-            return;
-        }
-        if (classicField != null && classicField.textboxKeyTyped(typedChar, keyCode)) {
-            return;
-        }
+        if (typeField(depthField, typedChar, keyCode)) return;
+        if (typeField(lengthField, typedChar, keyCode)) return;
+        if (typeField(classicMaxBlocksField, typedChar, keyCode)) return;
+        if (typeField(magnetRangeField, typedChar, keyCode)) return;
+        if (typeField(trashField, typedChar, keyCode)) return;
+        if (typeField(classicField, typedChar, keyCode)) return;
         super.keyTyped(typedChar, keyCode);
+    }
+
+    private boolean typeField(GuiTextField field, char typedChar, int keyCode) {
+        return field != null && field.textboxKeyTyped(typedChar, keyCode);
     }
 
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-        if (mouseButton == 0 && handleListScrollbarClick(mouseX, mouseY)) {
+        if (mouseButton == 0 && handleMainScrollbarClick(mouseX, mouseY)) {
             return;
         }
         super.mouseClicked(mouseX, mouseY, mouseButton);
-        if (trashField != null) {
-            trashField.mouseClicked(mouseX, mouseY, mouseButton);
-        }
-        if (classicField != null) {
-            classicField.mouseClicked(mouseX, mouseY, mouseButton);
+        clickField(depthField, mouseX, mouseY, mouseButton);
+        clickField(lengthField, mouseX, mouseY, mouseButton);
+        clickField(classicMaxBlocksField, mouseX, mouseY, mouseButton);
+        clickField(magnetRangeField, mouseX, mouseY, mouseButton);
+        clickField(trashField, mouseX, mouseY, mouseButton);
+        clickField(classicField, mouseX, mouseY, mouseButton);
+    }
+
+    private void clickField(GuiTextField field, int mouseX, int mouseY, int mouseButton) {
+        if (field != null) {
+            field.mouseClicked(mouseX, mouseY, mouseButton);
         }
     }
 
     @Override
     protected void mouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
-        if (draggingTrashScrollbar) {
-            setListScroll(false, scrollbarScrollFromMouse(mouseY, listTrackY(trashY), listTrackH(trashH),
-                    listThumbH(false), maxListScroll(false), trashScrollbarGrabOffset));
-            return;
-        }
-        if (draggingClassicScrollbar) {
-            setListScroll(true, scrollbarScrollFromMouse(mouseY, listTrackY(classicY), listTrackH(classicH),
-                    listThumbH(true), maxListScroll(true), classicScrollbarGrabOffset));
+        if (draggingScrollbar) {
+            updateMainScrollFromMouse(mouseY);
             return;
         }
         super.mouseClickMove(mouseX, mouseY, clickedMouseButton, timeSinceLastClick);
@@ -449,8 +546,7 @@ public final class UltmineConfigGui112 extends GuiScreen {
 
     @Override
     protected void mouseReleased(int mouseX, int mouseY, int state) {
-        draggingTrashScrollbar = false;
-        draggingClassicScrollbar = false;
+        draggingScrollbar = false;
         super.mouseReleased(mouseX, mouseY, state);
     }
 
@@ -463,79 +559,76 @@ public final class UltmineConfigGui112 extends GuiScreen {
         }
         int mouseX = Mouse.getEventX() * width / mc.displayWidth;
         int mouseY = height - Mouse.getEventY() * height / mc.displayHeight - 1;
-        if (inside(mouseX, mouseY, rightX, trashY, rightW, trashH)) {
-            setListScroll(false, trashScroll + (delta > 0 ? -1 : 1));
-        } else if (inside(mouseX, mouseY, rightX, classicY, rightW, classicH)) {
-            setListScroll(true, classicScroll + (delta > 0 ? -1 : 1));
+        if (inside(mouseX, mouseY, rightColX, trashSectionY - scrollOffset, rightColW, listSectionH(false))) {
+            setListScroll(false, trashScrollOffset + (delta > 0 ? -1 : 1));
+            return;
+        }
+        if (showClassicBlockSection && inside(mouseX, mouseY, rightColX, classicBlockSectionY - scrollOffset,
+                rightColW, listSectionH(true))) {
+            setListScroll(true, classicBlockScrollOffset + (delta > 0 ? -1 : 1));
+            return;
+        }
+        if (maxMainScroll() > 0) {
+            scrollOffset = clamp(scrollOffset + (delta > 0 ? -12 : 12), 0, maxMainScroll());
+            refreshKeepingText();
         }
     }
 
-    private boolean handleListScrollbarClick(int mouseX, int mouseY) {
-        if (maxListScroll(false) > 0 && inside(mouseX, mouseY, listTrackX(), listTrackY(trashY), 9, listTrackH(trashH))) {
-            draggingTrashScrollbar = true;
-            int thumbY = listThumbY(false);
-            int thumbH = listThumbH(false);
-            trashScrollbarGrabOffset = inside(mouseX, mouseY, listTrackX(), thumbY, 9, thumbH)
-                    ? mouseY - thumbY : thumbH / 2;
-            setListScroll(false, scrollbarScrollFromMouse(mouseY, listTrackY(trashY), listTrackH(trashH), thumbH,
-                    maxListScroll(false), trashScrollbarGrabOffset));
-            return true;
+    private boolean handleMainScrollbarClick(int mouseX, int mouseY) {
+        if (scrollbarTrackH <= 0) {
+            return false;
         }
-        if (maxListScroll(true) > 0 && inside(mouseX, mouseY, listTrackX(), listTrackY(classicY), 9, listTrackH(classicH))) {
-            draggingClassicScrollbar = true;
-            int thumbY = listThumbY(true);
-            int thumbH = listThumbH(true);
-            classicScrollbarGrabOffset = inside(mouseX, mouseY, listTrackX(), thumbY, 9, thumbH)
-                    ? mouseY - thumbY : thumbH / 2;
-            setListScroll(true, scrollbarScrollFromMouse(mouseY, listTrackY(classicY), listTrackH(classicH), thumbH,
-                    maxListScroll(true), classicScrollbarGrabOffset));
-            return true;
+        int barX = panelX + panelW - SCROLLBAR_WIDTH - 1;
+        if (!inside(mouseX, mouseY, barX - 2, scrollbarTrackY, SCROLLBAR_WIDTH + 4, scrollbarTrackH)) {
+            return false;
         }
-        return false;
+        draggingScrollbar = true;
+        scrollbarDragGrabOffset = inside(mouseX, mouseY, barX, scrollbarThumbY, SCROLLBAR_WIDTH, scrollbarThumbH)
+                ? mouseY - scrollbarThumbY : scrollbarThumbH / 2;
+        updateMainScrollFromMouse(mouseY);
+        return true;
+    }
+
+    private void updateMainScrollFromMouse(int mouseY) {
+        int maxScroll = maxMainScroll();
+        if (maxScroll <= 0 || scrollbarTrackH <= scrollbarThumbH) {
+            return;
+        }
+        int top = mouseY - scrollbarDragGrabOffset;
+        int range = scrollbarTrackH - scrollbarThumbH;
+        int next = clamp((top - scrollbarTrackY) * maxScroll / Math.max(1, range), 0, maxScroll);
+        if (next != scrollOffset) {
+            scrollOffset = next;
+            refreshKeepingText();
+        }
+    }
+
+    private int listSectionH(boolean classic) {
+        List<String> values = classic ? ClientUltmineConfig.getLegacyBlockedBlocks() : ClientUltmineConfig.getTrashItems();
+        int maxVisible = classic ? MAX_VISIBLE_CLASSIC_BLOCKS : MAX_VISIBLE_TRASH;
+        return 38 + Math.max(Math.min(maxVisible, values.size()), 1) * 16
+                + (values.size() > maxVisible ? 18 : 0) + 6;
     }
 
     private int maxListScroll(boolean classic) {
-        List<String> values = classic ? classicBlocks : trashItems;
-        int sectionH = classic ? classicH : trashH;
-        return Math.max(0, values.size() - visibleListRows(sectionH));
-    }
-
-    private int listTrackX() {
-        return rightX + rightW - 11;
-    }
-
-    private int listTrackY(int sectionY) {
-        return sectionY + 50;
-    }
-
-    private int listTrackH(int sectionH) {
-        return Math.max(0, sectionH - 62);
-    }
-
-    private int listThumbH(boolean classic) {
-        int sectionH = classic ? classicH : trashH;
-        List<String> values = classic ? classicBlocks : trashItems;
-        return scrollbarThumbHeight(listTrackH(sectionH), visibleListRows(sectionH), values.size());
-    }
-
-    private int listThumbY(boolean classic) {
-        int sectionY = classic ? classicY : trashY;
-        int sectionH = classic ? classicH : trashH;
-        int scrollValue = classic ? classicScroll : trashScroll;
-        return scrollbarThumbY(listTrackY(sectionY), listTrackH(sectionH), listThumbH(classic), scrollValue,
-                maxListScroll(classic));
+        List<String> values = classic ? ClientUltmineConfig.getLegacyBlockedBlocks() : ClientUltmineConfig.getTrashItems();
+        int maxVisible = classic ? MAX_VISIBLE_CLASSIC_BLOCKS : MAX_VISIBLE_TRASH;
+        return Math.max(0, values.size() - maxVisible);
     }
 
     private void setListScroll(boolean classic, int value) {
-        int next = clamp(value, 0, maxListScroll(classic));
         if (classic) {
-            if (next != classicScroll) {
-                classicScroll = next;
+            int next = clamp(value, 0, maxListScroll(true));
+            if (next != classicBlockScrollOffset) {
+                classicBlockScrollOffset = next;
                 refreshKeepingText();
             }
-        } else if (next != trashScroll) {
-            trashScroll = next;
-            refreshKeepingText();
+        } else {
+            int next = clamp(value, 0, maxListScroll(false));
+            if (next != trashScrollOffset) {
+                trashScrollOffset = next;
+                refreshKeepingText();
+            }
         }
     }
 
@@ -553,135 +646,453 @@ public final class UltmineConfigGui112 extends GuiScreen {
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        GuiScreen.drawRect(0, 0, width, height, 0xB8000000);
-        GuiScreen.drawRect(panelX, panelY, panelX + panelW, panelY + panelH, Palette.SECTION_BG);
-        drawPanelBorder(panelX, panelY, panelW, panelH, Palette.SECTION_BORDER);
-        renderCornerAccents(panelX, panelY, panelW, panelH, 9, Palette.ACCENT_GOLD);
-        GuiScreen.drawRect(panelX + 1, panelY + 1, panelX + panelW - 1, panelY + 34, Palette.PANEL_BG_HEADER);
-        GuiScreen.drawRect(panelX + 42, panelY + 33, panelX + panelW - 42, panelY + 34, Palette.ACCENT_GOLD);
-        drawCenteredString(fontRenderer, "Ultmine Config", width / 2, panelY + 13, Palette.TEXT_GOLD);
-        UltmineShape112 shape = ClientUltmineConfig.getSelectedShape();
-        GuiScreen.drawRect(panelX + 12, panelY + 38, panelX + panelW - 12, panelY + 100, 0x68101018);
-        drawPanelBorder(panelX + 12, panelY + 38, panelW - 24, 62, Palette.SECTION_BORDER);
-        GuiScreen.drawRect(panelX + 13, panelY + 67, panelX + panelW - 13, panelY + 68, 0x30FFFFFF);
-        int sectionTop = panelY + 106;
-        int bottom = panelY + panelH - 40;
-        int shapeCardY = sectionTop;
-        int shapeCardH = 120;
-        int classicCardY = shapeCardY + shapeCardH + 10;
-        int classicCardH = 64;
-        int magnetCardY = classicCardY + classicCardH + 10;
-        int magnetCardH = Math.max(72, bottom - magnetCardY);
+        renderGradientBackground();
+        int visiblePanelH = Math.min(panelH, height - 4 - panelY);
+        drawRect(panelX, panelY, panelX + panelW, panelY + visiblePanelH, Palette.PANEL_BG);
+        drawPanelBorder(panelX, panelY, panelW, visiblePanelH, Palette.SECTION_BORDER);
+        renderCornerAccents(panelX, panelY, panelW, visiblePanelH, 6, Palette.ACCENT_GOLD);
 
-        drawSection(leftX, shapeCardY, leftW, shapeCardH, "Shape size");
-        drawSection(leftX, classicCardY, leftW, classicCardH, "Classic limits");
-        drawSection(leftX, magnetCardY, leftW, magnetCardH, "Magnet");
-        int rowX = leftX + 12;
-        int shapeRowY = shapeCardY + 42;
-        int classicRowY = classicCardY + 28;
-        int magnetRangeY = magnetCardY + 58;
-        drawString(fontRenderer, "Current: " + shapeLabel(shape), rowX, shapeCardY + 22, Palette.TEXT_LIGHT);
-        drawString(fontRenderer, "Depth", rowX, shapeRowY + 5, Palette.TEXT_MUTED);
-        drawCenteredString(fontRenderer, String.valueOf(ClientUltmineConfig.getDepth(shape)), rowX + 146, shapeRowY + 5, Palette.TEXT_LIGHT);
-        drawString(fontRenderer, "Length", rowX, shapeRowY + 33, Palette.TEXT_MUTED);
-        drawCenteredString(fontRenderer, String.valueOf(ClientUltmineConfig.getLength(shape)), rowX + 146, shapeRowY + 33, Palette.TEXT_LIGHT);
-        drawString(fontRenderer, "Variant", rowX, shapeRowY + 61, Palette.TEXT_MUTED);
-        drawString(fontRenderer, "Max blocks", rowX, classicRowY + 5, Palette.TEXT_MUTED);
-        drawCenteredString(fontRenderer, String.valueOf(ClientUltmineConfig.getLegacyMaxBlocks()), rowX + 146, classicRowY + 5, Palette.TEXT_LIGHT);
-        drawString(fontRenderer, "Range", rowX, magnetRangeY + 5, Palette.TEXT_MUTED);
-        drawCenteredString(fontRenderer, String.valueOf(ClientUltmineConfig.getMagnetRange()), rowX + 146, magnetRangeY + 5, Palette.TEXT_LIGHT);
+        enableScissor(panelX, panelY, panelW, visiblePanelH);
+        int oY = -scrollOffset;
+        renderHeader(oY);
+        setSectionAnchor(leftColX, leftColW);
+        renderToggleSection(oY);
+        renderShapeSelector(oY);
+        renderShapeConfig(oY);
+        renderMagnetSection(oY);
+        setSectionAnchor(rightColX, rightColW);
+        renderTrashSection(oY);
+        if (showClassicBlockSection) {
+            renderClassicBlockSection(oY);
+        }
 
-        drawSection(rightX, trashY, rightW, trashH, "Trash items");
-        drawString(fontRenderer, trashItems.size() + " configured", rightX + rightW - 88, trashY + 4, Palette.TEXT_MUTED);
-        drawString(fontRenderer, "Item id", rightX + 10, trashY + 16, Palette.TEXT_MUTED);
-        drawList(false, trashItems, trashY, trashH, trashScroll);
-        drawSection(rightX, classicY, rightW, classicH, "Classic block lock");
-        drawString(fontRenderer, classicBlocks.size() + " configured", rightX + rightW - 88, classicY + 4, Palette.TEXT_MUTED);
-        drawString(fontRenderer, "Block id", rightX + 10, classicY + 16, Palette.TEXT_MUTED);
-        drawList(true, classicBlocks, classicY, classicH, classicScroll);
         super.drawScreen(mouseX, mouseY, partialTicks);
-        if (trashField != null) {
-            trashField.drawTextBox();
+        drawField(depthField);
+        drawField(lengthField);
+        drawField(classicMaxBlocksField);
+        drawField(magnetRangeField);
+        drawField(trashField);
+        drawField(classicField);
+
+        setSectionAnchor(leftColX, leftColW);
+        renderToggleButtonContent(oY);
+        renderShapeSelectorContent(oY);
+        renderShapeConfigValues(oY);
+        renderMagnetContent(oY);
+        setSectionAnchor(rightColX, rightColW);
+        renderTrashContent(oY);
+        if (showClassicBlockSection) {
+            renderClassicBlockContent(oY);
         }
-        if (classicField != null) {
-            classicField.drawTextBox();
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+
+        renderMainScrollbar(visiblePanelH);
+    }
+
+    private void drawField(GuiTextField field) {
+        if (field != null) {
+            field.drawTextBox();
         }
     }
 
-    private void drawSection(int x, int y, int w, int h, String title) {
-        GuiScreen.drawRect(x, y, x + w, y + h, 0xC2141420);
-        GuiScreen.drawRect(x + 1, y + 15, x + w - 1, y + h - 1, 0x66101018);
-        drawPanelBorder(x, y, w, h, Palette.SECTION_BORDER);
-        GuiScreen.drawRect(x, y, x + w, y + 16, 0x90181828);
-        GuiScreen.drawRect(x + 1, y + 1, x + 4, y + h - 1, Palette.ACCENT_GOLD);
-        GuiScreen.drawRect(x + 8, y + 15, x + w - 8, y + 16, 0x30FFFFFF);
-        drawString(fontRenderer, title, x + 8, y + 4, Palette.TEXT_GOLD);
+    private void renderGradientBackground() {
+        for (int y = 0; y < height; y++) {
+            float ratio = (float) y / Math.max(1, height);
+            int r = (int) (8 + ratio * 6);
+            int g = (int) (8 + ratio * 4);
+            int b = (int) (16 + ratio * 10);
+            drawRect(0, y, width, y + 1, Palette.BG_OVERLAY | (r << 16) | (g << 8) | b);
+        }
     }
 
-    private void drawList(boolean classic, List<String> values, int sectionY, int sectionH, int offset) {
-        int visible = visibleListRows(sectionH);
-        int count = Math.min(visible, Math.max(0, values.size() - offset));
+    private void renderHeader(int oY) {
+        int centerX = width / 2;
+        int headerBottom = panelY + HEADER_HEIGHT + oY;
+        drawRect(panelX + 1, panelY + 1 + oY, panelX + panelW - 1, headerBottom, Palette.PANEL_BG_HEADER);
+        int lineW = panelW - PANEL_PADDING * 4;
+        drawRect(centerX - lineW / 2, headerBottom - 1, centerX + lineW / 2, headerBottom, Palette.ACCENT_GOLD);
+        drawCenteredString(fontRenderer, tr("murilloskills.ultmine_config.title"), centerX, panelY + 5 + oY,
+                Palette.TEXT_GOLD);
+        drawCenteredString(fontRenderer, tr("murilloskills.ultmine_config.subtitle"), centerX, panelY + 19 + oY,
+                Palette.TEXT_MUTED);
+    }
+
+    private void renderToggleSection(int oY) {
+        renderSectionDivider(toggleSectionY + oY, tr("murilloskills.ultmine_config.section.toggles"));
+    }
+
+    private void renderToggleButtonContent(int oY) {
+        int toggleW = secW - PANEL_PADDING * 2;
+        int toggleGap = 4;
+        int toggleBtnW = (toggleW - toggleGap * 3) / 4;
+        int toggleStartX = secCx - toggleW / 2;
+        int btnY = toggleSectionY + 16 + oY;
+        renderToggleCard(toggleStartX, btnY, toggleBtnW,
+                tr("murilloskills.ultmine_config.drops_to_inventory"), ClientUltmineConfig.isDropsToInventory());
+        renderToggleCard(toggleStartX + toggleBtnW + toggleGap, btnY, toggleBtnW,
+                tr("murilloskills.ultmine_config.drops_to_storage"), ClientUltmineConfig.isDropsToStorage());
+        renderToggleCard(toggleStartX + 2 * (toggleBtnW + toggleGap), btnY, toggleBtnW,
+                tr("murilloskills.ultmine_config.xp_direct"), ClientUltmineConfig.isXpDirectToPlayer());
+        renderToggleCard(toggleStartX + 3 * (toggleBtnW + toggleGap), btnY, toggleBtnW,
+                tr("murilloskills.ultmine_config.same_block_only"), ClientUltmineConfig.isSameBlockOnly());
+    }
+
+    private void renderToggleCard(int x, int y, int w, String label, boolean enabled) {
+        drawRect(x + 1, y + 1, x + w - 1, y + 19, enabled ? Palette.SECTION_BG_ACTIVE : Palette.SECTION_BG);
+        if (enabled) {
+            drawRect(x + 1, y + 18, x + w - 1, y + 20, Palette.ACCENT_GREEN);
+        }
+        String prefix = enabled ? "\u25CF " : "\u25CB ";
+        int color = enabled ? Palette.TEXT_GREEN : Palette.TEXT_GRAY;
+        drawCenteredString(fontRenderer, fitForWidth(prefix + label, w - 8), x + w / 2, y + 6, color);
+    }
+
+    private void renderShapeSelector(int oY) {
+        renderSectionDivider(shapeSelectorY + oY, tr("murilloskills.ultmine_config.section.shape"));
+    }
+
+    private void renderShapeSelectorContent(int oY) {
+        UltmineShape112[] shapes = UltmineShape112.values();
+        int shapeBtnW = Math.min(55, (secW - (shapes.length - 1) * 4) / shapes.length);
+        int totalShapesW = shapes.length * shapeBtnW + (shapes.length - 1) * 4;
+        int startX = secCx - totalShapesW / 2;
+        int btnY = shapeSelectorY + 16 + oY;
+        for (int i = 0; i < shapes.length; i++) {
+            UltmineShape112 shape = shapes[i];
+            boolean active = shape == selectedShape;
+            int x = startX + i * (shapeBtnW + 4);
+            drawRect(x + 1, btnY + 1, x + shapeBtnW - 1, btnY + 17,
+                    active ? Palette.SECTION_BG_ACTIVE : Palette.SECTION_BG);
+            if (active) {
+                drawRect(x + 1, btnY + 16, x + shapeBtnW - 1, btnY + 18, Palette.TEXT_AQUA);
+            }
+            drawCenteredString(fontRenderer, fitForWidth(shortShapeLabel(shape), shapeBtnW - 4),
+                    x + shapeBtnW / 2, btnY + 5, active ? Palette.TEXT_AQUA : Palette.TEXT_GRAY);
+        }
+    }
+
+    private void renderShapeConfig(int oY) {
+        renderSectionDivider(shapeConfigY + oY, tr("murilloskills.ultmine_config.section.shape_config"));
+        drawCenteredString(fontRenderer, shapeLabel(selectedShape), secCx, shapeConfigY + 16 + oY,
+                Palette.TEXT_WHITE);
+    }
+
+    private void renderShapeConfigValues(int oY) {
+        int maxDepth = maxDepth(selectedShape);
+        int maxLength = maxLength(selectedShape);
+        int variantCount = variantCount(selectedShape);
+        int labelX = secX + PANEL_PADDING;
+        int fieldW = 50;
+        int row = 0;
+        if (maxDepth > 1) {
+            int y = shapeConfigY + 30 + row * 24 + oY;
+            drawString(fontRenderer, tr("murilloskills.ultmine_config.depth"), labelX, y + 5, Palette.TEXT_LIGHT);
+            drawString(fontRenderer, "/ " + maxDepth, secCx + 20 + fieldW + 4, y + 5, Palette.TEXT_MUTED);
+            row++;
+        }
+        if (maxLength > 1) {
+            int y = shapeConfigY + 30 + row * 24 + oY;
+            drawString(fontRenderer, tr("murilloskills.ultmine_config.length"), labelX, y + 5, Palette.TEXT_LIGHT);
+            drawString(fontRenderer, "/ " + maxLength, secCx + 20 + fieldW + 4, y + 5, Palette.TEXT_MUTED);
+            row++;
+        }
+        if (variantCount > 1) {
+            int y = shapeConfigY + 30 + row * 24 + oY;
+            drawString(fontRenderer, tr("murilloskills.ultmine_config.variant"), labelX, y + 5, Palette.TEXT_LIGHT);
+            int variantBtnW = 20;
+            int ctrlGap = 6;
+            int variantValueW = Math.min(100, secW - PANEL_PADDING - 4 - 2 * variantBtnW - 2 * ctrlGap);
+            if (variantValueW < 40) {
+                variantValueW = 40;
+            }
+            int variantStartX = secCx + 20;
+            int variantEndX = variantStartX + variantBtnW + ctrlGap + variantValueW + ctrlGap + variantBtnW;
+            int colRight = secX + secW - 2;
+            if (variantEndX > colRight) {
+                variantStartX -= variantEndX - colRight;
+            }
+            if (variantStartX < secX + 2) {
+                variantStartX = secX + 2;
+            }
+            int boxX = variantStartX + variantBtnW + ctrlGap;
+            drawRect(boxX, y, boxX + variantValueW, y + 18, Palette.SECTION_BG);
+            drawPanelBorder(boxX, y, variantValueW, 18, Palette.SECTION_BORDER);
+            drawCenteredString(fontRenderer, fitForWidth(variantLabel(), variantValueW - 4),
+                    boxX + variantValueW / 2, y + 5, Palette.TEXT_AQUA);
+            row++;
+        }
+        if (selectedShape == UltmineShape112.LEGACY) {
+            int y = shapeConfigY + 30 + row * 24 + oY;
+            drawString(fontRenderer, tr("murilloskills.ultmine_config.legacy.max_blocks"), labelX, y + 5,
+                    Palette.TEXT_LIGHT);
+            drawString(fontRenderer, "/ 4096", secCx + 20 + fieldW + 4, y + 5, Palette.TEXT_MUTED);
+            row++;
+            int cardX = secX + 4;
+            int cardW = secW - 8;
+            int cardY = shapeConfigY + 30 + row * 24 + oY;
+            int cardH = 2 * 14 + 8;
+            drawRect(cardX, cardY, cardX + cardW, cardY + cardH, Palette.CARD_BG_SUBTLE);
+            drawPanelBorder(cardX, cardY, cardW, cardH, Palette.INFO_BOX_BORDER);
+            int infoLabelX = cardX + 8;
+            int infoValueX = cardX + cardW - 8;
+            drawInfoRow(infoLabelX, infoValueX, cardY + 5,
+                    tr("murilloskills.ultmine_config.legacy.deepslate"), true);
+            drawInfoRow(infoLabelX, infoValueX, cardY + 19,
+                    tr("murilloskills.ultmine_config.legacy.tool_damage"), true);
+        } else if (maxDepth <= 1 && maxLength <= 1 && variantCount <= 1) {
+            drawCenteredString(fontRenderer, tr("murilloskills.ultmine_config.no_options"), secCx,
+                    shapeConfigY + 32 + oY, Palette.TEXT_MUTED);
+        }
+    }
+
+    private void drawInfoRow(int labelX, int valueX, int y, String label, boolean enabled) {
+        String value = enabled ? "ON" : "OFF";
+        drawString(fontRenderer, label, labelX, y, Palette.TEXT_LIGHT);
+        drawString(fontRenderer, value, valueX - fontRenderer.getStringWidth(value), y,
+                enabled ? Palette.TEXT_GREEN : Palette.STATUS_INACTIVE);
+    }
+
+    private void renderMagnetSection(int oY) {
+        renderSectionDivider(magnetSectionY + oY, tr("murilloskills.ultmine_config.section.magnet"));
+    }
+
+    private void renderMagnetContent(int oY) {
+        int magnetInnerW = secW - PANEL_PADDING * 2;
+        int magnetToggleW = magnetInnerW / 2 - 2;
+        int magnetLeftX = secCx - magnetInnerW / 2;
+        int y = magnetSectionY + 16 + oY;
+        renderToggleCard(magnetLeftX, y, magnetToggleW,
+                tr("murilloskills.ultmine_config.magnet.toggle"), ClientUltmineConfig.isMagnetEnabled());
+        int rightAreaX = magnetLeftX + magnetToggleW + 4;
+        drawString(fontRenderer, tr("murilloskills.ultmine_config.magnet.range"), rightAreaX, y + 6,
+                Palette.TEXT_LIGHT);
+        drawString(fontRenderer, "/ 32", rightAreaX + 50 + 36 + 3, y + 6, Palette.TEXT_MUTED);
+    }
+
+    private void renderTrashSection(int oY) {
+        renderSectionDivider(trashSectionY + oY, tr("murilloskills.ultmine_config.section.trash"));
+    }
+
+    private void renderTrashContent(int oY) {
+        renderListContent(false, ClientUltmineConfig.getTrashItems(), trashSectionY, trashScrollOffset,
+                MAX_VISIBLE_TRASH, tr("murilloskills.ultmine_config.trash.empty"), oY);
+    }
+
+    private void renderClassicBlockSection(int oY) {
+        renderSectionDivider(classicBlockSectionY + oY,
+                tr("murilloskills.ultmine_config.section.classic_block_lock"));
+    }
+
+    private void renderClassicBlockContent(int oY) {
+        renderListContent(true, ClientUltmineConfig.getLegacyBlockedBlocks(), classicBlockSectionY,
+                classicBlockScrollOffset, MAX_VISIBLE_CLASSIC_BLOCKS,
+                tr("murilloskills.ultmine_config.classic_block_lock.empty"), oY);
+    }
+
+    private void renderListContent(boolean classic, List<String> values, int sectionY, int offset, int maxVisible,
+            String empty, int oY) {
+        drawPlaceholder(classic ? classicField : trashField, classic ? "minecraft:stone" : "minecraft:cobblestone");
+        int labelX = secX + PANEL_PADDING + 2;
         if (values.isEmpty()) {
-            String empty = classic ? "No classic block lock entries" : "No trash items yet";
-            drawString(fontRenderer, empty, rightX + 10, sectionY + 52, Palette.TEXT_MUTED);
+            drawString(fontRenderer, empty, labelX, sectionY + 40 + oY, Palette.TEXT_MUTED);
             return;
         }
-        for (int i = 0; i < count; i++) {
-            String value = values.get(offset + i);
-            int y = sectionY + 50 + i * 16;
-            GuiScreen.drawRect(rightX + 8, y - 3, rightX + rightW - 40, y + 12,
-                    (i % 2 == 0) ? Palette.ALTERNATING_ROW_BG : 0x00000000);
-            drawString(fontRenderer, fitForWidth(value, rightW - 60), rightX + 12, y, Palette.TEXT_LIGHT);
+        int visibleCount = Math.min(maxVisible, values.size() - offset);
+        int rowX = secX + PANEL_PADDING;
+        int rowW = secW - PANEL_PADDING * 2;
+        for (int i = 0; i < visibleCount; i++) {
+            int idx = offset + i;
+            if (idx >= values.size()) {
+                break;
+            }
+            int y = sectionY + 38 + i * 16 + oY;
+            if (i % 2 == 1) {
+                drawRect(rowX, y - 1, rowX + rowW, y + 14, Palette.ALTERNATING_ROW_BG);
+            }
+            String value = values.get(idx);
+            String display = value.startsWith("minecraft:") ? value.substring(10) : value;
+            drawString(fontRenderer, "\u2022 " + fitForWidth(display, secW - PANEL_PADDING * 2 - 24),
+                    labelX, y + 3, idx % 2 == 0 ? Palette.TEXT_LIGHT : Palette.TEXT_GRAY);
         }
-        int maxScroll = maxListScroll(classic);
-        if (maxScroll > 0) {
-            int sectionForY = classic ? classicY : trashY;
-            int sectionForH = classic ? classicH : trashH;
-            renderScrollbar(listTrackX(), listTrackY(sectionForY), listTrackH(sectionForH), listThumbY(classic),
-                    listThumbH(classic));
+        if (values.size() > maxVisible) {
+            int countY = sectionY + 38 + maxVisible * 16 + oY;
+            String countText = (offset + 1) + "-" + Math.min(offset + maxVisible, values.size()) + " / " + values.size();
+            drawCenteredString(fontRenderer, countText, secCx, countY + 4, Palette.TEXT_MUTED);
         }
-        if (values.size() > visible) {
-            String range = (offset + 1) + "-" + Math.min(values.size(), offset + visible) + " / " + values.size();
-            drawString(fontRenderer, range, rightX + 10, sectionY + sectionH - 16, Palette.TEXT_MUTED);
+    }
+
+    private void drawPlaceholder(GuiTextField field, String placeholder) {
+        if (field != null && field.getText().length() == 0 && !field.isFocused()) {
+            drawString(fontRenderer, placeholder, field.x + 4, field.y + 5, Palette.TEXT_MUTED);
         }
+    }
+
+    private void renderSectionDivider(int y, String title) {
+        int titleW = fontRenderer.getStringWidth(title);
+        int sideMargin = 4;
+        int leftStart = secX + sideMargin;
+        int leftEnd = secCx - titleW / 2 - 8;
+        int rightStart = secCx + titleW / 2 + 8;
+        int rightEnd = secX + secW - sideMargin;
+        if (leftEnd > leftStart) {
+            drawRect(leftStart, y + 3, leftEnd, y + 4, Palette.DIVIDER_COLOR);
+        }
+        drawCenteredString(fontRenderer, title, secCx, y - 1, Palette.TEXT_GOLD);
+        if (rightEnd > rightStart) {
+            drawRect(rightStart, y + 3, rightEnd, y + 4, Palette.DIVIDER_COLOR);
+        }
+    }
+
+    private void renderMainScrollbar(int visiblePanelH) {
+        int maxScroll = maxMainScroll();
+        if (maxScroll <= 0) {
+            scrollbarTrackH = 0;
+            return;
+        }
+        scrollbarTrackY = panelY + 2;
+        scrollbarTrackH = visiblePanelH - 4;
+        scrollbarThumbH = Math.max(20, scrollbarTrackH * visiblePanelH / Math.max(1, contentHeight));
+        scrollbarThumbY = scrollbarTrackY + scrollOffset * (scrollbarTrackH - scrollbarThumbH) / Math.max(1, maxScroll);
+        int barX = panelX + panelW - SCROLLBAR_WIDTH - 1;
+        drawRect(barX, scrollbarTrackY, barX + SCROLLBAR_WIDTH, scrollbarTrackY + scrollbarTrackH,
+                Palette.PROGRESS_BAR_EMPTY);
+        drawRect(barX, scrollbarThumbY, barX + SCROLLBAR_WIDTH, scrollbarThumbY + scrollbarThumbH,
+                draggingScrollbar ? Palette.TEXT_AQUA : Palette.ACCENT_GOLD);
+        drawRect(barX + 1, scrollbarThumbY + 1, barX + SCROLLBAR_WIDTH - 1, scrollbarThumbY + 2, 0x40FFFFFF);
+    }
+
+    private void enableScissor(int x, int y, int w, int h) {
+        int factor = new ScaledResolution(mc).getScaleFactor();
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        GL11.glScissor(x * factor, mc.displayHeight - (y + h) * factor, w * factor, h * factor);
     }
 
     private String fitForWidth(String text, int maxWidth) {
         String out = text == null ? "" : text;
-        while (out.length() > 3 && fontRenderer.getStringWidth(out) > maxWidth) {
+        if (fontRenderer.getStringWidth(out) <= maxWidth) {
+            return out;
+        }
+        while (out.length() > 2 && fontRenderer.getStringWidth(out + "..") > maxWidth) {
             out = out.substring(0, out.length() - 1);
         }
-        return fontRenderer.getStringWidth(out) > maxWidth ? out : out;
+        return out.length() > 0 ? out + ".." : "";
+    }
+
+    private String shortShapeLabel(UltmineShape112 shape) {
+        if (shape == UltmineShape112.S_3x3) return "3x3";
+        if (shape == UltmineShape112.R_2x1) return "2x1";
+        if (shape == UltmineShape112.LINE) return "Line";
+        if (shape == UltmineShape112.STAIRS) return "Stair";
+        if (shape == UltmineShape112.SQUARE_20x20_D1) return "20x20";
+        if (shape == UltmineShape112.LEGACY) return "Vein";
+        return shape.name();
     }
 
     private String shapeLabel(UltmineShape112 shape) {
-        switch (shape) {
-            case S_3x3: return "3x3";
-            case R_2x1: return "2x1";
-            case LINE: return "Line";
-            case STAIRS: return "Stairs";
-            case SQUARE_20x20_D1: return "20x20";
-            case LEGACY: return "Classic";
-            default: return shape.name();
-        }
+        if (shape == UltmineShape112.S_3x3) return "3x3";
+        if (shape == UltmineShape112.R_2x1) return "2x1";
+        if (shape == UltmineShape112.LINE) return "Line";
+        if (shape == UltmineShape112.STAIRS) return "Stairs";
+        if (shape == UltmineShape112.SQUARE_20x20_D1) return "20x20";
+        if (shape == UltmineShape112.LEGACY) return "Classic";
+        return shape.name();
     }
 
     private String variantLabel() {
-        UltmineShape112 shape = ClientUltmineConfig.getSelectedShape();
-        int variant = ClientUltmineConfig.getVariant(shape);
-        if (shape == UltmineShape112.STAIRS) {
+        int variant = ClientUltmineConfig.getVariant(selectedShape);
+        if (selectedShape == UltmineShape112.STAIRS) {
             return variant == 1 ? "Down" : "Up";
         }
-        if (shape == UltmineShape112.SQUARE_20x20_D1) {
+        if (selectedShape == UltmineShape112.SQUARE_20x20_D1) {
             return variant == 1 ? "Vertical NS" : variant == 2 ? "Vertical EW" : "Horizontal";
         }
-        if (shape == UltmineShape112.R_2x1) {
+        if (selectedShape == UltmineShape112.R_2x1) {
             return variant == 1 ? "Tall" : "Wide";
         }
-        if (shape == UltmineShape112.LEGACY) {
+        if (selectedShape == UltmineShape112.LEGACY) {
             return variant == 1 ? "Ores" : "Same Block";
         }
         return "Default";
+    }
+
+    private int maxDepth(UltmineShape112 shape) {
+        if (shape == UltmineShape112.LINE || shape == UltmineShape112.LEGACY) return 1;
+        if (shape == UltmineShape112.STAIRS) return 64;
+        if (shape == UltmineShape112.SQUARE_20x20_D1) return 4;
+        return 16;
+    }
+
+    private int maxLength(UltmineShape112 shape) {
+        if (shape == UltmineShape112.LINE) return 128;
+        if (shape == UltmineShape112.SQUARE_20x20_D1) return 20;
+        if (shape == UltmineShape112.R_2x1) return 2;
+        if (shape == UltmineShape112.S_3x3) return 3;
+        return 1;
+    }
+
+    private int variantCount(UltmineShape112 shape) {
+        if (shape == UltmineShape112.STAIRS || shape == UltmineShape112.R_2x1 || shape == UltmineShape112.LEGACY) {
+            return 2;
+        }
+        if (shape == UltmineShape112.SQUARE_20x20_D1) {
+            return 3;
+        }
+        return 1;
+    }
+
+    private String tr(String key, Object... args) {
+        String value = net.minecraft.client.resources.I18n.format(key, args);
+        return value == null || value.equals(key) ? fallback(key, args) : value;
+    }
+
+    private String fallback(String key, Object... args) {
+        if ("murilloskills.ultmine_config.title".equals(key)) return "Ultmine Config";
+        if ("murilloskills.ultmine_config.subtitle".equals(key)) return "Configure Ultmine mining preferences";
+        if ("murilloskills.ultmine_config.section.toggles".equals(key)) return "Options";
+        if ("murilloskills.ultmine_config.section.shape".equals(key)) return "Shape";
+        if ("murilloskills.ultmine_config.section.shape_config".equals(key)) return "Shape Settings";
+        if ("murilloskills.ultmine_config.drops_to_inventory".equals(key)) return "Drops to Inv.";
+        if ("murilloskills.ultmine_config.drops_to_storage".equals(key)) return "To Storage";
+        if ("murilloskills.ultmine_config.xp_direct".equals(key)) return "XP Direct";
+        if ("murilloskills.ultmine_config.same_block_only".equals(key)) return "Same Block";
+        if ("murilloskills.ultmine_config.depth".equals(key)) return "Depth:";
+        if ("murilloskills.ultmine_config.length".equals(key)) return "Length:";
+        if ("murilloskills.ultmine_config.variant".equals(key)) return "Variant:";
+        if ("murilloskills.ultmine_config.no_options".equals(key)) return "No configurable options for this shape";
+        if ("murilloskills.ultmine_config.legacy.max_blocks".equals(key)) return "Max Blocks";
+        if ("murilloskills.ultmine_config.legacy.deepslate".equals(key)) return "Deepslate = Normal";
+        if ("murilloskills.ultmine_config.legacy.tool_damage".equals(key)) return "Tool Damage";
+        if ("murilloskills.ultmine_config.save".equals(key)) return "Save";
+        if ("murilloskills.ultmine_config.reset".equals(key)) return "Reset";
+        if ("murilloskills.ultmine_config.section.magnet".equals(key)) return "Magnet";
+        if ("murilloskills.ultmine_config.magnet.toggle".equals(key)) return "Magnet";
+        if ("murilloskills.ultmine_config.magnet.range".equals(key)) return "Range:";
+        if ("murilloskills.ultmine_config.section.trash".equals(key)) return "Auto Trash";
+        if ("murilloskills.ultmine_config.trash.empty".equals(key)) return "No items in trash list";
+        if ("murilloskills.ultmine_config.trash.browse".equals(key)) return "Browse";
+        if ("murilloskills.ultmine_config.section.classic_block_lock".equals(key)) return "Classic Block Lock";
+        if ("murilloskills.ultmine_config.classic_block_lock.empty".equals(key)) return "No blocks locked for classic mode";
+        if ("murilloskills.ultmine_config.classic_block_lock.browse".equals(key)) return "Browse";
+        if ("murilloskills.ultmine_config.storage_filter.button".equals(key)) {
+            int count = args != null && args.length > 0 && args[0] instanceof Number ? ((Number) args[0]).intValue() : 0;
+            return "Storage Filter (" + count + " items)";
+        }
+        return key;
+    }
+
+    private void saveAndClose() {
+        applyFieldValues();
+        ClientUltmineConfig.save();
+        syncConfigToServer();
+        mc.displayGuiScreen(parent);
+    }
+
+    private void syncConfigToServer() {
+        ModNetwork112.sendUltmineConfigToServer();
+        UltmineShape112 shape = ClientUltmineConfig.getSelectedShape();
+        ModNetwork112.sendUltmineSelection(shape, ClientUltmineConfig.getDepth(shape),
+                ClientUltmineConfig.getLength(shape), ClientUltmineConfig.getVariant(shape),
+                ClientUltmineConfig.getLegacyMaxBlocks());
     }
 
     @Override

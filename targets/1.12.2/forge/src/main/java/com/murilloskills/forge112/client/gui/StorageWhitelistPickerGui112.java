@@ -1,6 +1,7 @@
 package com.murilloskills.forge112.client.gui;
 
 import com.murilloskills.forge112.client.config.ClientUltmineConfig;
+import com.murilloskills.forge112.network.ModNetwork112;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
@@ -19,6 +20,7 @@ import java.util.Locale;
 
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.clamp;
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.drawPanelBorder;
+import static com.murilloskills.forge112.client.gui.Forge112UiSupport.flatButton;
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.invisibleButton;
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.inside;
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.renderCornerAccents;
@@ -70,7 +72,7 @@ public final class StorageWhitelistPickerGui112 extends GuiScreen {
         rowH = 22;
         visibleRows = Math.max(1, (panelH - 128) / (rowH + 3));
         scroll = clamp(scroll, 0, Math.max(0, ids.size() - visibleRows));
-        buttonList.add(new GuiButton(BACK, panelX + panelW - 82, panelY + panelH - 28, 70, 20, "Back"));
+        buttonList.add(flatButton(BACK, panelX + panelW - 82, panelY + panelH - 28, 70, 20, "Back"));
         searchField = new GuiTextField(7, fontRenderer, panelX + 14, panelY + 48, panelW - 28, 18);
         searchField.setText(query);
         searchField.setMaxStringLength(80);
@@ -95,6 +97,7 @@ public final class StorageWhitelistPickerGui112 extends GuiScreen {
     protected void actionPerformed(GuiButton button) {
         if (button.id == BACK) {
             ClientUltmineConfig.save();
+            ModNetwork112.sendUltmineConfigToServer();
             mc.displayGuiScreen(parent);
             return;
         }
@@ -108,6 +111,7 @@ public final class StorageWhitelistPickerGui112 extends GuiScreen {
                 ClientUltmineConfig.addStorageWhitelistItem(id);
             }
             ClientUltmineConfig.save();
+            ModNetwork112.sendUltmineConfigToServer();
             initGui();
         }
     }

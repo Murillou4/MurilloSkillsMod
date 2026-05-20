@@ -152,27 +152,30 @@ import java.util.UUID;
 
 @SideOnly(Side.CLIENT)
 public final class Forge112ClientHooks {
-    public static final KeyBinding OPEN = new KeyBinding("key.murilloskills.open", Keyboard.KEY_O, "key.categories.murilloskills");
-    public static final KeyBinding ABILITY = new KeyBinding("key.murilloskills.ability", Keyboard.KEY_Z, "key.categories.murilloskills");
-    public static final KeyBinding AREA_PLANTING = new KeyBinding("key.murilloskills.area_planting", Keyboard.KEY_G, "key.categories.murilloskills");
-    public static final KeyBinding HOLLOW_FILL = new KeyBinding("key.murilloskills.hollow_fill", Keyboard.KEY_H, "key.categories.murilloskills");
-    public static final KeyBinding NIGHT_VISION = new KeyBinding("key.murilloskills.night_vision", Keyboard.KEY_N, "key.categories.murilloskills");
-    public static final KeyBinding STEP_ASSIST = new KeyBinding("key.murilloskills.step_assist", Keyboard.KEY_V, "key.categories.murilloskills");
-    public static final KeyBinding ULTPLACE = new KeyBinding("key.murilloskills.ultplace_toggle", Keyboard.KEY_C, "key.categories.murilloskills");
-    public static final KeyBinding SPEED = new KeyBinding("key.murilloskills.speed_boost", Keyboard.KEY_B, "key.categories.murilloskills");
-    public static final KeyBinding CONFIG = new KeyBinding("key.murilloskills.ultplace_config", Keyboard.KEY_K, "key.categories.murilloskills");
-    public static final KeyBinding FILL = new KeyBinding("key.murilloskills.fill_mode", Keyboard.KEY_J, "key.categories.murilloskills");
-    public static final KeyBinding ULTMINE = new KeyBinding("key.murilloskills.ultmine_hold", Keyboard.KEY_PERIOD, "key.categories.murilloskills");
-    public static final KeyBinding DROPS = new KeyBinding("key.murilloskills.ultmine_drops", Keyboard.KEY_COMMA, "key.categories.murilloskills");
-    public static final KeyBinding TORCH = new KeyBinding("key.murilloskills.auto_torch", Keyboard.KEY_T, "key.categories.murilloskills");
-    public static final KeyBinding MELT = new KeyBinding("key.murilloskills.melting_touch", Keyboard.KEY_M, "key.categories.murilloskills");
-    public static final KeyBinding MENU = new KeyBinding("key.murilloskills.ultmine_menu", Keyboard.KEY_APOSTROPHE, "key.categories.murilloskills");
+    private static final String CATEGORY = "key.category.murilloskills.keybinds";
+    private static boolean postOptionsKeyAliasApplied;
+    public static final KeyBinding OPEN = new KeyBinding("key.murilloskills.open_gui", Keyboard.KEY_O, CATEGORY);
+    public static final KeyBinding ABILITY = new KeyBinding("key.murilloskills.use_ability", Keyboard.KEY_Z, CATEGORY);
+    public static final KeyBinding AREA_PLANTING = new KeyBinding("key.murilloskills.area_planting_toggle", Keyboard.KEY_G, CATEGORY);
+    public static final KeyBinding HOLLOW_FILL = new KeyBinding("key.murilloskills.hollow_fill_toggle", Keyboard.KEY_H, CATEGORY);
+    public static final KeyBinding NIGHT_VISION = new KeyBinding("key.murilloskills.night_vision_toggle", Keyboard.KEY_N, CATEGORY);
+    public static final KeyBinding STEP_ASSIST = new KeyBinding("key.murilloskills.step_assist_toggle", Keyboard.KEY_V, CATEGORY);
+    public static final KeyBinding ULTPLACE = new KeyBinding("key.murilloskills.ultplace_toggle", Keyboard.KEY_C, CATEGORY);
+    public static final KeyBinding SPEED = new KeyBinding("key.murilloskills.speed_boost_toggle", Keyboard.KEY_B, CATEGORY);
+    public static final KeyBinding CONFIG = new KeyBinding("key.murilloskills.ultplace_config", Keyboard.KEY_K, CATEGORY);
+    public static final KeyBinding FILL = new KeyBinding("key.murilloskills.fill_mode_cycle", Keyboard.KEY_J, CATEGORY);
+    public static final KeyBinding ULTMINE = new KeyBinding("key.murilloskills.vein_miner_toggle", Keyboard.KEY_PERIOD, CATEGORY);
+    public static final KeyBinding DROPS = new KeyBinding("key.murilloskills.vein_miner_drops_toggle", Keyboard.KEY_COMMA, CATEGORY);
+    public static final KeyBinding TORCH = new KeyBinding("key.murilloskills.auto_torch_toggle", Keyboard.KEY_T, CATEGORY);
+    public static final KeyBinding MELT = new KeyBinding("key.murilloskills.melting_touch_toggle", Keyboard.KEY_M, CATEGORY);
+    public static final KeyBinding MENU = new KeyBinding("key.murilloskills.ultmine_menu", Keyboard.KEY_APOSTROPHE, CATEGORY);
 
     public static void register() {
         for (KeyBinding key : new KeyBinding[] { OPEN, ABILITY, AREA_PLANTING, HOLLOW_FILL, NIGHT_VISION, STEP_ASSIST,
                 ULTPLACE, SPEED, CONFIG, FILL, ULTMINE, DROPS, TORCH, MELT, MENU }) {
             ClientRegistry.registerKeyBinding(key);
         }
+        applyUltmineKeyAlias();
         ClientUltmineConfig.load();
         ClientOreFilterConfig.load();
         MinecraftForge.EVENT_BUS.register(Forge112ClientHudOverlay.class);
@@ -182,5 +185,81 @@ public final class Forge112ClientHooks {
         FMLCommonHandler.instance().bus().register(Forge112ClientTickHandler.class);
         FMLCommonHandler.instance().bus().register(Forge112ClientInputHandler.class);
         LOG.info("[MurilloSkills][1.12.2][Client] Keybinds registered without duplicates: O/Z/G/H/N/V/C/B/K/J/./,/T/M/'");
+        LOG.info("[MurilloSkills][1.12.2][Client] Ultmine hold key is {} ({})",
+                getUltmineKeyName(), getUltmineKeyCode());
+    }
+
+    public static void ensurePostOptionsKeyAliases() {
+        if (postOptionsKeyAliasApplied) {
+            return;
+        }
+        postOptionsKeyAliasApplied = true;
+        applyUltmineKeyAlias();
+        LOG.info("[MurilloSkills][1.12.2][Client] Post-options Ultmine hold key is {} ({})",
+                getUltmineKeyName(), getUltmineKeyCode());
+    }
+
+    private static void applyUltmineKeyAlias() {
+        int primary = readOptionKey("key_key.murilloskills.vein_miner_toggle", Integer.MIN_VALUE);
+        int alias = readOptionKey("key_key.murilloskills.ultmine_hold", Integer.MIN_VALUE);
+        int staleUltPlace = readOptionKey("key_key.murilloskills.ultplace_toggle", Integer.MIN_VALUE);
+        if (alias != Integer.MIN_VALUE && alias != 0 && (primary == Integer.MIN_VALUE || primary == Keyboard.KEY_PERIOD)) {
+            setUltmineKeyCode(alias);
+            LOG.info("[MurilloSkills][1.12.2][Client] Migrated legacy ultmine_hold key alias to {} ({})",
+                    getUltmineKeyName(), alias);
+        } else if ((primary == Integer.MIN_VALUE || primary == Keyboard.KEY_PERIOD)
+                && staleUltPlace != Integer.MIN_VALUE && staleUltPlace != 0 && staleUltPlace != Keyboard.KEY_C) {
+            setUltmineKeyCode(staleUltPlace);
+            ULTPLACE.setKeyCode(Keyboard.KEY_C);
+            KeyBinding.resetKeyBindingArrayAndHash();
+            LOG.info("[MurilloSkills][1.12.2][Client] Recovered stale Ultmine hold key from ultplace_toggle: ultmine={} ({}) ultplace=C ({})",
+                    getUltmineKeyName(), staleUltPlace, Keyboard.KEY_C);
+        }
+    }
+
+    private static int readOptionKey(String name, int fallback) {
+        try {
+            Path path = Minecraft.getMinecraft().mcDataDir.toPath().resolve("options.txt");
+            if (!Files.isRegularFile(path)) {
+                return fallback;
+            }
+            List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
+            for (String line : lines) {
+                if (line != null && line.startsWith(name + ":")) {
+                    return Integer.parseInt(line.substring(name.length() + 1).trim());
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return fallback;
+    }
+
+    private static void setUltmineKeyCode(int keyCode) {
+        ULTMINE.setKeyCode(keyCode);
+        KeyBinding.resetKeyBindingArrayAndHash();
+    }
+
+    public static int getUltmineKeyCode() {
+        return ULTMINE.getKeyCode();
+    }
+
+    public static String getUltmineKeyName() {
+        return getKeyName(ULTMINE);
+    }
+
+    public static String getKeyName(KeyBinding key) {
+        return key == null ? "NONE" : keyName(key.getKeyCode());
+    }
+
+    public static int getKeyCode(KeyBinding key) {
+        return key == null ? 0 : key.getKeyCode();
+    }
+
+    private static String keyName(int code) {
+        if (code < 0) {
+            return "MOUSE" + (code + 101);
+        }
+        String name = code == 0 ? "NONE" : Keyboard.getKeyName(code);
+        return name == null ? String.valueOf(code) : name;
     }
 }

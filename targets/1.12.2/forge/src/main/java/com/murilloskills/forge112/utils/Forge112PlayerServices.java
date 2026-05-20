@@ -171,7 +171,7 @@ public final class Forge112PlayerServices {
             } else if (player.ticksExisted % 60 == 0) {
                 LOG.debug("[MurilloSkills][1.12.2][XP] {} +{} {} via {}", player.getName(), amount, skill, reason);
             }
-            STORE.save(player.getUniqueID());
+            STORE.markDirty(player.getUniqueID());
         }
     }
 

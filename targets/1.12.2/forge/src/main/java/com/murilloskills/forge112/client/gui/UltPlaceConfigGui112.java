@@ -11,6 +11,7 @@ import java.io.IOException;
 
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.clamp;
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.drawPanelBorder;
+import static com.murilloskills.forge112.client.gui.Forge112UiSupport.flatButton;
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.renderCornerAccents;
 
 public final class UltPlaceConfigGui112 extends GuiScreen {
@@ -52,10 +53,10 @@ public final class UltPlaceConfigGui112 extends GuiScreen {
         cardX = panelX + 14;
         cardY = panelY + 120;
         cardW = panelW - 28;
-        buttonList.add(new GuiButton(BACK, panelX + panelW - 82, panelY + panelH - 28, 70, 20, "Back"));
-        buttonList.add(new GuiButton(ENABLE, panelX + 14, panelY + panelH - 28, 92, 20,
+        buttonList.add(flatButton(BACK, panelX + panelW - 82, panelY + panelH - 28, 70, 20, "Back"));
+        buttonList.add(flatButton(ENABLE, panelX + 14, panelY + panelH - 28, 92, 20,
                 "UltPlace: " + (UltPlaceClientState112.isEnabled() ? "ON" : "OFF")));
-        buttonList.add(new GuiButton(PREVIEW, panelX + 112, panelY + panelH - 28, 92, 20,
+        buttonList.add(flatButton(PREVIEW, panelX + 112, panelY + panelH - 28, 92, 20,
                 "Preview: " + (UltPlaceClientState112.isPreviewEnabled() ? "ON" : "OFF")));
         UltPlaceShape112[] shapes = UltPlaceShape112.values();
         int cols = panelW >= 600 ? 5 : 3;
@@ -64,7 +65,7 @@ public final class UltPlaceConfigGui112 extends GuiScreen {
         for (int i = 0; i < shapes.length; i++) {
             int col = i % cols;
             int row = i / cols;
-            GuiButton button = new GuiButton(SHAPE_BASE + i, panelX + 14 + col * (shapeW + gap),
+            GuiButton button = flatButton(SHAPE_BASE + i, panelX + 14 + col * (shapeW + gap),
                     shapeY + row * 24, shapeW, 20, shapes[i].label());
             button.enabled = shapes[i] != UltPlaceClientState112.getSelectedShape();
             buttonList.add(button);
@@ -75,12 +76,12 @@ public final class UltPlaceConfigGui112 extends GuiScreen {
         addStepper(LENGTH_MINUS, LENGTH_PLUS, rowX, rowY + 26);
         addStepper(HEIGHT_MINUS, HEIGHT_PLUS, rowX, rowY + 52);
         addStepper(SPACING_MINUS, SPACING_PLUS, rowX, rowY + 78);
-        buttonList.add(new GuiButton(VARIANT, rowX + 96, rowY + 104, 104, 18, variantText()));
+        buttonList.add(flatButton(VARIANT, rowX + 96, rowY + 104, 104, 18, variantText()));
     }
 
     private void addStepper(int minus, int plus, int x, int y) {
-        buttonList.add(new GuiButton(minus, x, y, 24, 18, "-"));
-        buttonList.add(new GuiButton(plus, x + 78, y, 24, 18, "+"));
+        buttonList.add(flatButton(minus, x, y, 24, 18, "-"));
+        buttonList.add(flatButton(plus, x + 78, y, 24, 18, "+"));
     }
 
     @Override

@@ -12,6 +12,7 @@ import com.murilloskills.forge112.config.*;
 import com.murilloskills.forge112.data.*;
 import com.murilloskills.forge112.dev.*;
 import com.murilloskills.forge112.events.*;
+import com.murilloskills.forge112.network.ModNetwork112;
 import com.murilloskills.forge112.skills.*;
 import com.murilloskills.forge112.utils.*;
 import static com.murilloskills.forge112.MurilloSkillsForge112.*;
@@ -153,16 +154,26 @@ import java.util.UUID;
 
 @SideOnly(Side.CLIENT)
 public final class Forge112ClientInputHandler {
+    private static final Map<KeyBinding, Boolean> HELD_KEYS = new HashMap<KeyBinding, Boolean>();
+    private static final KeyBinding[] DIAGNOSTIC_KEYS = new KeyBinding[] {
+            Forge112ClientHooks.OPEN, Forge112ClientHooks.ABILITY, Forge112ClientHooks.AREA_PLANTING,
+            Forge112ClientHooks.HOLLOW_FILL, Forge112ClientHooks.NIGHT_VISION, Forge112ClientHooks.STEP_ASSIST,
+            Forge112ClientHooks.ULTPLACE, Forge112ClientHooks.SPEED, Forge112ClientHooks.CONFIG,
+            Forge112ClientHooks.FILL, Forge112ClientHooks.ULTMINE, Forge112ClientHooks.DROPS,
+            Forge112ClientHooks.TORCH, Forge112ClientHooks.MELT, Forge112ClientHooks.MENU
+    };
+
     @SubscribeEvent
     public static void onKey(InputEvent.KeyInputEvent event) {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.player == null) {
             return;
         }
-        if (Forge112ClientHooks.OPEN.isPressed()) {
+        logMurilloKeyEvent();
+        if (consumePress(Forge112ClientHooks.OPEN)) {
             mc.displayGuiScreen(new SkillsGuiParity());
         }
-        if (Forge112ClientHooks.ABILITY.isPressed()) {
+        if (consumePress(Forge112ClientHooks.ABILITY)) {
             if (data(mc.player).getParagonSkills().size() > 1) {
                 mc.displayGuiScreen(new ParagonAbilityGui112());
             } else {
@@ -173,23 +184,24 @@ public final class Forge112ClientInputHandler {
         keyToggle(Forge112ClientHooks.HOLLOW_FILL, "BUILDER", "hollow_fill");
         keyToggle(Forge112ClientHooks.NIGHT_VISION, "EXPLORER", "night_vision");
         keyToggle(Forge112ClientHooks.STEP_ASSIST, "EXPLORER", "step_assist");
-        if (Forge112ClientHooks.ULTPLACE.isPressed()) {
+        if (consumePress(Forge112ClientHooks.ULTPLACE)) {
             boolean enabled = UltPlaceClientState112.toggleEnabled();
+            LOG.info("[MurilloSkills][1.12.2][Client] One-shot BUILDER.ultplace from key {} ({})",
+                    Forge112ClientHooks.getKeyName(Forge112ClientHooks.ULTPLACE),
+                    Forge112ClientHooks.getKeyCode(Forge112ClientHooks.ULTPLACE));
             mc.player.sendChatMessage("/murilloskills toggle BUILDER ultplace");
             Forge112NotificationHud.addLocalCard("UltPlace", enabled ? "Enabled" : "Disabled",
                     UltPlaceClientState112.summary(), Palette.ACCENT_BLUE);
         }
         keyToggle(Forge112ClientHooks.SPEED, "EXPLORER", "speed_boost");
-        if (Forge112ClientHooks.CONFIG.isPressed()) {
+        if (consumePress(Forge112ClientHooks.CONFIG)) {
             mc.displayGuiScreen(new UltPlaceConfigGui112(null));
         }
         keyToggle(Forge112ClientHooks.FILL, "BUILDER", "fill_mode");
-        if (Forge112ClientHooks.MENU.isPressed()) {
-            mc.displayGuiScreen(new UltmineRadialGui112());
-        }
-        if (Forge112ClientHooks.DROPS.isPressed()) {
+        if (consumePress(Forge112ClientHooks.DROPS)) {
             ClientUltmineConfig.toggleDropsToInventory();
             ClientUltmineConfig.save();
+            ModNetwork112.sendUltmineConfigToServer();
             Forge112NotificationHud.addLocalCard("Ultmine",
                     ClientUltmineConfig.isDropsToInventory() ? "Inventory drops" : "World drops",
                     "Drops to inventory = " + ClientUltmineConfig.isDropsToInventory(), Palette.ACCENT_GOLD);
@@ -203,8 +215,67 @@ public final class Forge112ClientInputHandler {
     }
 
     private static void keyToggle(KeyBinding key, String skill, String name) {
-        if (key.isPressed()) {
+        if (consumePress(key)) {
+            LOG.info("[MurilloSkills][1.12.2][Client] One-shot {}.{} from key {} ({})",
+                    skill, name, Forge112ClientHooks.getKeyName(key), Forge112ClientHooks.getKeyCode(key));
             Minecraft.getMinecraft().player.sendChatMessage("/murilloskills toggle " + skill + " " + name);
         }
+    }
+
+    private static boolean consumePress(KeyBinding key) {
+        if (isReservedHoldConflict(key)) {
+            return false;
+        }
+        boolean down = isBindingDown(key);
+        boolean wasDown = Boolean.TRUE.equals(HELD_KEYS.get(key));
+        HELD_KEYS.put(key, down);
+        return down && !wasDown;
+    }
+
+    private static boolean isReservedHoldConflict(KeyBinding key) {
+        return sameBinding(key, Forge112ClientHooks.ULTMINE) || sameBinding(key, Forge112ClientHooks.MENU);
+    }
+
+    private static boolean sameBinding(KeyBinding a, KeyBinding b) {
+        return a != null && b != null && a != b && a.getKeyCode() == b.getKeyCode() && a.getKeyCode() != 0;
+    }
+
+    private static boolean isBindingDown(KeyBinding key) {
+        if (key == null) {
+            return false;
+        }
+        int code = key.getKeyCode();
+        if (code < 0) {
+            return Mouse.isButtonDown(code + 100);
+        }
+        return code > 0 && Keyboard.isKeyDown(code);
+    }
+
+    private static void logMurilloKeyEvent() {
+        if (!Keyboard.getEventKeyState()) {
+            return;
+        }
+        int eventKey = Keyboard.getEventKey();
+        if (eventKey <= 0) {
+            return;
+        }
+        KeyBinding matched = findMurilloKey(eventKey);
+        if (matched == null) {
+            return;
+        }
+        LOG.info("[MurilloSkills][1.12.2][Client] KeyInput {} ({}) matched {} | ultmine={} ({}) radial={} ({}) ultplace={} ({})",
+                Keyboard.getKeyName(eventKey), eventKey, matched.getKeyDescription(),
+                Forge112ClientHooks.getUltmineKeyName(), Forge112ClientHooks.getUltmineKeyCode(),
+                Forge112ClientHooks.getKeyName(Forge112ClientHooks.MENU), Forge112ClientHooks.getKeyCode(Forge112ClientHooks.MENU),
+                Forge112ClientHooks.getKeyName(Forge112ClientHooks.ULTPLACE), Forge112ClientHooks.getKeyCode(Forge112ClientHooks.ULTPLACE));
+    }
+
+    private static KeyBinding findMurilloKey(int eventKey) {
+        for (KeyBinding key : DIAGNOSTIC_KEYS) {
+            if (key != null && key.getKeyCode() == eventKey) {
+                return key;
+            }
+        }
+        return null;
     }
 }

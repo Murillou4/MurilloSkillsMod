@@ -1,6 +1,6 @@
 # Forge 1.12.2 Port
 
-Status: native-forge-port-refactored-validation-paused.
+Status: native-forge-port-refactored-validated.
 
 This target is now a native Forge 1.12.2 source port instead of a `multi-loader-runtime` compatibility jar.
 
@@ -17,4 +17,4 @@ The initial implementation was split out of the old single-file port into focuse
 - `utils` now includes Forge 1.12.2 equivalents for daily challenges, skill synergies, first-time hints, achievements, and notification dispatch.
 - The Forge 1.12.2 Gradle file no longer patches cached Forge jar binaries; jar output must be produced from source through Gradle.
 
-Validation is intentionally paused until requested.
+Validation completed on 2026-05-19 with `clean build`, disposable `runClient`, server self-test, UI self-test, screenshots, and copied dist jar.

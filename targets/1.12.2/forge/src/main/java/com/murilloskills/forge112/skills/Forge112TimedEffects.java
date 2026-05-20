@@ -236,6 +236,9 @@ public final class Forge112TimedEffects {
         int harvested = 0;
         for (BlockPos pos : BlockPos.getAllInBox(player.getPosition().add(-FARMER_ABILITY_RADIUS, -1, -FARMER_ABILITY_RADIUS),
                 player.getPosition().add(FARMER_ABILITY_RADIUS, 1, FARMER_ABILITY_RADIUS))) {
+            if (!isLoadedBlock(player.world, pos)) {
+                continue;
+            }
             IBlockState state = player.world.getBlockState(pos);
             Block block = state.getBlock();
             if (block instanceof BlockCrops) {
@@ -298,6 +301,9 @@ public final class Forge112TimedEffects {
             }
             boolean edge = Math.abs(pos.getX() - origin.getX()) == radius || Math.abs(pos.getZ() - origin.getZ()) == radius;
             if (hollow && !edge) {
+                continue;
+            }
+            if (!isLoadedBlock(world, pos)) {
                 continue;
             }
             IBlockState current = world.getBlockState(pos);

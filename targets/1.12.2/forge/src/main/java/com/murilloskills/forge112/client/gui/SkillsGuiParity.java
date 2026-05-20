@@ -167,7 +167,6 @@ public final class SkillsGuiParity extends GuiScreen {
     private int headerHeight;
     private boolean compactCards;
     private boolean ultraCompactCards;
-    private boolean xpToasts = true;
     private Boolean lastSelectionMode;
 
     @Override
@@ -239,21 +238,21 @@ public final class SkillsGuiParity extends GuiScreen {
             int y = cardY(i);
 
             if (data.canActivateParagonSkill(skill) && selected && stats.getLevel() >= CONFIG.getMaxLevel() - 1) {
-                int sideSize = cardBottomButtonSize();
-                int leftReserve = skill == SkillType.MINER ? (sideSize * 2) + 8 : 0;
-                int rightReserve = sideSize + 8;
+                int rightReserve = bottomControlReserve(skill, selected);
                 int btnHeight = cardActionButtonHeight();
-                int btnWidth = Math.max(88, cardWidth - 16 - leftReserve - rightReserve);
-                addActionButton(10200 + i, x + 8 + leftReserve, cardBottomButtonY(y, btnHeight), btnWidth,
+                int btnWidth = Math.max(72, cardWidth - 16 - rightReserve);
+                addActionButton(10200 + i, x + 8, cardBottomButtonY(y, btnHeight), btnWidth,
                         btnHeight, "MAKE PARAGON", skill, "paragon");
             }
 
             if (!compactCards && data.isParagonSkill(skill) && stats.getLevel() >= CONFIG.getMaxLevel()
                     && stats.getPrestige() < CONFIG.getMaxPrestigeLevel()) {
-                int bottomSize = cardBottomButtonSize();
-                int btnHeight = 14;
-                int btnY = cardBottomButtonY(y, bottomSize) - btnHeight - 4;
-                addActionButton(10300 + i, x + 18, btnY, cardWidth - 36, btnHeight, "Prestige", skill, "prestige");
+                int btnHeight = 15;
+                int btnY = cardBottomButtonY(y, btnHeight);
+                int rightReserve = bottomControlReserve(skill, selected);
+                int btnWidth = Math.max(72, cardWidth - 16 - rightReserve);
+                addActionButton(10300 + i, x + 8, btnY, btnWidth, btnHeight,
+                        "PRESTIGE P" + (stats.getPrestige() + 1), skill, "prestige");
             }
 
             if (selected) {
@@ -278,7 +277,8 @@ public final class SkillsGuiParity extends GuiScreen {
         int toastW = 130;
         int toastH = 16;
         int toastX = width - toastW - 10;
-        buttonList.add(flatButton(TOAST_BUTTON, toastX, 8, toastW, toastH, "XP Toasts: " + (xpToasts ? "ON" : "OFF")));
+        buttonList.add(flatButton(TOAST_BUTTON, toastX, 8, toastW, toastH,
+                "XP Toasts: " + (Forge112NotificationHud.isEnabled() ? "ON" : "OFF")));
         buttonList.add(flatButton(GUIDE_BUTTON, toastX - 80, 7, 70, 18, "Guide"));
     }
 
@@ -299,8 +299,8 @@ public final class SkillsGuiParity extends GuiScreen {
             return;
         }
         if (button.id == TOAST_BUTTON) {
-            xpToasts = !xpToasts;
-            button.displayString = "XP Toasts: " + (xpToasts ? "ON" : "OFF");
+            Forge112NotificationHud.toggle();
+            button.displayString = "XP Toasts: " + (Forge112NotificationHud.isEnabled() ? "ON" : "OFF");
             return;
         }
         if (button.id == CONFIRM_BUTTON) {
@@ -332,9 +332,11 @@ public final class SkillsGuiParity extends GuiScreen {
             initGui();
         } else if ("paragon".equals(action.action)) {
             mc.player.sendChatMessage("/murilloskills paragon " + action.skill.name());
+            predictParagon(action.skill);
             initGui();
         } else if ("prestige".equals(action.action)) {
-            mc.player.sendChatMessage("/murilloskills setlevel " + action.skill.name() + " 0");
+            mc.player.sendChatMessage("/murilloskills prestige " + action.skill.name());
+            predictPrestige(action.skill);
             initGui();
         } else if ("reset".equals(action.action)) {
             STORE.cache.put(mc.player.getUniqueID(), new PlayerSkillDataCore());
@@ -461,20 +463,25 @@ public final class SkillsGuiParity extends GuiScreen {
             }
         } else if (paragon) {
             if (!ultraCompactCards) {
-                drawString(fontRenderer, "READY", x + 28, y + 40, Palette.STATUS_READY);
+                drawString(fontRenderer, "READY", x + 28, statusY(y), Palette.STATUS_READY);
             }
             if (!compactCards) {
                 drawString(fontRenderer, "P", x + 120, y - 4, Palette.TEXT_YELLOW);
             }
         } else if (selected) {
             if (!ultraCompactCards && !compactActionButton) {
-                drawString(fontRenderer, "ACTIVE", x + 28, y + 40, Palette.STATUS_ACTIVE);
+                drawString(fontRenderer, "ACTIVE", x + 28, statusY(y), Palette.STATUS_ACTIVE);
             }
         }
 
         if (!selectionMode && !ultraCompactCards) {
-            int roadmapY = Math.min(y + 55, cardBottomButtonY(y, cardBottomButtonSize()) - 10);
-            if (roadmapY >= y + 44) {
+            int bottomButtonY = cardBottomButtonY(y, cardBottomButtonSize());
+            int markerSize = perkMarkerSize();
+            int minimumGap = cardHeight <= 86 ? 10 : 13;
+            int preferredY = cardHeight <= 86 ? y + 51 : y + 55;
+            int roadmapY = Math.min(preferredY, bottomButtonY - markerSize - 2);
+            roadmapY = Math.max(statusY(y) + minimumGap, roadmapY);
+            if (roadmapY + markerSize <= bottomButtonY - 2) {
                 renderPerkRoadmap(x + 28, roadmapY, skill, stats.getLevel(), locked);
             }
         }
@@ -565,6 +572,55 @@ public final class SkillsGuiParity extends GuiScreen {
     private int cardBottomButtonY(int cardY, int buttonHeight) {
         int bottomPadding = ultraCompactCards ? 4 : compactCards ? 5 : 8;
         return cardY + cardHeight - buttonHeight - bottomPadding;
+    }
+
+    private int bottomControlReserve(SkillType skill, boolean selected) {
+        if (!selected) {
+            return 0;
+        }
+        int size = cardBottomButtonSize();
+        int gap = 2;
+        int controls = skill == SkillType.MINER ? 3 : 1;
+        return controls * size + Math.max(0, controls - 1) * gap + 8;
+    }
+
+    private int statusY(int cardY) {
+        return cardY + (cardHeight <= 86 ? 38 : 40);
+    }
+
+    private int perkMarkerSize() {
+        return cardHeight <= 86 ? 5 : 6;
+    }
+
+    private void predictParagon(SkillType skill) {
+        if (mc.player == null) {
+            return;
+        }
+        PlayerSkillDataCore data = data(mc.player);
+        SkillStatsCore stats = data.getSkill(skill);
+        if (!data.isSkillSelected(skill)) {
+            data.setSelectedSkills(Collections.singletonList(skill), CONFIG);
+        }
+        stats.setLevel(Math.max(stats.getLevel(), CONFIG.getMaxLevel()));
+        data.activateParagonSkill(skill);
+        STORE.save(mc.player.getUniqueID());
+    }
+
+    private void predictPrestige(SkillType skill) {
+        if (mc.player == null) {
+            return;
+        }
+        PlayerSkillDataCore data = data(mc.player);
+        SkillStatsCore stats = data.getSkill(skill);
+        if (!data.isParagonSkill(skill) || stats.getLevel() < CONFIG.getMaxLevel()
+                || stats.getPrestige() >= CONFIG.getMaxPrestigeLevel()) {
+            return;
+        }
+        stats.setPrestige(stats.getPrestige() + 1);
+        stats.setLevel(0);
+        stats.setXp(0.0D);
+        stats.setLastAbilityUse(-1L);
+        STORE.save(mc.player.getUniqueID());
     }
 
     private String confirmText() {

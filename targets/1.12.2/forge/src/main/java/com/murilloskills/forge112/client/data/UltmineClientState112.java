@@ -1,8 +1,15 @@
 package com.murilloskills.forge112.client.data;
 
+import net.minecraft.util.math.BlockPos;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public final class UltmineClientState112 {
     private static boolean held;
     private static int previewBlocks;
+    private static List<BlockPos> preview = new ArrayList<BlockPos>();
     private static String lastResult = "";
     private static long lastResultAt;
 
@@ -23,6 +30,27 @@ public final class UltmineClientState112 {
 
     public static void setPreviewBlocks(int value) {
         previewBlocks = Math.max(0, value);
+    }
+
+    public static List<BlockPos> getPreview() {
+        return Collections.unmodifiableList(preview);
+    }
+
+    public static void setPreview(List<BlockPos> values) {
+        preview = new ArrayList<BlockPos>();
+        if (values != null) {
+            for (BlockPos pos : values) {
+                if (pos != null) {
+                    preview.add(pos.toImmutable());
+                }
+            }
+        }
+        previewBlocks = preview.size();
+    }
+
+    public static void clearPreview() {
+        preview = new ArrayList<BlockPos>();
+        previewBlocks = 0;
     }
 
     public static String getLastResult() {

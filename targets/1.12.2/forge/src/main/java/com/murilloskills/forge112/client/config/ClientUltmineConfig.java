@@ -277,6 +277,22 @@ public final class ClientUltmineConfig {
     public static void toggleXpDirectToPlayer() { toggle("xpDirectToPlayer", false); }
     public static void toggleSameBlockOnly() { toggle("sameBlockOnly", false); }
     public static void toggleMagnet() { toggle("magnetEnabled", false); }
+    public static void setDropsToInventory(boolean value) { setBool("dropsToInventory", value); }
+    public static void setDropsToStorage(boolean value) { setBool("dropsToStorage", value); }
+    public static void setXpDirectToPlayer(boolean value) { setBool("xpDirectToPlayer", value); }
+    public static void setSameBlockOnly(boolean value) { setBool("sameBlockOnly", value); }
+    public static void setMagnetEnabled(boolean value) { setBool("magnetEnabled", value); }
+
+    public static String toNetworkJson() {
+        load();
+        return GSON.toJson(root);
+    }
+
+    public static void resetDefaults() {
+        root = new JsonObject();
+        normalize();
+        save();
+    }
 
     public static int getLegacyMaxBlocks() {
         load();
@@ -486,5 +502,10 @@ public final class ClientUltmineConfig {
     private static void toggle(String name, boolean fallback) {
         load();
         root.addProperty(name, !bool(name, fallback));
+    }
+
+    private static void setBool(String name, boolean value) {
+        load();
+        root.addProperty(name, value);
     }
 }

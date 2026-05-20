@@ -164,7 +164,6 @@ public final class FlatButton112 extends GuiButton {
         int fill = enabled ? (hovered ? Palette.SECTION_BG_ACTIVE : Palette.SECTION_BG) : 0x70303038;
         int border = enabled ? (hovered ? Palette.ACCENT_GOLD : Palette.SECTION_BORDER) : Palette.CARD_BORDER_LOCKED;
         GuiScreen.drawRect(x, y, x + width, y + height, fill);
-        GuiScreen.drawRect(x + 1, y + 1, x + width - 1, y + 2, enabled && hovered ? 0x35FFFFFF : 0x12FFFFFF);
         drawPanelBorder(x, y, width, height, border);
         if (displayString != null && displayString.length() > 0) {
             String text = mc.fontRenderer.trimStringToWidth(displayString, Math.max(1, width - 8));

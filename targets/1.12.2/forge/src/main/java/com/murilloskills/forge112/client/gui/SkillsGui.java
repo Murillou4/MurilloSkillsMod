@@ -162,9 +162,9 @@ public final class SkillsGui extends GuiScreen {
         buttonList.clear();
         buttonActions.clear();
         Layout layout = layout();
-        buttonList.add(new GuiButton(PARAGON_BUTTON, width - 250, 12, 76, 20, "Paragon"));
-        buttonList.add(new GuiButton(GUIDE_BUTTON, width - 168, 12, 74, 20, "Guide"));
-        buttonList.add(new GuiButton(TOAST_BUTTON, width - 88, 12, 76, 20,
+        buttonList.add(flatButton(PARAGON_BUTTON, width - 250, 12, 76, 20, "Paragon"));
+        buttonList.add(flatButton(GUIDE_BUTTON, width - 168, 12, 74, 20, "Guide"));
+        buttonList.add(flatButton(TOAST_BUTTON, width - 88, 12, 76, 20,
                 "XP: " + (Forge112NotificationHud.isEnabled() ? "ON" : "OFF")));
 
         EntityPlayer player = mc.player;
@@ -193,7 +193,7 @@ public final class SkillsGui extends GuiScreen {
     }
 
     private void addSkillButton(int id, int x, int y, int w, int h, String text, SkillType skill, String action) {
-        buttonList.add(new GuiButton(id, x, y, w, h, text));
+        buttonList.add(flatButton(id, x, y, w, h, text));
         buttonActions.put(Integer.valueOf(id), new SkillButton(skill, action));
     }
 

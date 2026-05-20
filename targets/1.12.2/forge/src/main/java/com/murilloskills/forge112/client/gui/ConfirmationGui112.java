@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiScreen;
 import java.io.IOException;
 
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.drawPanelBorder;
+import static com.murilloskills.forge112.client.gui.Forge112UiSupport.flatButton;
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.renderCornerAccents;
 
 public final class ConfirmationGui112 extends GuiScreen {
@@ -34,8 +35,8 @@ public final class ConfirmationGui112 extends GuiScreen {
         panelH = 112;
         panelX = (width - panelW) / 2;
         panelY = (height - panelH) / 2;
-        buttonList.add(new GuiButton(CONFIRM, panelX + panelW - 148, panelY + panelH - 30, 64, 20, "Confirm"));
-        buttonList.add(new GuiButton(CANCEL, panelX + panelW - 78, panelY + panelH - 30, 64, 20, "Cancel"));
+        buttonList.add(flatButton(CONFIRM, panelX + panelW - 148, panelY + panelH - 30, 64, 20, "Confirm"));
+        buttonList.add(flatButton(CANCEL, panelX + panelW - 78, panelY + panelH - 30, 64, 20, "Cancel"));
     }
 
     @Override

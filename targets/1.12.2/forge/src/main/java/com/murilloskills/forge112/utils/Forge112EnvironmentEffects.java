@@ -175,6 +175,9 @@ public final class Forge112EnvironmentEffects {
                 if (found.size() >= limit) {
                     break;
                 }
+                if (!isLoadedBlock(player.world, pos)) {
+                    continue;
+                }
                 if (CrossModCompatRules.isLootContainerId(blockId(player.world.getBlockState(pos)))) {
                     found.add(pos.toImmutable());
                 }
@@ -187,7 +190,8 @@ public final class Forge112EnvironmentEffects {
         if (tile instanceof TileEntityChest || tile instanceof TileEntityMobSpawner) {
             return true;
         }
-        return CrossModCompatRules.isLootContainerId(blockId(tile.getWorld().getBlockState(tile.getPos())));
+        return tile.getWorld() != null && isLoadedBlock(tile.getWorld(), tile.getPos())
+                && CrossModCompatRules.isLootContainerId(blockId(tile.getWorld().getBlockState(tile.getPos())));
     }
 
     public static void awardExplorerMovement(EntityPlayer player, PlayerSkillDataCore data, PlayerRuntime runtime) {
@@ -213,6 +217,9 @@ public final class Forge112EnvironmentEffects {
         int radius = 2 + Math.min(4, data.getSkill(SkillType.FARMER).getLevel() / 25);
         World world = player.world;
         for (BlockPos pos : BlockPos.getAllInBox(player.getPosition().add(-radius, -1, -radius), player.getPosition().add(radius, 1, radius))) {
+            if (!isLoadedBlock(world, pos)) {
+                continue;
+            }
             IBlockState state = world.getBlockState(pos);
             Block block = state.getBlock();
             if (block instanceof IGrowable && RANDOM.nextInt(12) == 0) {
@@ -233,6 +240,9 @@ public final class Forge112EnvironmentEffects {
         int radius = 4;
         World world = player.world;
         for (BlockPos pos : BlockPos.getAllInBox(player.getPosition().add(-radius, -2, -radius), player.getPosition().add(radius, 2, radius))) {
+            if (!isLoadedBlock(world, pos)) {
+                continue;
+            }
             String id = blockId(world.getBlockState(pos));
             if (!CrossModCompatRules.isLikelyMachineIdOrClass(id)) {
                 continue;

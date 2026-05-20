@@ -156,6 +156,8 @@ public final class OreFilterGui112 extends GuiScreen {
     private static final int NONE = 27002;
     private static final int MAX_MINUS = 27003;
     private static final int MAX_PLUS = 27004;
+    private static final int SAVE = 27005;
+    private static final int RESET = 27006;
     private static final int OPTION_BASE = 27100;
     private final GuiScreen parent;
     private List<ClientOreFilterConfig.OreOption> options = new ArrayList<ClientOreFilterConfig.OreOption>();
@@ -178,6 +180,7 @@ public final class OreFilterGui112 extends GuiScreen {
     private int scrollbarThumbH;
     private boolean draggingScrollbar;
     private int scrollbarGrabOffset;
+    private GuiTextField maxOresField;
 
     public OreFilterGui112(GuiScreen parent) {
         this.parent = parent;
@@ -202,10 +205,15 @@ public final class OreFilterGui112 extends GuiScreen {
         int maxScroll = Math.max(0, (int) Math.ceil(options.size() / (double) cols) - visibleRows);
         scroll = clamp(scroll, 0, maxScroll);
         buttonList.add(flatButton(BACK, panelX + panelW - 82, panelY + panelH - 28, 70, 20, "Back"));
+        buttonList.add(flatButton(SAVE, panelX + panelW - 158, panelY + panelH - 28, 70, 20, "Save"));
+        buttonList.add(flatButton(RESET, panelX + panelW - 234, panelY + panelH - 28, 70, 20, "Reset"));
         buttonList.add(flatButton(ALL, panelX + 14, panelY + 48, 64, 18, "All"));
         buttonList.add(flatButton(NONE, panelX + 84, panelY + 48, 64, 18, "None"));
         buttonList.add(flatButton(MAX_MINUS, panelX + panelW - 168, panelY + 48, 24, 18, "-"));
         buttonList.add(flatButton(MAX_PLUS, panelX + panelW - 40, panelY + 48, 24, 18, "+"));
+        maxOresField = new GuiTextField(3, fontRenderer, panelX + panelW - 136, panelY + 48, 84, 18);
+        maxOresField.setMaxStringLength(3);
+        maxOresField.setText(String.valueOf(ClientOreFilterConfig.getMaxOres()));
         int first = scroll * cols;
         int last = Math.min(options.size(), first + visibleRows * cols);
         for (int i = first; i < last; i++) {
@@ -222,6 +230,18 @@ public final class OreFilterGui112 extends GuiScreen {
         if (button.id == BACK) {
             ClientOreFilterConfig.save();
             mc.displayGuiScreen(parent);
+            return;
+        }
+        if (button.id == SAVE) {
+            applyMaxOresField();
+            ClientOreFilterConfig.save();
+            mc.displayGuiScreen(parent);
+            return;
+        }
+        if (button.id == RESET) {
+            ClientOreFilterConfig.resetDefaults();
+            scroll = 0;
+            initGui();
             return;
         }
         if (button.id == ALL || button.id == NONE) {
@@ -245,6 +265,22 @@ public final class OreFilterGui112 extends GuiScreen {
     }
 
     @Override
+    public void updateScreen() {
+        if (maxOresField != null) {
+            maxOresField.updateCursorCounter();
+        }
+    }
+
+    @Override
+    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+        if (maxOresField != null && maxOresField.textboxKeyTyped(typedChar, keyCode)) {
+            applyMaxOresField();
+            return;
+        }
+        super.keyTyped(typedChar, keyCode);
+    }
+
+    @Override
     public void handleMouseInput() throws IOException {
         super.handleMouseInput();
         int delta = Mouse.getEventDWheel();
@@ -264,6 +300,9 @@ public final class OreFilterGui112 extends GuiScreen {
             return;
         }
         super.mouseClicked(mouseX, mouseY, mouseButton);
+        if (maxOresField != null) {
+            maxOresField.mouseClicked(mouseX, mouseY, mouseButton);
+        }
     }
 
     @Override
@@ -308,11 +347,25 @@ public final class OreFilterGui112 extends GuiScreen {
         drawString(fontRenderer, "Ores", panelX + 14, panelY + 72, Palette.TEXT_GOLD);
         drawString(fontRenderer, enabledCount() + " / " + options.size() + " enabled",
                 panelX + 54, panelY + 72, Palette.TEXT_MUTED);
-        String maxText = "Max ores: " + ClientOreFilterConfig.getMaxOres();
-        drawString(fontRenderer, maxText, panelX + panelW - 138, panelY + 53, Palette.TEXT_LIGHT);
+        drawString(fontRenderer, "Max ores", panelX + panelW - 224, panelY + 53, Palette.TEXT_MUTED);
         super.drawScreen(mouseX, mouseY, partialTicks);
+        if (maxOresField != null) {
+            maxOresField.drawTextBox();
+        }
         renderOreCards(mouseX, mouseY);
         renderOreScrollbar();
+    }
+
+    private void applyMaxOresField() {
+        if (maxOresField == null || maxOresField.getText().trim().length() == 0) {
+            return;
+        }
+        try {
+            ClientOreFilterConfig.setMaxOres(Integer.parseInt(maxOresField.getText().trim()));
+            maxOresField.setText(String.valueOf(ClientOreFilterConfig.getMaxOres()));
+        } catch (NumberFormatException ignored) {
+            maxOresField.setText(String.valueOf(ClientOreFilterConfig.getMaxOres()));
+        }
     }
 
     private void renderOreCards(int mouseX, int mouseY) {

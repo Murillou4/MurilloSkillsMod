@@ -10,6 +10,7 @@ import java.io.IOException;
 
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.clamp;
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.drawPanelBorder;
+import static com.murilloskills.forge112.client.gui.Forge112UiSupport.flatButton;
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.renderCornerAccents;
 
 public final class TerminalBulkCraftAmountGui112 extends GuiScreen {
@@ -31,10 +32,10 @@ public final class TerminalBulkCraftAmountGui112 extends GuiScreen {
         buttonList.clear();
         panelX = (width - 260) / 2;
         panelY = (height - 126) / 2;
-        buttonList.add(new GuiButton(MINUS, panelX + 44, panelY + 58, 34, 20, "-"));
-        buttonList.add(new GuiButton(PLUS, panelX + 182, panelY + 58, 34, 20, "+"));
-        buttonList.add(new GuiButton(CONFIRM, panelX + 112, panelY + 96, 64, 20, "Craft"));
-        buttonList.add(new GuiButton(CANCEL, panelX + 184, panelY + 96, 64, 20, "Cancel"));
+        buttonList.add(flatButton(MINUS, panelX + 44, panelY + 58, 34, 20, "-"));
+        buttonList.add(flatButton(PLUS, panelX + 182, panelY + 58, 34, 20, "+"));
+        buttonList.add(flatButton(CONFIRM, panelX + 112, panelY + 96, 64, 20, "Craft"));
+        buttonList.add(flatButton(CANCEL, panelX + 184, panelY + 96, 64, 20, "Cancel"));
     }
 
     @Override

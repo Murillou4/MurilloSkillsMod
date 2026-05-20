@@ -12,6 +12,7 @@ import com.murilloskills.forge112.data.*;
 import com.murilloskills.forge112.dev.*;
 import com.murilloskills.forge112.events.*;
 import com.murilloskills.forge112.impl.*;
+import com.murilloskills.forge112.network.ModNetwork112;
 import com.murilloskills.forge112.skills.*;
 import com.murilloskills.forge112.utils.*;
 import static com.murilloskills.forge112.client.gui.Forge112UiSupport.*;
@@ -258,6 +259,7 @@ public final class MurilloSkillsForge112 {
         Path configDir = event.getModConfigurationDirectory().toPath();
         CONFIG_DIR = configDir;
         CONFIG = Forge112ConfigLoader.load(configDir.resolve("murilloskills.json"));
+        ModNetwork112.register();
         registerSkills();
         STORE.setRoot(configDir.resolve("murilloskills-1.12.2"));
         LOG.info("[MurilloSkills][1.12.2] PreInit complete. dataRoot={} maxSelectedSkills={} xpBase={} xpMultiplier={} xpExponent={}",
@@ -284,7 +286,9 @@ public final class MurilloSkillsForge112 {
 
     @EventHandler
     public void serverStopping(FMLServerStoppingEvent event) {
-        STORE.saveAll();
-        LOG.info("[MurilloSkills][1.12.2] Server stopping. Saved {} players.", STORE.size());
+        int cachedPlayers = STORE.size();
+        STORE.clear();
+        RUNTIME.clear();
+        LOG.info("[MurilloSkills][1.12.2] Server stopping. Saved {} players.", cachedPlayers);
     }
 }

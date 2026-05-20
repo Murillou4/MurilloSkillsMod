@@ -1,6 +1,7 @@
 package com.murilloskills.forge112.utils;
 
 import com.murilloskills.core.config.SkillType;
+import com.murilloskills.forge112.network.ModNetwork112;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.util.SoundCategory;
@@ -73,6 +74,9 @@ public final class Forge112Notifications {
 
     private static void send(EntityPlayer player, String type, String... fields) {
         if (player == null || player.world == null || player.world.isRemote) {
+            return;
+        }
+        if (ModNetwork112.sendNotification(player, type, fields) && !Boolean.getBoolean("murilloskills.chat112")) {
             return;
         }
         StringBuilder payload = new StringBuilder(PREFIX).append(clean(type));

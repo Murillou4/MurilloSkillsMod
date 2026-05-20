@@ -11,6 +11,7 @@ import com.murilloskills.forge112.config.*;
 import com.murilloskills.forge112.data.*;
 import com.murilloskills.forge112.dev.*;
 import com.murilloskills.forge112.events.*;
+import com.murilloskills.forge112.network.ModNetwork112;
 import com.murilloskills.forge112.skills.*;
 import com.murilloskills.forge112.utils.*;
 import static com.murilloskills.forge112.MurilloSkillsForge112.*;
@@ -268,6 +269,7 @@ public class UltmineListPickerGui112 extends GuiScreen {
                     }
                 }
                 ClientUltmineConfig.save();
+                ModNetwork112.sendUltmineConfigToServer();
                 initGui();
             }
         }

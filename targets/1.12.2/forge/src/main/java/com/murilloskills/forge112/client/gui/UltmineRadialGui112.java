@@ -11,6 +11,7 @@ import com.murilloskills.forge112.config.*;
 import com.murilloskills.forge112.data.*;
 import com.murilloskills.forge112.dev.*;
 import com.murilloskills.forge112.events.*;
+import com.murilloskills.forge112.network.ModNetwork112;
 import com.murilloskills.forge112.skills.*;
 import com.murilloskills.forge112.utils.*;
 import static com.murilloskills.forge112.MurilloSkillsForge112.*;
@@ -169,6 +170,7 @@ public final class UltmineRadialGui112 extends GuiScreen {
     };
     private int hoveredIndex = -1;
     private int selectedIndex = 0;
+    private boolean selectionChanged;
 
     @Override
     public void initGui() {
@@ -181,6 +183,7 @@ public final class UltmineRadialGui112 extends GuiScreen {
                 break;
             }
         }
+        selectionChanged = false;
     }
 
     @Override
@@ -191,7 +194,7 @@ public final class UltmineRadialGui112 extends GuiScreen {
         }
         if (mouseButton == 0) {
             if (hoveredIndex >= 0) {
-                selectShape(hoveredIndex);
+                selectShape(hoveredIndex, false);
             } else {
                 mc.displayGuiScreen(null);
             }
@@ -205,7 +208,7 @@ public final class UltmineRadialGui112 extends GuiScreen {
             return;
         }
         if (keyCode == Keyboard.KEY_RETURN || keyCode == Keyboard.KEY_NUMPADENTER || keyCode == Keyboard.KEY_SPACE) {
-            selectShape(hoveredIndex >= 0 ? hoveredIndex : selectedIndex);
+            selectShape(hoveredIndex >= 0 ? hoveredIndex : selectedIndex, false);
             return;
         }
         if (keyCode == Keyboard.KEY_A || keyCode == Keyboard.KEY_LEFT) {
@@ -228,12 +231,26 @@ public final class UltmineRadialGui112 extends GuiScreen {
         }
     }
 
-    private void selectShape(int index) {
+    public void releaseAndClose() {
+        int index = hoveredIndex >= 0 ? hoveredIndex : selectedIndex;
+        if (index >= 0) {
+            selectShape(index, false);
+        } else if (selectionChanged && selectedIndex >= 0) {
+            selectShape(selectedIndex, false);
+        }
+        mc.displayGuiScreen(null);
+    }
+
+    private void selectShape(int index, boolean close) {
         if (index >= 0 && index < SHAPE_ORDER.length) {
+            selectionChanged = selectionChanged || selectedIndex != index;
             selectedIndex = index;
             ClientUltmineConfig.setSelectedShape(SHAPE_ORDER[index]);
             ClientUltmineConfig.save();
-            mc.displayGuiScreen(null);
+            syncSelection(SHAPE_ORDER[index]);
+            if (close) {
+                mc.displayGuiScreen(null);
+            }
         }
     }
 
@@ -251,6 +268,7 @@ public final class UltmineRadialGui112 extends GuiScreen {
         int next = (current + direction + count) % count;
         ClientUltmineConfig.setVariant(shape, next);
         ClientUltmineConfig.save();
+        syncSelection(shape);
     }
 
     @Override
@@ -259,6 +277,9 @@ public final class UltmineRadialGui112 extends GuiScreen {
         int cx = width / 2;
         int cy = height / 2;
         hoveredIndex = hoveredIndex(mouseX, mouseY, cx, cy);
+        if (hoveredIndex >= 0 && hoveredIndex != selectedIndex) {
+            selectShape(hoveredIndex, false);
+        }
         float slice = (float) (Math.PI * 2.0D / SHAPE_ORDER.length);
         float startBase = (float) (-Math.PI / 2.0D);
         for (int i = 0; i < SHAPE_ORDER.length; i++) {
@@ -290,7 +311,7 @@ public final class UltmineRadialGui112 extends GuiScreen {
         drawCenteredString(fontRenderer, "Ultmine Shape", cx, cy - 22, Palette.TEXT_GOLD);
         UltmineShape112 activeShape = SHAPE_ORDER[hoveredIndex >= 0 ? hoveredIndex : selectedIndex];
         drawCenteredString(fontRenderer, shapeLabel(activeShape), cx, cy - 4, Palette.TEXT_LIGHT);
-        drawCenteredString(fontRenderer, "A/D or wheel: variant", cx, cy + 13, Palette.TEXT_MUTED);
+        drawCenteredString(fontRenderer, "Release key: select", cx, cy + 13, Palette.TEXT_MUTED);
     }
 
     private int hoveredIndex(int mouseX, int mouseY, int cx, int cy) {
@@ -367,6 +388,12 @@ public final class UltmineRadialGui112 extends GuiScreen {
             return variant == 1 ? "Ores" : "Same Block";
         }
         return "";
+    }
+
+    private void syncSelection(UltmineShape112 shape) {
+        ModNetwork112.sendUltmineSelection(shape, ClientUltmineConfig.getDepth(shape),
+                ClientUltmineConfig.getLength(shape), ClientUltmineConfig.getVariant(shape),
+                ClientUltmineConfig.getLegacyMaxBlocks());
     }
 
     @Override

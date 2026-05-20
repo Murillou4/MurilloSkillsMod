@@ -22,6 +22,7 @@ import static com.murilloskills.forge112.MurilloSkillsForge112.*;
 import static com.murilloskills.forge112.skills.Forge112TimedEffects.activateTimed;
 import static com.murilloskills.forge112.skills.Forge112TimedEffects.performHarvestMoon;
 import static com.murilloskills.forge112.utils.Forge112EnvironmentEffects.accelerateNearbyPlants;
+import static com.murilloskills.forge112.utils.Forge112MiningTools.isLoadedBlock;
 import static com.murilloskills.forge112.utils.Forge112PlayerServices.*;
 import static com.murilloskills.forge112.utils.Forge112SkillMath.*;
 
@@ -37,7 +38,9 @@ public final class FarmerSkill extends AbstractSkill {
             return;
         }
         int level = data.getSkill(SkillType.FARMER).getLevel();
-        if (level >= FARMER_NATURES_VITALITY_LEVEL && isNaturalGround(player.world.getBlockState(player.getPosition().down()))) {
+        if (level >= FARMER_NATURES_VITALITY_LEVEL
+                && isLoadedBlock(player.world, player.getPosition().down())
+                && isNaturalGround(player.world.getBlockState(player.getPosition().down()))) {
             player.addPotionEffect(new PotionEffect(MobEffects.REGENERATION, 60, 0, true, false));
         }
         if (level >= FARMER_SEED_MASTER_LEVEL) {

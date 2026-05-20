@@ -7,6 +7,8 @@ import com.murilloskills.forge112.data.PlayerRuntime;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
 import net.minecraft.util.DamageSource;
+import net.minecraftforge.event.AnvilUpdateEvent;
+import net.minecraftforge.event.enchanting.EnchantmentLevelSetEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingFallEvent;
@@ -83,6 +85,12 @@ public abstract class AbstractSkill {
     }
 
     public void onFish(ItemFishedEvent event, EntityPlayer player, PlayerSkillDataCore data) {
+    }
+
+    public void onAnvilUpdate(AnvilUpdateEvent event) {
+    }
+
+    public void onEnchantmentLevelSet(EnchantmentLevelSetEvent event) {
     }
 
     public void onRightClickBlock(PlayerInteractEvent.RightClickBlock event, EntityPlayer player, PlayerSkillDataCore data, String blockId) {

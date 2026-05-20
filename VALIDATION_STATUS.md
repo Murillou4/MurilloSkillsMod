@@ -1,6 +1,27 @@
 # MurilloSkills Validation Status
 
-Atualizado em 2026-05-17.
+Atualizado em 2026-05-19.
+
+## Forge 1.12.2 runtime/UI/skills
+
+Rodada executada com JDK 8 portatil em `.codex-temp/jdks/jdk8/jdk8u492-b09` e Gradle 4.9:
+
+```powershell
+.\.codex-temp\smoke\mdk-1122\gradlew.bat --no-daemon --console=plain -p targets/1.12.2/forge clean build
+$env:MURILLOSKILLS_SELFTEST='1'; $env:MURILLOSKILLS_AUTOWORLD='1'; $env:MURILLOSKILLS_CLIENT_UI_SELFTEST='1'; $env:MURILLOSKILLS_CLIENT_UI_SELFTEST_EXIT='1'; .\.codex-temp\smoke\mdk-1122\gradlew.bat --no-daemon --console=plain -p targets/1.12.2/forge runClient
+```
+
+| Versao | Loader | Status |
+| --- | --- | --- |
+| 1.12.2 | Forge 14.23.5.2859 | PASS |
+
+Evidencias:
+
+- Build: `targets/1.12.2/forge/build/libs/murilloskills-1.12.2-forge-1.2.75.jar`
+- Dist: `dist/1.12.2/forge/murilloskills-1.12.2-forge-1.2.75.jar`
+- Server self-test: `targets/1.12.2/forge/run-clean/saves/CodexSmoke112/murilloskills/selftest-result.txt` = `PASS`
+- UI screenshots: `targets/1.12.2/forge/run-clean/screenshots/murilloskills-112-skills.png`, `murilloskills-112-ore_filter.png`, `murilloskills-112-ultmine_config.png`, `murilloskills-112-trash_picker.png`, `murilloskills-112-classic_picker.png`, `murilloskills-112-ultmine_radial.png`, `murilloskills-112-controls.png`, `murilloskills-112-ultmine_preview_world.png`
+- Runtime log evidence: `ClientUiSelfTest PASS` and client closed automatically.
 
 ## Fabric runtime/UI/skills
 
@@ -51,4 +72,4 @@ O smoke de Fabric agora usa OCR local do Windows para reconhecer botoes como `Si
 
 ## Fora desta rodada
 
-Forge, NeoForge e Legacy Fabric nao foram revalidados nesta rodada. Eles precisam de smoke proprio por loader e nao devem herdar resultado Fabric.
+NeoForge e Legacy Fabric nao foram revalidados nesta rodada. Eles precisam de smoke proprio por loader e nao devem herdar resultado Fabric/Forge.

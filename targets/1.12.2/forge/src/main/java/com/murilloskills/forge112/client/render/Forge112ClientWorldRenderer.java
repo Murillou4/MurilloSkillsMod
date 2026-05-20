@@ -3,6 +3,7 @@ package com.murilloskills.forge112.client.render;
 import com.murilloskills.forge112.MurilloSkillsForge112;
 import com.murilloskills.forge112.client.*;
 import com.murilloskills.forge112.client.config.*;
+import com.murilloskills.forge112.client.data.UltmineClientState112;
 import com.murilloskills.forge112.client.gui.*;
 import com.murilloskills.forge112.client.input.*;
 import com.murilloskills.forge112.client.render.*;
@@ -161,7 +162,17 @@ public final class Forge112ClientWorldRenderer {
         UUID id = mc.player.getUniqueID();
         List<BlockPos> ores = MINER_VISIBLE_ORES.get(id);
         List<BlockPos> treasures = TREASURE_VISIBLE_TARGETS.get(id);
-        if ((ores == null || ores.isEmpty()) && (treasures == null || treasures.isEmpty())) {
+        List<BlockPos> ultmine = UltmineClientState112.getPreview();
+        if (UltmineClientState112.isHeld() && (ultmine == null || ultmine.isEmpty())
+                && mc.objectMouseOver != null && mc.objectMouseOver.typeOfHit == RayTraceResult.Type.BLOCK
+                && mc.objectMouseOver.getBlockPos() != null) {
+            IBlockState state = mc.world.getBlockState(mc.objectMouseOver.getBlockPos());
+            if (state != null && state.getBlock() != Blocks.AIR) {
+                ultmine = Collections.singletonList(mc.objectMouseOver.getBlockPos().toImmutable());
+            }
+        }
+        if ((ores == null || ores.isEmpty()) && (treasures == null || treasures.isEmpty())
+                && (ultmine == null || ultmine.isEmpty())) {
             return;
         }
         Entity camera = mc.getRenderViewEntity();
@@ -178,7 +189,7 @@ public final class Forge112ClientWorldRenderer {
         GlStateManager.disableDepth();
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GL11.glLineWidth(2.0F);
+        GL11.glLineWidth(1.25F);
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
         buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
@@ -187,6 +198,9 @@ public final class Forge112ClientWorldRenderer {
         }
         if (treasures != null) {
             addHighlightBoxes(buffer, treasures, camX, camY, camZ, 0.35F, 0.85F, 1.0F, 0.85F);
+        }
+        if (ultmine != null) {
+            addUltminePreviewBoxes(buffer, ultmine, camX, camY, camZ);
         }
         tessellator.draw();
         GlStateManager.enableDepth();
@@ -209,6 +223,27 @@ public final class Forge112ClientWorldRenderer {
                     pos.getY() + 1.0D - camY + 0.003D,
                     pos.getZ() + 1.0D - camZ + 0.003D);
             addBoxLines(buffer, box, r, g, b, a);
+        }
+    }
+
+    private static void addUltminePreviewBoxes(BufferBuilder buffer, List<BlockPos> positions,
+            double camX, double camY, double camZ) {
+        int total = positions.size();
+        int limit = total > 256 ? 128 : Math.min(total, 192);
+        int stride = total > limit ? Math.max(1, total / limit) : 1;
+        int drawn = 0;
+        for (int i = 0; i < total && drawn < limit; i += stride) {
+            BlockPos pos = positions.get(i);
+            AxisAlignedBB box = new AxisAlignedBB(
+                    pos.getX() - camX - 0.002D,
+                    pos.getY() - camY - 0.002D,
+                    pos.getZ() - camZ - 0.002D,
+                    pos.getX() + 1.0D - camX + 0.002D,
+                    pos.getY() + 1.0D - camY + 0.002D,
+                    pos.getZ() + 1.0D - camZ + 0.002D);
+            float alpha = drawn == 0 ? 0.50F : 0.30F;
+            addBoxLines(buffer, box, 0.42F, 0.82F, 1.0F, alpha);
+            drawn++;
         }
     }
 

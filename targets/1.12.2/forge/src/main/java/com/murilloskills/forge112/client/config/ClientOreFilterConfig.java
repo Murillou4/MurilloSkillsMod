@@ -301,6 +301,12 @@ public final class ClientOreFilterConfig {
         root.addProperty("maxOres", clamp(value, 1, 500));
     }
 
+    public static void resetDefaults() {
+        root = new JsonObject();
+        normalize();
+        save();
+    }
+
     private static void setEnabled(String key, boolean enabled) {
         JsonObject obj = setting(key);
         if (obj != null) {

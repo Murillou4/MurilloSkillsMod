@@ -20,12 +20,11 @@ import java.util.Iterator;
 
 @SideOnly(Side.CLIENT)
 public final class Forge112NotificationHud {
-    private static final int MAX_XP_TOASTS = 5;
-    private static final long XP_DURATION_MS = 2500L;
-    private static final long CARD_DURATION_MS = 4200L;
+    private static final int MAX_TOASTS = 5;
+    private static final long TOAST_DURATION_MS = 2500L;
     private static final long FADE_MS = 300L;
-    private static final Deque<XpToast> XP_TOASTS = new ArrayDeque<XpToast>();
-    private static final Deque<CardNotice> CARDS = new ArrayDeque<CardNotice>();
+    private static final long DEDUPE_WINDOW_MS = 350L;
+    private static final Deque<ToastNotice> TOASTS = new ArrayDeque<ToastNotice>();
     private static boolean enabled = true;
 
     private Forge112NotificationHud() {
@@ -38,21 +37,48 @@ public final class Forge112NotificationHud {
     public static void setEnabled(boolean value) {
         enabled = value;
         if (!value) {
-            XP_TOASTS.clear();
+            TOASTS.clear();
         }
     }
 
     public static boolean toggle() {
         setEnabled(!enabled);
-        addLocalCard("Notifications", enabled ? "XP cards enabled" : "XP cards disabled", "", 0xFF5DDC7A);
+        if (enabled) {
+            addLocalCard("Notifications", "Enabled", "", 0xFF5DDC7A);
+        }
         return enabled;
     }
 
     public static void addLocalCard(String title, String subtitle, String body, int accent) {
-        while (CARDS.size() >= 4) {
-            CARDS.pollFirst();
+        if (!enabled) {
+            return;
         }
-        CARDS.addLast(new CardNotice(title, subtitle, body, accent));
+        String text = joinMini(clean(title), clean(subtitle), clean(body));
+        addToast(text, accent);
+    }
+
+    public static void acceptNetwork(String type, String[] fields) {
+        if (!enabled) {
+            return;
+        }
+        String safeType = clean(type);
+        String[] safeFields = fields == null ? new String[0] : fields;
+        if ("xp".equals(safeType) && safeFields.length >= 3) {
+            SkillType skill = parseSkill(safeFields[0]);
+            int amount = parseInt(safeFields[1], 0);
+            addXpToast(skill, amount, safeFields[2]);
+        } else if ("level".equals(safeType) && safeFields.length >= 3) {
+            return;
+        } else if ("toggle".equals(safeType) && safeFields.length >= 3) {
+            SkillType skill = parseSkill(safeFields[0]);
+            addToast(skillTitle(skill) + " " + clean(safeFields[1]) + ": " + clean(safeFields[2]), skillColor(skill));
+        } else if ("challenge".equals(safeType) && safeFields.length >= 5) {
+            SkillType skill = parseSkill(safeFields[0]);
+            addToast(skillTitle(skill) + " " + clean(safeFields[1]) + " " + clean(safeFields[2]) + "/"
+                    + clean(safeFields[3]) + " +" + clean(safeFields[4]) + " XP", skillColor(skill));
+        } else if ("notice".equals(safeType) && safeFields.length >= 3) {
+            addLocalCard(safeFields[0], safeFields[1], safeFields[2], Palette.ACCENT_GOLD);
+        }
     }
 
     @SubscribeEvent
@@ -70,13 +96,15 @@ public final class Forge112NotificationHud {
         if (event.getType() != RenderGameOverlayEvent.ElementType.TEXT) {
             return;
         }
+        if (!enabled) {
+            return;
+        }
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.player == null || mc.fontRenderer == null) {
             return;
         }
         ScaledResolution resolution = new ScaledResolution(mc);
-        renderXpToasts(mc, resolution);
-        renderCards(mc, resolution);
+        renderToasts(mc, resolution);
     }
 
     private static void parsePayload(String payload) {
@@ -84,90 +112,62 @@ public final class Forge112NotificationHud {
         if (parts.length == 0) {
             return;
         }
-        String type = parts[0];
-        if ("xp".equals(type) && parts.length >= 4) {
-            SkillType skill = parseSkill(parts[1]);
-            int amount = parseInt(parts[2], 0);
-            addXpToast(skill, amount, parts[3]);
-        } else if ("level".equals(type) && parts.length >= 4) {
-            SkillType skill = parseSkill(parts[1]);
-            int next = parseInt(parts[3], 0);
-            addLocalCard("Level up", skillTitle(skill), "Level " + next, skillColor(skill));
-        } else if ("toggle".equals(type) && parts.length >= 4) {
-            SkillType skill = parseSkill(parts[1]);
-            addLocalCard("Toggle", skillTitle(skill), parts[2] + " = " + parts[3], skillColor(skill));
-        } else if ("challenge".equals(type) && parts.length >= 6) {
-            SkillType skill = parseSkill(parts[1]);
-            addLocalCard("Daily challenge", skillTitle(skill),
-                    parts[2] + " " + parts[3] + "/" + parts[4] + " +" + parts[5] + " XP",
-                    skillColor(skill));
-        } else if ("notice".equals(type) && parts.length >= 4) {
-            addLocalCard(parts[1], parts[2], parts[3], Palette.ACCENT_GOLD);
+        String[] fields = new String[Math.max(0, parts.length - 1)];
+        for (int i = 1; i < parts.length; i++) {
+            fields[i - 1] = parts[i];
         }
+        acceptNetwork(parts[0], fields);
     }
 
     private static void addXpToast(SkillType skill, int amount, String source) {
         if (!enabled || skill == null || amount <= 0) {
             return;
         }
-        while (XP_TOASTS.size() >= MAX_XP_TOASTS) {
-            XP_TOASTS.pollFirst();
-        }
-        XP_TOASTS.addLast(new XpToast(skill, amount, source));
+        String text = "+" + amount + " XP " + skillTitle(skill)
+                + (clean(source).length() == 0 ? "" : " (" + clean(source) + ")");
+        addToast(text, skillColor(skill));
     }
 
-    private static void renderXpToasts(Minecraft mc, ScaledResolution resolution) {
+    private static void addToast(String text, int accent) {
+        if (!enabled) {
+            return;
+        }
+        String cleanText = clean(text);
+        if (cleanText.length() == 0) {
+            return;
+        }
+        ToastNotice last = TOASTS.peekLast();
         long now = System.currentTimeMillis();
-        Iterator<XpToast> iterator = XP_TOASTS.iterator();
+        if (last != null && now - last.createdAt < DEDUPE_WINDOW_MS && last.text.equals(cleanText)) {
+            return;
+        }
+        while (TOASTS.size() >= MAX_TOASTS) {
+            TOASTS.pollFirst();
+        }
+        TOASTS.addLast(new ToastNotice(cleanText, accent));
+    }
+
+    private static void renderToasts(Minecraft mc, ScaledResolution resolution) {
+        long now = System.currentTimeMillis();
+        Iterator<ToastNotice> iterator = TOASTS.iterator();
         while (iterator.hasNext()) {
-            if (now - iterator.next().createdAt > XP_DURATION_MS) {
+            if (now - iterator.next().createdAt > TOAST_DURATION_MS) {
                 iterator.remove();
             }
         }
         int y = 6;
-        for (XpToast toast : XP_TOASTS) {
-            float alpha = alpha(now - toast.createdAt, XP_DURATION_MS);
+        for (ToastNotice toast : TOASTS) {
+            float alpha = alpha(now - toast.createdAt, TOAST_DURATION_MS);
             if (alpha <= 0.01F) {
                 continue;
             }
-            String text = "+" + toast.amount + " XP " + skillTitle(toast.skill)
-                    + (toast.source.length() == 0 ? "" : " (" + toast.source + ")");
-            int textWidth = mc.fontRenderer.getStringWidth(text);
+            int textWidth = mc.fontRenderer.getStringWidth(toast.text);
             int w = Math.min(resolution.getScaledWidth() - 12, textWidth + 14);
             int x = resolution.getScaledWidth() - w - 6;
-            int accent = skillColor(toast.skill);
-            drawPanel(x, y, w, 17, accent, alpha);
-            mc.fontRenderer.drawStringWithShadow(fit(mc.fontRenderer, text, w - 12), x + 7, y + 5,
+            drawPanel(x, y, w, 17, toast.accent, alpha);
+            mc.fontRenderer.drawStringWithShadow(fit(mc.fontRenderer, toast.text, w - 12), x + 7, y + 5,
                     colorWithAlpha(0xFFFFFFFF, alpha));
             y += 21;
-        }
-    }
-
-    private static void renderCards(Minecraft mc, ScaledResolution resolution) {
-        long now = System.currentTimeMillis();
-        Iterator<CardNotice> iterator = CARDS.iterator();
-        while (iterator.hasNext()) {
-            if (now - iterator.next().createdAt > CARD_DURATION_MS) {
-                iterator.remove();
-            }
-        }
-        int w = Math.min(220, Math.max(150, resolution.getScaledWidth() / 3));
-        int x = 8;
-        int y = resolution.getScaledHeight() - 8;
-        for (CardNotice card : CARDS) {
-            float alpha = alpha(now - card.createdAt, CARD_DURATION_MS);
-            int h = card.body.length() == 0 ? 34 : 46;
-            y -= h;
-            drawPanel(x, y, w, h, card.accent, alpha);
-            mc.fontRenderer.drawStringWithShadow(fit(mc.fontRenderer, card.title, w - 14), x + 8, y + 7,
-                    colorWithAlpha(Palette.TEXT_GOLD, alpha));
-            mc.fontRenderer.drawString(fit(mc.fontRenderer, card.subtitle, w - 14), x + 8, y + 19,
-                    colorWithAlpha(Palette.TEXT_LIGHT, alpha));
-            if (card.body.length() > 0) {
-                mc.fontRenderer.drawString(fit(mc.fontRenderer, card.body, w - 14), x + 8, y + 31,
-                        colorWithAlpha(Palette.TEXT_MUTED, alpha));
-            }
-            y -= 6;
         }
     }
 
@@ -237,31 +237,28 @@ public final class Forge112NotificationHud {
         return skill == null ? Palette.ACCENT_GOLD : UiData.skillColor(skill);
     }
 
-    private static final class XpToast {
-        private final SkillType skill;
-        private final int amount;
-        private final String source;
-        private final long createdAt;
-
-        private XpToast(SkillType skill, int amount, String source) {
-            this.skill = skill;
-            this.amount = amount;
-            this.source = source == null ? "" : source;
-            this.createdAt = System.currentTimeMillis();
-        }
+    private static String clean(String value) {
+        return value == null ? "" : value.replace('\n', ' ').replace('\r', ' ').trim();
     }
 
-    private static final class CardNotice {
-        private final String title;
-        private final String subtitle;
-        private final String body;
+    private static String joinMini(String title, String subtitle, String body) {
+        String text = title;
+        if (subtitle.length() > 0) {
+            text += (text.length() == 0 ? "" : " ") + subtitle;
+        }
+        if (body.length() > 0) {
+            text += (text.length() == 0 ? "" : " ") + body;
+        }
+        return text;
+    }
+
+    private static final class ToastNotice {
+        private final String text;
         private final int accent;
         private final long createdAt;
 
-        private CardNotice(String title, String subtitle, String body, int accent) {
-            this.title = title == null ? "" : title;
-            this.subtitle = subtitle == null ? "" : subtitle;
-            this.body = body == null ? "" : body;
+        private ToastNotice(String text, int accent) {
+            this.text = text == null ? "" : text;
             this.accent = accent;
             this.createdAt = System.currentTimeMillis();
         }

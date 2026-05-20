@@ -6,12 +6,15 @@ import com.murilloskills.forge112.api.SkillRegistry;
 import com.murilloskills.forge112.data.PlayerRuntime;
 import com.murilloskills.forge112.utils.Forge112DailyChallengeManager;
 import com.murilloskills.forge112.utils.Forge112FirstTimeHints;
+import com.murilloskills.forge112.utils.Forge112MiningTools;
 import com.murilloskills.forge112.utils.Forge112SkillSynergyManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
 import net.minecraft.util.DamageSource;
+import net.minecraftforge.event.AnvilUpdateEvent;
+import net.minecraftforge.event.enchanting.EnchantmentLevelSetEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingFallEvent;
@@ -49,9 +52,9 @@ public final class Forge112SkillEvents {
 
     @SubscribeEvent
     public void onLogout(net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedOutEvent event) {
-        STORE.save(event.player.getUniqueID());
-        ULTMINE_HELD.remove(event.player.getUniqueID());
-        ULTMINE_RUNNING.remove(event.player.getUniqueID());
+        STORE.unload(event.player.getUniqueID());
+        RUNTIME.remove(event.player.getUniqueID());
+        Forge112MiningTools.clearUltmineState(event.player);
         LOG.info("[MurilloSkills][1.12.2] Player logout: {}", event.player.getName());
     }
 
@@ -63,6 +66,8 @@ public final class Forge112SkillEvents {
         PlayerRuntime runtime = runtime(event.player);
         runtime.ticks++;
         PlayerSkillDataCore data = data(event.player);
+        Forge112MiningTools.tickUltmineJob(event.player);
+        Forge112MiningTools.tickUltmineConfigEffects(event.player);
         tickTimedAbilities(event.player, data, runtime);
         SkillRegistry.tick(event.player, data, runtime);
         if (runtime.ticks % 100 == 0) {
@@ -81,7 +86,7 @@ public final class Forge112SkillEvents {
             SkillRegistry.applyPassives(event.player, data);
         }
         if (runtime.ticks % 80 == 0) {
-            STORE.save(event.player.getUniqueID());
+            STORE.saveIfDirty(event.player.getUniqueID());
         }
     }
 
@@ -95,6 +100,15 @@ public final class Forge112SkillEvents {
         for (AbstractSkill skill : SkillRegistry.values()) {
             skill.onBreakSpeed(event, player, data);
         }
+    }
+
+    @SubscribeEvent
+    public void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+        EntityPlayer player = event.getEntityPlayer();
+        if (player == null || player.world == null || player.world.isRemote) {
+            return;
+        }
+        Forge112MiningTools.recordUltmineTargetFace(player, event.getPos(), event.getFace());
     }
 
     @SubscribeEvent
@@ -112,6 +126,11 @@ public final class Forge112SkillEvents {
             Forge112DailyChallengeManager.record(player, com.murilloskills.core.config.SkillType.FARMER, "harvest", 1);
         } else {
             Forge112DailyChallengeManager.record(player, com.murilloskills.core.config.SkillType.MINER, "break", 1);
+        }
+        int mined = Forge112MiningTools.handleUltmineBreak(player, event.getPos(), event.getState());
+        if (mined > 0) {
+            addXp(player, com.murilloskills.core.config.SkillType.MINER, mined * 6, "ultmine " + blockId);
+            LOG.info("[MurilloSkills][1.12.2][Ultmine] {} mined {} extra blocks.", player.getName(), mined);
         }
     }
 
@@ -280,9 +299,26 @@ public final class Forge112SkillEvents {
     }
 
     @SubscribeEvent
+    public void onAnvilUpdate(AnvilUpdateEvent event) {
+        for (AbstractSkill skill : SkillRegistry.values()) {
+            skill.onAnvilUpdate(event);
+        }
+    }
+
+    @SubscribeEvent
+    public void onEnchantmentLevelSet(EnchantmentLevelSetEvent event) {
+        if (event.getWorld() == null || event.getWorld().isRemote) {
+            return;
+        }
+        for (AbstractSkill skill : SkillRegistry.values()) {
+            skill.onEnchantmentLevelSet(event);
+        }
+    }
+
+    @SubscribeEvent
     public void onRightClick(PlayerInteractEvent.RightClickBlock event) {
         EntityPlayer player = event.getEntityPlayer();
-        if (player == null || player.world.isRemote) {
+        if (player == null || player.world.isRemote || !Forge112MiningTools.isLoadedBlock(player.world, event.getPos())) {
             return;
         }
         PlayerSkillDataCore data = data(player);

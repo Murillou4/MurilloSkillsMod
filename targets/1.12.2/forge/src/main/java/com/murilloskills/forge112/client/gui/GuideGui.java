@@ -163,11 +163,11 @@ public final class GuideGui extends GuiScreen {
     @Override
     public void initGui() {
         buttonList.clear();
-        buttonList.add(new GuiButton(BACK, width - 86, 12, 74, 20, "Back"));
+        buttonList.add(flatButton(BACK, width - 86, 12, 74, 20, "Back"));
         String[] tabs = new String[] { "Status", "Synergy", "Prestige", "Perks" };
         int tabW = Math.max(64, Math.min(92, (width - 38) / tabs.length));
         for (int i = 0; i < tabs.length; i++) {
-            buttonList.add(new GuiButton(9200 + i, 18 + i * (tabW + 4), 36, tabW, 18, tabs[i]));
+            buttonList.add(flatButton(9200 + i, 18 + i * (tabW + 4), 36, tabW, 18, tabs[i]));
         }
     }
 

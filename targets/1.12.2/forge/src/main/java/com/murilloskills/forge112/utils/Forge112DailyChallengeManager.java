@@ -94,7 +94,7 @@ public final class Forge112DailyChallengeManager {
         }
         if (changed) {
             data.getExtensions().put(EXTENSION, root);
-            STORE.save(player.getUniqueID());
+            STORE.markDirty(player.getUniqueID());
         }
     }
 

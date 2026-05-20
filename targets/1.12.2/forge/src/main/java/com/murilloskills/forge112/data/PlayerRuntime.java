@@ -155,6 +155,9 @@ public final class PlayerRuntime {
     public double lastX;
     public double lastY;
     public double lastZ;
+    public String blacksmithEnchantingSlotFingerprint;
+    public boolean blacksmithEnchantingSlotHadEnchantments;
+    public String blacksmithEnchantingProcessedFingerprint;
 
     public PlayerRuntime(EntityPlayer player) {
         this.lastX = player.posX;

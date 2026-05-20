@@ -152,6 +152,7 @@ import java.util.UUID;
 
 public final class Forge112Store {
     public final Map<UUID, PlayerSkillDataCore> cache = new HashMap<UUID, PlayerSkillDataCore>();
+    private final Set<UUID> dirty = new HashSet<UUID>();
     public Path root;
 
     public void setRoot(Path root) {
@@ -176,14 +177,36 @@ public final class Forge112Store {
     }
 
     public void save(UUID uuid) {
+        if (uuid == null) {
+            return;
+        }
         PlayerSkillDataCore data = cache.get(uuid);
         if (data == null) {
             return;
         }
         try {
             PlayerSkillJsonCodec.write(path(uuid), data);
+            dirty.remove(uuid);
         } catch (IOException error) {
             LOG.warn("[MurilloSkills][1.12.2] Failed to save {}: {}", uuid, error.toString());
+        }
+    }
+
+    public void markDirty(UUID uuid) {
+        if (uuid != null && cache.containsKey(uuid)) {
+            dirty.add(uuid);
+        }
+    }
+
+    public void saveIfDirty(UUID uuid) {
+        if (uuid != null && dirty.contains(uuid)) {
+            save(uuid);
+        }
+    }
+
+    public void saveDirty() {
+        for (UUID uuid : new ArrayList<UUID>(dirty)) {
+            save(uuid);
         }
     }
 
@@ -193,8 +216,27 @@ public final class Forge112Store {
         }
     }
 
+    public void unload(UUID uuid) {
+        if (uuid == null) {
+            return;
+        }
+        save(uuid);
+        cache.remove(uuid);
+        dirty.remove(uuid);
+    }
+
+    public void clear() {
+        saveAll();
+        cache.clear();
+        dirty.clear();
+    }
+
     public int size() {
         return cache.size();
+    }
+
+    public int dirtySize() {
+        return dirty.size();
     }
 
     private Path path(UUID uuid) {

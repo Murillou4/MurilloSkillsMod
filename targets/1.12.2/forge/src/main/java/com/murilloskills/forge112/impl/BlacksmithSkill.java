@@ -13,6 +13,8 @@ import net.minecraft.init.SoundEvents;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.SoundCategory;
+import net.minecraftforge.event.AnvilUpdateEvent;
+import net.minecraftforge.event.enchanting.EnchantmentLevelSetEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent.ItemCraftedEvent;
@@ -24,6 +26,7 @@ import static com.murilloskills.forge112.skills.Forge112TimedEffects.activateTim
 import static com.murilloskills.forge112.skills.Forge112TimedEffects.isTimedActive;
 import static com.murilloskills.forge112.skills.Forge112TimedEffects.repairEquippedGear;
 import static com.murilloskills.forge112.utils.Forge112EnvironmentEffects.accelerateNearbyFurnaces;
+import static com.murilloskills.forge112.utils.Forge112BlacksmithEnchanting.*;
 import static com.murilloskills.forge112.utils.Forge112PlayerServices.*;
 import static com.murilloskills.forge112.utils.Forge112SkillMath.getBlacksmithDamageMultiplier;
 
@@ -51,6 +54,7 @@ public final class BlacksmithSkill extends AbstractSkill {
         if (runtime.ticks % 80 == 0 && isSelected(data, SkillType.BLACKSMITH)) {
             accelerateNearbyFurnaces(player, data);
         }
+        tickEnchantingTable(player, data, runtime);
     }
 
     @Override
@@ -85,6 +89,16 @@ public final class BlacksmithSkill extends AbstractSkill {
     @Override
     public void onSmelt(ItemSmeltedEvent event, String itemId) {
         addXp(event.player, SkillType.BLACKSMITH, 24, "smelt " + itemId);
+    }
+
+    @Override
+    public void onAnvilUpdate(AnvilUpdateEvent event) {
+        applyAnvilUpdate(event);
+    }
+
+    @Override
+    public void onEnchantmentLevelSet(EnchantmentLevelSetEvent event) {
+        applyEnchantmentLevelBoost(event);
     }
 
     @Override
