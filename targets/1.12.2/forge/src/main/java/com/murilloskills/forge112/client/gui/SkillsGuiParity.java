@@ -6,6 +6,7 @@ import com.murilloskills.forge112.client.config.*;
 import com.murilloskills.forge112.client.gui.*;
 import com.murilloskills.forge112.client.input.*;
 import com.murilloskills.forge112.client.render.*;
+import com.murilloskills.forge112.network.ModNetwork112;
 import com.murilloskills.forge112.commands.*;
 import com.murilloskills.forge112.config.*;
 import com.murilloskills.forge112.data.*;
@@ -304,11 +305,7 @@ public final class SkillsGuiParity extends GuiScreen {
             return;
         }
         if (button.id == CONFIRM_BUTTON) {
-            if (mc.player != null) {
-                for (SkillType skill : pendingSelection) {
-                    mc.player.sendChatMessage("/murilloskills select " + skill.name());
-                }
-            }
+            ModNetwork112.sendSkillSelection(pendingSelection);
             mc.displayGuiScreen(null);
             return;
         }
@@ -331,18 +328,16 @@ public final class SkillsGuiParity extends GuiScreen {
             }
             initGui();
         } else if ("paragon".equals(action.action)) {
-            mc.player.sendChatMessage("/murilloskills paragon " + action.skill.name());
+            ModNetwork112.sendSkillParagon(action.skill);
             predictParagon(action.skill);
             initGui();
         } else if ("prestige".equals(action.action)) {
-            mc.player.sendChatMessage("/murilloskills prestige " + action.skill.name());
+            ModNetwork112.sendSkillPrestige(action.skill);
             predictPrestige(action.skill);
             initGui();
         } else if ("reset".equals(action.action)) {
-            STORE.cache.put(mc.player.getUniqueID(), new PlayerSkillDataCore());
-            STORE.save(mc.player.getUniqueID());
             pendingSelection.clear();
-            mc.player.sendChatMessage("/murilloskills reset");
+            ModNetwork112.sendSkillResetAll();
             mc.displayGuiScreen(new SkillsGuiParity());
         } else if ("filter".equals(action.action)) {
             mc.displayGuiScreen(new OreFilterGui112(this));

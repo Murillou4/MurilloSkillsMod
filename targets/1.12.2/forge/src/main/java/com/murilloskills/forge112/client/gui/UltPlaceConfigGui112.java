@@ -3,6 +3,8 @@ package com.murilloskills.forge112.client.gui;
 import com.murilloskills.forge112.client.data.UltPlaceClientState112;
 import com.murilloskills.forge112.client.data.UltPlaceShape112;
 import com.murilloskills.forge112.client.render.Forge112NotificationHud;
+import com.murilloskills.forge112.network.ModNetwork112;
+import com.murilloskills.core.config.SkillType;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import org.lwjgl.input.Keyboard;
@@ -93,9 +95,7 @@ public final class UltPlaceConfigGui112 extends GuiScreen {
         }
         if (button.id == ENABLE) {
             boolean enabled = UltPlaceClientState112.toggleEnabled();
-            if (mc.player != null) {
-                mc.player.sendChatMessage("/murilloskills toggle BUILDER ultplace");
-            }
+            ModNetwork112.sendSkillToggle(SkillType.BUILDER, "ultplace");
             Forge112NotificationHud.addLocalCard("UltPlace", enabled ? "Enabled" : "Disabled",
                     UltPlaceClientState112.summary(), Palette.ACCENT_BLUE);
         } else if (button.id == PREVIEW) {

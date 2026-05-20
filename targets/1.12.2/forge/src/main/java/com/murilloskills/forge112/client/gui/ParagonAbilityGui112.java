@@ -3,6 +3,7 @@ package com.murilloskills.forge112.client.gui;
 import com.murilloskills.core.config.SkillType;
 import com.murilloskills.core.data.PlayerSkillDataCore;
 import com.murilloskills.core.data.SkillStatsCore;
+import com.murilloskills.forge112.network.ModNetwork112;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
@@ -77,7 +78,7 @@ public final class ParagonAbilityGui112 extends GuiScreen {
     protected void actionPerformed(GuiButton button) {
         SkillType skill = buttons.get(Integer.valueOf(button.id));
         if (skill != null && mc.player != null && isReady(skill)) {
-            mc.player.sendChatMessage("/murilloskills ability " + skill.name());
+            ModNetwork112.sendSkillAbility(skill);
             mc.displayGuiScreen(null);
         }
     }
@@ -114,7 +115,7 @@ public final class ParagonAbilityGui112 extends GuiScreen {
 
     private void activate(SkillType skill) {
         if (mc.player != null && skill != null && isReady(skill)) {
-            mc.player.sendChatMessage("/murilloskills ability " + skill.name());
+            ModNetwork112.sendSkillAbility(skill);
             mc.displayGuiScreen(null);
         }
     }

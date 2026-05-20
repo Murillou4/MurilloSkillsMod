@@ -1,11 +1,17 @@
 package com.murilloskills.forge112.network;
 
 import com.murilloskills.forge112.MurilloSkillsForge112;
+import com.murilloskills.core.config.SkillType;
+import com.murilloskills.core.data.PlayerSkillDataCore;
+import com.murilloskills.core.data.SkillStatsCore;
+import com.murilloskills.forge112.api.SkillRegistry;
 import com.murilloskills.forge112.client.config.ClientUltmineConfig;
 import com.murilloskills.forge112.client.data.UltmineClientState112;
 import com.murilloskills.forge112.client.gui.UltmineShape112;
 import com.murilloskills.forge112.client.render.Forge112NotificationHud;
+import com.murilloskills.forge112.utils.Forge112FirstTimeHints;
 import com.murilloskills.forge112.utils.Forge112MiningTools;
+import com.murilloskills.forge112.utils.Forge112Notifications;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
@@ -24,9 +30,22 @@ import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
+
+import static com.murilloskills.forge112.MurilloSkillsForge112.CONFIG;
+import static com.murilloskills.forge112.MurilloSkillsForge112.LOG;
+import static com.murilloskills.forge112.MurilloSkillsForge112.STORE;
+import static com.murilloskills.forge112.skills.Forge112Abilities.triggerAbility;
+import static com.murilloskills.forge112.utils.Forge112PlayerServices.data;
+import static com.murilloskills.forge112.utils.Forge112PlayerServices.say;
+import static com.murilloskills.forge112.utils.Forge112PlayerServices.skillName;
+import static com.murilloskills.forge112.utils.Forge112PlayerServices.toggle;
 
 public final class ModNetwork112 {
     private static final int MAX_FIELDS = 16;
@@ -74,6 +93,52 @@ public final class ModNetwork112 {
         sendToServer(new ClientActionMessage("ultmine_config", ClientUltmineConfig.toNetworkJson()));
     }
 
+    public static void sendSkillSelection(Collection<SkillType> skills) {
+        if (skills == null || skills.isEmpty()) {
+            return;
+        }
+        StringBuilder payload = new StringBuilder();
+        for (SkillType skill : skills) {
+            if (skill == null) {
+                continue;
+            }
+            if (payload.length() > 0) {
+                payload.append(',');
+            }
+            payload.append(skill.name());
+        }
+        if (payload.length() > 0) {
+            sendToServer(new ClientActionMessage("skill_select", payload.toString()));
+        }
+    }
+
+    public static void sendSkillParagon(SkillType skill) {
+        sendSkillAction("skill_paragon", skill);
+    }
+
+    public static void sendSkillPrestige(SkillType skill) {
+        sendSkillAction("skill_prestige", skill);
+    }
+
+    public static void sendSkillAbility(SkillType skill) {
+        sendSkillAction("skill_ability", skill);
+    }
+
+    public static void sendSkillToggle(SkillType skill, String toggleName) {
+        if (skill == null || toggleName == null || toggleName.trim().length() == 0) {
+            return;
+        }
+        sendToServer(new ClientActionMessage("skill_toggle", skill.name() + ";" + clean(toggleName)));
+    }
+
+    public static void sendSkillResetAll() {
+        sendToServer(new ClientActionMessage("skill_reset_all", ""));
+    }
+
+    private static void sendSkillAction(String action, SkillType skill) {
+        sendToServer(new ClientActionMessage(action, skill == null ? "" : skill.name()));
+    }
+
     public static void requestUltminePreview(BlockPos pos, EnumFacing face) {
         if (pos == null) {
             return;
@@ -118,7 +183,133 @@ public final class ModNetwork112 {
         }
         if ("ultmine_preview".equals(action)) {
             handlePreviewRequest(player, payload);
+            return;
         }
+        if ("skill_select".equals(action)) {
+            handleSkillSelection(player, payload);
+            return;
+        }
+        if ("skill_paragon".equals(action)) {
+            handleSkillParagon(player, parseSkill(payload));
+            return;
+        }
+        if ("skill_prestige".equals(action)) {
+            handleSkillPrestige(player, parseSkill(payload));
+            return;
+        }
+        if ("skill_ability".equals(action)) {
+            triggerAbility(player, parseSkill(payload));
+            return;
+        }
+        if ("skill_toggle".equals(action)) {
+            handleSkillToggle(player, payload);
+            return;
+        }
+        if ("skill_reset_all".equals(action)) {
+            handleSkillResetAll(player);
+        }
+    }
+
+    private static void handleSkillSelection(EntityPlayerMP player, String payload) {
+        List<SkillType> requested = parseSkillList(payload);
+        if (requested.isEmpty()) {
+            return;
+        }
+        PlayerSkillDataCore data = data(player);
+        Set<SkillType> before = new LinkedHashSet<SkillType>(data.getSelectedSkills());
+        if (!data.setSelectedSkills(requested, CONFIG)) {
+            Forge112Notifications.notice(player, "MurilloSkills", "Selection failed",
+                    "Limit " + CONFIG.getMaxSelectedSkills());
+            LOG.warn("[MurilloSkills][1.12.2][Network] Rejected selection {} for {} existing={}",
+                    requested, player.getName(), before);
+            return;
+        }
+        persistSkillData(player, data);
+        int added = 0;
+        for (SkillType skill : requested) {
+            if (!before.contains(skill) && data.isSkillSelected(skill)) {
+                added++;
+                Forge112Notifications.selection(player, skill);
+                Forge112FirstTimeHints.onSelection(player, skill);
+            }
+        }
+        LOG.info("[MurilloSkills][1.12.2][Network] {} selected {} skill(s): {}",
+                player.getName(), added, data.getSelectedSkills());
+    }
+
+    private static void handleSkillParagon(EntityPlayerMP player, SkillType skill) {
+        if (skill == null) {
+            return;
+        }
+        PlayerSkillDataCore data = data(player);
+        data.normalizeParagonState();
+        if (!data.isSkillSelected(skill) && !data.setSelectedSkills(Collections.singletonList(skill), CONFIG)) {
+            Forge112Notifications.notice(player, "Paragon", skillName(skill), "Select limit reached");
+            return;
+        }
+        if (!data.activateParagonSkill(skill)) {
+            Forge112Notifications.notice(player, "Paragon", skillName(skill), "Cannot activate");
+            return;
+        }
+        data.getSkill(skill).setLevel(Math.max(data.getSkill(skill).getLevel(), CONFIG.getMaxLevel()));
+        persistSkillData(player, data);
+        Forge112Notifications.paragon(player, skill);
+        LOG.info("[MurilloSkills][1.12.2][Network] {} set paragon {}", player.getName(), skill);
+    }
+
+    private static void handleSkillPrestige(EntityPlayerMP player, SkillType skill) {
+        if (skill == null) {
+            return;
+        }
+        PlayerSkillDataCore data = data(player);
+        SkillStatsCore stats = data.getSkill(skill);
+        if (!data.isParagonSkill(skill)) {
+            say(player, "MurilloSkills: apenas a skill Paragon pode prestigiar.");
+            return;
+        }
+        if (stats.getLevel() < CONFIG.getMaxLevel()) {
+            say(player, "MurilloSkills: precisa estar no nivel " + CONFIG.getMaxLevel() + " para prestigiar.");
+            return;
+        }
+        if (stats.getPrestige() >= CONFIG.getMaxPrestigeLevel()) {
+            say(player, "MurilloSkills: prestigio maximo ja alcancado.");
+            return;
+        }
+        int nextPrestige = stats.getPrestige() + 1;
+        stats.setPrestige(nextPrestige);
+        stats.setLevel(0);
+        stats.setXp(0.0D);
+        stats.setLastAbilityUse(-1L);
+        persistSkillData(player, data);
+        Forge112Notifications.notice(player, "Prestige", skillName(skill), "Prestige " + nextPrestige);
+        LOG.info("[MurilloSkills][1.12.2][Network] {} prestiged {} to {}", player.getName(), skill, nextPrestige);
+    }
+
+    private static void handleSkillToggle(EntityPlayerMP player, String payload) {
+        String[] parts = payload == null ? new String[0] : payload.split(";", 2);
+        if (parts.length < 2) {
+            return;
+        }
+        SkillType skill = parseSkill(parts[0]);
+        String toggleName = clean(parts[1]).toLowerCase(Locale.ROOT);
+        if (skill == null || toggleName.length() == 0) {
+            return;
+        }
+        toggle(player, skill, toggleName, false);
+    }
+
+    private static void handleSkillResetAll(EntityPlayerMP player) {
+        PlayerSkillDataCore data = new PlayerSkillDataCore();
+        STORE.cache.put(player.getUniqueID(), data);
+        persistSkillData(player, data);
+        Forge112Notifications.notice(player, "MurilloSkills", "Reset", "Skill data cleared");
+        LOG.info("[MurilloSkills][1.12.2][Network] {} reset all skill data", player.getName());
+    }
+
+    private static void persistSkillData(EntityPlayer player, PlayerSkillDataCore data) {
+        data.normalizeParagonState();
+        SkillRegistry.applyPassives(player, data);
+        STORE.save(player.getUniqueID());
     }
 
     private static void applyUltmineSelection(EntityPlayerMP player, String payload) {
@@ -177,6 +368,30 @@ public final class ModNetwork112 {
         } catch (Exception ignored) {
             return fallback;
         }
+    }
+
+    private static SkillType parseSkill(String value) {
+        if (value == null || value.trim().length() == 0) {
+            return null;
+        }
+        try {
+            return SkillType.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private static List<SkillType> parseSkillList(String payload) {
+        List<SkillType> out = new ArrayList<SkillType>();
+        Set<SkillType> seen = new LinkedHashSet<SkillType>();
+        String[] parts = payload == null ? new String[0] : payload.split("[,;]", -1);
+        for (String part : parts) {
+            SkillType skill = parseSkill(part);
+            if (skill != null && seen.add(skill)) {
+                out.add(skill);
+            }
+        }
+        return out;
     }
 
     public static final class NotificationMessage implements IMessage {

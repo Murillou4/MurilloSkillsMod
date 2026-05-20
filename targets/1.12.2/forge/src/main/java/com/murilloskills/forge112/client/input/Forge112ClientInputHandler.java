@@ -154,7 +154,9 @@ import java.util.UUID;
 
 @SideOnly(Side.CLIENT)
 public final class Forge112ClientInputHandler {
+    private static final long KEY_DEBOUNCE_MILLIS = 250L;
     private static final Map<KeyBinding, Boolean> HELD_KEYS = new HashMap<KeyBinding, Boolean>();
+    private static final Map<KeyBinding, Long> LAST_PRESS_MILLIS = new HashMap<KeyBinding, Long>();
     private static final KeyBinding[] DIAGNOSTIC_KEYS = new KeyBinding[] {
             Forge112ClientHooks.OPEN, Forge112ClientHooks.ABILITY, Forge112ClientHooks.AREA_PLANTING,
             Forge112ClientHooks.HOLLOW_FILL, Forge112ClientHooks.NIGHT_VISION, Forge112ClientHooks.STEP_ASSIST,
@@ -177,7 +179,7 @@ public final class Forge112ClientInputHandler {
             if (data(mc.player).getParagonSkills().size() > 1) {
                 mc.displayGuiScreen(new ParagonAbilityGui112());
             } else {
-                mc.player.sendChatMessage("/murilloskills ability");
+                ModNetwork112.sendSkillAbility(null);
             }
         }
         keyToggle(Forge112ClientHooks.AREA_PLANTING, "FARMER", "area_planting");
@@ -189,7 +191,7 @@ public final class Forge112ClientInputHandler {
             LOG.info("[MurilloSkills][1.12.2][Client] One-shot BUILDER.ultplace from key {} ({})",
                     Forge112ClientHooks.getKeyName(Forge112ClientHooks.ULTPLACE),
                     Forge112ClientHooks.getKeyCode(Forge112ClientHooks.ULTPLACE));
-            mc.player.sendChatMessage("/murilloskills toggle BUILDER ultplace");
+            ModNetwork112.sendSkillToggle(SkillType.BUILDER, "ultplace");
             Forge112NotificationHud.addLocalCard("UltPlace", enabled ? "Enabled" : "Disabled",
                     UltPlaceClientState112.summary(), Palette.ACCENT_BLUE);
         }
@@ -218,7 +220,10 @@ public final class Forge112ClientInputHandler {
         if (consumePress(key)) {
             LOG.info("[MurilloSkills][1.12.2][Client] One-shot {}.{} from key {} ({})",
                     skill, name, Forge112ClientHooks.getKeyName(key), Forge112ClientHooks.getKeyCode(key));
-            Minecraft.getMinecraft().player.sendChatMessage("/murilloskills toggle " + skill + " " + name);
+            try {
+                ModNetwork112.sendSkillToggle(SkillType.valueOf(skill), name);
+            } catch (IllegalArgumentException ignored) {
+            }
         }
     }
 
@@ -229,7 +234,16 @@ public final class Forge112ClientInputHandler {
         boolean down = isBindingDown(key);
         boolean wasDown = Boolean.TRUE.equals(HELD_KEYS.get(key));
         HELD_KEYS.put(key, down);
-        return down && !wasDown;
+        if (!down || wasDown) {
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        Long last = LAST_PRESS_MILLIS.get(key);
+        if (last != null && now - last.longValue() < KEY_DEBOUNCE_MILLIS) {
+            return false;
+        }
+        LAST_PRESS_MILLIS.put(key, Long.valueOf(now));
+        return true;
     }
 
     private static boolean isReservedHoldConflict(KeyBinding key) {

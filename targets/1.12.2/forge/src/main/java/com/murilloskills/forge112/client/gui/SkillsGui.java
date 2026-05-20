@@ -6,6 +6,7 @@ import com.murilloskills.forge112.client.config.*;
 import com.murilloskills.forge112.client.gui.*;
 import com.murilloskills.forge112.client.input.*;
 import com.murilloskills.forge112.client.render.*;
+import com.murilloskills.forge112.network.ModNetwork112;
 import com.murilloskills.forge112.commands.*;
 import com.murilloskills.forge112.config.*;
 import com.murilloskills.forge112.data.*;
@@ -217,11 +218,11 @@ public final class SkillsGui extends GuiScreen {
             return;
         }
         if ("select".equals(action.action)) {
-            mc.player.sendChatMessage("/murilloskills select " + action.skill.name());
+            ModNetwork112.sendSkillSelection(Collections.singletonList(action.skill));
         } else if ("paragon".equals(action.action)) {
-            mc.player.sendChatMessage("/murilloskills paragon " + action.skill.name());
+            ModNetwork112.sendSkillParagon(action.skill);
         } else if ("ability".equals(action.action)) {
-            mc.player.sendChatMessage("/murilloskills ability " + action.skill.name());
+            ModNetwork112.sendSkillAbility(action.skill);
         } else if ("filter".equals(action.action)) {
             mc.displayGuiScreen(new OreFilterGui112(this));
         } else if ("ultmine".equals(action.action)) {
