@@ -1,0 +1,22 @@
+{
+  "parent": "murilloskills:journey",
+  "display": {
+    "icon": {
+      "id": "minecraft:amethyst_shard"
+    },
+    "title": {
+      "text": "Uma nova vocação"
+    },
+    "description": {
+      "text": "Complete três contratos e conquiste um selo."
+    },
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlocked": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

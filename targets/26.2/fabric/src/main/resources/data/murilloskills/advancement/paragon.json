@@ -1,0 +1,22 @@
+{
+  "parent": "murilloskills:journey",
+  "display": {
+    "icon": {
+      "id": "minecraft:beacon"
+    },
+    "title": {
+      "text": "Paragon"
+    },
+    "description": {
+      "text": "Escolha sua profissão Paragon."
+    },
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlocked": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

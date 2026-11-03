@@ -1,0 +1,30 @@
+{
+  "required": true,
+  "package": "com.murilloskills.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "BlockItemMixin",
+    "LivingEntityMixin",
+    "BlockLootMixin",
+    "FishingHookMixin",
+    "FurnaceMixin",
+    "FurnaceResultMixin",
+    "CraftingMixin",
+    "AnvilMixin",
+    "CombinerAccess",
+    "PlayerMixin",
+    "ProjectileMixin",
+    "PlayerEnchantMixin",
+    "ExperienceOrbAccess",
+    "BowEconomyMixin",
+    "BlockItemAccess",
+    "AnimalBreedingMixin",
+    "ArrowAccess",
+    "ArrowSkillMixin",
+    "ComposterMixin"
+  ],
+  "client": ["KeyboardInputMixin"],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

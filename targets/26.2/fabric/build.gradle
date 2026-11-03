@@ -1,0 +1,67 @@
+plugins { id 'net.fabricmc.fabric-loom' version '1.17.21' }
+version = project.mod_version
+group = 'com.murilloskills'
+base { archivesName = 'murilloskills-26.2-fabric' }
+repositories { mavenCentral() }
+loom {
+    splitEnvironmentSourceSets()
+    mods { murilloskills { sourceSet sourceSets.main; sourceSet sourceSets.client } }
+    runs {
+        client {
+            programArgs '--width', '1280', '--height', '800'
+            if (providers.gradleProperty('testWorld').isPresent()) programArgs '--quickPlaySingleplayer', providers.gradleProperty('testWorld').get()
+        }
+        server { programArg 'nogui'; runDir '.codex-temp/server' }
+    }
+}
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+    testImplementation platform('org.junit:junit-bom:5.12.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+java { toolchain.languageVersion = JavaLanguageVersion.of(25); withSourcesJar() }
+tasks.withType(JavaCompile).configureEach { options.release = 25; options.encoding = 'UTF-8' }
+tasks.withType(AbstractArchiveTask).configureEach { preserveFileTimestamps = false; reproducibleFileOrder = true }
+processResources { inputs.property 'version', project.version; filesMatching('fabric.mod.json') { expand version: project.version } }
+test { useJUnitPlatform() }
+tasks.register('publishTargetJar', Copy) {
+    dependsOn tasks.named('build')
+    from tasks.named('jar')
+    into layout.projectDirectory.dir('../../../dist/26.2/fabric')
+}
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = 'murilloskills-test'
+        enableGameTests = false
+        enableClientGameTests = true
+        eula = true
+        clearRunDirectory = false
+        username = 'SkillsValidation'
+    }
+}
+sourceSets.gametest.compileClasspath += sourceSets.client.output + sourceSets.client.compileClasspath
+sourceSets.gametest.runtimeClasspath += sourceSets.client.output + sourceSets.client.runtimeClasspath
+loom.runs.clientGameTest {
+    vmArg '-Xmx2G'
+    vmArg '-Dmurilloskills.selftest=true'
+    runDir '.codex-temp/validation-client'
+    vmArg '-Dmurilloskills.evidence=' + file(providers.gradleProperty('evidenceDir').getOrElse('artifacts/runtime')).absolutePath
+    vmArg '-Dmurilloskills.testRoot=' + file('.codex-temp/validation').absolutePath
+    programArgs '--width', '1280', '--height', '800'
+}
+
+// The overall validation can run the actual distribution JAR, with fixtures kept outside it.
+if (providers.gradleProperty('useReleaseJar').getOrElse('false') == 'true') {
+    def productionDirectories = (sourceSets.main.output.files + sourceSets.client.output.files).collect { it.canonicalFile }.toSet()
+    tasks.withType(net.fabricmc.loom.task.AbstractRunTask).configureEach { run ->
+        dependsOn tasks.named('jar')
+        def originalClasspath = run.classpath
+        run.classpath = files(tasks.named('jar').flatMap { it.archiveFile }) + originalClasspath.filter { !productionDirectories.contains(it.canonicalFile) }
+        run.jvmArgs '-Dmurilloskills.releaseJar=true'
+    }
+}
+

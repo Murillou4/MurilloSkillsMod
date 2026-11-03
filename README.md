@@ -1,5 +1,7 @@
 # 🎮 MurilloSkills Mod
 
+> **MurilloSkills 2.2.6 / Fabric 26.2:** [documentação, instalação e controles](targets/26.2/fabric/README.md) · [baixar o JAR](dist/26.2/fabric/murilloskills-26.2-fabric-2.2.6.jar). Oito profissões, quatro escolhas e interface com valores do servidor. Novo radial Ultmine aprovado visualmente pelo usuário. Alvo nativo separado em `targets/26.2/fabric`, Java 25 e sem integrações externas. O conteúdo abaixo continua documentando a linha 1.x / 1.21.10.
+
 <div align="center">
 
 **Um mod de habilidades e progressão para Minecraft — Fabric 1.21.10**

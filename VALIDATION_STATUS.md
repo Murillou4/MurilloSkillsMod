@@ -1,6 +1,10 @@
 # MurilloSkills Validation Status
 
-Atualizado em 2026-05-19.
+## Fabric 26.2 / 2.2.6
+
+Radial Ultmine recomposto com cartões flutuantes e núcleo compacto, usando a identidade das outras telas. Build/empacotamento PASS com Java25 e build -x test; cópias conferidas por SHA256. Runtime, mundo, UI e testes NOT_RUN nesta entrega: o usuário fará a avaliação no jogo. A revisão PASS da 2.2.5 pertence ao histórico e não valida este novo radial. Status em [targets/26.2/fabric/VALIDATION_STATUS.md](targets/26.2/fabric/VALIDATION_STATUS.md).
+
+O histórico abaixo registra a revisão de 2026-05-19 e não valida esses alvos para a linha 2.2.
 
 ## Forge 1.12.2 runtime/UI/skills
 

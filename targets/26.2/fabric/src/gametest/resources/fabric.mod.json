@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "murilloskills-test",
+  "version": "1.0.0",
+  "name": "MurilloSkills validation",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": [
+      "com.murilloskills.validation.RuntimeValidation"
+    ]
+  },
+  "depends": {
+    "murilloskills": "*"
+  }
+}

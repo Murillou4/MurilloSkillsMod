@@ -1,0 +1,22 @@
+{
+  "parent": "murilloskills:journey",
+  "display": {
+    "icon": {
+      "id": "minecraft:nether_star"
+    },
+    "title": {
+      "text": "A jornada continua"
+    },
+    "description": {
+      "text": "Conquiste seu primeiro prestígio."
+    },
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlocked": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

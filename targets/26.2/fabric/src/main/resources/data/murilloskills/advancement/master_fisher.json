@@ -1,0 +1,22 @@
+{
+  "parent": "murilloskills:journey",
+  "display": {
+    "icon": {
+      "id": "minecraft:fishing_rod"
+    },
+    "title": {
+      "text": "Domínio · FISHER"
+    },
+    "description": {
+      "text": "Alcance o nível 100 nesta profissão."
+    },
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlocked": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

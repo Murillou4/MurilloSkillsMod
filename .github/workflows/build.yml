@@ -7,6 +7,30 @@ name: build
 on: [pull_request, push]
 
 jobs:
+  fabric-26-2:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: targets/26.2/fabric
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+      - uses: gradle/actions/setup-gradle@v4
+      - run: chmod +x gradlew
+      - name: Build native 2.2 and simulate progression
+        run: ./gradlew --no-daemon --console=plain build gametestClasses
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MurilloSkills-2.2-Fabric-26.2
+          path: |
+            targets/26.2/fabric/build/libs/
+            targets/26.2/fabric/build/reports/tests/
+            targets/26.2/fabric/artifacts/balance-simulation.csv
+            targets/26.2/fabric/artifacts/catalog.md
+
   build:
     runs-on: ubuntu-24.04
     steps:

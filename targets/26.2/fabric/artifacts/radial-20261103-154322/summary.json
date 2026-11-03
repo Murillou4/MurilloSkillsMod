@@ -1,0 +1,13 @@
+{
+  "version": "2.2.6",
+  "target": "Fabric 26.2",
+  "build": "PASS",
+  "command": "gradlew.bat --no-daemon --console=plain build -x test",
+  "jvmTests": "NOT_RUN",
+  "client": "NOT_RUN",
+  "gameplay": "NOT_RUN",
+  "ui": "NOT_RUN",
+  "reason": "Usuário fará a avaliação no jogo. Cliente não aberto pelo agente.",
+  "sha256": "fb77d4447658fad64d82a3583264ea3adc97c950b7f688432709957947cd0d05",
+  "copies": "identical"
+}
